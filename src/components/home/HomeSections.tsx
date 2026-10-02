@@ -9,6 +9,8 @@ import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLa
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
+import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
+import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
@@ -311,6 +313,27 @@ export function HomeResults() {
             </div>
           ) : active === 1 ? (
             <SocialFormatCollage />
+          ) : active === 3 ? (
+            <div className="relative w-full overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
+              <video
+                className="h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                aria-label="Beispiel: KI-erstelltes Fahrzeugvideo"
+              >
+                <source src={resultVideoWebmAsset.url} type="video/webm" />
+                <source src={resultVideoMp4Asset.url} type="video/mp4" />
+              </video>
+              <img
+                src={getAiDisclosureLabelVector('landing')}
+                alt={getAiDisclosureLabelAlt('landing')}
+                title={getAiDisclosureText('landing')}
+                className={AI_DISCLOSURE_OVERLAY_CLASS}
+              />
+            </div>
           ) : (
             <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
           )}
