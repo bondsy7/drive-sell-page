@@ -203,75 +203,115 @@ const SOCIAL_FORMATS = {
 
 const SOCIAL_ORDER = [SOCIAL_FORMATS.story, SOCIAL_FORMATS.post, SOCIAL_FORMATS.fbAd, SOCIAL_FORMATS.skyscraper];
 
+const SOCIAL_ITEMS = SOCIAL_ORDER.map((format) => ({ src: format.src, alt: format.alt }));
+
 /** Stellt die Formate unbeschnitten in ihrem jeweiligen Verhältnis dar; der Kasten dahinter bleibt gleich groß. */
-function SocialFormatCollage() {
+function SocialFormatCollage({ onOpen }: { onOpen: (index: number) => void }) {
+  const zoomClass = 'cursor-zoom-in transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
   return (
     <div className="grid aspect-[4/3] w-full">
       <div className="flex h-full snap-x snap-mandatory items-center gap-3 overflow-x-auto sm:hidden">
-        {SOCIAL_ORDER.map((format) => (
-          <img
-            key={format.alt}
-            src={format.src}
-            alt={format.alt}
-            loading="lazy"
-            className="h-[86%] w-auto max-w-none shrink-0 snap-start rounded-lg border border-border"
-          />
+        {SOCIAL_ORDER.map((format, index) => (
+          <button key={format.alt} type="button" onClick={() => onOpen(index)} aria-label={`${format.alt} – vergrößern`} className={cn('h-[86%] shrink-0 snap-start', zoomClass)}>
+            <img
+              src={format.src}
+              alt={format.alt}
+              loading="lazy"
+              className="h-full w-auto max-w-none rounded-lg border border-border"
+            />
+          </button>
         ))}
       </div>
       <div className="hidden h-full items-center gap-3 sm:flex">
-        <img
-          src={SOCIAL_FORMATS.story.src}
-          alt={SOCIAL_FORMATS.story.alt}
-          loading="lazy"
-          className="w-[37%] shrink-0 rounded-lg border border-border"
-          style={{ aspectRatio: '9 / 16' }}
-        />
+        <button type="button" onClick={() => onOpen(0)} aria-label={`${SOCIAL_FORMATS.story.alt} – vergrößern`} className={cn('w-[37%] shrink-0', zoomClass)}>
+          <img
+            src={SOCIAL_FORMATS.story.src}
+            alt={SOCIAL_FORMATS.story.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-border"
+            style={{ aspectRatio: '9 / 16' }}
+          />
+        </button>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <img
-            src={SOCIAL_FORMATS.fbAd.src}
-            alt={SOCIAL_FORMATS.fbAd.alt}
-            loading="lazy"
-            className="w-full rounded-lg border border-border"
-            style={{ aspectRatio: '1200 / 628' }}
-          />
-          <img
-            src={SOCIAL_FORMATS.post.src}
-            alt={SOCIAL_FORMATS.post.alt}
-            loading="lazy"
-            className="w-full rounded-lg border border-border"
-            style={{ aspectRatio: '1 / 1' }}
-          />
+          <button type="button" onClick={() => onOpen(2)} aria-label={`${SOCIAL_FORMATS.fbAd.alt} – vergrößern`} className={cn('w-full', zoomClass)}>
+            <img
+              src={SOCIAL_FORMATS.fbAd.src}
+              alt={SOCIAL_FORMATS.fbAd.alt}
+              loading="lazy"
+              className="w-full rounded-lg border border-border"
+              style={{ aspectRatio: '1200 / 628' }}
+            />
+          </button>
+          <button type="button" onClick={() => onOpen(1)} aria-label={`${SOCIAL_FORMATS.post.alt} – vergrößern`} className={cn('w-full', zoomClass)}>
+            <img
+              src={SOCIAL_FORMATS.post.src}
+              alt={SOCIAL_FORMATS.post.alt}
+              loading="lazy"
+              className="w-full rounded-lg border border-border"
+              style={{ aspectRatio: '1 / 1' }}
+            />
+          </button>
         </div>
-        <img
-          src={SOCIAL_FORMATS.skyscraper.src}
-          alt={SOCIAL_FORMATS.skyscraper.alt}
-          loading="lazy"
-          className="w-[17.5%] shrink-0 rounded-lg border border-border"
-          style={{ aspectRatio: '160 / 600' }}
-        />
+        <button type="button" onClick={() => onOpen(3)} aria-label={`${SOCIAL_FORMATS.skyscraper.alt} – vergrößern`} className={cn('w-[17.5%] shrink-0', zoomClass)}>
+          <img
+            src={SOCIAL_FORMATS.skyscraper.src}
+            alt={SOCIAL_FORMATS.skyscraper.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-border"
+            style={{ aspectRatio: '160 / 600' }}
+          />
+        </button>
       </div>
     </div>
   );
 }
 
+const RESULT_IMAGE_ITEMS = RESULT_IMAGES.filter((src): src is string => Boolean(src)).map((src, index) => ({
+  src,
+  alt: `Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt`,
+}));
+
+const VERKAUFSSEITE_ITEM = {
+  src: verkaufsseiteAsset.url,
+  alt: 'Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt',
+};
+
+interface LightboxItem {
+  src: string;
+  alt: string;
+}
+
+interface LightboxState {
+  items: LightboxItem[];
+  index: number;
+}
+
 export function HomeResults() {
   const [active, setActive] = useState(0);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const result = RESULT_TABS[active];
-  const lightboxCount = RESULT_IMAGES.length;
+
+  const openLightbox = (items: LightboxItem[], index: number) => setLightbox({ items, index });
+  const stepLightbox = (direction: 1 | -1) =>
+    setLightbox((current) =>
+      current === null
+        ? current
+        : { ...current, index: (current.index + direction + current.items.length) % current.items.length },
+    );
 
   useEffect(() => {
-    if (lightboxIndex === null) return;
+    if (lightbox === null) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowLeft') {
-        setLightboxIndex((current) => (current === null ? current : (current - 1 + lightboxCount) % lightboxCount));
+        stepLightbox(-1);
       } else if (event.key === 'ArrowRight') {
-        setLightboxIndex((current) => (current === null ? current : (current + 1) % lightboxCount));
+        stepLightbox(1);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [lightboxIndex, lightboxCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightbox === null]);
 
   return (
     <section id="ergebnisse" className="scroll-mt-20 border-y border-border bg-secondary/60 py-20 sm:py-28">
@@ -296,7 +336,7 @@ export function HomeResults() {
                   <button
                     key={index}
                     type="button"
-                    onClick={() => RESULT_IMAGES[index] && setLightboxIndex(index)}
+                    onClick={() => RESULT_IMAGES[index] && openLightbox(RESULT_IMAGE_ITEMS, index)}
                     aria-label={RESULT_IMAGES[index] ? `Fahrzeugansicht ${index + 1} vergrößern` : undefined}
                     className={cn('text-left', RESULT_IMAGES[index] && 'cursor-zoom-in transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}
                   >
@@ -313,7 +353,7 @@ export function HomeResults() {
               </div>
             </div>
           ) : active === 1 ? (
-            <SocialFormatCollage />
+            <SocialFormatCollage onOpen={(index) => openLightbox(SOCIAL_ITEMS, index)} />
           ) : active === 3 ? (
             <div className="relative w-full overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
               <video
@@ -336,29 +376,36 @@ export function HomeResults() {
               />
             </div>
           ) : active === 4 ? (
-            <ImagePlaceholder
-              label={result.label}
-              ratio={result.ratio}
-              className="w-full"
-              src={verkaufsseiteAsset.url}
-              alt="Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt"
-              aiContext="landing"
-            />
+            <button
+              type="button"
+              onClick={() => openLightbox([VERKAUFSSEITE_ITEM], 0)}
+              aria-label="Verkaufsseiten-Beispiel vergrößern"
+              className="w-full cursor-zoom-in text-left transition-transform duration-200 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ImagePlaceholder
+                label={result.label}
+                ratio={result.ratio}
+                className="w-full"
+                src={verkaufsseiteAsset.url}
+                alt={VERKAUFSSEITE_ITEM.alt}
+                aiContext="landing"
+              />
+            </button>
           ) : (
             <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
           )}
         </div>
       </div>
-      <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
+      <Dialog open={lightbox !== null} onOpenChange={(open) => !open && setLightbox(null)}>
         <DialogContent className="max-w-5xl border-none bg-transparent p-0 shadow-none sm:max-w-5xl [&>button]:hidden">
           <DialogTitle className="sr-only">
-            {lightboxIndex !== null ? `Fahrzeugansicht ${lightboxIndex + 1} von ${lightboxCount}` : 'Fahrzeugansicht'}
+            {lightbox !== null ? `Bild ${lightbox.index + 1} von ${lightbox.items.length}` : 'Bildansicht'}
           </DialogTitle>
-          {lightboxIndex !== null ? (
+          {lightbox !== null ? (
             <div className="relative">
               <img
-                src={RESULT_IMAGES[lightboxIndex]}
-                alt={`Fahrzeugansicht ${lightboxIndex + 1} im Showroom – mit KI erstellt`}
+                src={lightbox.items[lightbox.index].src}
+                alt={lightbox.items[lightbox.index].alt}
                 className="max-h-[85vh] w-full rounded-lg object-contain"
               />
               <img
@@ -371,34 +418,38 @@ export function HomeResults() {
                 type="button"
                 variant="secondary"
                 size="icon"
-                onClick={() => setLightboxIndex(null)}
+                onClick={() => setLightbox(null)}
                 aria-label="Detailansicht schließen"
                 className="absolute -right-2 -top-2 z-10 rounded-full shadow-lg sm:-right-3 sm:-top-3"
               >
                 <X className="size-5" />
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                onClick={() => setLightboxIndex((lightboxIndex - 1 + lightboxCount) % lightboxCount)}
-                aria-label="Vorheriges Bild"
-                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
-              >
-                <ChevronLeft className="size-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                onClick={() => setLightboxIndex((lightboxIndex + 1) % lightboxCount)}
-                aria-label="Nächstes Bild"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
-              >
-                <ChevronRight className="size-5" />
-              </Button>
+              {lightbox.items.length > 1 ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => stepLightbox(-1)}
+                    aria-label="Vorheriges Bild"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
+                  >
+                    <ChevronLeft className="size-5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => stepLightbox(1)}
+                    aria-label="Nächstes Bild"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
+                  >
+                    <ChevronRight className="size-5" />
+                  </Button>
+                </>
+              ) : null}
               <p className="mt-3 text-center text-sm font-medium text-primary-foreground">
-                {lightboxIndex + 1} / {lightboxCount}
+                {lightbox.index + 1} / {lightbox.items.length}
               </p>
             </div>
           ) : null}
