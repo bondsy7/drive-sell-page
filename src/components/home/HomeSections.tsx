@@ -217,7 +217,8 @@ function SocialFormatCollage() {
           src={SOCIAL_FORMATS.story.src}
           alt={SOCIAL_FORMATS.story.alt}
           loading="lazy"
-          className="h-[88%] w-auto max-w-none shrink-0 rounded-lg border border-border"
+          className="w-[37%] shrink-0 rounded-lg border border-border"
+          style={{ aspectRatio: '9 / 16' }}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <img
@@ -239,7 +240,8 @@ function SocialFormatCollage() {
           src={SOCIAL_FORMATS.skyscraper.src}
           alt={SOCIAL_FORMATS.skyscraper.alt}
           loading="lazy"
-          className="h-[88%] w-auto max-w-none shrink-0 rounded-lg border border-border"
+          className="w-[17.5%] shrink-0 rounded-lg border border-border"
+          style={{ aspectRatio: '160 / 600' }}
         />
       </div>
     </div>
