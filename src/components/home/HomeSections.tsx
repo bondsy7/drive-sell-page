@@ -16,6 +16,7 @@ import bannerMockupAsset from '@/assets/home/mobilede-mockup-banner.png.asset.js
 import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
+import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
