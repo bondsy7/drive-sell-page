@@ -223,6 +223,14 @@ export default function StandtageVermeiden() {
                 <p className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />Aufbereitung und Fototermin müssen den Vermarktungsstart nicht mehr verzögern.</p>
                 <p className="flex items-start gap-2 md:pl-4"><Car className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />Die Fahrzeugaufbereitung kann parallel weiterlaufen.</p>
               </div>
+              <div className="mt-4 flex items-center gap-3 text-xs font-medium text-accent">
+                <span className="h-3 w-px bg-accent/60" aria-hidden="true" />
+                <span className="h-px flex-1 bg-accent/40" aria-hidden="true" />
+                <span>Wenige Minuten Wartezeit bis zum Vermarktungsstart</span>
+                <span className="h-px flex-1 bg-accent/40" aria-hidden="true" />
+                <span className="h-3 w-px bg-accent/60" aria-hidden="true" />
+              </div>
+
             </Lane>
           </div>
         </div>
