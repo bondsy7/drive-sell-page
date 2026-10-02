@@ -33,6 +33,15 @@ export default function HomeHero() {
     return () => window.clearTimeout(id);
   }, [index, paused, tick]);
 
+  // Browser pausieren stumme Autoplay-Videos teils beim Verschieben aus dem Sichtbereich – bei Slide 1 aktiv neu starten.
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || index !== 0) return;
+    v.muted = true;
+    v.play().catch(() => {});
+  }, [index]);
+
   return (
     <section className="overflow-hidden border-b border-border bg-card">
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
@@ -82,12 +91,14 @@ export default function HomeHero() {
                     className="block h-auto w-full"
                   />
                   <video
+                    ref={videoRef}
                     aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
                     autoPlay
                     muted
                     loop
                     playsInline
-                    preload="metadata"
+                    preload="auto"
+                    onCanPlay={(e) => { e.currentTarget.muted = true; e.currentTarget.play().catch(() => {}); }}
                     className="absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover"
                   >
                     <source src={headlightsWebmAsset.url} type="video/webm" />
