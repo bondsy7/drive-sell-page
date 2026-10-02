@@ -13,6 +13,7 @@ import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
 import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
 import bannerMockupAsset from '@/assets/home/mobilede-mockup-banner.png.asset.json';
+import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
@@ -522,9 +523,14 @@ export function HomeClosingCta({ destination }: { destination: string }) {
   return (
     <section className="border-t border-border bg-secondary/60 px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto grid max-w-6xl overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-glow lg:grid-cols-2">
-        <div className="grid grid-cols-2 gap-3 p-5 sm:p-8">
-          <ImagePlaceholder label="Dein Originalfoto" ratio="4/3" className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground/75" />
-          <ImagePlaceholder label="Dein Ergebnis" ratio="4/3" className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground/75" />
+        <div className="p-5 sm:p-8">
+          <ImagePlaceholder
+            label="Dein Originalfoto"
+            ratio="3/2"
+            className="h-full w-full border-primary-foreground/30"
+            src={dealerCapturingAsset.url}
+            alt="Händler fotografiert mit dem Smartphone ein verschmutztes Fahrzeug auf dem Hof"
+          />
         </div>
         <div className="flex flex-col justify-center border-t border-primary-foreground/20 p-7 sm:p-10 lg:border-l lg:border-t-0">
           <h2 className="font-display text-3xl font-bold sm:text-4xl">Was wird aus deinem Fahrzeug?</h2>
