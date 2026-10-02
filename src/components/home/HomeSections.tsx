@@ -19,7 +19,6 @@ import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look.webp.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
-import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import showroomDetailAsset from '@/assets/home/looks/showroom-detail.webp.asset.json';
 import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
 import brandingDetailAsset from '@/assets/home/looks/branding-detail.webp.asset.json';
@@ -553,7 +552,7 @@ export function HomeQuality() {
             aiContext={lookImage?.aiContext}
           />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
-            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={fahrzeugdetailAsset.url} alt="Scheinwerfer-Detail eines silbernen SUVs – mit KI erstellt" aiContext="landing" />
+            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={lookImage?.detail.src} alt={lookImage?.detail.alt} aiContext="landing" />
           </div>
         </div>
         <div>
