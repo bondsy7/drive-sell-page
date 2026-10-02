@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Car, CheckCircle2, Clock, Layers, Rocket, Turtle, UserRound } from 'lucide-react';
+import { ArrowDown, ArrowRight, Car, CheckCircle2, Clock, Layers, Rabbit, Rocket, Turtle, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -226,7 +226,7 @@ export default function StandtageVermeiden() {
               <div className="mt-4 flex items-center gap-3 text-xs font-medium text-accent">
                 <span className="h-3 w-px bg-accent/60" aria-hidden="true" />
                 <span className="h-px flex-1 bg-accent/40" aria-hidden="true" />
-                <span>Wenige Minuten Wartezeit bis zum Vermarktungsstart</span>
+                <span className="inline-flex items-center gap-1.5"><Rabbit className="h-4 w-4 shrink-0" aria-hidden="true" /> Wenige Minuten Wartezeit bis zum Vermarktungsstart</span>
                 <span className="h-px flex-1 bg-accent/40" aria-hidden="true" />
                 <span className="h-3 w-px bg-accent/60" aria-hidden="true" />
               </div>
