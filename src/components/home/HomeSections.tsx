@@ -491,7 +491,8 @@ const LOOK_IMAGES: Record<string, { src: string; alt: string; aiContext?: AiDisc
   },
   Outdoor: {
     src: outdoorLookAsset.url,
-    alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht',
+    alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht – mit KI erstellt',
+    aiContext: 'landing',
   },
 };
 
