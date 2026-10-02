@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Camera, Check, ChevronLeft, ChevronRight, Images, LayoutTemplate, Palette, Share2, Video } from 'lucide-react';
+import { ArrowRight, Camera, Check, ChevronLeft, ChevronRight, Images, LayoutTemplate, Palette, Share2, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -332,6 +332,16 @@ export function HomeResults() {
                 title={getAiDisclosureText('landing')}
                 className="pointer-events-none absolute right-3 top-3 h-[1.125rem] w-auto"
               />
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={() => setLightboxIndex(null)}
+                aria-label="Detailansicht schließen"
+                className="absolute -right-2 -top-2 z-10 rounded-full shadow-lg sm:-right-3 sm:-top-3"
+              >
+                <X className="size-5" />
+              </Button>
               <Button
                 type="button"
                 variant="secondary"
