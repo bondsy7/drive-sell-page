@@ -9,7 +9,8 @@ import {
 import heroShowroomAsset from '@/assets/home/hero-showroom.webp.asset.json';
 import originalDealerAsset from '@/assets/home/original-dealer.png.asset.json';
 import socialStoryAsset from '@/assets/home/social-story.webp.asset.json';
-import ImagePlaceholder from './ImagePlaceholder';
+import headlightsVideoAsset from '@/assets/home/fahrzeugscheinwerfer-loop.mp4.asset.json';
+import headlightsWebmAsset from '@/assets/home/fahrzeugscheinwerfer-loop.webm.asset.json';
 
 export default function HomeHero() {
   return (
@@ -67,7 +68,26 @@ export default function HomeHero() {
                 Beispiel
               </span>
             </div>
-            <ImagePlaceholder label="Video-Beispiel" ratio="9/16" className="bg-card shadow-card" />
+            <div className="relative overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
+              <video
+                aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="aspect-[9/16] w-full object-cover"
+              >
+                <source src={headlightsWebmAsset.url} type="video/webm" />
+                <source src={headlightsVideoAsset.url} type="video/mp4" />
+              </video>
+              <img
+                src={getAiDisclosureLabelAsset('landing')}
+                alt={getAiDisclosureLabelAlt('landing')}
+                title={getAiDisclosureText('landing')}
+                className="pointer-events-none absolute right-2 top-2 h-5 w-auto"
+              />
+            </div>
           </div>
         </div>
       </div>
