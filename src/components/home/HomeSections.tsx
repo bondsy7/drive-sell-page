@@ -115,6 +115,7 @@ export function HomeProcess() {
               src={step.image}
               alt={step.alt}
               objectPosition={step.objectPosition ?? 'center 62%'}
+              aiContext={step.aiContext}
             />
           </div>
           <div className="flex flex-col justify-end border-t border-border p-6 lg:border-l lg:border-t-0 lg:p-8">
