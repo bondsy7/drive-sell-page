@@ -10,6 +10,7 @@ import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
+import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
 import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
@@ -380,7 +381,14 @@ export function HomeQuality() {
     <section className="py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div className="relative pb-10 pr-0 sm:pr-20">
-          <ImagePlaceholder label={`${activeLook} · großes Fahrzeugbild`} ratio="4/3" className="w-full bg-secondary" />
+          <ImagePlaceholder
+            label={`${activeLook} · großes Fahrzeugbild`}
+            ratio="4/3"
+            className="w-full bg-secondary"
+            src={activeLook === 'Showroom' ? showroomLookAsset.url : undefined}
+            alt={activeLook === 'Showroom' ? 'Silbernes SUV im Showroom – mit KI erstellt' : undefined}
+            aiContext={activeLook === 'Showroom' ? 'landing' : undefined}
+          />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
             <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" />
           </div>
