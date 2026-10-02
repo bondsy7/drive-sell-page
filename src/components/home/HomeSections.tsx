@@ -20,6 +20,10 @@ import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
 import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
 import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
+import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json';
+import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
+import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
+import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -171,6 +175,81 @@ export function HomeProcess() {
   );
 }
 
+/** Social-Media-Werbemittel in ihren echten Seitenverhältnissen. */
+const SOCIAL_FORMATS = {
+  story: {
+    src: socialStoryAsset.url,
+    alt: 'Instagram Story im Hochformat 1080 × 1920 – Fahrzeuganzeige mit Preis und Anfragebutton',
+  },
+  post: {
+    src: socialPostAsset.url,
+    alt: 'Instagram Beitrag im Quadrat 1080 × 1080 – Fahrzeuganzeige mit Preis und Anfragebutton',
+  },
+  fbAd: {
+    src: socialFbAdAsset.url,
+    alt: 'Facebook-Werbeanzeige 1200 × 628 – Fahrzeuganzeige mit Preis und Anfragebutton',
+  },
+  skyscraper: {
+    src: socialSkyscraperAsset.url,
+    alt: 'Schmales Anzeigen-Hochformat 160 × 600 – Fahrzeuganzeige mit Preis und Anfragebutton',
+  },
+};
+
+const SOCIAL_ORDER = [SOCIAL_FORMATS.story, SOCIAL_FORMATS.post, SOCIAL_FORMATS.fbAd, SOCIAL_FORMATS.skyscraper];
+
+/** Stellt die Formate unbeschnitten in ihrem jeweiligen Verhältnis dar; der Kasten dahinter bleibt gleich groß. */
+function SocialFormatCollage() {
+  return (
+    <div className="grid aspect-[4/3] w-full">
+      <div className="flex h-full items-center gap-3 overflow-x-auto sm:hidden">
+        {SOCIAL_ORDER.map((format) => (
+          <img
+            key={format.alt}
+            src={format.src}
+            alt={format.alt}
+            loading="lazy"
+            className="h-[86%] w-auto shrink-0 rounded-lg border border-border object-cover"
+          />
+        ))}
+      </div>
+      <div className="hidden h-full items-center gap-3 sm:flex">
+        <ImagePlaceholder
+          label="Story"
+          ratio="9/16"
+          className="w-[38%] shrink-0"
+          src={SOCIAL_FORMATS.story.src}
+          alt={SOCIAL_FORMATS.story.alt}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <ImagePlaceholder
+            label="Werbeanzeige"
+            ratio="1200/628"
+            className="w-full"
+            src={SOCIAL_FORMATS.fbAd.src}
+            alt={SOCIAL_FORMATS.fbAd.alt}
+          />
+          <div className="flex items-start justify-between gap-3">
+            <ImagePlaceholder
+              label="Post"
+              ratio="1/1"
+              className="w-[62%]"
+              src={SOCIAL_FORMATS.post.src}
+              alt={SOCIAL_FORMATS.post.alt}
+            />
+            <ImagePlaceholder
+              label="Schmales Hochformat"
+              ratio="160/600"
+              className="w-[14%]"
+              src={SOCIAL_FORMATS.skyscraper.src}
+              alt={SOCIAL_FORMATS.skyscraper.alt}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HomeResults() {
   const [active, setActive] = useState(0);
   const result = RESULT_TABS[active];
@@ -207,6 +286,8 @@ export function HomeResults() {
                 ))}
               </div>
             </div>
+          ) : active === 1 ? (
+            <SocialFormatCollage />
           ) : (
             <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
           )}
