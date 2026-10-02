@@ -127,3 +127,4 @@
 ## Startseite: 12 Ergebnis-Perspektiven im Raster (02.10.2026)
 - [x] Bilder 1–12 nach Dateinummer in die zwölf Kacheln des Bereichs „Ergebnisse" einsetzen
 - [x] Kacheln 11 und 12 mit web_11/web_12 füllen; Hinweiszeile auf „12 Perspektiven · Ergebnisse" stellen
+- [x] Kacheln 6 und 7 tauschen (Scheinwerfer-Detail nach 6, 2×2-Collage nach 7)
