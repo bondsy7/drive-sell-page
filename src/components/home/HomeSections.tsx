@@ -23,6 +23,7 @@ type ProcessStep = {
   icon: typeof Camera;
   image?: string;
   alt?: string;
+  objectPosition?: string;
   aiContext?: AiDisclosureContext;
 };
 
@@ -112,7 +113,7 @@ export function HomeProcess() {
               className="w-full bg-card"
               src={step.image}
               alt={step.alt}
-              objectPosition="center 62%"
+              objectPosition={step.objectPosition ?? 'center 62%'}
             />
           </div>
           <div className="flex flex-col justify-end border-t border-border p-6 lg:border-l lg:border-t-0 lg:p-8">
