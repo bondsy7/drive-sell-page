@@ -1,8 +1,9 @@
 import { ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
+  AI_DISCLOSURE_OVERLAY_CLASS,
   getAiDisclosureLabelAlt,
-  getAiDisclosureLabelAsset,
+  getAiDisclosureLabelVector,
   getAiDisclosureText,
   type AiDisclosureContext,
 } from '@/lib/ai-disclosure';

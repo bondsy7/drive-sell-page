@@ -10,7 +10,7 @@ import aiLabelAsset from "@/assets/ai-labels/ai-black.png.asset.json";
 import aiGeneratedLabelAsset from "@/assets/ai-labels/ai-generated-black.png.asset.json";
 import aiModifiedLabelAsset from "@/assets/ai-labels/ai-modified-black.png.asset.json";
 
-//ieselbe official
+// Dieselbe Official-Gestalt wie die PNGs, nur als Vektor – skaliert verlustfrei.
 import aiLabelVector from "@/assets/ai-labels/ai-black.svg";
 import aiGeneratedLabelVector from "@/assets/ai-labels/ai-generated-black.svg";
 import aiModifiedLabelVector from "@/assets/ai-labels/ai-modified-black.svg";
