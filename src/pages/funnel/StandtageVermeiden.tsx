@@ -226,7 +226,7 @@ export default function StandtageVermeiden() {
               <div className="mt-4 flex items-center gap-3 text-xs font-medium text-accent">
                 <span className="h-3 w-px bg-accent/60" aria-hidden="true" />
                 <span className="h-px flex-1 bg-accent/40" aria-hidden="true" />
-                <span className="inline-flex items-center gap-1.5"><Rabbit className="h-4 w-4 shrink-0" aria-hidden="true" /> Wenige Minuten Wartezeit bis zum Vermarktungsstart</span>
+                <span className="inline-flex items-center gap-1.5"><Rabbit className="h-4 w-4 shrink-0" aria-hidden="true" /> In wenigen Minuten überall online</span>
                 <span className="h-px flex-1 bg-accent/40" aria-hidden="true" />
                 <span className="h-3 w-px bg-accent/60" aria-hidden="true" />
               </div>
