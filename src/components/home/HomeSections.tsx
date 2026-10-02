@@ -315,7 +315,7 @@ export function HomeResults() {
         </div>
       </div>
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
-        <DialogContent className="max-w-5xl border-none bg-transparent p-0 shadow-none sm:max-w-5xl">
+        <DialogContent className="max-w-5xl border-none bg-transparent p-0 shadow-none sm:max-w-5xl [&>button]:hidden">
           <DialogTitle className="sr-only">
             {lightboxIndex !== null ? `Fahrzeugansicht ${lightboxIndex + 1} von ${lightboxCount}` : 'Fahrzeugansicht'}
           </DialogTitle>
