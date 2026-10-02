@@ -12,6 +12,7 @@ import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.
 import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
 import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
+import bannerMockupAsset from '@/assets/home/mobilede-mockup-banner.png.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
@@ -276,6 +277,11 @@ const VERKAUFSSEITE_ITEM = {
   alt: 'Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt',
 };
 
+const BANNER_MOCKUP_ITEM = {
+  src: bannerMockupAsset.url,
+  alt: 'Werbebanner-Beispiel auf einer Fahrzeugsuchseite – mit KI erstellt',
+};
+
 interface LightboxItem {
   src: string;
   alt: string;
@@ -354,6 +360,22 @@ export function HomeResults() {
             </div>
           ) : active === 1 ? (
             <SocialFormatCollage onOpen={(index) => openLightbox(SOCIAL_ITEMS, index)} />
+          ) : active === 2 ? (
+            <button
+              type="button"
+              onClick={() => openLightbox([BANNER_MOCKUP_ITEM], 0)}
+              aria-label="Werbebanner-Beispiel vergrößern"
+              className="w-full cursor-zoom-in text-left transition-transform duration-200 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ImagePlaceholder
+                label={result.label}
+                ratio={result.ratio}
+                className="w-full"
+                src={bannerMockupAsset.url}
+                alt={BANNER_MOCKUP_ITEM.alt}
+                objectPosition="center"
+              />
+            </button>
           ) : active === 3 ? (
             <div className="relative w-full overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
               <video
