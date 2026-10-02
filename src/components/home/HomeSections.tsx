@@ -311,6 +311,27 @@ export function HomeResults() {
             </div>
           ) : active === 1 ? (
             <SocialFormatCollage />
+          ) : active === 3 ? (
+            <div className="relative w-full overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
+              <video
+                className="h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                aria-label="Beispiel: KI-erstelltes Fahrzeugvideo"
+              >
+                <source src={resultVideoWebmAsset.url} type="video/webm" />
+                <source src={resultVideoMp4Asset.url} type="video/mp4" />
+              </video>
+              <img
+                src={getAiDisclosureLabelVector('landing')}
+                alt={getAiDisclosureLabelAlt('landing')}
+                title={getAiDisclosureText('landing')}
+                className={AI_DISCLOSURE_OVERLAY_CLASS}
+              />
+            </div>
           ) : (
             <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
           )}
