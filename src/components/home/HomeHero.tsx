@@ -32,31 +32,31 @@ export default function HomeHero() {
           </div>
         </div>
 
-      </div>
-      <div className="relative w-full">
-        <img
-          src={headerGraphicAsset.url}
-          alt="Vom Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild und Social-Media-Auftritt"
-          className="block h-auto w-full"
-        />
-        <video
-          aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          className="absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover"
-        >
-          <source src={headlightsWebmAsset.url} type="video/webm" />
-          <source src={headlightsMp4Asset.url} type="video/mp4" />
-        </video>
-        <img
-          src={getAiDisclosureLabelAsset('landing')}
-          alt={getAiDisclosureLabelAlt('landing')}
-          title={getAiDisclosureText('landing')}
-          className="pointer-events-none absolute right-2 top-2 h-4 w-auto sm:right-4 sm:top-4 sm:h-5"
-        />
+        <div className="relative mt-10 w-full sm:mt-14">
+          <img
+            src={headerGraphicAsset.url}
+            alt="Vom Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild und Social-Media-Auftritt"
+            className="block h-auto w-full"
+          />
+          <video
+            aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover"
+          >
+            <source src={headlightsWebmAsset.url} type="video/webm" />
+            <source src={headlightsMp4Asset.url} type="video/mp4" />
+          </video>
+          <img
+            src={getAiDisclosureLabelAsset('landing')}
+            alt={getAiDisclosureLabelAlt('landing')}
+            title={getAiDisclosureText('landing')}
+            className="pointer-events-none absolute right-2 top-2 h-4 w-auto sm:right-4 sm:top-4 sm:h-5"
+          />
+        </div>
       </div>
     </section>
   );
