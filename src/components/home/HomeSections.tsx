@@ -26,6 +26,7 @@ type ProcessStep = {
   alt?: string;
   objectPosition?: string;
   aiContext?: AiDisclosureContext;
+  ratio?: string;
 };
 
 const PROCESS_STEPS: ProcessStep[] = [
