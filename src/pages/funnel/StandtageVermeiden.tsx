@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Car, CheckCircle2, Clock, Layers, Rocket, UserRound } from 'lucide-react';
+import { ArrowDown, ArrowRight, Car, CheckCircle2, Clock, Layers, Rocket, Turtle, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
