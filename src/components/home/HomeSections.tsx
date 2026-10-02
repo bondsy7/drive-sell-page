@@ -50,7 +50,17 @@ const PROCESS_STEPS: ProcessStep[] = [
     objectPosition: 'center',
     aiContext: 'landing',
   },
-  { number: '03', title: 'Marketing erstellen', text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.', label: 'Marketingformate aus demselben Fahrzeug', icon: LayoutTemplate },
+  {
+    number: '03',
+    title: 'Marketing erstellen',
+    text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.',
+    label: 'Marketingformate aus demselben Fahrzeug',
+    icon: LayoutTemplate,
+    image: marketingBannerAsset.url,
+    alt: 'Werbebanner mit SUV vor Neonkulisse, Aktionspreis und Anfrage-Button – mit KI erstellt',
+    objectPosition: 'center',
+    ratio: '1200/628',
+  },
 ];
 
 const RESULT_TABS = [
