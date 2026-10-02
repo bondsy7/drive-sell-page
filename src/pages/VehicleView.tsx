@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw,
@@ -55,7 +55,11 @@ export default function VehicleView() {
   const deleteBanner = useDeleteBanner();
   const deleteSpin360 = useDeleteSpin360();
 
-  const [tab, setTab] = useState<TabKey>('originals');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab') as TabKey | null;
+  const [tabState, setTabState] = useState<TabKey>(urlTab || 'originals');
+  const tab = urlTab || tabState;
+  const setTab = (t: TabKey) => { setTabState(t); if (urlTab) setSearchParams({}, { replace: true }); };
   const { disabledModules } = useModuleAccess();
   const canPublishWebsite = !disabledModules.has('website-publishing');
 
@@ -295,7 +299,7 @@ export default function VehicleView() {
         return <DataTab vehicle={vehicle} />;
       case 'website':
         if (!canPublishWebsite) return null;
-        return <WebsitePublishingTab vehicle={vehicle as never} />;
+        return <WebsitePublishingTab vehicle={vehicle as never} prepareJobId={searchParams.get('prepare')} />;
       case 'gallery':
         return (
           <GalleryTab

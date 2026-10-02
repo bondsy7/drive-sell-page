@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  AUTO3_SOURCE, DEFAULT_TARGET, buildSnapshot, importExternalVehicle, isPublishableUrl, isRealVin, publicationStatusLabel,
+  AUTO3_SOURCE, DEFAULT_TARGET, buildAuto3JobDraft, buildSnapshot, importExternalVehicle, selectAuto3JobImages, isPublishableUrl, isRealVin, publicationStatusLabel,
   type CoverMode, type GalleryMode, type PublicationItem, type WebsitePublication,
 } from '@/lib/website-publishing';
 
@@ -23,7 +23,7 @@ interface ExtVehicle {
   external_images?: { url: string; sortOrder: number }[] | null;
 }
 
-export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle }) {
+export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicle: ExtVehicle; prepareJobId?: string | null }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const target = DEFAULT_TARGET;
@@ -47,7 +47,7 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!pub) return;
+    if (!pub || prepareJobId) return;
     setCoverMode(pub.cover_mode);
     setGalleryMode(pub.gallery_mode);
     setCoverId(pub.cover_asset_id);
@@ -59,6 +59,17 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
     [assets],
   );
   const auto3Images = vehicle.external_images || [];
+
+  // „Für Auto Schmitt vorbereiten“: prefill the draft once from a finished OneShot run. Nothing is saved or published.
+  const jobImages = useMemo(() => (prepareJobId ? selectAuto3JobImages(aiAssets, vehicle.id, prepareJobId) : []), [aiAssets, vehicle.id, prepareJobId]);
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (prefilled || isLoading || !prepareJobId || jobImages.length === 0) return;
+    const d = buildAuto3JobDraft(jobImages);
+    setCoverMode(d.coverMode); setGalleryMode(d.galleryMode); setCoverId(d.coverId); setItems(d.items);
+    setPrefilled(true);
+    toast.info(`${jobImages.length} Fahrzeugbilder vorbelegt – noch nicht veröffentlicht. Bitte prüfen und dann „Änderungen veröffentlichen“.`);
+  }, [prefilled, isLoading, prepareJobId, jobImages]);
   const coverUrl = aiAssets.find((a) => a.id === coverId)?.url || items.find((i) => i.assetId === coverId)?.url || null;
 
   // Import form
@@ -106,7 +117,8 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
     if (opts.status === 'disabled') row.status = 'disabled';
     else if (opts.publish) {
       row.status = 'live';
-      row.live_snapshot = buildSnapshot({ coverMode: cm, galleryMode: gm, coverUrl, items });
+      try { row.live_snapshot = buildSnapshot({ coverMode: cm, galleryMode: gm, coverUrl, items }); }
+      catch (e) { setSaving(false); toast.error((e as Error).message); return; }
       row.published_at = new Date().toISOString();
     } else if (!pub) row.status = 'draft';
     const { error } = await supabase.from('website_publications').upsert([row as never], { onConflict: 'vehicle_id,target' });
@@ -119,7 +131,7 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
     qc.invalidateQueries({ queryKey: ['website-publications'] });
   };
 
-  const preview = buildSnapshot({ coverMode, galleryMode, coverUrl, items });
+  const preview = (() => { try { return buildSnapshot({ coverMode, galleryMode, coverUrl, items }); } catch { return { coverMode, galleryMode, coverImageUrl: null, images: [] }; } })();
   const previewCover = preview.coverImageUrl || auto3Images[0]?.url || null;
   const previewGallery = galleryMode === 'auto3' ? auto3Images.map((i) => i.url)
     : galleryMode === 'append' ? [...preview.images.map((i) => i.url), ...auto3Images.map((i) => i.url)]
@@ -173,6 +185,9 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
           <div className="flex gap-2">
             <Button size="sm" variant={coverMode === 'auto3' ? 'default' : 'outline'} onClick={() => setCoverMode('auto3')}>Auto3-Titelbild</Button>
             <Button size="sm" variant={coverMode === 'ai' ? 'default' : 'outline'} onClick={() => setCoverMode('ai')}>AI-Bild</Button>
+            {prepareJobId && jobImages.length > 0 && (
+              <Button size="sm" variant="ghost" onClick={() => { setCoverMode('ai'); setGalleryMode('auto3'); }}>Nur Cover</Button>
+            )}
           </div>
         </div>
         <div>

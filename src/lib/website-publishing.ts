@@ -50,6 +50,8 @@ export function buildSnapshot(input: {
   coverUrl: string | null;
   items: PublicationItem[];
 }): LiveSnapshot {
+  if (input.coverUrl && input.coverMode === 'ai' && !isPublishableUrl(input.coverUrl)) throw new Error('Cover hat keine dauerhafte öffentliche Adresse.');
+  if (input.galleryMode !== 'auto3' && input.items.some((it) => !isPublishableUrl(it.url))) throw new Error('Nur Bilder mit dauerhafter öffentlicher Adresse können veröffentlicht werden.');
   const images = input.galleryMode === 'auto3'
     ? []
     : [...input.items].sort((a, b) => a.sortOrder - b.sortOrder).map((it, i) => ({ url: it.url, sortOrder: i }));
@@ -135,4 +137,32 @@ export async function importExternalVehicle(userId: string, input: ImportExterna
   }]).select('id').single();
   if (error) throw error;
   return data.id as string;
+}
+
+/** Gallery assets with a durable public URL. Banners/videos/spins/originals are never part of it. */
+export interface GalleryAssetLike { id: string; url: string; label?: string | null }
+
+const ONESHOT_ORDER = [
+  'master', 'ext_34_front_right', 'ext_34_front_left', 'ext_front', 'ext_side_left', 'ext_side_right',
+  'ext_34_rear_left', 'ext_34_rear_right', 'ext_rear', 'int_dashboard', 'int_front_seats', 'int_rear_seats',
+];
+
+/** Vehicle images from one Auto3 OneShot run (stored under auto3-jobs/<vehicle>/<job>/<slot>.png). */
+export function selectAuto3JobImages<T extends GalleryAssetLike>(assets: T[], vehicleId: string, jobId: string): T[] {
+  const marker = `/auto3-jobs/${vehicleId}/${jobId}/`;
+  const slot = (u: string) => (u.split(marker)[1] || '').split(/[?#]/)[0].replace(/\.(png|jpe?g|webp)$/i, '');
+  const rank = (u: string) => { const i = ONESHOT_ORDER.indexOf(slot(u)); return i < 0 ? ONESHOT_ORDER.length : i; };
+  return assets
+    .filter((a) => isPublishableUrl(a.url) && a.url.includes(marker) && /\.(png|jpe?g|webp)(\?|$)/i.test(a.url))
+    .sort((a, b) => rank(a.url) - rank(b.url));
+}
+
+/** Default draft for a finished Auto3 OneShot run: AI cover + "Nur AI" gallery. Never publishes. */
+export function buildAuto3JobDraft(images: GalleryAssetLike[]) {
+  return {
+    coverMode: 'ai' as CoverMode,
+    galleryMode: 'replace' as GalleryMode,
+    coverId: images[0]?.id ?? null,
+    items: images.map((a, i) => ({ assetId: a.id, url: a.url, sortOrder: i })) as PublicationItem[],
+  };
 }
