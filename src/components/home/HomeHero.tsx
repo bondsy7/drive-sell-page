@@ -106,11 +106,11 @@ export default function HomeHero() {
               </figure>
 
               <figure className="w-full shrink-0" aria-hidden={index !== 1}>
-                <div className="relative">
+                <div className="relative" style={{ aspectRatio: '1672 / 941' }}>
                   <img
                     src={mockupAsset.url}
                     alt="Geräte-Mockup mit Landingpage, Bannern, Social-Media-Content und Video – komplettes Marketingpaket"
-                    className="block h-auto w-full"
+                    className="block h-full w-full object-cover"
                   />
               <img
                 src={getAiDisclosureLabelVector('landing')}
