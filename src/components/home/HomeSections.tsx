@@ -203,52 +203,64 @@ const SOCIAL_FORMATS = {
 
 const SOCIAL_ORDER = [SOCIAL_FORMATS.story, SOCIAL_FORMATS.post, SOCIAL_FORMATS.fbAd, SOCIAL_FORMATS.skyscraper];
 
+const SOCIAL_ITEMS = SOCIAL_ORDER.map((format) => ({ src: format.src, alt: format.alt }));
+
 /** Stellt die Formate unbeschnitten in ihrem jeweiligen Verhältnis dar; der Kasten dahinter bleibt gleich groß. */
-function SocialFormatCollage() {
+function SocialFormatCollage({ onOpen }: { onOpen: (index: number) => void }) {
+  const zoomClass = 'cursor-zoom-in transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
   return (
     <div className="grid aspect-[4/3] w-full">
       <div className="flex h-full snap-x snap-mandatory items-center gap-3 overflow-x-auto sm:hidden">
-        {SOCIAL_ORDER.map((format) => (
-          <img
-            key={format.alt}
-            src={format.src}
-            alt={format.alt}
-            loading="lazy"
-            className="h-[86%] w-auto max-w-none shrink-0 snap-start rounded-lg border border-border"
-          />
+        {SOCIAL_ORDER.map((format, index) => (
+          <button key={format.alt} type="button" onClick={() => onOpen(index)} aria-label={`${format.alt} – vergrößern`} className={cn('h-[86%] shrink-0 snap-start', zoomClass)}>
+            <img
+              src={format.src}
+              alt={format.alt}
+              loading="lazy"
+              className="h-full w-auto max-w-none rounded-lg border border-border"
+            />
+          </button>
         ))}
       </div>
       <div className="hidden h-full items-center gap-3 sm:flex">
-        <img
-          src={SOCIAL_FORMATS.story.src}
-          alt={SOCIAL_FORMATS.story.alt}
-          loading="lazy"
-          className="w-[37%] shrink-0 rounded-lg border border-border"
-          style={{ aspectRatio: '9 / 16' }}
-        />
+        <button type="button" onClick={() => onOpen(0)} aria-label={`${SOCIAL_FORMATS.story.alt} – vergrößern`} className={cn('w-[37%] shrink-0', zoomClass)}>
+          <img
+            src={SOCIAL_FORMATS.story.src}
+            alt={SOCIAL_FORMATS.story.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-border"
+            style={{ aspectRatio: '9 / 16' }}
+          />
+        </button>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <img
-            src={SOCIAL_FORMATS.fbAd.src}
-            alt={SOCIAL_FORMATS.fbAd.alt}
-            loading="lazy"
-            className="w-full rounded-lg border border-border"
-            style={{ aspectRatio: '1200 / 628' }}
-          />
-          <img
-            src={SOCIAL_FORMATS.post.src}
-            alt={SOCIAL_FORMATS.post.alt}
-            loading="lazy"
-            className="w-full rounded-lg border border-border"
-            style={{ aspectRatio: '1 / 1' }}
-          />
+          <button type="button" onClick={() => onOpen(2)} aria-label={`${SOCIAL_FORMATS.fbAd.alt} – vergrößern`} className={cn('w-full', zoomClass)}>
+            <img
+              src={SOCIAL_FORMATS.fbAd.src}
+              alt={SOCIAL_FORMATS.fbAd.alt}
+              loading="lazy"
+              className="w-full rounded-lg border border-border"
+              style={{ aspectRatio: '1200 / 628' }}
+            />
+          </button>
+          <button type="button" onClick={() => onOpen(1)} aria-label={`${SOCIAL_FORMATS.post.alt} – vergrößern`} className={cn('w-full', zoomClass)}>
+            <img
+              src={SOCIAL_FORMATS.post.src}
+              alt={SOCIAL_FORMATS.post.alt}
+              loading="lazy"
+              className="w-full rounded-lg border border-border"
+              style={{ aspectRatio: '1 / 1' }}
+            />
+          </button>
         </div>
-        <img
-          src={SOCIAL_FORMATS.skyscraper.src}
-          alt={SOCIAL_FORMATS.skyscraper.alt}
-          loading="lazy"
-          className="w-[17.5%] shrink-0 rounded-lg border border-border"
-          style={{ aspectRatio: '160 / 600' }}
-        />
+        <button type="button" onClick={() => onOpen(3)} aria-label={`${SOCIAL_FORMATS.skyscraper.alt} – vergrößern`} className={cn('w-[17.5%] shrink-0', zoomClass)}>
+          <img
+            src={SOCIAL_FORMATS.skyscraper.src}
+            alt={SOCIAL_FORMATS.skyscraper.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-border"
+            style={{ aspectRatio: '160 / 600' }}
+          />
+        </button>
       </div>
     </div>
   );
