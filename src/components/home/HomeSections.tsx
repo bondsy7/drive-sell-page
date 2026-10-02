@@ -63,6 +63,8 @@ const PROCESS_STEPS: ProcessStep[] = [
   },
 ];
 
+const RESULT_TILE_COUNT = 12;
+
 const RESULT_TABS = [
   { title: 'Fahrzeugbilder', label: 'Große Fahrzeugansicht · Ergebnisse folgen', icon: Images, ratio: '16/9' },
   { title: 'Social Media', label: 'Social-Media-Beispiel · Ergebnis folgt', icon: Share2, ratio: '4/3' },
@@ -161,7 +163,23 @@ export function HomeResults() {
           ))}
         </div>
         <div className="mt-4 rounded-lg border border-border bg-card p-4 shadow-card sm:p-6">
-          <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
+          {active === 0 ? (
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse folgen</p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
+                {Array.from({ length: RESULT_TILE_COUNT }, (_, index) => (
+                  <ImagePlaceholder
+                    key={index}
+                    label={`Perspektive ${index + 1}`}
+                    ratio="16/9"
+                    className="bg-secondary/70"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
+          )}
         </div>
       </div>
     </section>
