@@ -489,26 +489,50 @@ export function HomeResults() {
   );
 }
 
-const LOOK_IMAGES: Record<string, { src: string; alt: string; aiContext?: AiDisclosureContext }> = {
+type LookEntry = {
+  src: string;
+  alt: string;
+  aiContext?: AiDisclosureContext;
+  /** Kleines Detailbild im überlagernden Kasten – wechselt mit der Kategorie. */
+  detail: { src: string; alt: string };
+};
+
+const LOOK_IMAGES: Record<string, LookEntry> = {
   Showroom: {
     src: showroomLookAsset.url,
     alt: 'Silbernes SUV im Showroom – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: showroomDetailAsset.url,
+      alt: 'Detailaufnahme von Kühlergrill und Scheinwerfer des silbernen SUVs im Showroom – mit KI erstellt',
+    },
   },
   Outdoor: {
     src: outdoorLookAsset.url,
     alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: outdoorDetailAsset.url,
+      alt: 'Detailaufnahme des Vorderrads mit Leichtmetallfelge im Abendlicht – mit KI erstellt',
+    },
   },
   Branding: {
     src: brandingLookAsset.url,
     alt: 'Silbernes SUV im Showroom vor einer Wand mit der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: brandingDetailAsset.url,
+      alt: 'Detailaufnahme der Wand mit dem Schriftzug autohaus.ai – mit KI erstellt',
+    },
   },
   Kennzeichen: {
     src: kennzeichenLookAsset.url,
     alt: 'Silbernes SUV in der Dreiviertelansicht von vorne mit dem Kennzeichen autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: kennzeichenDetailAsset.url,
+      alt: 'Detailaufnahme des Kennzeichens mit der Aufschrift autohaus.ai – mit KI erstellt',
+    },
   },
 };
 
