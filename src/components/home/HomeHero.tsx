@@ -34,10 +34,10 @@ export default function HomeHero() {
           </div>
         </div>
 
-        <div className="relative mt-10 w-full sm:mt-14">
+        <figure className="relative mt-10 w-full sm:mt-14">
           <img
             src={headerGraphicAsset.url}
-            alt="Vom Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild und Social-Media-Auftritt"
+            alt="Vom Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild und Social-Media-Auftritt – Für schnelles Social Media Marketing"
             className="block h-auto w-full"
           />
           <video
@@ -58,7 +58,27 @@ export default function HomeHero() {
             title={getAiDisclosureText('landing')}
             className={cn(AI_DISCLOSURE_OVERLAY_CLASS, 'sm:right-4 sm:top-4')}
           />
-        </div>
+          <figcaption className="mt-3 text-sm text-muted-foreground">
+            Für schnelles Social Media Marketing
+          </figcaption>
+        </figure>
+
+        <figure className="relative mt-10 w-full sm:mt-14">
+          <img
+            src={mockupAsset.url}
+            alt="Geräte-Mockup mit Landingpage, Bannern, Social-Media-Content und Video – komplettes Marketingpaket"
+            className="block h-auto w-full"
+          />
+          <img
+            src={getAiDisclosureLabelVector('landing')}
+            alt={getAiDisclosureLabelAlt('landing')}
+            title={getAiDisclosureText('landing')}
+            className={cn(AI_DISCLOSURE_OVERLAY_CLASS, 'sm:right-4 sm:top-4')}
+          />
+          <figcaption className="mt-3 text-sm text-muted-foreground">
+            Oder als komplettes Marketingpaket mit Landingpage, Banner, Social Media Content und Video
+          </figcaption>
+        </figure>
       </div>
     </section>
   );
