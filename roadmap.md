@@ -118,3 +118,7 @@
 ## Startseiten-Headergrafik (02.10.2026)
 - [x] Text und Buttons über die vollbreite Vorher/Nachher-Grafik setzen
 - [x] Proportionalen Video-Rahmen über der weißen Fläche vorbereiten; Platzhalter bis zur Videolieferung erhalten
+
+## Startseite: echtes Hof-Foto in Schritt 01 (02.10.2026)
+- [x] Originalaufnahme vom Hof (schlammiger SUV, nasser Platz) statt Platzhalter im Bereich „So funktioniert's"
+- [x] Bild als Medien-Adresse angelegt; Schritt 02/03 und Ergebnisse bleiben bis zur Lieferung Platzhalter
