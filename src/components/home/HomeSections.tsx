@@ -512,7 +512,7 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     aiContext: 'landing',
     detail: {
       src: outdoorDetailAsset.url,
-      alt: 'Detailaufnahme des Vorderrads mit Leichtmetallfelge im Abendlicht – mit KI erstellt',
+      alt: 'Collage mit vier Ansichten des silbernen SUVs auf einem Parkplatz im Abendlicht – mit KI erstellt',
     },
   },
   Branding: {
