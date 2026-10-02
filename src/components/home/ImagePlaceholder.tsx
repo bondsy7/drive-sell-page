@@ -5,10 +5,33 @@ interface ImagePlaceholderProps {
   label: string;
   ratio?: string;
   className?: string;
+  /** Echte Bild-URL. Ist sie gesetzt, wird das Bild statt des Platzhalters gezeigt. */
+  src?: string;
+  /** Alternativtext für echte Bilder (sonst wird label verwendet). */
+  alt?: string;
+  /** Position des Bildausschnitts, z. B. 'center 62%'. */
+  objectPosition?: string;
 }
 
-/** Austauschbarer Bildplatzhalter – wird durch echte App-Ergebnisse ersetzt. */
-export default function ImagePlaceholder({ label, ratio = '16/10', className }: ImagePlaceholderProps) {
+/** Bildplatzhalter – wird durch echte App-Ergebnisse ersetzt, sobald src gesetzt ist. */
+export default function ImagePlaceholder({ label, ratio = '16/10', className, src, alt, objectPosition }: ImagePlaceholderProps) {
+  if (src) {
+    return (
+      <div
+        className={cn('overflow-hidden rounded-lg border border-border bg-secondary/70', className)}
+        style={{ aspectRatio: ratio }}
+      >
+        <img
+          src={src}
+          alt={alt ?? label}
+          loading="lazy"
+          className="h-full w-full object-cover"
+          style={objectPosition ? { objectPosition } : undefined}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
