@@ -483,8 +483,21 @@ export function HomeResults() {
   );
 }
 
+const LOOK_IMAGES: Record<string, { src: string; alt: string; aiContext?: AiDisclosureContext }> = {
+  Showroom: {
+    src: showroomLookAsset.url,
+    alt: 'Silbernes SUV im Showroom – mit KI erstellt',
+    aiContext: 'landing',
+  },
+  Outdoor: {
+    src: outdoorLookAsset.url,
+    alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht',
+  },
+};
+
 export function HomeQuality() {
   const [activeLook, setActiveLook] = useState(LOOKS[0]);
+  const lookImage = LOOK_IMAGES[activeLook];
 
   return (
     <section className="py-20 sm:py-28">
@@ -494,9 +507,9 @@ export function HomeQuality() {
             label={`${activeLook} · großes Fahrzeugbild`}
             ratio="4/3"
             className="w-full bg-secondary"
-            src={activeLook === 'Showroom' ? showroomLookAsset.url : undefined}
-            alt={activeLook === 'Showroom' ? 'Silbernes SUV im Showroom – mit KI erstellt' : undefined}
-            aiContext={activeLook === 'Showroom' ? 'landing' : undefined}
+            src={lookImage?.src}
+            alt={lookImage?.alt}
+            aiContext={lookImage?.aiContext}
           />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
             <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={fahrzeugdetailAsset.url} alt="Scheinwerfer-Detail eines silbernen SUVs – mit KI erstellt" aiContext="landing" />
