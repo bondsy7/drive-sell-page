@@ -396,16 +396,16 @@ export function HomeResults() {
           )}
         </div>
       </div>
-      <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
+      <Dialog open={lightbox !== null} onOpenChange={(open) => !open && setLightbox(null)}>
         <DialogContent className="max-w-5xl border-none bg-transparent p-0 shadow-none sm:max-w-5xl [&>button]:hidden">
           <DialogTitle className="sr-only">
-            {lightboxIndex !== null ? `Fahrzeugansicht ${lightboxIndex + 1} von ${lightboxCount}` : 'Fahrzeugansicht'}
+            {lightbox !== null ? `Bild ${lightbox.index + 1} von ${lightbox.items.length}` : 'Bildansicht'}
           </DialogTitle>
-          {lightboxIndex !== null ? (
+          {lightbox !== null ? (
             <div className="relative">
               <img
-                src={RESULT_IMAGES[lightboxIndex]}
-                alt={`Fahrzeugansicht ${lightboxIndex + 1} im Showroom – mit KI erstellt`}
+                src={lightbox.items[lightbox.index].src}
+                alt={lightbox.items[lightbox.index].alt}
                 className="max-h-[85vh] w-full rounded-lg object-contain"
               />
               <img
@@ -418,34 +418,38 @@ export function HomeResults() {
                 type="button"
                 variant="secondary"
                 size="icon"
-                onClick={() => setLightboxIndex(null)}
+                onClick={() => setLightbox(null)}
                 aria-label="Detailansicht schließen"
                 className="absolute -right-2 -top-2 z-10 rounded-full shadow-lg sm:-right-3 sm:-top-3"
               >
                 <X className="size-5" />
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                onClick={() => setLightboxIndex((lightboxIndex - 1 + lightboxCount) % lightboxCount)}
-                aria-label="Vorheriges Bild"
-                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
-              >
-                <ChevronLeft className="size-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                onClick={() => setLightboxIndex((lightboxIndex + 1) % lightboxCount)}
-                aria-label="Nächstes Bild"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
-              >
-                <ChevronRight className="size-5" />
-              </Button>
+              {lightbox.items.length > 1 ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => stepLightbox(-1)}
+                    aria-label="Vorheriges Bild"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
+                  >
+                    <ChevronLeft className="size-5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => stepLightbox(1)}
+                    aria-label="Nächstes Bild"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
+                  >
+                    <ChevronRight className="size-5" />
+                  </Button>
+                </>
+              ) : null}
               <p className="mt-3 text-center text-sm font-medium text-primary-foreground">
-                {lightboxIndex + 1} / {lightboxCount}
+                {lightbox.index + 1} / {lightbox.items.length}
               </p>
             </div>
           ) : null}
