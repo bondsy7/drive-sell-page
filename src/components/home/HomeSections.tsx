@@ -85,11 +85,11 @@ const RESULT_IMAGES = [
   resultImage5Asset.url,
   resultImage7Asset.url,
   resultImage6Asset.url,
+  resultImage11Asset.url,
+  resultImage12Asset.url,
   resultImage8Asset.url,
   resultImage9Asset.url,
   resultImage10Asset.url,
-  resultImage11Asset.url,
-  resultImage12Asset.url,
 ];
 
 const RESULT_TABS = [
