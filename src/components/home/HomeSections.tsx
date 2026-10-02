@@ -9,6 +9,8 @@ import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLa
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
+import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
+import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
