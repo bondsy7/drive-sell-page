@@ -19,7 +19,7 @@ import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look.webp.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
-import showroomDetailAsset from '@/assets/home/looks/showroom-detail.webp.asset.json';
+import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
 import brandingDetailAsset from '@/assets/home/looks/branding-detail.webp.asset.json';
 import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
@@ -502,8 +502,8 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Silbernes SUV im Showroom – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: showroomDetailAsset.url,
-      alt: 'Detailaufnahme von Kühlergrill und Scheinwerfer des silbernen SUVs im Showroom – mit KI erstellt',
+      src: fahrzeugdetailAsset.url,
+      alt: 'Scheinwerfer-Detail eines silbernen SUVs – mit KI erstellt',
     },
   },
   Outdoor: {
