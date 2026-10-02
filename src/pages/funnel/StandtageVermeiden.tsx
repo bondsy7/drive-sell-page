@@ -198,7 +198,7 @@ export default function StandtageVermeiden() {
               <div className="mt-4 flex items-center gap-3 text-xs font-medium text-destructive" aria-hidden="false">
                 <span className="h-3 w-px bg-destructive/60" aria-hidden="true" />
                 <span className="h-px flex-1 bg-destructive/40" aria-hidden="true" />
-                <span>Tagelange Wartezeit bis zum Vermarktungsstart</span>
+                <span className="inline-flex items-center gap-1.5"><Turtle className="h-4 w-4 shrink-0" aria-hidden="true" /> Tagelange Wartezeit bis zum Vermarktungsstart</span>
                 <span className="h-px flex-1 bg-destructive/40" aria-hidden="true" />
                 <span className="h-3 w-px bg-destructive/60" aria-hidden="true" />
               </div>
