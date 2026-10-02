@@ -123,3 +123,7 @@
 - [x] Originalaufnahme vom Hof (schlammiger SUV, nasser Platz) statt Platzhalter im Bereich „So funktioniert's"
 - [x] Bild als Medien-Adresse angelegt; Schritt 02/03 und Ergebnisse bleiben bis zur Lieferung Platzhalter
 - [x] Schritt 02 „Gestalten" mit aufbereitetem Showroom-Bild füllen; KI-Kennzeichnung (AI MODIFIED) oben rechts
+
+## Startseite: 12 Ergebnis-Perspektiven im Raster (02.10.2026)
+- [x] Bilder 1–12 nach Dateinummer in die zwölf Kacheln des Bereichs „Ergebnisse" einsetzen
+- [x] Kacheln 11 und 12 mit web_11/web_12 füllen; Hinweiszeile auf „12 Perspektiven · Ergebnisse" stellen

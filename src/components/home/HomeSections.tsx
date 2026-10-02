@@ -18,6 +18,8 @@ import resultImage7Asset from '@/assets/home/results/web-7.jpeg.asset.json';
 import resultImage8Asset from '@/assets/home/results/web-8.jpeg.asset.json';
 import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
+import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
+import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -86,6 +88,8 @@ const RESULT_IMAGES = [
   resultImage8Asset.url,
   resultImage9Asset.url,
   resultImage10Asset.url,
+  resultImage11Asset.url,
+  resultImage12Asset.url,
 ];
 
 const RESULT_TABS = [
@@ -188,7 +192,7 @@ export function HomeResults() {
         <div className="mt-4 rounded-lg border border-border bg-card p-4 shadow-card sm:p-6">
           {active === 0 ? (
             <div>
-              <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse folgen</p>
+              <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse</p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
                 {Array.from({ length: RESULT_TILE_COUNT }, (_, index) => (
                   <ImagePlaceholder
