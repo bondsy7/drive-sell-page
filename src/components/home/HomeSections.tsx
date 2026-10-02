@@ -256,7 +256,7 @@ export function HomeResults() {
     <section id="ergebnisse" className="scroll-mt-20 border-y border-border bg-secondary/60 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-5xl">
-          <p className="text-xs font-bold uppercase text-primary">Ein Foto, viele Ergebnisse</p>
+          <p className="text-xs font-bold uppercase text-primary">EIN FOTO, VIELE ERGEBNISSE – DIREKT VOM HOF. OHNE UMPARKEN.</p>
           <h2 className="mt-4 font-display text-3xl font-bold sm:text-4xl lg:text-5xl">Das alles entsteht ab einem einzigen Foto.</h2>
         </div>
         <div className="mt-9 flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Ergebnisarten">
