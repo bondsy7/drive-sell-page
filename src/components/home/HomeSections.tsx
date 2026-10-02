@@ -11,6 +11,7 @@ import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
+import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
 import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
@@ -390,7 +391,7 @@ export function HomeQuality() {
             aiContext={activeLook === 'Showroom' ? 'landing' : undefined}
           />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
-            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" />
+            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={fahrzeugdetailAsset.url} alt="Scheinwerfer-Detail eines silbernen SUVs – mit KI erstellt" aiContext="landing" />
           </div>
         </div>
         <div>
