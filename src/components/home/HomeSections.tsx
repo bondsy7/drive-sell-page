@@ -266,24 +266,47 @@ function SocialFormatCollage({ onOpen }: { onOpen: (index: number) => void }) {
   );
 }
 
+const RESULT_IMAGE_ITEMS = RESULT_IMAGES.filter((src): src is string => Boolean(src)).map((src, index) => ({
+  src,
+  alt: `Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt`,
+}));
+
+interface LightboxItem {
+  src: string;
+  alt: string;
+}
+
+interface LightboxState {
+  items: LightboxItem[];
+  index: number;
+}
+
 export function HomeResults() {
   const [active, setActive] = useState(0);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const result = RESULT_TABS[active];
-  const lightboxCount = RESULT_IMAGES.length;
+
+  const openLightbox = (items: LightboxItem[], index: number) => setLightbox({ items, index });
+  const stepLightbox = (direction: 1 | -1) =>
+    setLightbox((current) =>
+      current === null
+        ? current
+        : { ...current, index: (current.index + direction + current.items.length) % current.items.length },
+    );
 
   useEffect(() => {
-    if (lightboxIndex === null) return;
+    if (lightbox === null) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowLeft') {
-        setLightboxIndex((current) => (current === null ? current : (current - 1 + lightboxCount) % lightboxCount));
+        stepLightbox(-1);
       } else if (event.key === 'ArrowRight') {
-        setLightboxIndex((current) => (current === null ? current : (current + 1) % lightboxCount));
+        stepLightbox(1);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [lightboxIndex, lightboxCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightbox === null]);
 
   return (
     <section id="ergebnisse" className="scroll-mt-20 border-y border-border bg-secondary/60 py-20 sm:py-28">
