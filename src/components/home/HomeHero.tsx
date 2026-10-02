@@ -7,10 +7,8 @@ import {
   getAiDisclosureText,
 } from '@/lib/ai-disclosure';
 import headerGraphicAsset from '@/assets/home/before_after_header.png.asset.json';
-
-// Add the separately supplied video URL here when it arrives. Until then the
-// white video frame remains part of the header graphic.
-const headerVideoSrc = '';
+import headlightsWebmAsset from '@/assets/home/fahrzeugscheinwerfer-loop2.webm.asset.json';
+import headlightsMp4Asset from '@/assets/home/fahrzeugscheinwerfer-loop2.mp4.asset.json';
 
 export default function HomeHero() {
   return (
@@ -42,15 +40,17 @@ export default function HomeHero() {
           className="block h-auto w-full"
         />
         <video
-          src={headerVideoSrc || undefined}
-          aria-label="Fahrzeugvideo im Header"
+          aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
           autoPlay
           muted
           loop
           playsInline
           preload="metadata"
-          className={`absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover ${headerVideoSrc ? '' : 'hidden'}`}
-        />
+          className="absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover"
+        >
+          <source src={headlightsWebmAsset.url} type="video/webm" />
+          <source src={headlightsMp4Asset.url} type="video/mp4" />
+        </video>
         <img
           src={getAiDisclosureLabelAsset('landing')}
           alt={getAiDisclosureLabelAlt('landing')}
