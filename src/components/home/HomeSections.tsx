@@ -277,6 +277,11 @@ const VERKAUFSSEITE_ITEM = {
   alt: 'Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt',
 };
 
+const BANNER_MOCKUP_ITEM = {
+  src: bannerMockupAsset.url,
+  alt: 'Werbebanner-Beispiel auf einer Fahrzeugsuchseite – mit KI erstellt',
+};
+
 interface LightboxItem {
   src: string;
   alt: string;
