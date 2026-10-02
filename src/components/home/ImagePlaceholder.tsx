@@ -1,5 +1,11 @@
 import { ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  getAiDisclosureLabelAlt,
+  getAiDisclosureLabelAsset,
+  getAiDisclosureText,
+  type AiDisclosureContext,
+} from '@/lib/ai-disclosure';
 
 interface ImagePlaceholderProps {
   label: string;
@@ -11,14 +17,24 @@ interface ImagePlaceholderProps {
   alt?: string;
   /** Position des Bildausschnitts, z. B. 'center 62%'. */
   objectPosition?: string;
+  /** KI-pflichtiges Bild: setzt das zentrale Kennzeichnungs-Overlay oben rechts. */
+  aiContext?: AiDisclosureContext;
 }
 
 /** Bildplatzhalter – wird durch echte App-Ergebnisse ersetzt, sobald src gesetzt ist. */
-export default function ImagePlaceholder({ label, ratio = '16/10', className, src, alt, objectPosition }: ImagePlaceholderProps) {
+export default function ImagePlaceholder({
+  label,
+  ratio = '16/10',
+  className,
+  src,
+  alt,
+  objectPosition,
+  aiContext,
+}: ImagePlaceholderProps) {
   if (src) {
     return (
       <div
-        className={cn('overflow-hidden rounded-lg border border-border bg-secondary/70', className)}
+        className={cn('relative overflow-hidden rounded-lg border border-border bg-secondary/70', className)}
         style={{ aspectRatio: ratio }}
       >
         <img
@@ -28,6 +44,14 @@ export default function ImagePlaceholder({ label, ratio = '16/10', className, sr
           className="h-full w-full object-cover"
           style={objectPosition ? { objectPosition } : undefined}
         />
+        {aiContext ? (
+          <img
+            src={getAiDisclosureLabelAsset(aiContext)}
+            alt={getAiDisclosureLabelAlt(aiContext)}
+            title={getAiDisclosureText(aiContext)}
+            className="pointer-events-none absolute right-2 top-2 h-4 w-auto sm:right-3 sm:top-3 sm:h-5"
+          />
+        ) : null}
       </div>
     );
   }

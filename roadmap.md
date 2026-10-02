@@ -122,3 +122,4 @@
 ## Startseite: echtes Hof-Foto in Schritt 01 (02.10.2026)
 - [x] Originalaufnahme vom Hof (schlammiger SUV, nasser Platz) statt Platzhalter im Bereich „So funktioniert's"
 - [x] Bild als Medien-Adresse angelegt; Schritt 02/03 und Ergebnisse bleiben bis zur Lieferung Platzhalter
+- [x] Schritt 02 „Gestalten" mit aufbereitetem Showroom-Bild füllen; KI-Kennzeichnung (AI MODIFIED) oben rechts
