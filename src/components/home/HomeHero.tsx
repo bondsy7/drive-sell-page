@@ -54,7 +54,7 @@ export default function HomeHero() {
             src={getAiDisclosureLabelAsset('landing')}
             alt={getAiDisclosureLabelAlt('landing')}
             title={getAiDisclosureText('landing')}
-            className="pointer-events-none absolute right-2 top-2 h-4 w-auto sm:right-4 sm:top-4 sm:h-5"
+            className="pointer-events-none absolute right-2 top-2 h-[0.9rem] w-auto sm:right-4 sm:top-4 sm:h-[1.125rem]"
           />
         </div>
       </div>

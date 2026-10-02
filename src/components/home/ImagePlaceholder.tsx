@@ -49,7 +49,7 @@ export default function ImagePlaceholder({
             src={getAiDisclosureLabelAsset(aiContext)}
             alt={getAiDisclosureLabelAlt(aiContext)}
             title={getAiDisclosureText(aiContext)}
-            className="pointer-events-none absolute right-2 top-2 h-4 w-auto sm:right-3 sm:top-3 sm:h-5"
+            className="pointer-events-none absolute right-2 top-2 h-[0.9rem] w-auto sm:right-3 sm:top-3 sm:h-[1.125rem]"
           />
         ) : null}
       </div>
