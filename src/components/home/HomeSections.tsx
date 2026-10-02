@@ -19,7 +19,7 @@ import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look.webp.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
-import fahrzeugdetailAsset from '@/assets/home/fahrzeugdetail.jpeg.asset.json';
+import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
 import brandingDetailAsset from '@/assets/home/looks/branding-detail.webp.asset.json';
 import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
