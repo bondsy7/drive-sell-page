@@ -360,6 +360,22 @@ export function HomeResults() {
             </div>
           ) : active === 1 ? (
             <SocialFormatCollage onOpen={(index) => openLightbox(SOCIAL_ITEMS, index)} />
+          ) : active === 2 ? (
+            <button
+              type="button"
+              onClick={() => openLightbox([BANNER_MOCKUP_ITEM], 0)}
+              aria-label="Werbebanner-Beispiel vergrößern"
+              className="w-full cursor-zoom-in text-left transition-transform duration-200 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ImagePlaceholder
+                label={result.label}
+                ratio={result.ratio}
+                className="w-full"
+                src={bannerMockupAsset.url}
+                alt={BANNER_MOCKUP_ITEM.alt}
+                objectPosition="center"
+              />
+            </button>
           ) : active === 3 ? (
             <div className="relative w-full overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
               <video
