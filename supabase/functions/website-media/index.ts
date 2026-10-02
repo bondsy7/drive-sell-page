@@ -46,12 +46,14 @@ Deno.serve(async (req) => {
   if (!data || !data.live_snapshot) return json({ error: "not_published" }, 404, { "Cache-Control": "no-store" });
 
   const s = data.live_snapshot as any;
+  // Defense in depth: only durable public HTTPS URLs leave this endpoint (never signed/private URLs).
+  const ok = (u: unknown) => typeof u === "string" && /^https:\/\//i.test(u) && !/\/object\/sign\//.test(u) && !/[?&]token=/.test(u);
   return json({
     externalVehicleId: data.external_vehicle_id,
     coverMode: s.coverMode,
     galleryMode: s.galleryMode,
-    coverImageUrl: s.coverMode === "ai" ? s.coverImageUrl ?? null : null,
-    images: s.galleryMode === "auto3" ? [] : (s.images || []).map((i: any) => ({ url: i.url, sortOrder: i.sortOrder })),
+    coverImageUrl: s.coverMode === "ai" ? (ok(s.coverImageUrl) ? s.coverImageUrl : null) : null,
+    images: s.galleryMode === "auto3" ? [] : (s.images || []).filter((i: any) => ok(i?.url)).map((i: any) => ({ url: i.url, sortOrder: i.sortOrder })),
     updatedAt: data.published_at,
   }, 200, { "Cache-Control": "public, max-age=60" });
 });

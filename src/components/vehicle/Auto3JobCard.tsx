@@ -138,7 +138,8 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
               {busy === 'retry' ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-1.5" />}Erneut versuchen
             </Button>
           )}
-          {job.status === 'ready_for_review' && <Button asChild size="sm" variant="outline"><Link to={`/vehicle/${vehicleId}`}>Ergebnisse prüfen</Link></Button>}
+          {job.status === 'ready_for_review' && <Button asChild size="sm" variant="outline"><Link to={`/vehicle/${vehicleId}?tab=gallery`}>Ergebnisse prüfen</Link></Button>}
+          {job.status === 'ready_for_review' && <Button asChild size="sm"><Link to={`/vehicle/${vehicleId}?tab=website&prepare=${job.id}`}>Für Auto Schmitt vorbereiten</Link></Button>}
           {compact && <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${vehicleId}`}>Job ansehen</Link></Button>}
           {canStart && !prof?.approved && <span className="text-xs text-muted-foreground">Start erst nach Freigabe des Aufbereitungsprofils: <Link className="underline" to="/profile">Profil → Fahrzeug-Aufbereitung → „Profil freigeben“</Link>.</span>}
           {canStart && prof?.approved && cost && balance < cost.total && <span className="text-xs text-destructive">Guthaben {balance} Credits reicht nicht – der Job würde pausieren.</span>}
