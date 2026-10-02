@@ -257,7 +257,7 @@ export function HomeResults() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-5xl">
           <p className="text-xs font-bold uppercase text-primary">Ein Foto, viele Ergebnisse</p>
-          <h2 className="mt-4 font-display text-3xl font-bold sm:text-4xl lg:text-5xl">Das alles entsteht aus einem einzigen Foto.</h2>
+          <h2 className="mt-4 font-display text-3xl font-bold sm:text-4xl lg:text-5xl">Das alles entsteht ab einem einzigen Foto.</h2>
         </div>
         <div className="mt-9 flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Ergebnisarten">
           {RESULT_TABS.map((item, index) => (
