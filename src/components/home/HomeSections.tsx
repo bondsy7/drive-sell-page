@@ -57,7 +57,7 @@ const PROCESS_STEPS: ProcessStep[] = [
   },
   {
     number: '02',
-    title: 'Gestalten',
+    title: 'Aufbereiten\n',
     text: 'Szene, Autohaus-Look und Fahrzeugdarstellung automatisch aufbereiten.',
     label: 'Aufbereitetes Fahrzeug im Autohaus-Look',
     icon: Palette,
