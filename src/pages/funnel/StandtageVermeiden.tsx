@@ -250,7 +250,7 @@ export default function StandtageVermeiden() {
       <section className="px-4 pb-12 sm:px-6 sm:pb-16">
         <div className="mx-auto grid max-w-6xl items-center gap-4 overflow-hidden rounded-xl bg-accent px-6 pt-8 text-accent-foreground shadow-elevated md:grid-cols-[1fr_1fr] md:py-0 md:pl-12 md:pt-0">
           <div className="md:py-10">
-            <h2 className="font-display text-3xl font-bold leading-tight sm:text-4xl">Mach dein nächstes Fahrzeug zum Test.</h2>
+            <h2 className="font-display text-3xl font-bold leading-tight sm:text-4xl">Was wird aus deinem Fahrzeug?</h2>
             <p className="mt-2 text-base opacity-90 sm:text-lg">Sieh, was aus deinen Smartphone-Fotos wird.</p>
             <Button asChild size="lg" variant="secondary" className="mt-6 w-full sm:w-auto">
               <Link to={TEST_URL}>Mein Fahrzeugfoto testen <ArrowRight className="h-4 w-4" /></Link>
