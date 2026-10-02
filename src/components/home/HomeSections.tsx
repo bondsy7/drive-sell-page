@@ -130,7 +130,7 @@ export function HomeProcess() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase text-primary">Drei klare Schritte</p>
-          <h2 className="mt-4 font-display text-3xl font-bold sm:text-4xl lg:text-5xl">Vom Foto bis zum fertigen Marketing.</h2>
+          <h2 className="mt-4 font-display text-3xl font-bold sm:text-4xl lg:text-5xl">Vom Foto bis zum fertigen Marketing. In Minuten statt Tagen.</h2>
         </div>
 
         <div className="mt-10 grid gap-3 md:grid-cols-3">
