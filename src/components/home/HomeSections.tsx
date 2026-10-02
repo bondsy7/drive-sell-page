@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
-import { getAiDisclosureLabelAlt, getAiDisclosureLabelAsset, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
@@ -329,10 +329,10 @@ export function HomeResults() {
                 className="max-h-[85vh] w-full rounded-lg object-contain"
               />
               <img
-                src={getAiDisclosureLabelAsset('landing')}
+                src={getAiDisclosureLabelVector('landing')}
                 alt={getAiDisclosureLabelAlt('landing')}
                 title={getAiDisclosureText('landing')}
-                className="pointer-events-none absolute right-3 top-3 h-[1.125rem] w-auto"
+                className={AI_DISCLOSURE_OVERLAY_CLASS}
               />
               <Button
                 type="button"
