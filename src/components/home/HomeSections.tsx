@@ -192,7 +192,7 @@ export function HomeResults() {
         <div className="mt-4 rounded-lg border border-border bg-card p-4 shadow-card sm:p-6">
           {active === 0 ? (
             <div>
-              <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse folgen</p>
+              <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse</p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
                 {Array.from({ length: RESULT_TILE_COUNT }, (_, index) => (
                   <ImagePlaceholder
