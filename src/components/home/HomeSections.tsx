@@ -11,6 +11,7 @@ import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
+import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
@@ -334,6 +335,15 @@ export function HomeResults() {
                 className={AI_DISCLOSURE_OVERLAY_CLASS}
               />
             </div>
+          ) : active === 4 ? (
+            <ImagePlaceholder
+              label={result.label}
+              ratio={result.ratio}
+              className="w-full"
+              src={verkaufsseiteAsset.url}
+              alt="Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt"
+              aiContext="landing"
+            />
           ) : (
             <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
           )}
