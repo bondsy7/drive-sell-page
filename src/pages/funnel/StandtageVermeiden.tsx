@@ -35,7 +35,7 @@ const AI_FLOW = [
 
 const BENEFITS = [
   { icon: Rocket, title: 'Direkt online', text: 'Vermarktung schon vor der Aufbereitung.' },
-  { icon: Clock, title: 'Weniger Personalaufwand', text: 'Kein separater Fototermin und kein Rangieren zum Fotoplatz.' },
+  { icon: Clock, title: 'Kein zusätzlicher Personalaufwand', text: 'Kein separater Fototermin und kein Rangieren zum Fotoplatz.' },
   { icon: Layers, title: 'Einheitlicher Auftritt', text: 'Ein passender Bildlook für deinen Bestand.' },
 ];
 
