@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import {
   getAiDisclosureLabelAlt,
-  getAiDisclosureLabelAsset,
+  getAiDisclosureLabelVector,
   getAiDisclosureText,
   getAiDisclosureKind,
   type AiDisclosureContext,
@@ -35,7 +35,7 @@ const AiDisclosureBadge: React.FC<AiDisclosureBadgeProps> = ({
     title={getAiDisclosureText(context)}
   >
     <img
-      src={getAiDisclosureLabelAsset(context)}
+      src={getAiDisclosureLabelVector(context)}
       alt={getAiDisclosureLabelAlt(context)}
       className={cn(
         "block w-auto object-contain",

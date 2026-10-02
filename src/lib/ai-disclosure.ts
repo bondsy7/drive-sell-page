@@ -10,6 +10,11 @@ import aiLabelAsset from "@/assets/ai-labels/ai-black.png.asset.json";
 import aiGeneratedLabelAsset from "@/assets/ai-labels/ai-generated-black.png.asset.json";
 import aiModifiedLabelAsset from "@/assets/ai-labels/ai-modified-black.png.asset.json";
 
+// Dieselbe Official-Gestalt wie die PNGs, nur als Vektor – skaliert verlustfrei.
+import aiLabelVector from "@/assets/ai-labels/ai-black.svg";
+import aiGeneratedLabelVector from "@/assets/ai-labels/ai-generated-black.svg";
+import aiModifiedLabelVector from "@/assets/ai-labels/ai-modified-black.svg";
+
 export const AI_DISCLOSURE_LABEL_DE = "KI-generiert";
 export const AI_DISCLOSURE_LABEL_EN = "AI-generated";
 export const AI_DISCLOSURE_LONG_DE =
@@ -63,6 +68,28 @@ export function getAiDisclosureKind(context: AiDisclosureContext): AiDisclosureK
 export function getAiDisclosureLabelAsset(context: AiDisclosureContext): string {
   return LABEL_ASSETS[getAiDisclosureKind(context)];
 }
+
+const LABEL_VECTORS: Record<AiDisclosureKind, string> = {
+  basic: aiLabelVector,
+  generated: aiGeneratedLabelVector,
+  modified: aiModifiedLabelVector,
+};
+
+/**
+ * Skalierbares Vektor-Label (SVG, exakt dieselbe Official-Gestalt wie die PNGs)
+ * für Overlays im Interface – bleibt in jeder Größe scharf.
+ */
+export function getAiDisclosureLabelVector(context: AiDisclosureContext): string {
+  return LABEL_VECTORS[getAiDisclosureKind(context)];
+}
+
+/**
+ * Einheitliche Darstellung des Overlay-Labels: bewusst klein, leicht
+ * transparent und mit festem Abstand zu Kante/Oben. Über cn() pro Einsatzort
+ * überschreibbar.
+ */
+export const AI_DISCLOSURE_OVERLAY_CLASS =
+  "pointer-events-none absolute right-2 top-2 h-3 w-auto opacity-90 sm:right-3 sm:top-3 sm:h-3.5";
 
 export function getAiDisclosureLabelAlt(context: AiDisclosureContext): string {
   return LABEL_ALT[getAiDisclosureKind(context)];

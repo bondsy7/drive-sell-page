@@ -1,8 +1,9 @@
 import { ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
+  AI_DISCLOSURE_OVERLAY_CLASS,
   getAiDisclosureLabelAlt,
-  getAiDisclosureLabelAsset,
+  getAiDisclosureLabelVector,
   getAiDisclosureText,
   type AiDisclosureContext,
 } from '@/lib/ai-disclosure';
@@ -46,10 +47,10 @@ export default function ImagePlaceholder({
         />
         {aiContext ? (
           <img
-            src={getAiDisclosureLabelAsset(aiContext)}
+            src={getAiDisclosureLabelVector(aiContext)}
             alt={getAiDisclosureLabelAlt(aiContext)}
             title={getAiDisclosureText(aiContext)}
-            className="pointer-events-none absolute right-2 top-2 h-[0.9rem] w-auto sm:right-3 sm:top-3 sm:h-[1.125rem]"
+            className={AI_DISCLOSURE_OVERLAY_CLASS}
           />
         ) : null}
       </div>
