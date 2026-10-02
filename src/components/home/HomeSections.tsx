@@ -49,7 +49,7 @@ const PROCESS_STEPS: ProcessStep[] = [
   {
     number: '01',
     title: 'Fotografieren',
-    text: 'Originalaufnahme direkt auf dem Hof.',
+    text: 'Originalaufnahme direkt auf dem Hof.\nSchnell und einfach mit dem Smartphone.',
     label: 'Originalaufnahme vom Hof',
     icon: Camera,
     image: originalDealerAsset.url,
