@@ -4,7 +4,9 @@ import { ArrowRight, Camera, Check, Images, LayoutTemplate, Palette, Share2, Vid
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
+import type { AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
+import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -21,6 +23,7 @@ type ProcessStep = {
   icon: typeof Camera;
   image?: string;
   alt?: string;
+  aiContext?: AiDisclosureContext;
 };
 
 const PROCESS_STEPS: ProcessStep[] = [
@@ -33,7 +36,16 @@ const PROCESS_STEPS: ProcessStep[] = [
     image: originalDealerAsset.url,
     alt: 'Schlammiger SUV auf nassem Händlerhof – Originalaufnahme vor der Aufbereitung',
   },
-  { number: '02', title: 'Gestalten', text: 'Szene, Autohaus-Look und Fahrzeugdarstellung aufbereiten.', label: 'Aufbereitetes Fahrzeug im Autohaus-Look', icon: Palette },
+  {
+    number: '02',
+    title: 'Gestalten',
+    text: 'Szene, Autohaus-Look und Fahrzeugdarstellung aufbereiten.',
+    label: 'Aufbereitetes Fahrzeug im Autohaus-Look',
+    icon: Palette,
+    image: remasterShowroomAsset.url,
+    alt: 'Derselbe SUV sauber freigestellt im hellen Showroom – mit KI aufbereitet',
+    aiContext: 'landing',
+  },
   { number: '03', title: 'Marketing erstellen', text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.', label: 'Marketingformate aus demselben Fahrzeug', icon: LayoutTemplate },
 ];
 
