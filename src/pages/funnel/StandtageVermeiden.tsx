@@ -135,7 +135,7 @@ export default function StandtageVermeiden() {
             <Button asChild size="lg" className="mt-7 w-full shadow-glow sm:w-auto">
               <Link to={TEST_URL}>Mit eigenem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link>
             </Button>
-            <p className="mt-3 text-sm text-muted-foreground">Ohne Fototermin. Ohne Fahrt zum Fotoplatz.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Ohne Aufbereitung. Ohne Fotobox. Ohne Personal.</p>
           </div>
 
           <div className="relative min-w-0 pb-10 sm:pb-12">
