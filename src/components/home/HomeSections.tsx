@@ -45,6 +45,7 @@ const PROCESS_STEPS: ProcessStep[] = [
     icon: Palette,
     image: remasterShowroomAsset.url,
     alt: 'Derselbe SUV sauber freigestellt im hellen Showroom – mit KI aufbereitet',
+    objectPosition: 'center',
     aiContext: 'landing',
   },
   { number: '03', title: 'Marketing erstellen', text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.', label: 'Marketingformate aus demselben Fahrzeug', icon: LayoutTemplate },
