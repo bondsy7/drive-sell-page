@@ -331,7 +331,7 @@ export function HomeResults() {
                   <button
                     key={index}
                     type="button"
-                    onClick={() => RESULT_IMAGES[index] && setLightboxIndex(index)}
+                    onClick={() => RESULT_IMAGES[index] && openLightbox(RESULT_IMAGE_ITEMS, index)}
                     aria-label={RESULT_IMAGES[index] ? `Fahrzeugansicht ${index + 1} vergrößern` : undefined}
                     className={cn('text-left', RESULT_IMAGES[index] && 'cursor-zoom-in transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}
                   >
@@ -348,7 +348,7 @@ export function HomeResults() {
               </div>
             </div>
           ) : active === 1 ? (
-            <SocialFormatCollage />
+            <SocialFormatCollage onOpen={(index) => openLightbox(SOCIAL_ITEMS, index)} />
           ) : active === 3 ? (
             <div className="relative w-full overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
               <video
@@ -371,14 +371,21 @@ export function HomeResults() {
               />
             </div>
           ) : active === 4 ? (
-            <ImagePlaceholder
-              label={result.label}
-              ratio={result.ratio}
-              className="w-full"
-              src={verkaufsseiteAsset.url}
-              alt="Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt"
-              aiContext="landing"
-            />
+            <button
+              type="button"
+              onClick={() => openLightbox([VERKAUFSSEITE_ITEM], 0)}
+              aria-label="Verkaufsseiten-Beispiel vergrößern"
+              className="w-full cursor-zoom-in text-left transition-transform duration-200 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ImagePlaceholder
+                label={result.label}
+                ratio={result.ratio}
+                className="w-full"
+                src={verkaufsseiteAsset.url}
+                alt={VERKAUFSSEITE_ITEM.alt}
+                aiContext="landing"
+              />
+            </button>
           ) : (
             <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
           )}
