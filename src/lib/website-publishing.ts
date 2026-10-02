@@ -32,6 +32,11 @@ export interface WebsitePublication {
   draft_items: PublicationItem[];
   live_snapshot: LiveSnapshot | null;
   published_at: string | null;
+  version: number;
+  live_updated_at: string | null;
+  last_action: string | null;
+  last_action_at: string | null;
+  last_error: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,7 +46,10 @@ export const AUTO3_SOURCE = 'auto3';
 
 /** Only public http(s) URLs may be published (no data:, no signed private URLs). */
 export function isPublishableUrl(url: string): boolean {
-  return /^https:\/\//i.test(url) && !/\/object\/sign\//.test(url) && !/[?&]token=/.test(url);
+  return typeof url === 'string'
+    && /^https:\/\//i.test(url) && !/\/object\/sign\//.test(url) && !/[?&]token=/.test(url)
+    && !/\/object\/public\/(banners|originals)\//i.test(url)
+    && /\.(png|jpe?g|webp|avif)(\?|#|$)/i.test(url);
 }
 
 export function buildSnapshot(input: {
@@ -54,13 +62,47 @@ export function buildSnapshot(input: {
   if (input.galleryMode !== 'auto3' && input.items.some((it) => !isPublishableUrl(it.url))) throw new Error('Nur Bilder mit dauerhafter öffentlicher Adresse können veröffentlicht werden.');
   const images = input.galleryMode === 'auto3'
     ? []
-    : [...input.items].sort((a, b) => a.sortOrder - b.sortOrder).map((it, i) => ({ url: it.url, sortOrder: i }));
+    : dedupeItems(input.items).map((it, i) => ({ url: it.url, sortOrder: i }));
+  if (input.coverMode === 'ai' && !input.coverUrl) throw new Error('Bitte ein AI-Bild als Cover markieren.');
   return {
     coverMode: input.coverMode,
     galleryMode: input.galleryMode,
     coverImageUrl: input.coverMode === 'ai' ? input.coverUrl : null,
     images,
   };
+}
+
+/** Stable sort by sortOrder (ties keep input order), duplicates by URL removed. */
+export function dedupeItems(items: PublicationItem[]): PublicationItem[] {
+  const seen = new Set<string>();
+  return items.map((it, idx) => ({ it, idx }))
+    .sort((a, b) => a.it.sortOrder - b.it.sortOrder || a.idx - b.idx)
+    .map((x) => x.it)
+    .filter((it) => (seen.has(it.url) ? false : (seen.add(it.url), true)));
+}
+
+const GALLERY_LABEL: Record<GalleryMode, string> = { replace: 'Nur AI', append: 'AI+Auto3', auto3: 'Auto3' };
+
+/** „Auto Schmitt · LIVE · Cover AI · Galerie Nur AI · 10 Bilder · Version 3 · veröffentlicht 02.10.2026, 13:09“ */
+export function formatLiveStatus(p: Pick<WebsitePublication, 'status' | 'live_snapshot' | 'version' | 'published_at' | 'live_updated_at'> | null | undefined, targetLabel = 'Auto Schmitt'): string {
+  if (!p) return `${targetLabel} · nicht veröffentlicht (Auto3-Bilder)`;
+  const when = (iso: string | null) => iso ? new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  if (p.status === 'disabled') return `${targetLabel} · AUS · zurück auf Auto3 · Version ${p.version ?? 0} · seit ${when(p.live_updated_at)}`;
+  if (p.status !== 'live' || !p.live_snapshot) return `${targetLabel} · ENTWURF · noch nicht veröffentlicht`;
+  const s = p.live_snapshot;
+  return [targetLabel, 'LIVE', `Cover ${s.coverMode === 'ai' ? 'AI' : 'Auto3'}`, `Galerie ${GALLERY_LABEL[s.galleryMode]}`,
+    `${s.images.length} ${s.images.length === 1 ? 'Bild' : 'Bilder'}`, `Version ${p.version ?? 0}`, `veröffentlicht ${when(p.published_at)}`].join(' · ');
+}
+
+/** True if the editable draft differs from what is live. */
+export function hasUnpublishedChanges(p: WebsitePublication | null | undefined, draft: { coverMode: CoverMode; galleryMode: GalleryMode; coverUrl: string | null; items: PublicationItem[] }): boolean {
+  if (!p || p.status !== 'live' || !p.live_snapshot) return false;
+  let next: LiveSnapshot;
+  try { next = buildSnapshot(draft); } catch { return true; }
+  const a = p.live_snapshot;
+  return a.coverMode !== next.coverMode || a.galleryMode !== next.galleryMode
+    || (a.coverImageUrl || null) !== (next.coverImageUrl || null)
+    || JSON.stringify(a.images.map((i) => i.url)) !== JSON.stringify(next.images.map((i) => i.url));
 }
 
 export function publicationStatusLabel(p: Pick<WebsitePublication, 'status' | 'live_snapshot'> | null | undefined): string {

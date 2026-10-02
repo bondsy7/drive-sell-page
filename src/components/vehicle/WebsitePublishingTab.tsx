@@ -10,9 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  AUTO3_SOURCE, DEFAULT_TARGET, buildAuto3JobDraft, buildSnapshot, importExternalVehicle, selectAuto3JobImages, isPublishableUrl, isRealVin, publicationStatusLabel,
+  AUTO3_SOURCE, DEFAULT_TARGET, buildAuto3JobDraft, buildSnapshot, importExternalVehicle, selectAuto3JobImages, isPublishableUrl, isRealVin, publicationStatusLabel, formatLiveStatus, hasUnpublishedChanges,
   type CoverMode, type GalleryMode, type PublicationItem, type WebsitePublication,
 } from '@/lib/website-publishing';
+
+const ACTION_LABEL: Record<string, string> = {
+  publish: 'Veröffentlicht', revert_auto3: 'Zurück auf Auto3-Bilder', disable: 'Veröffentlichung deaktiviert', save_draft: 'Entwurf gespeichert',
+};
 
 interface ExtVehicle {
   id: string;
@@ -114,6 +118,8 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
       external_vehicle_id: vehicle.external_vehicle_id, cover_mode: cm, gallery_mode: gm,
       cover_asset_id: coverId, draft_items: items,
     };
+    const action = opts.status === 'disabled' ? 'disable' : opts.publish ? (cm === 'auto3' && gm === 'auto3' ? 'revert_auto3' : 'publish') : 'save_draft';
+    row.last_action = action; row.last_action_at = new Date().toISOString(); row.last_error = null;
     if (opts.status === 'disabled') row.status = 'disabled';
     else if (opts.publish) {
       row.status = 'live';
@@ -123,7 +129,13 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
     } else if (!pub) row.status = 'draft';
     const { error } = await supabase.from('website_publications').upsert([row as never], { onConflict: 'vehicle_id,target' });
     setSaving(false);
-    if (error) { toast.error(`Speichern fehlgeschlagen: ${error.message}`); return; }
+    if (error) {
+      // Local, non-sensitive error log on the existing row (status/snapshot untouched → no version change).
+      if (pub) await supabase.from('website_publications').update({ last_error: error.message.slice(0, 300), last_action_at: new Date().toISOString() } as never).eq('id', pub.id);
+      toast.error(`Speichern fehlgeschlagen: ${error.message}`);
+      qc.invalidateQueries({ queryKey: ['website-publication', vehicle.id, target] });
+      return;
+    }
     if (opts.cover) setCoverMode(opts.cover);
     if (opts.gallery) setGalleryMode(opts.gallery);
     toast.success(opts.status === 'disabled' ? 'Website-Veröffentlichung deaktiviert' : opts.publish ? 'Änderungen veröffentlicht' : 'Entwurf gespeichert');
@@ -136,6 +148,7 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
   const previewGallery = galleryMode === 'auto3' ? auto3Images.map((i) => i.url)
     : galleryMode === 'append' ? [...preview.images.map((i) => i.url), ...auto3Images.map((i) => i.url)]
     : preview.images.map((i) => i.url);
+  const unpublished = hasUnpublishedChanges(pub, { coverMode, galleryMode, coverUrl, items });
   const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder);
 
   if (isLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
@@ -159,6 +172,16 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
             {pub?.status === 'live' ? 'Live' : pub?.status === 'disabled' ? 'Deaktiviert' : 'Entwurf'}
           </Badge>
         </div>
+        <div className="rounded-md bg-muted/60 px-3 py-2 text-sm font-medium" data-testid="website-live-status">
+          {formatLiveStatus(pub)}
+          {unpublished && <Badge variant="outline" className="ml-2 border-accent text-accent">Änderungen nicht veröffentlicht</Badge>}
+        </div>
+        {pub?.last_error && (
+          <p className="text-xs text-destructive">Letzter Fehler ({pub.last_action_at ? new Date(pub.last_action_at).toLocaleString('de-DE') : '—'}): {pub.last_error}</p>
+        )}
+        {pub?.last_action && !pub.last_error && (
+          <p className="text-[11px] text-muted-foreground">Letzte Aktion: {ACTION_LABEL[pub.last_action] || pub.last_action}{pub.last_action_at ? ` · ${new Date(pub.last_action_at).toLocaleString('de-DE')}` : ''}</p>
+        )}
         <p className="text-xs text-muted-foreground">
           Generierte Bilder werden nie automatisch veröffentlicht. Erst „Änderungen veröffentlichen“ macht sie auf der Website sichtbar.
         </p>

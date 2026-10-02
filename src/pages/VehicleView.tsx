@@ -29,6 +29,7 @@ import OriginalsTab from '@/components/vehicle/OriginalsTab';
 import DataTab from '@/components/vehicle/DataTab';
 import Auto3JobCard from '@/components/vehicle/Auto3JobCard';
 import WebsitePublishingTab from '@/components/vehicle/WebsitePublishingTab';
+import WebsiteStatusLine from '@/components/vehicle/WebsiteStatusLine';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import GalleryLightbox from '@/components/GalleryLightbox';
@@ -347,6 +348,9 @@ export default function VehicleView() {
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">{title}</h1>
               <p className="text-xs text-muted-foreground font-mono truncate">{vehicle.vin}</p>
+              {canPublishWebsite && (vehicle as { source_system?: string | null }).source_system === 'auto3' && (
+                <WebsiteStatusLine vehicleId={vehicle.id} onOpen={() => setTab('website')} />
+              )}
             </div>
           </div>
           <Button

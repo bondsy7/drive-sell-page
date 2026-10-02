@@ -85,6 +85,13 @@
       "when": 1790892226438,
       "tag": "0011_auto3_processing_profiles_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790942461531,
+      "tag": "0012_website_publications_versioning",
+      "breakpoints": true
     }
   ]
 }
