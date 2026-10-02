@@ -4,6 +4,7 @@ import { ArrowRight, Camera, Check, Images, LayoutTemplate, Palette, Share2, Vid
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
+import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -12,8 +13,26 @@ const BENEFITS = [
   { title: 'Marketing inklusive', text: 'Bilder, Videos, Posts und Werbemittel erstellen.' },
 ];
 
-const PROCESS_STEPS = [
-  { number: '01', title: 'Fotografieren', text: 'Originalaufnahme direkt auf dem Hof.', label: 'Originalaufnahme vom Hof', icon: Camera },
+type ProcessStep = {
+  number: string;
+  title: string;
+  text: string;
+  label: string;
+  icon: typeof Camera;
+  image?: string;
+  alt?: string;
+};
+
+const PROCESS_STEPS: ProcessStep[] = [
+  {
+    number: '01',
+    title: 'Fotografieren',
+    text: 'Originalaufnahme direkt auf dem Hof.',
+    label: 'Originalaufnahme vom Hof',
+    icon: Camera,
+    image: originalDealerAsset.url,
+    alt: 'Schlammiger SUV auf nassem Händlerhof – Originalaufnahme vor der Aufbereitung',
+  },
   { number: '02', title: 'Gestalten', text: 'Szene, Autohaus-Look und Fahrzeugdarstellung aufbereiten.', label: 'Aufbereitetes Fahrzeug im Autohaus-Look', icon: Palette },
   { number: '03', title: 'Marketing erstellen', text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.', label: 'Marketingformate aus demselben Fahrzeug', icon: LayoutTemplate },
 ];
@@ -75,7 +94,14 @@ export function HomeProcess() {
 
         <div className="mt-5 grid overflow-hidden rounded-lg border border-border bg-secondary/60 lg:grid-cols-[1fr_18rem]">
           <div className="p-4 sm:p-6 lg:p-8">
-            <ImagePlaceholder label={step.label} ratio="16/9" className="w-full bg-card" />
+            <ImagePlaceholder
+              label={step.label}
+              ratio="16/9"
+              className="w-full bg-card"
+              src={step.image}
+              alt={step.alt}
+              objectPosition="center 62%"
+            />
           </div>
           <div className="flex flex-col justify-end border-t border-border p-6 lg:border-l lg:border-t-0 lg:p-8">
             <step.icon className="size-7 text-primary" />
