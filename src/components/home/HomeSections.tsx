@@ -154,7 +154,7 @@ export function HomeClosingCta({ destination }: { destination: string }) {
           <ImagePlaceholder label="Dein Ergebnis" ratio="4/3" className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground/75" />
         </div>
         <div className="flex flex-col justify-center border-t border-primary-foreground/20 p-7 sm:p-10 lg:border-l lg:border-t-0">
-          <h2 className="font-display text-3xl font-bold sm:text-4xl">Was wird aus deinem Fahrzeugfoto?</h2>
+          <h2 className="font-display text-3xl font-bold sm:text-4xl">Was wird aus deinem Fahrzeug?</h2>
           <p className="mt-4 text-sm leading-6 text-primary-foreground/80 sm:text-base">Teste autohaus.ai mit einem Fahrzeug aus deinem Bestand und sieh den Unterschied.</p>
           <Button asChild size="lg" variant="secondary" className="mt-7 w-fit">
             <Link to={destination}>Mit meinem Fahrzeug testen <ArrowRight className="size-4" /></Link>
