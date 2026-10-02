@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  AI_DISCLOSURE_OVERLAY_CLASS,
   getAiDisclosureLabelAlt,
-  getAiDisclosureLabelAsset,
+  getAiDisclosureLabelVector,
   getAiDisclosureText,
 } from '@/lib/ai-disclosure';
 import headerGraphicAsset from '@/assets/home/before_after_header.png.asset.json';
@@ -51,10 +52,10 @@ export default function HomeHero() {
             <source src={headlightsMp4Asset.url} type="video/mp4" />
           </video>
           <img
-            src={getAiDisclosureLabelAsset('landing')}
+            src={getAiDisclosureLabelVector('landing')}
             alt={getAiDisclosureLabelAlt('landing')}
             title={getAiDisclosureText('landing')}
-            className="pointer-events-none absolute right-2 top-2 h-[0.9rem] w-auto sm:right-4 sm:top-4 sm:h-[1.125rem]"
+            className={cn(AI_DISCLOSURE_OVERLAY_CLASS, 'sm:right-4 sm:top-4')}
           />
         </div>
       </div>
