@@ -7,6 +7,7 @@ import ImagePlaceholder from './ImagePlaceholder';
 import type { AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
+import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -25,6 +26,7 @@ type ProcessStep = {
   alt?: string;
   objectPosition?: string;
   aiContext?: AiDisclosureContext;
+  ratio?: string;
 };
 
 const PROCESS_STEPS: ProcessStep[] = [
@@ -48,7 +50,17 @@ const PROCESS_STEPS: ProcessStep[] = [
     objectPosition: 'center',
     aiContext: 'landing',
   },
-  { number: '03', title: 'Marketing erstellen', text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.', label: 'Marketingformate aus demselben Fahrzeug', icon: LayoutTemplate },
+  {
+    number: '03',
+    title: 'Marketing erstellen',
+    text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.',
+    label: 'Marketingformate aus demselben Fahrzeug',
+    icon: LayoutTemplate,
+    image: marketingBannerAsset.url,
+    alt: 'Werbebanner mit SUV vor Neonkulisse, Aktionspreis und Anfrage-Button – mit KI erstellt',
+    objectPosition: 'center',
+    ratio: '1200/628',
+  },
 ];
 
 const RESULT_TABS = [
@@ -110,7 +122,7 @@ export function HomeProcess() {
           <div className="p-4 sm:p-6 lg:p-8">
             <ImagePlaceholder
               label={step.label}
-              ratio="16/9"
+              ratio={step.ratio ?? '16/9'}
               className="w-full bg-card"
               src={step.image}
               alt={step.alt}
