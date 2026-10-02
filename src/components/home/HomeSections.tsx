@@ -208,7 +208,7 @@ function SocialFormatCollage() {
             src={format.src}
             alt={format.alt}
             loading="lazy"
-            className="h-[86%] w-auto shrink-0 rounded-lg border border-border object-cover"
+            className="h-[86%] w-auto max-w-none shrink-0 rounded-lg border border-border object-cover"
           />
         ))}
       </div>
