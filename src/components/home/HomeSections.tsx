@@ -63,6 +63,8 @@ const PROCESS_STEPS: ProcessStep[] = [
   },
 ];
 
+const RESULT_TILE_COUNT = 12;
+
 const RESULT_TABS = [
   { title: 'Fahrzeugbilder', label: 'Große Fahrzeugansicht · Ergebnisse folgen', icon: Images, ratio: '16/9' },
   { title: 'Social Media', label: 'Social-Media-Beispiel · Ergebnis folgt', icon: Share2, ratio: '4/3' },
