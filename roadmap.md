@@ -114,3 +114,7 @@
 - [x] Eigenständige Seite /autohaus-videos mit Formaten, Prozessvergleich, Stilen, Kanälen, Testweg und FAQ erstellen
 - [x] Bestehende Consent-, CTA-, Scroll- und Quellenmessung für lp_videos wiederverwenden
 - [x] Desktop/Mobil, CTA-Ziel und Vorschau prüfen; nicht veröffentlichen
+
+## Startseiten-Headergrafik (02.10.2026)
+- [x] Text und Buttons über die vollbreite Vorher/Nachher-Grafik setzen
+- [x] Proportionalen Video-Rahmen über der weißen Fläche vorbereiten; Platzhalter bis zur Videolieferung erhalten
