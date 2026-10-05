@@ -522,15 +522,6 @@ export default function AutohausWerbemittel() {
         </div>
       </section>
 
-      {/* 6 · Branding */}
-      <section className="bg-card py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Nicht irgendeine Werbung. Deine Werbung.</h2>
-          <p className="mt-2 text-center font-display text-lg font-bold text-accent">Dein Logo. Deine Farben. Dein Angebot.</p>
-          <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-6 text-muted-foreground">Dein Logo, deine Farben und deine Angebotsbotschaft geben den Auftritt vor. So passt dein Fahrzeugmarketing zu deinem Autohaus.</p>
-        </div>
-      </section>
-
       {/* 7 · FAQ */}
       <section id="fragen" className="scroll-mt-20 border-t border-border bg-secondary/40 py-14">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr]">
@@ -546,6 +537,15 @@ export default function AutohausWerbemittel() {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* 6 · Branding */}
+      <section className="bg-card py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Nicht irgendeine Werbung. Deine Werbung.</h2>
+          <p className="mt-2 text-center font-display text-lg font-bold text-accent">Dein Logo. Deine Farben. Dein Angebot.</p>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-6 text-muted-foreground">Dein Logo, deine Farben und deine Angebotsbotschaft geben den Auftritt vor. So passt dein Fahrzeugmarketing zu deinem Autohaus.</p>
         </div>
       </section>
 
