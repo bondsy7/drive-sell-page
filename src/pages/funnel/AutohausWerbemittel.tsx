@@ -361,7 +361,7 @@ const STEPS = [
   { icon: Car, title: 'Fahrzeug auswählen', text: 'Dein fertiges Fahrzeugbild als Grundlage nutzen.' },
   { icon: LayoutTemplate, title: 'Format wählen', text: 'Beitrag, Story, Webbanner oder Google Display Banner auswählen.' },
   { icon: PenLine, title: 'Angebot ergänzen', text: 'Preis, Fahrzeugdaten und Botschaft hinzufügen.' },
-  { icon: Upload, title: 'Veröffentlichen', text: 'Posten, veröffentlichen oder herunterladen.' },
+  { icon: Upload, title: 'Veröffentlichen', text: 'Posten, mit Website verknüpfen\n\u00a0oder herunterladen.' },
 ];
 
 const NOT_NEEDED = [
