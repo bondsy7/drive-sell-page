@@ -479,7 +479,7 @@ export default function AutohausWerbemittel() {
       <section id="formate" className="scroll-mt-20 bg-secondary/40 py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Ein Fahrzeug. Dein Marketing für mehrere Kanäle.</h2>
-          <div className="mt-6"><FormatSlider /></div>
+          <div className="mt-6"><FormatShowcase /></div>
         </div>
       </section>
 
