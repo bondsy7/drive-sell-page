@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Camera, Car, Check, CheckCircle2, CircleX, Crop, Download, Gem, Home, ImageIcon, Layers3, Maximize2, Store, Timer, X, Zap } from 'lucide-react';
+import { Armchair, ArrowDown, ArrowRight, Camera, Car, CarFront, Check, CheckCircle2, CircleX, Crop, Download, Gem, Home, ImageIcon, Images, Layers3, Maximize2, Store, Timer, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -14,6 +14,13 @@ import outdoorAsset from '@/assets/funnel/fb-04-outdoor.webp.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fb-05-kennzeichen.webp.asset.json';
 import logoShowroomAsset from '@/assets/funnel/fb-06-logo-showroom.webp.asset.json';
 import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp';
+import perspFrontAsset from '@/assets/funnel/fb-08-front.webp.asset.json';
+import perspSideAsset from '@/assets/funnel/fb-08-side.webp.asset.json';
+import perspRearAsset from '@/assets/funnel/fb-08-rear.webp.asset.json';
+import perspWheelAsset from '@/assets/funnel/fb-08-wheel.webp.asset.json';
+import perspLightAsset from '@/assets/funnel/fb-08-light.webp.asset.json';
+import perspCockpitAsset from '@/assets/funnel/fb-08-cockpit.webp.asset.json';
+import perspRearSeatsAsset from '@/assets/funnel/fb-08-rearseats.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
 
@@ -55,6 +62,39 @@ const SCENES = [
   { label: 'Outdoor-Szene', image: outdoorAsset.url },
 ];
 
+// Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
+type Perspective = { label: string; text: string; image: string };
+const PERSPECTIVE_GROUPS: { title: string; hint: string; icon: typeof Car; items: Perspective[] }[] = [
+  {
+    title: 'Außenansichten',
+    hint: 'Winkel, die dein Fahrzeug vollständig zeigen.',
+    icon: CarFront,
+    items: [
+      { label: 'Dreiviertel Front', text: 'Die Verkaufsansicht für Anzeige und Website.', image: perspFrontAsset.url },
+      { label: 'Seite', text: 'Linienführung und Proportionen im Profil.', image: perspSideAsset.url },
+      { label: 'Dreiviertel Heck', text: 'Heck und Seitenpartie in einer Aufnahme.', image: perspRearAsset.url },
+    ],
+  },
+  {
+    title: 'Details',
+    hint: 'Aufnahmen, die Ausstattung und Zustand betonen.',
+    icon: Gem,
+    items: [
+      { label: 'Felge', text: 'Rad und Reifen als eigene Detailaufnahme.', image: perspWheelAsset.url },
+      { label: 'Scheinwerfer', text: 'Lichtsignatur und Frontdetails nah betrachtet.', image: perspLightAsset.url },
+    ],
+  },
+  {
+    title: 'Innenraum',
+    hint: 'Bilder, die den Innenraum wirklich zeigen.',
+    icon: Armchair,
+    items: [
+      { label: 'Cockpit', text: 'Lenkrad, Displays und Mittelkonsole.', image: perspCockpitAsset.url },
+      { label: 'Rücksitzbank', text: 'Fond und Platzangebot aus eigener Aufnahme.', image: perspRearSeatsAsset.url },
+    ],
+  },
+];
+
 const MORE = [
   { icon: Car, title: 'Außen- & Innenansichten', text: 'Erstelle professionelle Außen- und Innenraumaufnahmen.' },
   { icon: Home, title: 'Eigener Showroom-Look', text: 'Nutze deinen individuellen Look für einen einheitlichen Markenauftritt.' },
@@ -77,9 +117,10 @@ export default function AutohausFahrzeugbilder() {
   useEffect(() => { captureAttribution('lp_fahrzeugbilder'); }, []);
 
   const [scene, setScene] = useState<number | null>(null);
+  const [perspective, setPerspective] = useState<Perspective | null>(null);
 
   return (
-    <FunnelLayout ctaHref={TEST_URL} ctaLabel="Kostenlos testen" anchors={[{ href: '#bildqualitaet', label: 'Bildqualität' }, { href: '#ablauf', label: 'Ablauf' }, { href: '#szenen', label: 'Szenen' }, { href: '#fragen', label: 'Fragen' }]}>
+    <FunnelLayout ctaHref={TEST_URL} ctaLabel="Kostenlos testen" anchors={[{ href: '#bildqualitaet', label: 'Bildqualität' }, { href: '#perspektiven', label: 'Perspektiven' }, { href: '#ablauf', label: 'Ablauf' }, { href: '#szenen', label: 'Szenen' }, { href: '#fragen', label: 'Fragen' }]}>
       {/* Einstieg */}
       <section className="overflow-hidden bg-card">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16">
@@ -136,6 +177,38 @@ export default function AutohausFahrzeugbilder() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* Perspektiven */}
+      <section id="perspektiven" className="border-t border-border bg-secondary/40 py-14 scroll-mt-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="font-display text-3xl font-bold">Vielfältige Perspektiven ab zwei Fahrzeugfotos</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Ab zwei Fahrzeugfotos entsteht eine echte Galerie: weitere Außenwinkel, gezielte Detailaufnahmen und Innenraumbilder. Jede Ansicht beruht auf einer Aufnahme, die du tatsächlich gemacht hast.</p>
+          <div className="mt-8 space-y-9">
+            {PERSPECTIVE_GROUPS.map((g) => (
+              <div key={g.title}>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><g.icon className="h-5 w-5" aria-hidden="true" /></span>
+                  <div><h3 className="text-sm font-bold">{g.title}</h3><p className="text-xs leading-5 text-muted-foreground">{g.hint}</p></div>
+                </div>
+                <div className={`mt-4 grid gap-4 sm:grid-cols-2 ${g.items.length > 2 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+                  {g.items.map((p) => (
+                    <figure key={p.label}>
+                      <button type="button" onClick={() => setPerspective(p)} aria-label={`${p.label} vollständig ansehen`} className="group relative block w-full overflow-hidden rounded-lg border border-border bg-card shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <img src={p.image} alt={`${p.label} – ${g.title}`} width={1024} height={768} className="block aspect-[4/3] w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02]" loading="lazy" />
+                        <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-card/90 text-foreground shadow-card"><Maximize2 className="h-4 w-4" aria-hidden="true" /></span>
+                      </button>
+                      <figcaption className="mt-2 text-sm font-semibold">{p.label}</figcaption>
+                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{p.text}</p>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 flex items-center justify-center gap-2 rounded-md bg-accent/10 px-4 py-3 text-center text-sm text-accent"><Images className="h-4 w-4 shrink-0" aria-hidden="true" /><span><strong>Zwei Fotos genügen für den Start.</strong> Jede weitere Aufnahme bringt eine echte Ansicht in deine Galerie.</span></p>
+          <FunnelImageLightbox open={perspective !== null} onOpenChange={(o) => !o && setPerspective(null)} src={perspective?.image ?? ''} alt={perspective ? `${perspective.label} – vollständige Ansicht` : ''} title={perspective?.label ?? ''} />
         </div>
       </section>
 
