@@ -134,16 +134,20 @@ function StoryFrame({
   video = true,
   clip,
   imageSrc,
+  pageSrc,
 }: {
   label?: string;
   className?: string;
   video?: boolean;
   clip?: { webm: string; mp4: string; poster: string };
   imageSrc?: string;
+  pageSrc?: string;
 }) {
   return (
     <div className={cn('relative overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
-      {clip ? (
+      {pageSrc ? (
+        <ScaledPagePreview src={pageSrc} viewportWidth={390} className="w-full rounded-xl" style={{ aspectRatio: '9 / 16' }} />
+      ) : clip ? (
         <>
           <video
             poster={clip.poster}
@@ -177,7 +181,7 @@ function StoryFrame({
 const VEHICLE_PAGE_URL = '/previews/velmora-nerys-angebot.html';
 const VEHICLE_PAGE_PREVIEW_EVENT = 'open-vehicle-page-preview';
 
-function ScaledPagePreview({ src, className }: { src: string; className?: string }) {
+function ScaledPagePreview({ src, className, viewportWidth = 1280, style }: { src: string; className?: string; viewportWidth?: number; style?: React.CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.2);
   const [height, setHeight] = useState(960);
@@ -185,7 +189,7 @@ function ScaledPagePreview({ src, className }: { src: string; className?: string
     const el = containerRef.current;
     if (!el) return;
     const update = () => {
-      const nextScale = el.clientWidth / 1280;
+      const nextScale = el.clientWidth / viewportWidth;
       if (nextScale <= 0) return;
       setScale(nextScale);
       setHeight(el.clientHeight / nextScale);
@@ -194,16 +198,16 @@ function ScaledPagePreview({ src, className }: { src: string; className?: string
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [viewportWidth]);
   return (
-    <div ref={containerRef} className={cn('relative overflow-hidden bg-white', className)}>
+    <div ref={containerRef} className={cn('relative overflow-hidden bg-white', className)} style={style}>
       <iframe
         src={src}
         title="Fahrzeugseite Vorschau"
         tabIndex={-1}
         aria-hidden
         className="pointer-events-none absolute left-0 top-0 origin-top-left border-0 bg-white"
-        style={{ width: 1280, height, transform: `scale(${scale})` }}
+        style={{ width: viewportWidth, height, transform: `scale(${scale})` }}
       />
     </div>
   );
@@ -306,7 +310,7 @@ const CATEGORIES: Category[] = [
     icons: [{ src: logoWebsite.url, label: 'Website' }],
     slides: [
       { key: 'desktop', width: 'w-[300px] sm:w-[460px]', node: <BrowserFrame label="Desktop-Vorschau" ratio="16 / 9" previewSrc={VEHICLE_PAGE_URL} /> },
-      { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} /> },
+      { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} pageSrc={VEHICLE_PAGE_URL} /> },
     ],
   },
 ];
