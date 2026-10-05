@@ -38,8 +38,9 @@ import type { ModelTier } from '@/components/ModelSelector';
 import ModelSelector from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Auto3Center from '@/components/auto3/Auto3Center';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis' | 'background-swap';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis' | 'background-swap' | 'auto3';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -67,6 +68,7 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'analyse': 'damage-analysis',
   'background-swap': 'background-swap',
   'hintergrund': 'background-swap',
+  'auto3': 'auto3',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
@@ -84,6 +86,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
   'damage-repair': 'damage-repair',
   'damage-analysis': 'damage-analysis',
   'background-swap': 'background-swap',
+  'auto3': 'auto3',
 };
 
 const Index = () => {
@@ -711,6 +714,9 @@ const Index = () => {
       case 'sales-assistant':
         navigate('/sales-assistant');
         break;
+      case 'auto3':
+        setAppState('auto3');
+        break;
       case 'spin360':
         setAppState('spin360' as ExtendedAppState);
         break;
@@ -845,6 +851,8 @@ const Index = () => {
               )}
             </>
           )}
+
+          {appState === 'auto3' && <Auto3Center onBack={() => setAppState('hub')} />}
 
           {/* ─── Photo Mode Selector (new intermediate step) ─── */}
           {appState === 'standalone-photo-mode' && (
