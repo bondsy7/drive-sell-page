@@ -496,7 +496,7 @@ export default function AutohausWerbemittel() {
       <section className="border-b border-border bg-card py-12">
         <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
           <h2 className="font-display text-2xl font-bold sm:text-3xl">In wenigen Minuten. Direkt am Fahrzeug.</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Aus deinem fertigen Fahrzeugbild entstehen Motive, Clips und Fahrzeugseiten. Direkt auf dem Smartphone.</p>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Aus deinem fertigen Fahrzeugbild entstehen Banner, Clips und Fahrzeugseiten. Direkt auf dem Smartphone.</p>
           <div className="mt-8 grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-border">
             {SPEED.map(({ icon: Icon, label }) => (
               <div key={label} className="flex items-center justify-center gap-3 py-2">
