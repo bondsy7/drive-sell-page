@@ -314,9 +314,26 @@ function FormatSlider() {
   const trackRef = useRef<HTMLDivElement>(null);
   const slides = CATEGORIES[cat].slides;
 
-  useEffect(() => { setActive(0); trackRef.current?.scrollTo({ left: 0 }); }, [cat]);
+  const pendingRef = useRef<'start' | 'end'>('start');
+  useEffect(() => {
+    const track = trackRef.current;
+    if (pendingRef.current === 'end') {
+      const last = CATEGORIES[cat].slides.length - 1;
+      setActive(last);
+      requestAnimationFrame(() => {
+        const el = track?.children[last] as HTMLElement | undefined;
+        if (track && el) track.scrollTo({ left: el.offsetLeft - track.offsetLeft - 16 });
+      });
+    } else {
+      setActive(0);
+      track?.scrollTo({ left: 0 });
+    }
+    pendingRef.current = 'start';
+  }, [cat]);
 
   const goTo = (i: number) => {
+    if (i >= slides.length && cat < CATEGORIES.length - 1) { pendingRef.current = 'start'; setCat(cat + 1); return; }
+    if (i < 0 && cat > 0) { pendingRef.current = 'end'; setCat(cat - 1); return; }
     const idx = Math.max(0, Math.min(slides.length - 1, i));
     const track = trackRef.current;
     const el = track?.children[idx] as HTMLElement | undefined;
@@ -353,7 +370,7 @@ function FormatSlider() {
       </div>
 
       <div className="relative mt-8">
-        <button aria-label="Vorheriges Beispiel" onClick={() => goTo(active - 1)} disabled={active === 0}
+        <button aria-label="Vorheriges Beispiel" onClick={() => goTo(active - 1)} disabled={active === 0 && cat === 0}
           className="absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -365,7 +382,7 @@ function FormatSlider() {
           ))}
           <div className="w-4 shrink-0 sm:w-12" aria-hidden />
         </div>
-        <button aria-label="Nächstes Beispiel" onClick={() => goTo(active + 1)} disabled={active === slides.length - 1}
+        <button aria-label="Nächstes Beispiel" onClick={() => goTo(active + 1)} disabled={active === slides.length - 1 && cat === CATEGORIES.length - 1}
           className="absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
           <ChevronRight className="h-5 w-5" />
         </button>
