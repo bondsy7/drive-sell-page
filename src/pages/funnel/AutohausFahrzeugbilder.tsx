@@ -167,7 +167,8 @@ export default function AutohausFahrzeugbilder() {
             ))}
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {/* Kennzeichen-/Logo-Blöcke ausgeblendet – wird bereits im Hauptbild behandelt */}
+          {false && (<div className="mt-6 grid gap-4 md:grid-cols-2">
             {[{ img: kennzeichenAsset.url, title: 'Kennzeichen nach Wunsch', text: 'Mit, ohne oder mit deiner gewünschten Kennzeichendarstellung.', alt: 'Fahrzeugfront mit individuellem Kennzeichen „AUTOHAUS“' },
               { img: logoShowroomAsset.url, title: 'Dein Logo im Showroom', text: 'Dein Autohaus-Logo als Teil des Showrooms.', alt: 'Showroom-Wand mit Autohaus-Logo' }].map((c) => (
               <article key={c.title} className="grid grid-cols-[45%_1fr] overflow-hidden rounded-lg border border-border bg-card shadow-card">
@@ -175,7 +176,7 @@ export default function AutohausFahrzeugbilder() {
                 <div className="p-4 sm:p-5"><h3 className="text-sm font-bold">{c.title}</h3><p className="mt-2 text-xs leading-5 text-muted-foreground">{c.text}</p></div>
               </article>
             ))}
-          </div>
+          </div>)}
         </div>
       </section>
 
