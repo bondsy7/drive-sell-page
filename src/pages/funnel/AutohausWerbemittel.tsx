@@ -472,7 +472,7 @@ export default function AutohausWerbemittel() {
         <img src={headerMockup.url} alt="" aria-hidden className="absolute inset-0 hidden h-full w-full object-cover object-center md:block" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-45% to-background/45" aria-hidden />
         <div className="relative mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
-          <div className="max-w-xl md:pr-28 lg:pr-0">
+          <div className="max-w-xl md:pr-40 lg:pr-0">
             <h1 className="font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl">Aus deinem Fahrzeugbild wird dein nächstes Marketing.</h1>
             <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">Social-Media-Motive, kurze Videos und Fahrzeugseiten. In wenigen Minuten. Passend zu deinem Autohaus.</p>
             <Button asChild size="lg" className="mt-7 w-full bg-accent text-accent-foreground shadow-glow hover:bg-accent/90 sm:w-auto">
