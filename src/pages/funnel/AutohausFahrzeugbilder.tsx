@@ -180,6 +180,38 @@ export default function AutohausFahrzeugbilder() {
         </div>
       </section>
 
+      {/* Perspektiven */}
+      <section id="perspektiven" className="border-t border-border bg-secondary/40 py-14 scroll-mt-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="font-display text-3xl font-bold">Vielfältige Perspektiven ab zwei Fahrzeugfotos</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Ab zwei Fahrzeugfotos entsteht eine echte Galerie: weitere Außenwinkel, gezielte Detailaufnahmen und Innenraumbilder. Jede Ansicht beruht auf einer Aufnahme, die du tatsächlich gemacht hast.</p>
+          <div className="mt-8 space-y-9">
+            {PERSPECTIVE_GROUPS.map((g) => (
+              <div key={g.title}>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><g.icon className="h-5 w-5" aria-hidden="true" /></span>
+                  <div><h3 className="text-sm font-bold">{g.title}</h3><p className="text-xs leading-5 text-muted-foreground">{g.hint}</p></div>
+                </div>
+                <div className={`mt-4 grid gap-4 sm:grid-cols-2 ${g.items.length > 2 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+                  {g.items.map((p) => (
+                    <figure key={p.label}>
+                      <button type="button" onClick={() => setPerspective(p)} aria-label={`${p.label} vollständig ansehen`} className="group relative block w-full overflow-hidden rounded-lg border border-border bg-card shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <img src={p.image} alt={`${p.label} – ${g.title}`} width={1024} height={768} className="block aspect-[4/3] w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02]" loading="lazy" />
+                        <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-card/90 text-foreground shadow-card"><Maximize2 className="h-4 w-4" aria-hidden="true" /></span>
+                      </button>
+                      <figcaption className="mt-2 text-sm font-semibold">{p.label}</figcaption>
+                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{p.text}</p>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 flex items-center justify-center gap-2 rounded-md bg-accent/10 px-4 py-3 text-center text-sm text-accent"><Images className="h-4 w-4 shrink-0" aria-hidden="true" /><span><strong>Zwei Fotos genügen für den Start.</strong> Jede weitere Aufnahme bringt eine echte Ansicht in deine Galerie.</span></p>
+          <FunnelImageLightbox open={perspective !== null} onOpenChange={(o) => !o && setPerspective(null)} src={perspective?.image ?? ''} alt={perspective ? `${perspective.label} – vollständige Ansicht` : ''} title={perspective?.label ?? ''} />
+        </div>
+      </section>
+
       {/* Ablauf + Vergleich */}
       <section id="ablauf" className="border-t border-border bg-secondary/40 py-14 scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
