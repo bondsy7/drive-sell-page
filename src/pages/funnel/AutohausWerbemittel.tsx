@@ -19,6 +19,7 @@ import logoGoogle from '@/assets/funnel/logo-google.png.asset.json';
 import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
+import socialPostVelmora from '@/assets/funnel/social-post-velmora.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
@@ -50,7 +51,7 @@ function MediaPlaceholder({ label, ratio, className, kind = 'image' }: { label: 
   );
 }
 
-function SocialFrame({ label = 'Social-Media-Motiv', className }: { label?: string; className?: string }) {
+function SocialFrame({ label = 'Social-Media-Motiv', className, imageSrc }: { label?: string; className?: string; imageSrc?: string }) {
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
       <div className="flex items-center gap-2 px-3 py-2">
@@ -61,7 +62,11 @@ function SocialFrame({ label = 'Social-Media-Motiv', className }: { label?: stri
         </div>
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
       </div>
-      <MediaPlaceholder label={label} ratio="1 / 1" />
+      {imageSrc ? (
+        <img src={imageSrc} alt={label} className="aspect-square w-full object-cover" loading="lazy" />
+      ) : (
+        <MediaPlaceholder label={label} ratio="1 / 1" />
+      )}
       <div className="flex items-center gap-3 px-3 py-2 text-foreground/70">
         <Heart className="h-4 w-4" aria-hidden /><MessageCircle className="h-4 w-4" aria-hidden /><Send className="h-4 w-4" aria-hidden />
         <Bookmark className="ml-auto h-4 w-4" aria-hidden />
@@ -115,9 +120,9 @@ const CATEGORIES: Category[] = [
   {
     id: 'social', label: 'Social Media', description: 'Posts und Stories für dein Fahrzeugangebot.',
     slides: [
-      { key: 'post', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" /> },
+      { key: 'post', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
       { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} /> },
-      { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" /> },
+      { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
     ],
   },
   {
@@ -290,7 +295,7 @@ export default function AutohausWerbemittel() {
           </div>
           <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             <div className="flex flex-col items-center gap-4">
-              <SocialFrame className="w-full max-w-[240px]" />
+              <SocialFrame className="w-full max-w-[240px]" imageSrc={socialPostVelmora.url} />
               <IconGroup label="Social Media">
                 <BrandImage src={logoInstagram.url} label="Instagram" /><BrandImage src={logoFacebook.url} label="Facebook" /><BrandImage src={logoLinkedin.url} label="LinkedIn" /><BrandImage src={logoX.url} label="X" />
               </IconGroup>
@@ -381,7 +386,7 @@ export default function AutohausWerbemittel() {
           <p className="mt-2 text-center font-display text-lg font-bold text-accent">Dein Logo. Deine Farben. Dein Angebot.</p>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-6 text-muted-foreground">Dein Logo, deine Farben und deine Angebotsbotschaft geben den Auftritt vor. So passt dein Fahrzeugmarketing zu deinem Autohaus.</p>
           <div className="mt-10 grid items-start gap-6 md:grid-cols-[.8fr_1.1fr_1.1fr]">
-            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Social Media</figcaption><SocialFrame /></figure>
+            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Social Media</figcaption><SocialFrame imageSrc={socialPostVelmora.url} /></figure>
             <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Display-Banner</figcaption><BannerFrame label="Display-Banner" ratio="4 / 3" /></figure>
             <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Fahrzeugseite</figcaption><BrowserFrame /></figure>
           </div>
