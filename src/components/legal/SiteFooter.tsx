@@ -56,6 +56,13 @@ export default function SiteFooter({ compact = false }: SiteFooterProps) {
             öffentlich-rechtliche Sondervermögen.
           </p>
         )}
+        {!compact && (
+          <p className="max-w-4xl leading-relaxed">
+            Alle genannten Marken, Produktnamen und Logos sind Eigentum ihrer jeweiligen Rechteinhaber.
+            Ihre Verwendung dient der Beschreibung und Zuordnung. Daraus ergibt sich keine Partnerschaft
+            oder Unterstützung durch die jeweiligen Markeninhaber.
+          </p>
+        )}
         <p className="border-t border-border/70 pt-3">© {new Date().getFullYear()} autohaus.ai · ein Produkt der {LEGAL.company}</p>
       </div>
     </footer>
