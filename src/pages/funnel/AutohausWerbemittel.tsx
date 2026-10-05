@@ -311,7 +311,7 @@ const CATEGORIES: Category[] = [
     icons: [{ src: logoTiktok.url, label: 'TikTok' }, { src: logoYoutube.url, label: 'YouTube' }],
     slides: [
       { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={HEADLIGHT_CLIP} /> },
-      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><MediaPlaceholder label="Video (16:9)" ratio="16 / 9" kind="video" /></div> },
+      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><div className="relative"><video poster={HORIZON_CLIP.poster} muted loop autoPlay playsInline preload="metadata" aria-label="Video (16:9)" className="aspect-[16 / 9] w-full object-cover"><source src={HORIZON_CLIP.webm} type="video/webm" /><source src={HORIZON_CLIP.mp4} type="video/mp4" /></video><AiMark /></div></div> },
     ],
   },
   {
