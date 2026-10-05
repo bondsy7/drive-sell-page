@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Move } from 'lucide-react';
+import { Maximize2, Move } from 'lucide-react';
+import FunnelImageLightbox from '@/components/funnel/FunnelImageLightbox';
 import { Button } from '@/components/ui/button';
 import beforeAsset from '@/assets/funnel/before.webp.asset.json';
 import after1Asset from '@/assets/funnel/after1.webp.asset.json';
@@ -27,6 +28,7 @@ export default function SmartphoneRevealDemo() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [intro, setIntro] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const clampToStage = (x: number, y: number): Position => {
     const stage = stageRef.current;
@@ -151,7 +153,7 @@ export default function SmartphoneRevealDemo() {
 
         <div className={`pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-foreground/85 px-3 py-2 text-[10px] font-semibold text-background shadow-card transition-opacity duration-300 sm:text-xs ${dragging ? 'opacity-0' : 'opacity-100'}`}>
           <Move className="h-3.5 w-3.5" aria-hidden="true" />
-          Ziehen und Ergebnis entdecken
+          Verschieben und Bildlook entdecken
         </div>
       </div>
 
@@ -172,7 +174,17 @@ export default function SmartphoneRevealDemo() {
             </Button>
           ))}
         </div>
+        <Button type="button" variant="outline" className="mt-2.5 w-full sm:w-auto" onClick={() => setLightboxOpen(true)}>
+          <Maximize2 className="h-4 w-4" aria-hidden="true" /> Fahrzeugbild vollständig ansehen
+        </Button>
       </div>
+      <FunnelImageLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        src={REVEAL_VARIANTS[activeIndex].image}
+        alt={`Fertiges Fahrzeugbild – ${REVEAL_VARIANTS[activeIndex].label}`}
+        title={`Ergebnis: ${REVEAL_VARIANTS[activeIndex].label}`}
+      />
     </section>
   );
 }
