@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
+  ArrowRight, Bookmark, Car, Check, Clock3, Globe, Heart, Image as ImageIcon,
   LayoutTemplate, MessageCircle, MoreHorizontal, PenLine, Send, Smartphone, Upload, UserRound, Video, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
