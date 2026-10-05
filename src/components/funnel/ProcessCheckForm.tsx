@@ -14,7 +14,7 @@ import { trackFunnelEvent } from '@/lib/funnel-tracking';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 /** Kurzer Prozesscheck für Händlergruppen – 4 Felder, ohne Upload. */
-export default function ProcessCheckForm() {
+export default function ProcessCheckForm({ submitLabel = 'Prozesscheck anfragen' }: { submitLabel?: string } = {}) {
   const navigate = useNavigate();
   const [company, setCompany] = useState('');
   const [email, setEmail] = useState('');
@@ -99,7 +99,7 @@ export default function ProcessCheckForm() {
         Hinweise zur Verarbeitung: <a href="/datenschutz" target="_blank" rel="noreferrer" className="text-accent underline underline-offset-2">Datenschutzerklärung</a>
       </p>
       <Button type="submit" className="mt-4 w-full sm:w-auto" disabled={sending} data-cta="prozess_check_submit">
-        {sending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Wird gesendet …</> : 'Prozesscheck anfragen'}
+        {sending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Wird gesendet …</> : submitLabel}
       </Button>
     </form>
   );
