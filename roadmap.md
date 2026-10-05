@@ -134,3 +134,10 @@
 - [x] Story, quadratischer Beitrag, Werbeanzeige und schmales Hochformat als schlanke WebP in die Medienablage legen
 - [x] Reiter „Social Media" mit den vier Motiven in ihren echten Seitenverhältnissen befüllen (dreispaltige Collage, Kasten bleibt 1104 × 840)
 - [x] Mobil als wischbare Leiste mit Rastsprung; alle Höhenkanten bündig, kein Beschnitt
+
+## Auto3-Verbindung und Arbeitsbereich (05.10.2026)
+- [x] Händler-/Mandanten-URL im Profil serverseitig prüfen und als Verbindung speichern
+- [x] Auto3-Kachel nur nach erfolgreicher Verbindung im Generator anzeigen
+- [x] Bestand, Import und Automatik in ein eigenes Auto3-Center verschieben
+- [x] Globale Bildregeln einklappen; Kosten und ausdrückliche Credit-Freigabe sichtbar halten
+- [ ] Desktop, Smartphone, Verbindung und Bestand im echten Nutzerzustand prüfen
