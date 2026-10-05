@@ -200,7 +200,7 @@ function ScaledPagePreview({ src, className, viewportWidth = 1280, style }: { sr
     return () => observer.disconnect();
   }, [viewportWidth]);
   return (
-    <div ref={containerRef} className={cn('relative overflow-hidden bg-white', className)}>
+    <div ref={containerRef} className={cn('relative overflow-hidden bg-white', className)} style={style}>
       <iframe
         src={src}
         title="Fahrzeugseite Vorschau"
