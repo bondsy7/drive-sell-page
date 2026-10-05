@@ -267,11 +267,17 @@ function BannerFrame({ label, ratio, className }: { label: string; ratio: string
 /* ---------- Slider-Inhalte ---------- */
 
 type Slide = { key: string; width: string; node: ReactNode };
-type Category = { id: string; label: string; description: string; slides: Slide[] };
+type Category = { id: string; label: string; description: string; icons: { src: string; label: string }[]; slides: Slide[] };
 
 const CATEGORIES: Category[] = [
   {
     id: 'social', label: 'Social Media', description: 'Posts und Stories für dein Fahrzeugangebot.',
+    icons: [
+      { src: logoInstagram.url, label: 'Instagram' },
+      { src: logoFacebook.url, label: 'Facebook' },
+      { src: logoLinkedin.url, label: 'LinkedIn' },
+      { src: logoX.url, label: 'X' },
+    ],
     slides: [
       { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
       { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} imageSrc={storyVelmora.url} /> },
@@ -280,6 +286,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'banner', label: 'Display-Banner', description: 'Dein Fahrzeugangebot in passenden Formaten für Display-Werbung.',
+    icons: [{ src: logoGoogle.url, label: 'Google' }],
     slides: [
       { key: 'wide', width: 'w-[300px] sm:w-[440px]', node: <BannerFrame label="Breites Banner" ratio="728 / 180" /> },
       { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" /> },
@@ -288,6 +295,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'video', label: 'Videos', description: 'Kurze Fahrzeugclips für deine Videokanäle.',
+    icons: [{ src: logoTiktok.url, label: 'TikTok' }, { src: logoYoutube.url, label: 'YouTube' }],
     slides: [
       { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={HEADLIGHT_CLIP} /> },
       { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><MediaPlaceholder label="Video (16:9)" ratio="16 / 9" kind="video" /></div> },
@@ -295,6 +303,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'pages', label: 'Fahrzeugseiten', description: 'Eine eigene Fahrzeugseite mit Angebotsinformationen und Kontaktmöglichkeit.',
+    icons: [{ src: logoWebsite.url, label: 'Website' }],
     slides: [
       { key: 'desktop', width: 'w-[300px] sm:w-[460px]', node: <BrowserFrame label="Desktop-Vorschau" ratio="16 / 9" previewSrc={VEHICLE_PAGE_URL} /> },
       { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} /> },
@@ -334,8 +343,13 @@ function FormatSlider() {
       <div role="tablist" aria-label="Formate" className="flex flex-wrap justify-center gap-2">
         {CATEGORIES.map((c, i) => (
           <button key={c.id} role="tab" aria-selected={cat === i} onClick={() => setCat(i)}
-            className={cn('rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            className={cn('flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               cat === i ? 'bg-accent text-accent-foreground' : 'bg-card text-foreground hover:bg-muted')}>
+            <span className="flex items-center gap-1.5" aria-hidden>
+              {c.icons.map((ic) => (
+                <img key={ic.label} src={ic.src} alt="" className="h-[18px] w-[18px] rounded-[4px]" loading="lazy" />
+              ))}
+            </span>
             {c.label}
           </button>
         ))}
