@@ -22,6 +22,7 @@ import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/social-post-velmora.png.asset.json';
 import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
+import storyVelmora from '@/assets/story-velmora.webp.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
@@ -132,11 +133,13 @@ function StoryFrame({
   className,
   video = true,
   clip,
+  imageSrc,
 }: {
   label?: string;
   className?: string;
   video?: boolean;
   clip?: { webm: string; mp4: string; poster: string };
+  imageSrc?: string;
 }) {
   return (
     <div className={cn('relative overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
@@ -157,6 +160,13 @@ function StoryFrame({
           </video>
           <AiMark />
         </>
+      ) : imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={label}
+          className="aspect-[9 / 16] w-full rounded-xl object-cover"
+          loading="lazy"
+        />
       ) : (
         <MediaPlaceholder label={label} ratio="9 / 16" kind={video ? 'video' : 'image'} className="rounded-xl" />
       )}
@@ -264,7 +274,7 @@ const CATEGORIES: Category[] = [
     id: 'social', label: 'Social Media', description: 'Posts und Stories für dein Fahrzeugangebot.',
     slides: [
       { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
-      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} /> },
+      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} imageSrc={storyVelmora.url} /> },
       { key: 'post', width: 'w-[300px] sm:w-[460px]', node: <FacebookAdFrame label="Facebook-Anzeige (16:9)" imageSrc={facebookAdVelmora.url} /> },
     ],
   },
