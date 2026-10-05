@@ -370,7 +370,7 @@ function FormatSlider() {
       </div>
 
       <div className="relative mt-8">
-        <button aria-label="Vorheriges Beispiel" onClick={() => goTo(active - 1)} disabled={active === 0}
+        <button aria-label="Vorheriges Beispiel" onClick={() => goTo(active - 1)} disabled={active === 0 && cat === 0}
           className="absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -382,7 +382,7 @@ function FormatSlider() {
           ))}
           <div className="w-4 shrink-0 sm:w-12" aria-hidden />
         </div>
-        <button aria-label="Nächstes Beispiel" onClick={() => goTo(active + 1)} disabled={active === slides.length - 1}
+        <button aria-label="Nächstes Beispiel" onClick={() => goTo(active + 1)} disabled={active === slides.length - 1 && cat === CATEGORIES.length - 1}
           className="absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
           <ChevronRight className="h-5 w-5" />
         </button>
