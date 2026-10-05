@@ -26,7 +26,7 @@ import storyVelmora from '@/assets/story-velmora.webp.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
-import headerMockup from '@/assets/funnel/header-mockup.png.asset.json';
+import headerMockup from '@/assets/funnel/header-mockup-content-2.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
