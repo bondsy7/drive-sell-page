@@ -16,7 +16,7 @@ export default function Auto3ConnectionCard() {
 
   useEffect(() => {
     if (!config) return;
-    setUrl(config.tenantUrl);
+    setUrl(config.tenantUrl || (config.accountEmail ? 'https://schmitt.indicar.de' : ''));
     if (config.tenantUrl && config.verifiedAt) {
       setResult({ tenantUrl: config.tenantUrl, total: config.vehicleCount ?? 0, verifiedAt: config.verifiedAt });
     }
