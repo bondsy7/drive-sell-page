@@ -203,7 +203,7 @@ function ScaledPagePreview({ src, className, viewportWidth = 1280 }: { src: stri
         tabIndex={-1}
         aria-hidden
         className="pointer-events-none absolute left-0 top-0 origin-top-left border-0 bg-white"
-        style={{ width: 1280, height, transform: `scale(${scale})` }}
+        style={{ width: viewportWidth, height, transform: `scale(${scale})` }}
       />
     </div>
   );
