@@ -310,7 +310,7 @@ const CATEGORIES: Category[] = [
     icons: [{ src: logoWebsite.url, label: 'Website' }],
     slides: [
       { key: 'desktop', width: 'w-[300px] sm:w-[460px]', node: <BrowserFrame label="Desktop-Vorschau" ratio="16 / 9" previewSrc={VEHICLE_PAGE_URL} /> },
-      { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} /> },
+      { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} pageSrc={VEHICLE_PAGE_URL} /> },
     ],
   },
 ];
