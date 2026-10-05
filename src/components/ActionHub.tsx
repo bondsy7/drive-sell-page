@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   ArrowRight, Camera, Coins, Database, FileText, Image, Layout, Lock,
-  Music, RotateCw, Scissors, Search, Sparkles, Video, Wand2, Wrench, Zap,
+  Music, RotateCw, Scissors, Search, Sparkles, Video, Wand2, Wrench, Zap, CarFront,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCredits } from '@/hooks/useCredits';
@@ -12,6 +12,7 @@ import afterAsset from '@/assets/funnel/after1.webp.asset.json';
 import photoAsset from '@/assets/foto-aufnehmen.webp.asset.json';
 import marketingAsset from '@/assets/marketing-formate.webp.asset.json';
 import cityAsset from '@/assets/scene-previews/city.webp.asset.json';
+import { useAuto3Config } from '@/hooks/useAuto3Config';
 
 export type HubAction =
   | 'studio'
@@ -27,6 +28,7 @@ export type HubAction =
   | 'damage-repair'
   | 'damage-analysis'
   | 'sales-assistant'
+  | 'auto3'
   | 'reference-v2';
 
 type ToolGroup = 'fahrzeugbilder' | 'werbung' | 'verkauf' | 'analyse' | 'assistenten';
@@ -71,6 +73,7 @@ interface ActionHubProps {
 const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
   const { balance } = useCredits();
   const { disabledModules } = useModuleAccess();
+  const { isConfigured: auto3Connected } = useAuto3Config();
 
   const availableTiles = TILES.filter((tile) => {
     const key = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
@@ -157,6 +160,16 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           {remainingPhotoTiles.map((tile) => <div key={tile.id} className="lg:col-span-6">{renderTool(tile)}</div>)}
         </div>
       </section>
+
+      {auto3Connected && (
+        <section aria-labelledby="generator-auto3" className="space-y-4">
+          <div>
+            <h2 id="generator-auto3" className="font-display text-xl font-bold text-foreground">Verbundene Fahrzeugquellen</h2>
+            <p className="text-xs text-muted-foreground">Bestand übernehmen und Aufbereitung automatisieren</p>
+          </div>
+          {renderTool({ id: 'auto3', icon: <CarFront />, title: 'Auto3 Fahrzeugbestand', description: 'Fahrzeuge suchen, Originalbilder übernehmen und OneShot-Aufbereitung mit Ihren freigegebenen Regeln starten.', group: 'verkauf', badge: 'Verbunden', cta: 'Bestand öffnen' }, true)}
+        </section>
+      )}
 
       <section aria-labelledby="generator-more-tools" className="space-y-4">
         <div>

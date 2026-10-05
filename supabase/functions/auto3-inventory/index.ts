@@ -5,17 +5,17 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { analyzeVehicleOriginals } from "../_shared/auto3-analysis.ts";
 
 const AUTO3_BASE = (Deno.env.get("AUTO3_API_BASE") || "https://dev-api.autoversus.de").replace(/\/$/, "");
-const AUTO3_X_BASEURL = Deno.env.get("AUTO3_X_BASEURL") || "https://schmitt.indicar.de";
+const LEGACY_AUTO3_X_BASEURL = Deno.env.get("AUTO3_X_BASEURL") || "https://schmitt.indicar.de";
 const SOURCE = "auto3";
 const MODULE = "website-publishing";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-async function auto3Get(path: string) {
+async function auto3Get(path: string, tenantUrl: string) {
   const res = await fetch(`${AUTO3_BASE}${path}`, {
     method: "GET",
-    headers: { Accept: "application/json", "X-BASEURL": AUTO3_X_BASEURL },
+    headers: { Accept: "application/json", "X-BASEURL": tenantUrl },
   });
   if (!res.ok) { await res.text(); throw new Error(`Auto3 ${res.status}`); }
   return res.json();
@@ -67,8 +67,8 @@ function summary(r: Raw) {
   };
 }
 
-async function detail(id: string): Promise<Raw> {
-  const d = await auto3Get(`/v1/vehicle/vehicle/buy/${encodeURIComponent(id)}`);
+async function detail(id: string, tenantUrl: string): Promise<Raw> {
+  const d = await auto3Get(`/v1/vehicle/vehicle/buy/${encodeURIComponent(id)}`, tenantUrl);
   return Array.isArray(d?.content) ? d.content[0] : d;
 }
 
@@ -240,15 +240,47 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
 
+    const normalizeTenantUrl = (value: unknown): string | null => {
+      try {
+        const url = new URL(String(value || "").trim());
+        if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) return null;
+        return url.origin;
+      } catch { return null; }
+    };
+
+    if (action === "verify_connection") {
+      const tenantUrl = normalizeTenantUrl(body?.tenantUrl);
+      if (!tenantUrl) return json({ error: "Bitte eine gültige HTTPS-Händler-URL eingeben." }, 400);
+      const result = await auto3Get("/v1/vehicle/vehicle/buy?page=0&pageSize=1&includeImages=false", tenantUrl);
+      const total = Number(result?.totalElements);
+      if (!Number.isFinite(total)) return json({ error: "Auto3 hat keine gültige Bestandsantwort geliefert." }, 502);
+      const verifiedAt = new Date().toISOString();
+      const { error: saveError } = await sb.from("profiles").update({
+        auto3_tenant_url: tenantUrl,
+        auto3_connection_verified_at: verifiedAt,
+        auto3_connection_vehicle_count: total,
+      }).eq("id", userId);
+      if (saveError) throw saveError;
+      console.log(`[auto3-inventory] verify-connection user=${userId} total=${total}`);
+      return json({ connected: true, tenantUrl, total, verifiedAt });
+    }
+
+    const { data: profile } = await sb.from("profiles")
+      .select("auto3_tenant_url, auto3_connection_verified_at, auto3_account_email")
+      .eq("id", userId).maybeSingle();
+    const tenantUrl = normalizeTenantUrl(profile?.auto3_tenant_url)
+      || (profile?.auto3_account_email ? LEGACY_AUTO3_X_BASEURL : null);
+    if (!tenantUrl) return json({ error: "Bitte zuerst im Profil die Auto3-Händler-URL verbinden." }, 409);
+
     if (action === "list") {
       const raws: Raw[] = [];
       for (let page = 0; page < 20; page++) {
-        const r = await auto3Get(`/v1/vehicle/vehicle/buy?page=${page}&pageSize=100&includeImages=true`);
+        const r = await auto3Get(`/v1/vehicle/vehicle/buy?page=${page}&pageSize=100&includeImages=true`, tenantUrl);
         raws.push(...((r?.content || []) as Raw[]));
         if (page + 1 >= (r?.totalPages ?? 1)) break;
       }
       // VIN only exists in the detail record → fetch details server-side, never return plain VIN.
-      const details = await pool(raws, 10, async (r) => { try { return await detail(String(r.id)); } catch { return null; } });
+      const details = await pool(raws, 10, async (r) => { try { return await detail(String(r.id), tenantUrl); } catch { return null; } });
 
       const { data: vehicles } = await sb.from("vehicles").select("id, vin, external_vehicle_id, source_system").eq("user_id", userId);
       const byExt = new Map<string, Raw>(); const byVin = new Map<string, Raw>();
@@ -300,7 +332,7 @@ Deno.serve(async (req) => {
       const results = [];
       for (const extId of ids) {
         try {
-          const d = await detail(extId);
+          const d = await detail(extId, tenantUrl);
           if (!d || String(d.id) !== extId) { results.push({ externalVehicleId: extId, ok: false, error: "Fahrzeug nicht im Auto3-Bestand gefunden" }); continue; }
           const { vin } = extractVin(d);
           if (!vin) { results.push({ externalVehicleId: extId, ok: false, error: "Keine gültige 17-stellige VIN – nicht importiert" }); continue; }
@@ -364,7 +396,7 @@ Deno.serve(async (req) => {
       const { data: v } = await sb.from("vehicles").select("id, vehicle_data, cover_image_url").eq("user_id", userId)
         .eq("source_system", SOURCE).eq("external_vehicle_id", extId).maybeSingle();
       if (!v) return json({ error: "Fahrzeugakte nicht gefunden – bitte zuerst Fahrzeugdaten übernehmen" }, 404);
-      const d = await detail(extId);
+      const d = await detail(extId, tenantUrl);
       const media = mediaList(d);
       const prefix = `${userId}/${v.id}`;
       const { data: files } = await sb.storage.from("originals").list(prefix, { limit: 1000 });

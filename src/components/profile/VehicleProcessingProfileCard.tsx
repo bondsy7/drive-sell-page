@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import { ONESHOT_BANNER_FORMATS, type BannerFormatId } from '@/components/oneshot/oneshot-types';
 import { useProcessingProfile } from '@/hooks/useProcessingProfile';
@@ -30,7 +31,7 @@ const MODES: { value: AutomationMode; label: string; hint: string }[] = [
 ];
 
 /** Dealer "Fahrzeug-Aufbereitung" profile + Auto3 automation mode. */
-export default function VehicleProcessingProfileCard() {
+export default function VehicleProcessingProfileCard({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth();
   const { getCost, balance } = useCredits();
   const { data, refresh } = useProcessingProfile();
@@ -87,74 +88,64 @@ export default function VehicleProcessingProfileCard() {
   const toggleFormat = (f: BannerFormatId) => set('bannerFormats', s.bannerFormats.includes(f) ? s.bannerFormats.filter((x) => x !== f) : [...s.bannerFormats, f]);
 
   return (
-    <div className="space-y-4 rounded-lg border border-border p-3">
+    <div className={`space-y-4 ${embedded ? '' : 'rounded-lg border border-border p-3'}`}>
       <div className="flex flex-wrap items-center gap-2">
         <h4 className="text-sm font-semibold">Fahrzeug-Aufbereitung</h4>
         {approved ? <Badge><ShieldCheck className="w-3 h-3 mr-1" />Freigegeben · {data?.profile?.approved_max_credits_per_job} Credits/Fahrzeug</Badge>
           : <Badge variant="secondary">Nicht freigegeben</Badge>}
       </div>
 
-      <Button type="button" size="sm" variant="outline" onClick={() => { setName(AUTO_SCHMITT_STANDARD_NAME); setS(AUTO_SCHMITT_STANDARD); }}>Standard „Auto Schmitt“ einsetzen</Button>
-
-      <label className="block text-xs font-medium">Profilname
-        <Input className="mt-1 h-8" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-      </label>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className="text-xs font-medium">Hintergrund / Showroom
-          <select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.scene} onChange={(e) => set('scene', e.target.value)}>
-            {SCENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </label>
-        <label className="text-xs font-medium">Kennzeichen
-          <select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.licensePlate} onChange={(e) => set('licensePlate', e.target.value as ProcessingSettings['licensePlate'])}>
-            {PLATES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </label>
-        <label className="text-xs font-medium">Qualitätsstufe
-          <select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.modelTier} onChange={(e) => set('modelTier', e.target.value as ProcessingSettings['modelTier'])}>
-            {MODEL_TIER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </label>
-      </div>
-      <p className="text-[11px] text-muted-foreground">Eigenes Händlerkennzeichen und eigener Showroom brauchen eine Bildvorlage und sind in der Automatik noch nicht verfügbar. Bildformat und Auflösung legt die OneShot-Bildaufbereitung fest.</p>
-
       <div>
-        <p className="text-xs font-medium mb-1.5">Ausgabe-Perspektiven (zusätzlich zum Masterbild)</p>
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          {ONESHOT_PERSPECTIVE_JOBS.map((j) => (
-            <label key={j.key} className="flex items-center gap-2 text-sm">
-              <Checkbox checked={s.perspectiveKeys.includes(j.key)} onCheckedChange={() => togglePerspective(j.key)} />
-              <span>{j.labelDe}{(j.extraPrompts?.length || 0) > 0 ? ` (${1 + j.extraPrompts!.length} Bilder)` : ''}</span>
-            </label>
-          ))}
+        <h4 className="text-sm font-medium mb-2">Auto3-Automatik</h4>
+        <div className="grid gap-2 lg:grid-cols-3">
+          {MODES.map((o) => {
+            const disabled = o.value === 'full' && !approved;
+            return (
+              <label key={o.value} className={`flex gap-2 rounded-md border border-border p-2 text-sm ${disabled ? 'opacity-60' : 'cursor-pointer'}`}>
+                <input type="radio" name="auto3-mode" checked={data?.mode === o.value} disabled={disabled} onChange={() => setMode(o.value)} className="mt-1" />
+                <span><span className="font-medium">{o.label}</span><span className="block text-xs text-muted-foreground">{o.hint}{disabled ? ' Erst nach Freigabe des Profils wählbar.' : ''}</span></span>
+              </label>
+            );
+          })}
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">Innenraum-Perspektiven werden nur erzeugt, wenn unter den Originalen eine passende Innenaufnahme ist.</p>
       </div>
 
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm"><Switch checked={s.showManufacturerLogo} onCheckedChange={(v) => set('showManufacturerLogo', v)} />Herstellerlogo einbinden</label>
-        <label className="flex items-center gap-2 text-sm"><Switch checked={s.bannerEnabled} onCheckedChange={(v) => set('bannerEnabled', v)} />Banner automatisch erzeugen</label>
-        {s.bannerEnabled && (
-          <div className="ml-10 space-y-2">
-            <div className="flex flex-wrap gap-1.5">
-              {ONESHOT_BANNER_FORMATS.map((f) => (
-                <Button key={f.id} type="button" size="sm" variant={s.bannerFormats.includes(f.id) ? 'default' : 'outline'} onClick={() => toggleFormat(f.id)}>{f.label}</Button>
-              ))}
+      <Accordion type="multiple" className="rounded-md border border-border px-3">
+        <AccordionItem value="style">
+          <AccordionTrigger className="py-3 text-sm hover:no-underline">Bildstil <span className="ml-auto mr-3 hidden text-xs font-normal text-muted-foreground sm:inline">Showroom, Kennzeichen, Qualität</span></AccordionTrigger>
+          <AccordionContent className="space-y-3">
+            <Button type="button" size="sm" variant="outline" onClick={() => { setName(AUTO_SCHMITT_STANDARD_NAME); setS(AUTO_SCHMITT_STANDARD); }}>Standard „Auto Schmitt“ einsetzen</Button>
+            <label className="block text-xs font-medium">Profilname<Input className="mt-1 h-8" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} /></label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="text-xs font-medium">Hintergrund / Showroom<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.scene} onChange={(e) => set('scene', e.target.value)}>{SCENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+              <label className="text-xs font-medium">Kennzeichen<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.licensePlate} onChange={(e) => set('licensePlate', e.target.value as ProcessingSettings['licensePlate'])}>{PLATES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+              <label className="text-xs font-medium">Qualitätsstufe<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.modelTier} onChange={(e) => set('modelTier', e.target.value as ProcessingSettings['modelTier'])}>{MODEL_TIER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
             </div>
-            <label className="text-xs font-medium">Banner-Stil
-              <select className="ml-2 rounded border border-border bg-background p-1 text-sm" value={s.bannerStyle} onChange={(e) => set('bannerStyle', e.target.value)}>
-                {BANNER_STYLES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </label>
-            <p className="text-[11px] text-muted-foreground">Texte kommen nur aus den Auto3-Fahrzeugdaten (Modell, Preis, Leistung …). Fehlende Angaben werden weggelassen, nie erfunden.</p>
-          </div>
-        )}
-        <label className="flex items-center gap-2 text-sm"><Switch checked={s.socialSet} onCheckedChange={(v) => set('socialSet', v)} />Social-Set (Story + Post)</label>
-        <label className="flex items-center gap-2 text-sm"><Switch checked={s.videoEnabled} onCheckedChange={(v) => set('videoEnabled', v)} />Video (Standard: aus)</label>
-        {s.videoEnabled && <Input className="ml-10 h-8 max-w-md" placeholder="Optionale Videoanweisung (sonst Standard-Video)" value={s.videoPrompt} onChange={(e) => set('videoPrompt', e.target.value)} maxLength={500} />}
-        <label className="flex items-center gap-2 text-sm"><Switch checked={s.websiteTarget === 'autoschmitt'} onCheckedChange={(v) => set('websiteTarget', v ? 'autoschmitt' : 'none')} />Website-Ziel „Auto Schmitt“ vormerken <span className="text-xs text-muted-foreground">(Veröffentlichung bleibt manuell)</span></label>
-      </div>
+            <p className="text-[11px] text-muted-foreground">Eigenes Händlerkennzeichen und eigener Showroom brauchen eine Bildvorlage und sind in der Automatik noch nicht verfügbar.</p>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="perspectives">
+          <AccordionTrigger className="py-3 text-sm hover:no-underline">Perspektiven & Bildumfang <span className="ml-auto mr-3 hidden text-xs font-normal text-muted-foreground sm:inline">{cost.images} Fahrzeugbilder</span></AccordionTrigger>
+          <AccordionContent>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {ONESHOT_PERSPECTIVE_JOBS.map((j) => <label key={j.key} className="flex items-center gap-2 text-sm"><Checkbox checked={s.perspectiveKeys.includes(j.key)} onCheckedChange={() => togglePerspective(j.key)} /><span>{j.labelDe}{(j.extraPrompts?.length || 0) > 0 ? ` (${1 + j.extraPrompts!.length} Bilder)` : ''}</span></label>)}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">Innenraum-Perspektiven entstehen nur mit einer passenden Originalaufnahme.</p>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="extras" className="border-0">
+          <AccordionTrigger className="py-3 text-sm hover:no-underline">Zusatzausgaben <span className="ml-auto mr-3 hidden text-xs font-normal text-muted-foreground sm:inline">Banner, Social, Video, Website</span></AccordionTrigger>
+          <AccordionContent className="space-y-2">
+            <label className="flex items-center gap-2 text-sm"><Switch checked={s.showManufacturerLogo} onCheckedChange={(v) => set('showManufacturerLogo', v)} />Herstellerlogo einbinden</label>
+            <label className="flex items-center gap-2 text-sm"><Switch checked={s.bannerEnabled} onCheckedChange={(v) => set('bannerEnabled', v)} />Banner automatisch erzeugen</label>
+            {s.bannerEnabled && <div className="ml-10 space-y-2"><div className="flex flex-wrap gap-1.5">{ONESHOT_BANNER_FORMATS.map((f) => <Button key={f.id} type="button" size="sm" variant={s.bannerFormats.includes(f.id) ? 'default' : 'outline'} onClick={() => toggleFormat(f.id)}>{f.label}</Button>)}</div><label className="text-xs font-medium">Banner-Stil<select className="ml-2 rounded border border-border bg-background p-1 text-sm" value={s.bannerStyle} onChange={(e) => set('bannerStyle', e.target.value)}>{BANNER_STYLES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label></div>}
+            <label className="flex items-center gap-2 text-sm"><Switch checked={s.socialSet} onCheckedChange={(v) => set('socialSet', v)} />Social-Set (Story + Post)</label>
+            <label className="flex items-center gap-2 text-sm"><Switch checked={s.videoEnabled} onCheckedChange={(v) => set('videoEnabled', v)} />Video (Standard: aus)</label>
+            {s.videoEnabled && <Input className="ml-10 h-8 max-w-md" placeholder="Optionale Videoanweisung" value={s.videoPrompt} onChange={(e) => set('videoPrompt', e.target.value)} maxLength={500} />}
+            <label className="flex items-center gap-2 text-sm"><Switch checked={s.websiteTarget === 'autoschmitt'} onCheckedChange={(v) => set('websiteTarget', v ? 'autoschmitt' : 'none')} />Website-Ziel „Auto Schmitt“ vormerken <span className="text-xs text-muted-foreground">(Veröffentlichung bleibt manuell)</span></label>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <div className="rounded-md bg-muted/40 p-2 text-sm space-y-0.5">
         <div className="flex justify-between"><span>{cost.images} Fahrzeugbilder × {cost.perImage} Credits</span><span>{cost.imageCost}</span></div>
@@ -174,20 +165,6 @@ export default function VehicleProcessingProfileCard() {
       </div>
       <p className="text-[11px] text-muted-foreground">Mit der Freigabe erlauben Sie, dass ein Auto3-Fahrzeug im Hintergrund bis zu diesem Betrag Credits verbraucht. Jede Änderung am Profil hebt die Freigabe auf.</p>
 
-      <div>
-        <h4 className="text-sm font-medium mb-2">Auto3-Automatik</h4>
-        <div className="space-y-2">
-          {MODES.map((o) => {
-            const disabled = o.value === 'full' && !approved;
-            return (
-              <label key={o.value} className={`flex gap-2 rounded-md border border-border p-2 text-sm ${disabled ? 'opacity-60' : 'cursor-pointer'}`}>
-                <input type="radio" name="auto3-mode" checked={data?.mode === o.value} disabled={disabled} onChange={() => setMode(o.value)} className="mt-1" />
-                <span><span className="font-medium">{o.label}</span><span className="block text-xs text-muted-foreground">{o.hint}{disabled ? ' Erst nach Freigabe des Profils wählbar.' : ''}</span></span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

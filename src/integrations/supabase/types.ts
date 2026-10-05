@@ -1616,8 +1616,11 @@ export type Database = {
           auto3_account_email: string | null
           auto3_autopilot_mode: string
           auto3_channels_default: string[]
+          auto3_connection_vehicle_count: number | null
+          auto3_connection_verified_at: string | null
           auto3_default_caption: string | null
           auto3_default_cta_url: string | null
+          auto3_tenant_url: string | null
           ci_settings: Json | null
           city: string | null
           company_name: string | null
@@ -1653,8 +1656,11 @@ export type Database = {
           auto3_account_email?: string | null
           auto3_autopilot_mode?: string
           auto3_channels_default?: string[]
+          auto3_connection_vehicle_count?: number | null
+          auto3_connection_verified_at?: string | null
           auto3_default_caption?: string | null
           auto3_default_cta_url?: string | null
+          auto3_tenant_url?: string | null
           ci_settings?: Json | null
           city?: string | null
           company_name?: string | null
@@ -1690,8 +1696,11 @@ export type Database = {
           auto3_account_email?: string | null
           auto3_autopilot_mode?: string
           auto3_channels_default?: string[]
+          auto3_connection_vehicle_count?: number | null
+          auto3_connection_verified_at?: string | null
           auto3_default_caption?: string | null
           auto3_default_cta_url?: string | null
+          auto3_tenant_url?: string | null
           ci_settings?: Json | null
           city?: string | null
           company_name?: string | null
