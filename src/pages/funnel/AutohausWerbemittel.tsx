@@ -181,7 +181,7 @@ function StoryFrame({
 const VEHICLE_PAGE_URL = '/previews/velmora-nerys-angebot.html';
 const VEHICLE_PAGE_PREVIEW_EVENT = 'open-vehicle-page-preview';
 
-function ScaledPagePreview({ src, className, viewportWidth = 1280 }: { src: string; className?: string; viewportWidth?: number }) {
+function ScaledPagePreview({ src, className, viewportWidth = 1280, style }: { src: string; className?: string; viewportWidth?: number; style?: React.CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.2);
   const [height, setHeight] = useState(960);
