@@ -26,7 +26,7 @@ const BENEFITS = [
 // Positionen in Prozent des sichtbaren Showroom-Bildes (x von links, y von oben).
 const HOTSPOTS = [
   { title: 'Licht & Reflexionen', text: 'Stimmige Reflexionen betonen die Linien und Oberflächen des Fahrzeugs.', x: 36, y: 41 },
-  { title: 'Bodenkontakt & Schatten', text: 'Ein natürlicher Schatten verbindet das Fahrzeug mit dem Boden und unterstützt einen realistischen Gesamteindruck.', x: 60, y: 79 },
+  { title: 'Bodenkontakt & Schatten', text: 'Ein natürlicher Schatten verbindet das Fahrzeug mit dem Boden und unterstützt einen realistischen Gesamteindruck.', x: 66, y: 84 },
   { title: 'Fahrzeugdetails', text: 'Klare Konturen und gut erkennbare Details rücken die Merkmale deines Fahrzeugs in den Mittelpunkt.', x: 45, y: 48 },
   { title: 'Showroom', text: 'Ein ruhiger Showroom-Hintergrund sorgt für eine hochwertige und einheitliche Fahrzeugpräsentation.', x: 15, y: 19 },
   { title: 'Kennzeichen', text: 'Zeige dein Fahrzeug mit Kennzeichen, ohne Kennzeichen oder mit deiner gewünschten Kennzeichendarstellung.', x: 24, y: 62 },
