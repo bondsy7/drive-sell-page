@@ -12,6 +12,10 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution, captureLastTouch } from '@/lib/funnel-attribution';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
 import { cn } from '@/lib/utils';
+import logoInstagram from '@/assets/funnel/logo-instagram.png.asset.json';
+import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
+import logoLinkedin from '@/assets/funnel/logo-linkedin.png.asset.json';
+import logoX from '@/assets/funnel/logo-x.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
