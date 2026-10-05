@@ -31,7 +31,7 @@ const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
 
 function BrandImage({ src, label }: { src: string; label: string }) {
-  return <img src={src} alt={label} className="h-6 w-6 rounded-[5px]" loading="lazy" />;
+  return <img src={src} alt={label} className="h-[30px] w-[30px] rounded-[6px]" loading="lazy" />;
 }
 
 function IconGroup({ children, label }: { children: ReactNode; label: string }) {
