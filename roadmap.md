@@ -140,4 +140,4 @@
 - [x] Auto3-Kachel nur nach erfolgreicher Verbindung im Generator anzeigen
 - [x] Bestand, Import und Automatik in ein eigenes Auto3-Center verschieben
 - [x] Globale Bildregeln einklappen; Kosten und ausdrückliche Credit-Freigabe sichtbar halten
-- [ ] Desktop, Smartphone, Verbindung und Bestand im echten Nutzerzustand prüfen
+- [x] Desktop, Smartphone, Verbindung und Bestand im echten Nutzerzustand prüfen
