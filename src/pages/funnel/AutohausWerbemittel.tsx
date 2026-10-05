@@ -21,6 +21,7 @@ import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/social-post-velmora.png.asset.json';
+import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
@@ -71,6 +72,36 @@ function SocialFrame({ label = 'Social-Media-Motiv', className, imageSrc }: { la
       ) : (
         <MediaPlaceholder label={label} ratio="1 / 1" />
       )}
+      <div className="flex items-center gap-3 px-3 py-2 text-foreground/70">
+        <Heart className="h-4 w-4" aria-hidden /><MessageCircle className="h-4 w-4" aria-hidden /><Send className="h-4 w-4" aria-hidden />
+        <Bookmark className="ml-auto h-4 w-4" aria-hidden />
+      </div>
+    </div>
+  );
+}
+
+function FacebookAdFrame({
+  label = 'Facebook-Anzeige',
+  className,
+  imageSrc,
+}: {
+  label?: string;
+  className?: string;
+  imageSrc: string;
+}) {
+  return (
+    <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/15 text-[9px] font-bold text-accent">ai</span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="text-[11px] font-bold">autohaus.ai</p>
+          <p className="text-[9px] text-muted-foreground">Gesponsert</p>
+        </div>
+        <MoreHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+      </div>
+      <div className="w-full bg-white" style={{ aspectRatio: '16 / 9' }}>
+        <img src={imageSrc} alt={label} className="h-full w-full object-contain" loading="lazy" />
+      </div>
       <div className="flex items-center gap-3 px-3 py-2 text-foreground/70">
         <Heart className="h-4 w-4" aria-hidden /><MessageCircle className="h-4 w-4" aria-hidden /><Send className="h-4 w-4" aria-hidden />
         <Bookmark className="ml-auto h-4 w-4" aria-hidden />
@@ -232,7 +263,7 @@ const CATEGORIES: Category[] = [
   {
     id: 'social', label: 'Social Media', description: 'Posts und Stories für dein Fahrzeugangebot.',
     slides: [
-      { key: 'post', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
+      { key: 'post', width: 'w-[300px] sm:w-[460px]', node: <FacebookAdFrame label="Facebook-Anzeige (16:9)" imageSrc={facebookAdVelmora.url} /> },
       { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} /> },
       { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
     ],
