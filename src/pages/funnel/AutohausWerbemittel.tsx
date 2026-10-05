@@ -268,10 +268,16 @@ function BrowserFrame({
   );
 }
 
-function BannerFrame({ label, ratio, className }: { label: string; ratio: string; className?: string }) {
+function BannerFrame({ label, ratio, imageSrc, className }: { label: string; ratio: string; imageSrc?: string; className?: string }) {
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
-      <MediaPlaceholder label={label} ratio={ratio} />
+      {imageSrc ? (
+        <div className="w-full" style={{ aspectRatio: ratio }}>
+          <img src={imageSrc} alt={label} className="h-full w-full object-cover" loading="lazy" />
+        </div>
+      ) : (
+        <MediaPlaceholder label={label} ratio={ratio} />
+      )}
       <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
         <span className="text-[10px] font-bold">autohaus<span className="text-accent">.ai</span></span>
         <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Jetzt entdecken</span>
