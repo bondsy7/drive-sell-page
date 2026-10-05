@@ -134,16 +134,20 @@ function StoryFrame({
   video = true,
   clip,
   imageSrc,
+  pageSrc,
 }: {
   label?: string;
   className?: string;
   video?: boolean;
   clip?: { webm: string; mp4: string; poster: string };
   imageSrc?: string;
+  pageSrc?: string;
 }) {
   return (
     <div className={cn('relative overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
-      {clip ? (
+      {pageSrc ? (
+        <ScaledPagePreview src={pageSrc} viewportWidth={390} className="aspect-[9 / 16] w-full rounded-xl" />
+      ) : clip ? (
         <>
           <video
             poster={clip.poster}
