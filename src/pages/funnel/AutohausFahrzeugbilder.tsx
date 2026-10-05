@@ -235,7 +235,7 @@ export default function AutohausFahrzeugbilder() {
             {FAQ.map(([q, a], i) => (
               <AccordionItem key={q} value={`faq-${i}`} className="rounded-lg border border-border bg-card px-5 shadow-card last:border-b">
                 <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline">{q}</AccordionTrigger>
-                <AccordionContent forceMount className="text-sm leading-6 text-muted-foreground data-[state=closed]:hidden">{a}</AccordionContent>
+                <AccordionContent forceMount data-faq-answer className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
