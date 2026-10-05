@@ -137,7 +137,7 @@ export default function AutohausFahrzeugbilder() {
               style={{ left: `${h.x}%`, top: `${h.y}%` }}
             >{i + 1}</button>
           ))}
-          {spot && <SpotCard className={`absolute top-4 hidden w-72 md:block ${spot.x > 50 ? 'left-4' : 'right-4'}`} />}
+          {spot && <SpotCard className={`absolute bottom-4 hidden w-72 md:block ${spot.x > 50 ? 'left-4' : 'right-4'}`} />}
         </div>
         {spot && <SpotCard className="mt-3 md:hidden" />}
         <div className="mt-4 flex flex-wrap gap-2">
