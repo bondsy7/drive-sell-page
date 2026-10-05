@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
-  LayoutTemplate, MessageCircle, MoreHorizontal, PenLine, Send, Smartphone, Upload, UserRound, Video,
+  LayoutTemplate, MessageCircle, MoreHorizontal, PenLine, Send, Smartphone, Upload, UserRound, Video, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -133,9 +133,65 @@ function StoryFrame({
   );
 }
 
-function BrowserFrame({ label = 'Fahrzeugseite', className, ratio = '4 / 3' }: { label?: string; className?: string; ratio?: string }) {
+const VEHICLE_PAGE_URL = '/previews/velmora-nerys-angebot.html';
+const VEHICLE_PAGE_PREVIEW_EVENT = 'open-vehicle-page-preview';
+
+function ScaledPagePreview({ src, className }: { src: string; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.2);
+  const [height, setHeight] = useState(960);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const nextScale = el.clientWidth / 1280;
+      if (nextScale <= 0) return;
+      setScale(nextScale);
+      setHeight(el.clientHeight / nextScale);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
+    <div ref={containerRef} className={cn('relative overflow-hidden bg-white', className)}>
+      <iframe
+        src={src}
+        title="Fahrzeugseite Vorschau"
+        tabIndex={-1}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 origin-top-left border-0 bg-white"
+        style={{ width: 1280, height, transform: `scale(${scale})` }}
+      />
+    </div>
+  );
+}
+
+function BrowserFrame({
+  label = 'Fahrzeugseite',
+  className,
+  ratio = '4 / 3',
+  previewSrc,
+  onOpen,
+}: {
+  label?: string;
+  className?: string;
+  ratio?: string;
+  previewSrc?: string;
+  onOpen?: () => void;
+}) {
+  const openAction = onOpen ?? (previewSrc ? () => window.dispatchEvent(new CustomEvent(VEHICLE_PAGE_PREVIEW_EVENT)) : undefined);
+  const clickable = typeof openAction === 'function';
+  return (
+    <div
+      className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', clickable && 'cursor-pointer transition hover:shadow-glow focus-visible:outline-2 focus-visible:outline-accent', className)}
+      onClick={openAction}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAction?.(); } } : undefined}
+      title={clickable ? 'Fahrzeugseite vergrößern' : undefined}
+    >
       <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
         <span className="h-2 w-2 rounded-full bg-muted-foreground/30" /><span className="h-2 w-2 rounded-full bg-muted-foreground/30" /><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
         <span className="ml-2 h-3 flex-1 rounded bg-muted" />
@@ -144,7 +200,13 @@ function BrowserFrame({ label = 'Fahrzeugseite', className, ratio = '4 / 3' }: {
         <span className="font-display text-[11px] font-bold">autohaus<span className="text-accent">.ai</span></span>
         <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Fahrzeug anfragen</span>
       </div>
-      <MediaPlaceholder label={label} ratio={ratio} />
+      {previewSrc ? (
+        <div className="w-full" style={{ aspectRatio: ratio }}>
+          <ScaledPagePreview src={previewSrc} className="h-full w-full" />
+        </div>
+      ) : (
+        <MediaPlaceholder label={label} ratio={ratio} />
+      )}
     </div>
   );
 }
@@ -193,7 +255,7 @@ const CATEGORIES: Category[] = [
   {
     id: 'pages', label: 'Fahrzeugseiten', description: 'Eine eigene Fahrzeugseite mit Angebotsinformationen und Kontaktmöglichkeit.',
     slides: [
-      { key: 'desktop', width: 'w-[300px] sm:w-[460px]', node: <BrowserFrame label="Desktop-Vorschau" ratio="16 / 9" /> },
+      { key: 'desktop', width: 'w-[300px] sm:w-[460px]', node: <BrowserFrame label="Desktop-Vorschau" ratio="16 / 9" previewSrc={VEHICLE_PAGE_URL} /> },
       { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} /> },
     ],
   },
@@ -327,6 +389,26 @@ export default function AutohausWerbemittel() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const [pagePreviewOpen, setPagePreviewOpen] = useState(false);
+
+  useEffect(() => {
+    const open = () => setPagePreviewOpen(true);
+    window.addEventListener(VEHICLE_PAGE_PREVIEW_EVENT, open);
+    return () => window.removeEventListener(VEHICLE_PAGE_PREVIEW_EVENT, open);
+  }, []);
+
+  useEffect(() => {
+    if (!pagePreviewOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPagePreviewOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [pagePreviewOpen]);
+
+
   return (
     <FunnelLayout
       ctaHref={TEST_URL}
@@ -359,8 +441,9 @@ export default function AutohausWerbemittel() {
               <IconGroup label="Display-Banner"><BrandImage src={logoGoogle.url} label="Google" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <BrowserFrame className="w-full max-w-[240px]" />
+              <BrowserFrame className="w-full max-w-[240px]" previewSrc={VEHICLE_PAGE_URL} onOpen={() => setPagePreviewOpen(true)} />
               <IconGroup label="Fahrzeugseite"><BrandImage src={logoWebsite.url} label="Website" /></IconGroup>
+              <span className="text-[10px] font-semibold text-muted-foreground">Antippen und durchscrollen</span>
             </div>
           </div>
         </div>
@@ -438,7 +521,7 @@ export default function AutohausWerbemittel() {
           <div className="mt-10 grid items-start gap-6 md:grid-cols-[.8fr_1.1fr_1.1fr]">
             <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Social Media</figcaption><SocialFrame imageSrc={socialPostVelmora.url} /></figure>
             <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Display-Banner</figcaption><BannerFrame label="Display-Banner" ratio="4 / 3" /></figure>
-            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Fahrzeugseite</figcaption><BrowserFrame /></figure>
+            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Fahrzeugseite</figcaption><BrowserFrame previewSrc={VEHICLE_PAGE_URL} /></figure>
           </div>
           <p className="mt-6 text-center text-xs text-muted-foreground">Beispieldesign mit autohaus.ai. Für dein Autohaus individuell anpassbar.</p>
         </div>
@@ -471,6 +554,34 @@ export default function AutohausWerbemittel() {
           <Link to={TEST_URL} data-cta="werbemittel_test">Kostenlos testen <ArrowRight className="h-4 w-4" /></Link>
         </Button>
       </section>
+
+      {/* Fahrzeugseite-Vorschau (Vollbild) */}
+      {pagePreviewOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/70 p-3 backdrop-blur-sm sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Fahrzeugseite Vorschau"
+          onClick={() => setPagePreviewOpen(false)}
+        >
+          <div
+            className="flex h-full max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <Globe className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="truncate text-sm font-semibold">Fahrzeugseite – Vorschau</span>
+                <span className="hidden rounded bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground sm:inline">Beispiel: Velmora Nerys</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setPagePreviewOpen(false)}>
+                <X className="h-4 w-4" aria-hidden /> Schließen
+              </Button>
+            </div>
+            <iframe src={VEHICLE_PAGE_URL} title="Fahrzeugseite – vollständige Vorschau" className="w-full flex-1 border-0 bg-white" />
+          </div>
+        </div>
+      )}
     </FunnelLayout>
   );
 }
