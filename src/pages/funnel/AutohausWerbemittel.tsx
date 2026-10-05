@@ -4,7 +4,7 @@ import {
   ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
   LayoutTemplate, MessageCircle, MoreHorizontal, PanelsTopLeft, PenLine, Send, Smartphone, Upload, UserRound, Video,
 } from 'lucide-react';
-import { siGoogle, siTiktok, siYoutube, type SimpleIcon } from 'simple-icons';
+import { siTiktok, siYoutube, type SimpleIcon } from 'simple-icons';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -16,6 +16,7 @@ import logoInstagram from '@/assets/funnel/logo-instagram.png.asset.json';
 import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
 import logoLinkedin from '@/assets/funnel/logo-linkedin.png.asset.json';
 import logoX from '@/assets/funnel/logo-x.png.asset.json';
+import logoGoogle from '@/assets/funnel/logo-google.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
