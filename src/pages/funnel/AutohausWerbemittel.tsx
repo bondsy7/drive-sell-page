@@ -263,9 +263,9 @@ const CATEGORIES: Category[] = [
   {
     id: 'social', label: 'Social Media', description: 'Posts und Stories für dein Fahrzeugangebot.',
     slides: [
-      { key: 'post', width: 'w-[300px] sm:w-[460px]', node: <FacebookAdFrame label="Facebook-Anzeige (16:9)" imageSrc={facebookAdVelmora.url} /> },
-      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} /> },
       { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
+      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} /> },
+      { key: 'post', width: 'w-[300px] sm:w-[460px]', node: <FacebookAdFrame label="Facebook-Anzeige (16:9)" imageSrc={facebookAdVelmora.url} /> },
     ],
   },
   {
