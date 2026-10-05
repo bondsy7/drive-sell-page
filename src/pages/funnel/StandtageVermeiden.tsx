@@ -281,7 +281,7 @@ export default function StandtageVermeiden() {
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <h2 className="text-center font-display text-3xl font-bold text-foreground">Noch Fragen?</h2>
           <p className="mt-2 text-center text-base text-muted-foreground">So wird aus deinen Fahrzeugfotos fertiges Marketing.</p>
-          <Accordion type="single" collapsible className="mt-6 space-y-3">
+          <Accordion type="single" collapsible defaultValue="f0" className="mt-6 space-y-3">
             {FAQ.map(([q, a], i) => (
               <AccordionItem key={q} value={`f${i}`} className="rounded-lg border border-border bg-card px-4">
                 <AccordionTrigger className="min-h-12 py-4 text-left text-sm font-semibold sm:text-base">{q}</AccordionTrigger>
