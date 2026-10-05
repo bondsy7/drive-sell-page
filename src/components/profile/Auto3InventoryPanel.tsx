@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2, RefreshCw, Download } from 'lucide-react';
@@ -57,6 +57,10 @@ export default function Auto3InventoryPanel() {
     const vids = (data.items as Item[]).map((i) => i.vehicleId).filter(Boolean) as string[];
     await loadJobs(vids);
   };
+
+  useEffect(() => {
+    void load();
+  }, []);
 
   const [phase, setPhase] = useState<string | null>(null);
   const [ready, setReady] = useState<{ vehicleId: string; label: string; stored: number; total: number }[]>([]);
