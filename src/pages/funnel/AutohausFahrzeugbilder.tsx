@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Camera, CalendarDays, Car, Check, Crop, Download, Gem, Home, ImageIcon, ImagePlus, Layers, Layers3, Maximize2, Store, Zap } from 'lucide-react';
+import { ArrowDown, ArrowRight, Camera, Car, Check, CheckCircle2, CircleX, Crop, Download, Gem, Home, ImageIcon, Layers3, Maximize2, Store, Timer, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -44,9 +44,9 @@ const STEPS = [
 ];
 
 const COMPARE = [
-  { icon: CalendarDays, before: 'Fotoplatz und Fototermin organisieren', after: 'Direkt am Fahrzeug fotografieren' },
-  { icon: ImagePlus, before: 'Bilder manuell bearbeiten', after: 'Verkaufsbilder mit der App erstellen' },
-  { icon: Layers, before: 'Unterschiedliche Hintergründe im Bestand', after: 'Einen gewählten Look einheitlich nutzen' },
+  { before: 'Fotoplatz und Fototermin organisieren', after: 'Direkt am Fahrzeug fotografieren' },
+  { before: 'Bilder manuell bearbeiten', after: 'Verkaufsbilder mit der App erstellen' },
+  { before: 'Unterschiedliche Hintergründe im Bestand', after: 'Einen gewählten Look einheitlich nutzen' },
 ];
 
 const SCENES = [
@@ -157,16 +157,24 @@ export default function AutohausFahrzeugbilder() {
 
           <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card shadow-card">
             <div className="hidden grid-cols-2 md:grid">
-              <p className="bg-destructive/10 px-5 py-3 text-sm font-bold text-destructive">Bisher häufig nötig</p>
-              <p className="bg-accent/10 px-5 py-3 text-sm font-bold text-accent">Mit autohaus.ai</p>
+              <p className="flex items-center gap-2 border-r border-border bg-destructive/10 px-5 py-3 text-sm font-bold text-destructive"><CircleX className="h-4 w-4 shrink-0" aria-hidden="true" />Bisher häufig nötig</p>
+              <p className="flex items-center gap-2 bg-accent/10 px-5 py-3 text-sm font-bold text-accent"><CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />Mit autohaus.ai</p>
             </div>
             {COMPARE.map((c) => (
               <div key={c.before} className="grid border-t border-border md:grid-cols-2 md:first-of-type:border-t-0">
-                <p className="flex items-center gap-3 bg-destructive/5 px-5 py-3 text-sm"><c.icon className="h-4 w-4 shrink-0 text-destructive" aria-hidden="true" /><span><span className="sr-only md:hidden">Bisher: </span>{c.before}</span></p>
-                <p className="flex items-center gap-3 bg-accent/5 px-5 py-3 text-sm"><Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={3} aria-hidden="true" /><span><span className="sr-only">Mit autohaus.ai: </span>{c.after}</span></p>
+                <p className="flex items-start gap-3 bg-destructive/5 px-5 py-3.5 text-sm text-muted-foreground md:border-r md:border-border">
+                  <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" strokeWidth={3} aria-hidden="true" />
+                  <span className="line-through decoration-destructive/50"><span className="sr-only md:hidden">Bisher: </span>{c.before}</span>
+                </p>
+                <p className="flex items-start gap-3 bg-accent/5 px-5 py-3.5 text-sm font-medium text-foreground">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={3} aria-hidden="true" />
+                  <span><span className="sr-only">Mit autohaus.ai: </span>{c.after}</span>
+                </p>
               </div>
             ))}
           </div>
+
+          <p className="mt-5 flex items-center justify-center gap-2.5 rounded-md bg-accent/10 px-4 py-3.5 text-center text-sm font-semibold text-accent"><Timer className="h-5 w-5 shrink-0" aria-hidden="true" /><span>Ihr perfektes Fahrzeugbild. Fertig zur Vermarktung direkt am Fahrzeug.</span></p>
 
           {/* Kennzeichen-/Logo-Blöcke ausgeblendet – wird bereits im Hauptbild behandelt */}
           {false && (<div className="mt-6 grid gap-4 md:grid-cols-2">
