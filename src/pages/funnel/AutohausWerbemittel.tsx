@@ -25,13 +25,8 @@ function BrandIcon({ icon, label }: { icon: SimpleIcon; label: string }) {
   );
 }
 
-function LinkedInIcon() {
-  return (
-    <svg role="img" aria-label="LinkedIn" viewBox="0 0 24 24" className="h-6 w-6">
-      <rect width="24" height="24" rx="4" fill="#0A66C2" />
-      <path fill="#fff" d="M6.9 9.4h2.6V18H6.9zM8.2 5.3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM11.1 9.4h2.5v1.2c.4-.7 1.3-1.4 2.6-1.4 2.7 0 3.2 1.8 3.2 4.1V18h-2.6v-4.1c0-1 0-2.2-1.4-2.2s-1.6 1.1-1.6 2.2V18h-2.7z" />
-    </svg>
-  );
+function BrandImage({ src, label }: { src: string; label: string }) {
+  return <img src={src} alt={label} className="h-6 w-6 rounded-[5px]" loading="lazy" />;
 }
 
 function IconGroup({ children, label }: { children: ReactNode; label: string }) {
