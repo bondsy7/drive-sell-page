@@ -315,55 +315,16 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-function FormatSlider() {
+function FormatShowcase() {
   const [cat, setCat] = useState(0);
-  const [active, setActive] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const slides = CATEGORIES[cat].slides;
-
-  const pendingRef = useRef<'start' | 'end'>('start');
-  useEffect(() => {
-    const track = trackRef.current;
-    if (pendingRef.current === 'end') {
-      const last = CATEGORIES[cat].slides.length - 1;
-      setActive(last);
-      requestAnimationFrame(() => {
-        const el = track?.children[last] as HTMLElement | undefined;
-        if (track && el) track.scrollTo({ left: el.offsetLeft - track.offsetLeft - 16 });
-      });
-    } else {
-      setActive(0);
-      track?.scrollTo({ left: 0 });
-    }
-    pendingRef.current = 'start';
-  }, [cat]);
-
-  const goTo = (i: number) => {
-    if (i >= slides.length && cat < CATEGORIES.length - 1) { pendingRef.current = 'start'; setCat(cat + 1); return; }
-    if (i < 0 && cat > 0) { pendingRef.current = 'end'; setCat(cat - 1); return; }
-    const idx = Math.max(0, Math.min(slides.length - 1, i));
-    const track = trackRef.current;
-    const el = track?.children[idx] as HTMLElement | undefined;
-    if (track && el) track.scrollTo({ left: el.offsetLeft - track.offsetLeft - 16, behavior: 'smooth' });
-    setActive(idx);
-  };
-
-  const onScroll = () => {
-    const track = trackRef.current;
-    if (!track) return;
-    let best = 0; let dist = Infinity;
-    Array.from(track.children).forEach((c, i) => {
-      const d = Math.abs((c as HTMLElement).offsetLeft - track.offsetLeft - 16 - track.scrollLeft);
-      if (d < dist) { dist = d; best = i; }
-    });
-    setActive(best);
-  };
+  const category = CATEGORIES[cat];
 
   return (
     <div>
       <div role="tablist" aria-label="Formate" className="flex flex-wrap justify-center gap-2">
         {CATEGORIES.map((c, i) => (
-          <button key={c.id} role="tab" aria-selected={cat === i} onClick={() => setCat(i)}
+          <button key={c.id} role="tab" id={`format-tab-${c.id}`} aria-selected={cat === i} aria-controls={`format-panel-${c.id}`}
+            onClick={() => setCat(i)}
             className={cn('flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               cat === i ? 'bg-accent text-accent-foreground' : 'bg-card text-foreground hover:bg-muted')}>
             <span className="flex items-center gap-1.5" aria-hidden>
@@ -376,32 +337,14 @@ function FormatSlider() {
         ))}
       </div>
 
-      <div className="relative mt-8">
-        <button aria-label="Vorheriges Beispiel" onClick={() => goTo(active - 1)} disabled={active === 0 && cat === 0}
-          className="absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <div ref={trackRef} onScroll={onScroll} tabIndex={0} aria-roledescription="Slider" aria-label={CATEGORIES[cat].label}
-          onKeyDown={(e) => { if (e.key === 'ArrowRight') { e.preventDefault(); goTo(active + 1); } if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(active - 1); } }}
-          className="flex snap-x snap-mandatory items-center gap-5 overflow-x-auto px-4 pb-4 [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-16 [&::-webkit-scrollbar]:hidden">
-          {slides.map((s, i) => (
-            <div key={`${CATEGORIES[cat].id}-${s.key}`} className={cn('shrink-0 snap-start', s.width)} aria-label={`Beispiel ${i + 1} von ${slides.length}`}>{s.node}</div>
-          ))}
-          <div className="w-4 shrink-0 sm:w-12" aria-hidden />
-        </div>
-        <button aria-label="Nächstes Beispiel" onClick={() => goTo(active + 1)} disabled={active === slides.length - 1 && cat === CATEGORIES.length - 1}
-          className="absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div className="mt-3 flex justify-center gap-2">
-        {slides.map((s, i) => (
-          <button key={s.key} aria-label={`Beispiel ${i + 1} anzeigen`} aria-current={active === i} onClick={() => goTo(i)}
-            className={cn('h-2.5 rounded-full transition-all', active === i ? 'w-6 bg-accent' : 'w-2.5 bg-muted-foreground/30')} />
+      <div role="tabpanel" id={`format-panel-${category.id}`} aria-labelledby={`format-tab-${category.id}`}
+        className="mt-8 flex flex-wrap items-start justify-center gap-6">
+        {category.slides.map((s) => (
+          <div key={`${category.id}-${s.key}`} className={cn('shrink-0', s.width)}>{s.node}</div>
         ))}
       </div>
-      <p className="mt-4 text-center text-sm text-muted-foreground" aria-live="polite">{CATEGORIES[cat].description}</p>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">{category.description}</p>
     </div>
   );
 }
