@@ -10,6 +10,7 @@ import FunnelLayout from '@/components/funnel/FunnelLayout';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution, captureLastTouch } from '@/lib/funnel-attribution';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import { cn } from '@/lib/utils';
 import logoInstagram from '@/assets/funnel/logo-instagram.png.asset.json';
 import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
@@ -20,6 +21,9 @@ import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/social-post-velmora.png.asset.json';
+import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
+import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
+import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
@@ -75,10 +79,56 @@ function SocialFrame({ label = 'Social-Media-Motiv', className, imageSrc }: { la
   );
 }
 
-function StoryFrame({ label = 'Fahrzeugclip', className, video = true }: { label?: string; className?: string; video?: boolean }) {
+function AiMark() {
   return (
-    <div className={cn('overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
-      <MediaPlaceholder label={label} ratio="9 / 16" kind={video ? 'video' : 'image'} className="rounded-xl" />
+    <img
+      src={getAiDisclosureLabelVector('landing')}
+      alt={getAiDisclosureLabelAlt('landing')}
+      title={getAiDisclosureText('landing')}
+      className={AI_DISCLOSURE_OVERLAY_CLASS}
+    />
+  );
+}
+
+const HEADLIGHT_CLIP = {
+  webm: clipHeadlightsWebm.url,
+  mp4: clipHeadlights.url,
+  poster: clipHeadlightsPoster.url,
+};
+
+function StoryFrame({
+  label = 'Fahrzeugclip',
+  className,
+  video = true,
+  clip,
+}: {
+  label?: string;
+  className?: string;
+  video?: boolean;
+  clip?: { webm: string; mp4: string; poster: string };
+}) {
+  return (
+    <div className={cn('relative overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
+      {clip ? (
+        <>
+          <video
+            poster={clip.poster}
+            muted
+            loop
+            autoPlay
+            playsInline
+            preload="metadata"
+            aria-label={label}
+            className="aspect-[9 / 16] w-full rounded-xl object-cover"
+          >
+            <source src={clip.webm} type="video/webm" />
+            <source src={clip.mp4} type="video/mp4" />
+          </video>
+          <AiMark />
+        </>
+      ) : (
+        <MediaPlaceholder label={label} ratio="9 / 16" kind={video ? 'video' : 'image'} className="rounded-xl" />
+      )}
     </div>
   );
 }
@@ -136,7 +186,7 @@ const CATEGORIES: Category[] = [
   {
     id: 'video', label: 'Videos', description: 'Kurze Fahrzeugclips für deine Videokanäle.',
     slides: [
-      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" /> },
+      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={HEADLIGHT_CLIP} /> },
       { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><MediaPlaceholder label="Video (16:9)" ratio="16 / 9" kind="video" /></div> },
     ],
   },
@@ -301,7 +351,7 @@ export default function AutohausWerbemittel() {
               </IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <StoryFrame className="w-full max-w-[170px]" />
+              <StoryFrame className="w-full max-w-[170px]" clip={HEADLIGHT_CLIP} />
               <IconGroup label="Video"><BrandImage src={logoTiktok.url} label="TikTok" /><BrandImage src={logoYoutube.url} label="YouTube" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
