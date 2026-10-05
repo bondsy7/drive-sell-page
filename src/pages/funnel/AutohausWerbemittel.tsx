@@ -130,7 +130,7 @@ const CATEGORIES: Category[] = [
     slides: [
       { key: 'wide', width: 'w-[300px] sm:w-[440px]', node: <BannerFrame label="Breites Banner" ratio="728 / 180" /> },
       { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" /> },
-      { key: 'tall', width: 'w-[130px] sm:w-[150px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" /> },
+      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" /> },
     ],
   },
   {
