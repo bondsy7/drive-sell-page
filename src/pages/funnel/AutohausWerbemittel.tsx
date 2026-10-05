@@ -79,6 +79,36 @@ function SocialFrame({ label = 'Social-Media-Motiv', className, imageSrc }: { la
   );
 }
 
+function FacebookAdFrame({
+  label = 'Facebook-Anzeige',
+  className,
+  imageSrc,
+}: {
+  label?: string;
+  className?: string;
+  imageSrc: string;
+}) {
+  return (
+    <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/15 text-[9px] font-bold text-accent">ai</span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="text-[11px] font-bold">autohaus.ai</p>
+          <p className="text-[9px] text-muted-foreground">Gesponsert</p>
+        </div>
+        <MoreHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+      </div>
+      <div className="w-full bg-white" style={{ aspectRatio: '16 / 9' }}>
+        <img src={imageSrc} alt={label} className="h-full w-full object-contain" loading="lazy" />
+      </div>
+      <div className="flex items-center gap-3 px-3 py-2 text-foreground/70">
+        <Heart className="h-4 w-4" aria-hidden /><MessageCircle className="h-4 w-4" aria-hidden /><Send className="h-4 w-4" aria-hidden />
+        <Bookmark className="ml-auto h-4 w-4" aria-hidden />
+      </div>
+    </div>
+  );
+}
+
 function AiMark() {
   return (
     <img
