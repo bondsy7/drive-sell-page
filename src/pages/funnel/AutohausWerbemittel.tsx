@@ -146,7 +146,7 @@ function StoryFrame({
   return (
     <div className={cn('relative overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
       {pageSrc ? (
-        <ScaledPagePreview src={pageSrc} viewportWidth={390} className="aspect-[9 / 16] w-full rounded-xl" />
+        <ScaledPagePreview src={pageSrc} viewportWidth={390} className="w-full rounded-xl" style={{ aspectRatio: '9 / 16' }} />
       ) : clip ? (
         <>
           <video
