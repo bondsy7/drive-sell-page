@@ -288,20 +288,23 @@ export default function AutohausWerbemittel() {
               <Link to={TEST_URL} data-cta="werbemittel_test">Marketing erstellen lassen{"\n"} <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </div>
-          <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-3 sm:gap-4">
+          <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             <div className="flex flex-col items-center gap-4">
-              <SocialFrame className="w-full max-w-[260px]" />
+              <SocialFrame className="w-full max-w-[240px]" />
               <IconGroup label="Social Media">
                 <BrandImage src={logoInstagram.url} label="Instagram" /><BrandImage src={logoFacebook.url} label="Facebook" /><BrandImage src={logoLinkedin.url} label="LinkedIn" /><BrandImage src={logoX.url} label="X" />
               </IconGroup>
-              <IconGroup label="Display-Banner"><BrandImage src={logoGoogle.url} label="Google" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <StoryFrame className="w-full max-w-[180px]" />
+              <StoryFrame className="w-full max-w-[170px]" />
               <IconGroup label="Video"><BrandImage src={logoTiktok.url} label="TikTok" /><BrandImage src={logoYoutube.url} label="YouTube" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <BrowserFrame className="w-full max-w-[260px]" />
+              <BannerFrame label="Display-Banner" ratio="3 / 2" className="w-full max-w-[220px]" />
+              <IconGroup label="Display-Banner"><BrandImage src={logoGoogle.url} label="Google" /></IconGroup>
+            </div>
+            <div className="flex flex-col items-center gap-4">
+              <BrowserFrame className="w-full max-w-[240px]" />
               <IconGroup label="Fahrzeugseite"><BrandImage src={logoWebsite.url} label="Website" /></IconGroup>
             </div>
           </div>
