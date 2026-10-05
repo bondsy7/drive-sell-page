@@ -1,203 +1,260 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Check, ChevronRight, X, ShieldCheck, Clock3, Briefcase, Palette, LayoutGrid, RefreshCw,
-  FileText, MessageSquare, PenTool, Send, Car, Image as ImageIcon, Tag, Play, Heart, MoreHorizontal, Globe,
+  ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
+  LayoutTemplate, MessageCircle, MoreHorizontal, PanelsTopLeft, PenLine, Send, Smartphone, Upload, UserRound, Video,
 } from 'lucide-react';
+import { siFacebook, siGoogle, siInstagram, siTiktok, siX, siYoutube, type SimpleIcon } from 'simple-icons';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution, captureLastTouch } from '@/lib/funnel-attribution';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
-import carImage from '@/assets/funnel/standtage-showroom-local.webp';
+import { cn } from '@/lib/utils';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
-const CLASSIC_LINE = [
-  'Fahrzeug auswählen', 'Bilder suchen', 'Angebot definieren', 'Briefing schreiben', 'Grafik erstellen',
-  'Rückfragen', 'Korrekturen', 'Formate anpassen', 'Freigeben', 'Veröffentlichen',
+/* ---------- Plattform-Icons (Markenzeichen in Originalfarbe) ---------- */
+
+function BrandIcon({ icon, label }: { icon: SimpleIcon; label: string }) {
+  return (
+    <svg role="img" aria-label={label} viewBox="0 0 24 24" className="h-6 w-6" fill={`#${icon.hex}`}>
+      <path d={icon.path} />
+    </svg>
+  );
+}
+
+function LinkedInIcon() {
+  return (
+    <svg role="img" aria-label="LinkedIn" viewBox="0 0 24 24" className="h-6 w-6">
+      <rect width="24" height="24" rx="4" fill="#0A66C2" />
+      <path fill="#fff" d="M6.9 9.4h2.6V18H6.9zM8.2 5.3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM11.1 9.4h2.5v1.2c.4-.7 1.3-1.4 2.6-1.4 2.7 0 3.2 1.8 3.2 4.1V18h-2.6v-4.1c0-1 0-2.2-1.4-2.2s-1.6 1.1-1.6 2.2V18h-2.7z" />
+    </svg>
+  );
+}
+
+function IconGroup({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="flex items-center gap-2.5">{children}</div>
+      <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+/* ---------- Platzhalter (später durch echte Medien ersetzbar) ---------- */
+
+function MediaPlaceholder({ label, ratio, className, kind = 'image' }: { label: string; ratio: string; className?: string; kind?: 'image' | 'video' }) {
+  const Icon = kind === 'video' ? Video : ImageIcon;
+  return (
+    <div className={cn('flex w-full flex-col items-center justify-center gap-1.5 bg-muted text-muted-foreground', className)} style={{ aspectRatio: ratio }}>
+      <Icon className="h-5 w-5 opacity-60" aria-hidden />
+      <span className="px-2 text-center text-[10px] font-semibold uppercase tracking-wide opacity-80">{label}</span>
+    </div>
+  );
+}
+
+function SocialFrame({ label = 'Social-Media-Motiv', className }: { label?: string; className?: string }) {
+  return (
+    <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/15 text-[9px] font-bold text-accent">ai</span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="text-[11px] font-bold">autohaus.ai</p>
+          <p className="text-[9px] text-muted-foreground">Gesponsert</p>
+        </div>
+        <MoreHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+      </div>
+      <MediaPlaceholder label={label} ratio="1 / 1" />
+      <div className="flex items-center gap-3 px-3 py-2 text-foreground/70">
+        <Heart className="h-4 w-4" aria-hidden /><MessageCircle className="h-4 w-4" aria-hidden /><Send className="h-4 w-4" aria-hidden />
+        <Bookmark className="ml-auto h-4 w-4" aria-hidden />
+      </div>
+    </div>
+  );
+}
+
+function StoryFrame({ label = 'Fahrzeugclip', className, video = true }: { label?: string; className?: string; video?: boolean }) {
+  return (
+    <div className={cn('overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
+      <MediaPlaceholder label={label} ratio="9 / 16" kind={video ? 'video' : 'image'} className="rounded-xl" />
+    </div>
+  );
+}
+
+function BrowserFrame({ label = 'Fahrzeugseite', className, ratio = '4 / 3' }: { label?: string; className?: string; ratio?: string }) {
+  return (
+    <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
+      <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/30" /><span className="h-2 w-2 rounded-full bg-muted-foreground/30" /><span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+        <span className="ml-2 h-3 flex-1 rounded bg-muted" />
+      </div>
+      <div className="flex items-center justify-between px-3 py-2">
+        <span className="font-display text-[11px] font-bold">autohaus<span className="text-accent">.ai</span></span>
+        <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Fahrzeug anfragen</span>
+      </div>
+      <MediaPlaceholder label={label} ratio={ratio} />
+    </div>
+  );
+}
+
+function BannerFrame({ label, ratio, className }: { label: string; ratio: string; className?: string }) {
+  return (
+    <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
+      <MediaPlaceholder label={label} ratio={ratio} />
+      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
+        <span className="text-[10px] font-bold">autohaus<span className="text-accent">.ai</span></span>
+        <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Jetzt entdecken</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Slider-Inhalte ---------- */
+
+type Slide = { key: string; width: string; node: ReactNode };
+type Category = { id: string; label: string; description: string; slides: Slide[] };
+
+const CATEGORIES: Category[] = [
+  {
+    id: 'social', label: 'Social Media', description: 'Posts und Stories für dein Fahrzeugangebot.',
+    slides: [
+      { key: 'post', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" /> },
+      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} /> },
+      { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" /> },
+    ],
+  },
+  {
+    id: 'banner', label: 'Display-Banner', description: 'Dein Fahrzeugangebot in passenden Formaten für Display-Werbung.',
+    slides: [
+      { key: 'wide', width: 'w-[300px] sm:w-[440px]', node: <BannerFrame label="Breites Banner" ratio="728 / 180" /> },
+      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" /> },
+      { key: 'tall', width: 'w-[130px] sm:w-[150px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" /> },
+    ],
+  },
+  {
+    id: 'video', label: 'Videos', description: 'Kurze Fahrzeugclips für deine Videokanäle.',
+    slides: [
+      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" /> },
+      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><MediaPlaceholder label="Video (16:9)" ratio="16 / 9" kind="video" /></div> },
+    ],
+  },
+  {
+    id: 'pages', label: 'Fahrzeugseiten', description: 'Eine eigene Fahrzeugseite mit Angebotsinformationen und Kontaktmöglichkeit.',
+    slides: [
+      { key: 'desktop', width: 'w-[300px] sm:w-[460px]', node: <BrowserFrame label="Desktop-Vorschau" ratio="16 / 9" /> },
+      { key: 'mobile', width: 'w-[180px] sm:w-[200px]', node: <StoryFrame label="Smartphone-Vorschau" video={false} /> },
+    ],
+  },
 ];
 
-const PROBLEMS = [
-  { icon: FileText, title: 'Jedes Motiv wird zum Auftrag.', text: 'Briefing schreiben, Material schicken, Rückfragen beantworten, Korrekturen prüfen.' },
-  { icon: Clock3, title: 'Kreativarbeit blockiert Arbeitszeit.', text: 'Social Posts, Banner und Formate entstehen neben dem eigentlichen Tagesgeschäft.' },
-  { icon: Car, title: 'Ohne Ressourcen passiert oft gar nichts.', text: 'Das Fahrzeug ist online, bekommt aber keine zusätzliche Vermarktung.' },
+function FormatSlider() {
+  const [cat, setCat] = useState(0);
+  const [active, setActive] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const slides = CATEGORIES[cat].slides;
+
+  useEffect(() => { setActive(0); trackRef.current?.scrollTo({ left: 0 }); }, [cat]);
+
+  const goTo = (i: number) => {
+    const idx = Math.max(0, Math.min(slides.length - 1, i));
+    const track = trackRef.current;
+    const el = track?.children[idx] as HTMLElement | undefined;
+    if (track && el) track.scrollTo({ left: el.offsetLeft - track.offsetLeft - 16, behavior: 'smooth' });
+    setActive(idx);
+  };
+
+  const onScroll = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    let best = 0; let dist = Infinity;
+    Array.from(track.children).forEach((c, i) => {
+      const d = Math.abs((c as HTMLElement).offsetLeft - track.offsetLeft - 16 - track.scrollLeft);
+      if (d < dist) { dist = d; best = i; }
+    });
+    setActive(best);
+  };
+
+  return (
+    <div>
+      <div role="tablist" aria-label="Formate" className="flex flex-wrap justify-center gap-2">
+        {CATEGORIES.map((c, i) => (
+          <button key={c.id} role="tab" aria-selected={cat === i} onClick={() => setCat(i)}
+            className={cn('rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              cat === i ? 'bg-accent text-accent-foreground' : 'bg-card text-foreground hover:bg-muted')}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative mt-8">
+        <button aria-label="Vorheriges Beispiel" onClick={() => goTo(active - 1)} disabled={active === 0}
+          className="absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div ref={trackRef} onScroll={onScroll} tabIndex={0} aria-roledescription="Slider" aria-label={CATEGORIES[cat].label}
+          onKeyDown={(e) => { if (e.key === 'ArrowRight') { e.preventDefault(); goTo(active + 1); } if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(active - 1); } }}
+          className="flex snap-x snap-mandatory items-center gap-5 overflow-x-auto px-4 pb-4 [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-16 [&::-webkit-scrollbar]:hidden">
+          {slides.map((s, i) => (
+            <div key={`${CATEGORIES[cat].id}-${s.key}`} className={cn('shrink-0 snap-start', s.width)} aria-label={`Beispiel ${i + 1} von ${slides.length}`}>{s.node}</div>
+          ))}
+          <div className="w-4 shrink-0 sm:w-12" aria-hidden />
+        </div>
+        <button aria-label="Nächstes Beispiel" onClick={() => goTo(active + 1)} disabled={active === slides.length - 1}
+          className="absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-card disabled:opacity-40 sm:flex">
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="mt-3 flex justify-center gap-2">
+        {slides.map((s, i) => (
+          <button key={s.key} aria-label={`Beispiel ${i + 1} anzeigen`} aria-current={active === i} onClick={() => goTo(i)}
+            className={cn('h-2.5 rounded-full transition-all', active === i ? 'w-6 bg-accent' : 'w-2.5 bg-muted-foreground/30')} />
+        ))}
+      </div>
+      <p className="mt-4 text-center text-sm text-muted-foreground" aria-live="polite">{CATEGORIES[cat].description}</p>
+    </div>
+  );
+}
+
+/* ---------- Inhalte ---------- */
+
+const SPEED = [
+  { icon: Clock3, label: 'In wenigen Minuten' },
+  { icon: Smartphone, label: 'Direkt am Fahrzeug' },
+  { icon: UserRound, label: 'Ohne zusätzliche Mitarbeiter' },
 ];
 
-const CLASSIC_WAY = [
-  'Fahrzeug auswählen', 'Bilder zusammensuchen', 'Angebot definieren', 'Agentur/Grafik briefen',
-  'Entwurf abwarten', 'Änderungen abstimmen', 'Formate exportieren', 'Veröffentlichen',
+const STEPS = [
+  { icon: Car, title: 'Fahrzeug auswählen', text: 'Dein fertiges Fahrzeugbild als Grundlage nutzen.' },
+  { icon: LayoutTemplate, title: 'Werbemittel wählen', text: 'Motiv, Clip oder Fahrzeugseite auswählen.' },
+  { icon: PenLine, title: 'Angebot ergänzen', text: 'Preis, Fahrzeugdaten und Botschaft hinzufügen.' },
+  { icon: Upload, title: 'Veröffentlichen', text: 'Posten, veröffentlichen oder herunterladen.' },
 ];
 
-const AI_WAY: [string, string][] = [
-  ['Fahrzeug auswählen', 'Aus Ihrem Bestand, mit vorhandenen Bildern und Daten.'],
-  ['Werbemittel auswählen', 'Social Media, Portal, Website, Ads oder Video.'],
-  ['Fertige Varianten nutzen', 'Im gleichen Auftritt, passend zum jeweiligen Kanal.'],
-];
-
-const DROP_CHIPS = ['Briefing', 'Layoutarbeit', 'Größenanpassung', 'Warteschleife', 'manuelle Exporte'];
-
-const BENEFITS = [
-  { icon: Briefcase, title: 'Standardaufgaben ohne Agentur-Warteschleife', text: 'Neue Fahrzeugaktionen müssen nicht jedes Mal extern beauftragt werden.' },
-  { icon: PenTool, title: 'Keine zusätzliche Grafikarbeit im Tagesgeschäft', text: 'Wiederkehrende Werbemittel entstehen direkt aus dem Fahrzeugbestand.' },
-  { icon: Palette, title: 'Immer im eigenen Corporate Design', text: 'Farben, Logos und Gestaltung bleiben einheitlich.' },
-  { icon: LayoutGrid, title: 'Für jeden Kanal passend', text: 'Ein Fahrzeug kann gleichzeitig für Website, Social Media, Portale und Ads vorbereitet werden.' },
-];
-
-const FRIDAY_PROBLEM = ['Neues Fahrzeug.', 'Neuer Aktionspreis.', 'Social Media fehlt.', 'Website-Banner fehlt.', 'Agentur nicht erreichbar.'];
-const FRIDAY_SOLUTION = ['Fahrzeug auswählen.', 'Aktion eingeben.', 'Formate wählen.', 'Fertige Motive verwenden.'];
-
-const TEST_STEPS = [
-  { title: 'Fahrzeug auswählen oder Bild hochladen', text: 'Ein Fahrzeugbild aus Ihrem Bestand genügt für den Test.' },
-  { title: 'Gewünschte Marketingformate wählen', text: 'Zum Beispiel Social Media, Banner oder Portalwerbung.' },
-  { title: 'Beispiel-Marketing-Set erhalten', text: 'Sie sehen Ihr Fahrzeug in mehreren Formaten und entscheiden dann.' },
-];
-
-const TRUST = [
-  'Angebot ausschließlich für Unternehmer i. S. d. § 14 BGB',
-  'Das hochgeladene Bild wird nur für die Testanfrage verwendet und nicht veröffentlicht',
-  'Rückmeldung in der Regel innerhalb eines Werktags',
-  'KI-generierte Medien werden gekennzeichnet',
-  'Ein Produkt der Breadcrumb Marketing GmbH, Hanau',
+const NOT_NEEDED = [
+  ['Keine Agentur nötig', 'Deine Fahrzeugwerbung selbst erstellen.'],
+  ['Keine Creator nötig', 'Motive und Clips direkt in der App erstellen.'],
+  ['Keine langen Abstimmungen', 'Keine Briefings und Korrekturschleifen mit Dritten.'],
+  ['Keine manuelle Formatgestaltung', 'Passende Vorlagen für deine Kanäle verwenden.'],
 ];
 
 const FAQ: [string, string][] = [
-  ['Brauche ich eine Agentur dann gar nicht mehr?', 'Für Kampagnen und Markenentwicklung kann eine Agentur weiterhin sinnvoll sein. autohaus.ai übernimmt vor allem wiederkehrende, fahrzeugbezogene Standardwerbemittel, die sonst jedes Mal einzeln beauftragt werden müssten.'],
-  ['Welche Formate können erstellt werden?', 'Social-Media-Posts und Stories, Verkaufsbanner, Motive für Fahrzeugportale und Website sowie Anzeigenmotive und Videos. Welche Formate in Ihrem Paket enthalten sind, klären wir im Test.'],
-  ['Kann mein Corporate Design verwendet werden?', 'Ja. Logo, Farben und Gestaltung werden einmal hinterlegt. Neue Motive entstehen danach im gleichen Auftritt.'],
-  ['Kann ich Preis oder Aktion später ändern?', 'Ja. Statt ein altes Banner umbauen zu lassen, erstellen Sie mit den neuen Angaben einfach ein neues Motiv.'],
-  ['Kann ich das für mehrere Standorte nutzen?', 'Ja. autohaus.ai ist für einzelne Autohäuser und Händlergruppen gedacht. Wie Sie mehrere Standorte abbilden, besprechen wir im weiteren schriftlichen Austausch.'],
+  ['Welche Werbemittel kann ich mit autohaus.ai erstellen?', 'Du kannst Social-Media-Motive, Display-Banner, kurze Fahrzeugvideos und eigene Fahrzeugseiten erstellen. Deine Fahrzeugbilder bilden die visuelle Grundlage. Dazu ergänzt du die passenden Angebotsinformationen.'],
+  ['Wie schnell entsteht fertiges Marketingmaterial?', 'Aus deinen fertigen Fahrzeugbildern entstehen in wenigen Minuten Motive, Banner oder kurze Clips. Auch Fahrzeugseiten lassen sich in wenigen Schritten erstellen. Die genaue Dauer hängt von der gewählten Funktion und dem Umfang ab.'],
+  ['Kann ich die Inhalte direkt am Fahrzeug erstellen?', 'Ja. Du kannst direkt nach der Bildaufbereitung auf dem Smartphone mit deinem Fahrzeugmarketing weitermachen. Wähle das gewünschte Werbemittel, ergänze dein Angebot und erstelle das Ergebnis.'],
+  ['Welche Bilder und Fahrzeugdaten brauche ich?', 'Nutze deine Fahrzeugbilder und ergänze die Informationen, die im jeweiligen Werbemittel erscheinen sollen, beispielsweise Modell, Preis und Angebotsbotschaft. Für eine Fahrzeugseite benötigst du zusätzlich die passenden Fahrzeug- und Kontaktdaten.'],
+  ['Kann ich Logo und Farben meines Autohauses verwenden?', 'Du kannst dein Fahrzeugmarketing mit deinem Logo und deinen Autohausfarben gestalten. So erhalten Motive, Banner und Fahrzeugseiten einen zusammenhängenden Auftritt, der zu deinem Autohaus passt.'],
+  ['Wie veröffentliche ich meine Inhalte?', 'Je nach Funktion und verbundenem Kanal kannst du Inhalte direkt veröffentlichen oder herunterladen und anschließend auf deinem gewünschten Kanal verwenden. Fahrzeugseiten werden als eigene Angebotsseiten veröffentlicht.'],
+  ['Brauche ich eine Agentur oder einen Creator?', 'Für die Erstellung der gezeigten Fahrzeugmotive, Banner und Clips brauchst du keine externe Agentur und keinen zusätzlichen Creator. Du erstellst das Material selbst mit den Funktionen und Vorlagen von autohaus.ai.'],
+  ['Was enthält eine Fahrzeugseite?', 'Eine Fahrzeugseite präsentiert dein Angebot mit Fahrzeugbildern, den bereitgestellten Fahrzeuginformationen und einer Kontaktmöglichkeit. Du kannst den Link nutzen, um Interessenten gezielt zu deinem Fahrzeugangebot zu führen.'],
 ];
-
-/* ---------- Mockups (reines HTML/CSS, neutrale Labels, keine Plattformlogos) ---------- */
-
-function Frame({ label, className = '', children }: { label: string; className?: string; children: ReactNode }) {
-  return (
-    <figure className={`min-w-0 ${className}`}>
-      <div className="h-full overflow-hidden rounded-lg border border-border bg-card shadow-card">{children}</div>
-      <figcaption className="mt-1.5 text-[11px] font-semibold text-muted-foreground">{label}</figcaption>
-    </figure>
-  );
-}
-
-const Car16 = ({ className = '' }: { className?: string }) => (
-  <img src={carImage} alt="" aria-hidden="true" className={`w-full object-cover ${className}`} loading="lazy" />
-);
-
-function FeedMock() {
-  return (
-    <Frame label="Social Feed · 1:1">
-      <div className="flex items-center gap-2 px-2.5 py-2">
-        <span className="h-5 w-5 rounded-full bg-accent" />
-        <span className="text-[10px] font-bold">ihr.autohaus</span>
-        <MoreHorizontal className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-      </div>
-      <div className="relative">
-        <Car16 className="aspect-square" />
-        <span className="absolute left-2 top-2 rounded bg-accent px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent-foreground">Neu im Bestand</span>
-        <span className="absolute bottom-2 right-2 rounded bg-card px-2 py-1 text-[10px] font-bold shadow-card">Ihr Aktionspreis</span>
-      </div>
-      <div className="flex items-center gap-2 px-2.5 py-2 text-muted-foreground"><Heart className="h-3.5 w-3.5" /><MessageSquare className="h-3.5 w-3.5" /><Send className="h-3.5 w-3.5" /></div>
-    </Frame>
-  );
-}
-
-function StoryMock() {
-  return (
-    <Frame label="Story · 9:16">
-      <div className="relative aspect-[9/16] bg-foreground">
-        <Car16 className="absolute inset-0 h-full opacity-90" />
-        <div className="absolute inset-x-2 top-2 h-0.5 rounded bg-background/60" />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-foreground/90 to-transparent p-2.5 pt-10 text-background">
-          <p className="font-display text-sm font-bold leading-tight">Jetzt Probefahrt sichern</p>
-          <p className="mt-1 text-[9px] opacity-80">Nur solange verfügbar</p>
-          <span className="mt-2 block rounded-full bg-accent py-1 text-center text-[9px] font-bold text-accent-foreground">Mehr erfahren</span>
-        </div>
-      </div>
-    </Frame>
-  );
-}
-
-function PortalMock() {
-  return (
-    <Frame label="Fahrzeugportal · Inserat">
-      <div className="flex gap-2 p-2">
-        <div className="relative w-2/5 shrink-0 overflow-hidden rounded">
-          <Car16 className="aspect-[4/3]" />
-          <span className="absolute bottom-1 left-1 rounded bg-accent px-1 text-[8px] font-bold text-accent-foreground">Top-Angebot</span>
-        </div>
-        <div className="min-w-0 text-[10px] leading-snug">
-          <p className="font-bold">Ihr Fahrzeug · Ausstattungslinie</p>
-          <p className="text-muted-foreground">Erstzulassung · Kilometer · Kraftstoff</p>
-          <p className="mt-1 font-display text-xs font-bold text-accent">Ihr Aktionspreis</p>
-        </div>
-      </div>
-    </Frame>
-  );
-}
-
-function WebsiteMock() {
-  return (
-    <Frame label="Website-Banner · 16:9">
-      <div className="flex items-center gap-1 border-b border-border px-2 py-1"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" /><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" /><Globe className="ml-1 h-2.5 w-2.5 text-muted-foreground" /><span className="h-1.5 w-16 rounded bg-secondary" /></div>
-      <div className="relative">
-        <Car16 className="aspect-[16/7]" />
-        <div className="absolute inset-y-0 left-0 flex w-1/2 flex-col justify-center bg-gradient-to-r from-card via-card/85 to-transparent p-3">
-          <p className="font-display text-xs font-bold leading-tight sm:text-sm">Das Wochenend-Angebot</p>
-          <span className="mt-1.5 w-fit rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Jetzt anfragen</span>
-        </div>
-      </div>
-    </Frame>
-  );
-}
-
-function DisplayMock() {
-  return (
-    <Frame label="Display-Anzeige · Rechteck">
-      <div className="gradient-hero p-2.5 text-primary-foreground">
-        <p className="text-[9px] font-bold uppercase tracking-wider opacity-80">Anzeige</p>
-        <p className="font-display text-xs font-bold leading-tight">Ihr Fahrzeug. Ihr Preis.</p>
-      </div>
-      <Car16 className="aspect-[2/1]" />
-      <div className="flex items-center justify-between p-2 text-[10px]"><span className="font-bold">Ihr Autohaus</span><span className="rounded bg-accent px-1.5 py-0.5 font-bold text-accent-foreground">Ansehen</span></div>
-    </Frame>
-  );
-}
-
-function VideoMock() {
-  return (
-    <Frame label="Video · Kurzclip">
-      <div className="relative">
-        <Car16 className="aspect-video" />
-        <span className="absolute inset-0 m-auto flex h-9 w-9 items-center justify-center rounded-full bg-card/90 shadow-card"><Play className="h-4 w-4 fill-accent text-accent" /></span>
-        <span className="absolute bottom-1.5 right-1.5 rounded bg-foreground/80 px-1 text-[9px] font-bold text-background">0:15</span>
-        <span className="absolute left-1.5 top-1.5 rounded bg-accent px-1.5 text-[9px] font-bold text-accent-foreground">360° Rundgang</span>
-      </div>
-    </Frame>
-  );
-}
-
-function CiWorld({ world, name, headline }: { world: string; name: string; headline: string }) {
-  return (
-    <figure className={`${world} min-w-0 overflow-hidden rounded-lg border border-border shadow-card`}>
-      <div className="ci-bg p-3">
-        <div className="flex items-center justify-between">
-          <span className="ci-main-text font-display text-sm font-bold">{name}</span>
-          <span className="ci-main-bg rounded px-2 py-0.5 text-[10px] font-bold">Aktion</span>
-        </div>
-        <img src={carImage} alt="" aria-hidden="true" className="mt-3 aspect-[16/9] w-full rounded object-cover" loading="lazy" />
-        <p className="ci-body-text mt-3 font-display text-base font-bold leading-tight">{headline}</p>
-        <span className="ci-main-bg mt-3 block rounded py-1.5 text-center text-xs font-bold">Jetzt anfragen</span>
-      </div>
-    </figure>
-  );
-}
 
 export default function AutohausWerbemittel() {
   usePageMeta({
-    title: 'Werbemittel für jedes Fahrzeug – Marketing-Set aus Ihrem Bestand | autohaus.ai',
-    description: 'Social Post, Verkaufsbanner, Portalwerbung, Website-Motiv oder Video: autohaus.ai erstellt passende Werbemittel direkt aus Ihren Fahrzeugbildern und Daten – im eigenen Corporate Design.',
+    title: 'Fahrzeugmarketing in wenigen Minuten – Social Media, Banner, Videos | autohaus.ai',
+    description: 'Aus deinem Fahrzeugbild entstehen Social-Media-Motive, Display-Banner, kurze Videos und Fahrzeugseiten. In wenigen Minuten, direkt am Fahrzeug, passend zu deinem Autohaus.',
     canonicalPath: '/autohaus-werbemittel',
   });
 
@@ -223,247 +280,143 @@ export default function AutohausWerbemittel() {
   return (
     <FunnelLayout
       ctaHref={TEST_URL}
-      ctaLabel="Marketing-Set testen"
+      ctaLabel="Kostenlos testen"
       anchors={[{ href: '#so-funktionierts', label: "So funktioniert's" }, { href: '#formate', label: 'Formate' }, { href: '#fragen', label: 'Fragen' }]}
     >
-      {/* 1 · Hero */}
+      {/* 1 · Header */}
       <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.95fr_1.05fr] lg:py-16">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:py-16">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Für Autohäuser &amp; Fahrzeughändler</p>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-[1.04] text-foreground sm:text-5xl">Für jedes Fahrzeug neue Werbung. Aber wer soll sie machen?</h1>
-            <p className="mt-3 font-display text-lg font-bold text-accent sm:text-xl">Aus einem Fahrzeug wird Ihr komplettes Marketing-Set.</p>
-            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-              Social Media Post, Verkaufsbanner, Portalwerbung, Website-Motiv oder Video: Statt jedes Format einzeln bei Agentur oder Grafik anzufragen, erstellt autohaus.ai die passenden Werbemittel direkt aus Ihren Fahrzeugbildern und Daten.
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="w-full shadow-glow sm:w-auto">
-                <Link to={TEST_URL} data-cta="werbemittel_test">Marketing-Set für ein Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-                <a href="#so-funktionierts">So funktioniert es <ChevronRight className="h-4 w-4" /></a>
-              </Button>
-            </div>
-            <p className="mt-5 flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="h-3.5 w-3.5 text-accent" />Für Social Media · Portale · Website · Ads · Video</p>
+            <h1 className="font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl">Aus deinem Fahrzeugbild wird dein nächstes Marketing.</h1>
+            <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">Social-Media-Motive, kurze Videos und Fahrzeugseiten. In wenigen Minuten. Passend zu deinem Autohaus.</p>
+            <Button asChild size="lg" className="mt-7 w-full bg-accent text-accent-foreground shadow-glow hover:bg-accent/90 sm:w-auto">
+              <Link to={TEST_URL} data-cta="werbemittel_test">Marketing erstellen <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
           </div>
-
-          {/* Hero-Visual: ein Fahrzeug, sechs Formate */}
-          <div className="min-w-0">
-            <div className="grid grid-cols-6 gap-2 sm:gap-3">
-              <div className="col-span-4"><WebsiteMock /></div>
-              <div className="col-span-2 row-span-2"><StoryMock /></div>
-              <div className="col-span-2"><FeedMock /></div>
-              <div className="col-span-2"><VideoMock /></div>
-              <div className="col-span-3"><PortalMock /></div>
-              <div className="col-span-3"><DisplayMock /></div>
+          <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-3 sm:gap-4">
+            <div className="flex flex-col items-center gap-4">
+              <SocialFrame className="w-full max-w-[260px]" />
+              <IconGroup label="Social Media">
+                <BrandIcon icon={siInstagram} label="Instagram" /><BrandIcon icon={siFacebook} label="Facebook" /><LinkedInIcon /><BrandIcon icon={siX} label="X" />
+              </IconGroup>
+              <IconGroup label="Display-Banner"><BrandIcon icon={siGoogle} label="Google" /></IconGroup>
+            </div>
+            <div className="flex flex-col items-center gap-4">
+              <StoryFrame className="w-full max-w-[180px]" />
+              <IconGroup label="Video"><BrandIcon icon={siTiktok} label="TikTok" /><BrandIcon icon={siYoutube} label="YouTube" /></IconGroup>
+            </div>
+            <div className="flex flex-col items-center gap-4">
+              <BrowserFrame className="w-full max-w-[260px]" />
+              <IconGroup label="Fahrzeugseite"><PanelsTopLeft className="h-6 w-6 text-foreground" aria-label="Website" /></IconGroup>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3 · Problem */}
-      <section className="border-b border-border bg-secondary/45 py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="max-w-3xl font-display text-3xl font-bold leading-tight sm:text-4xl">Ein Fahrzeug. Zehn Formate. Zehnmal Arbeit.</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Das Fahrzeug ist da, Preis und Bilder sind vorhanden. Trotzdem beginnt die kreative Arbeit für jeden Kanal von vorn.</p>
-          <ol className="mt-7 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]">
-            {CLASSIC_LINE.map((s, i) => (
-              <li key={s} className="flex shrink-0 items-center gap-2">
-                <span className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold shadow-card">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-muted-foreground">{i + 1}</span>{s}
-                </span>
-                {i < CLASSIC_LINE.length - 1 && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />}
-              </li>
-            ))}
-          </ol>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {PROBLEMS.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="rounded-lg border border-border bg-card p-5 shadow-card">
-                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-destructive/10"><Icon className="h-5 w-5 text-destructive" /></span>
-                <h3 className="mt-4 font-display text-lg font-bold leading-tight">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+      {/* 2 · Geschwindigkeit */}
+      <section className="border-b border-border bg-card py-12">
+        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
+          <h2 className="font-display text-2xl font-bold sm:text-3xl">In wenigen Minuten. Direkt am Fahrzeug.</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Aus deinem fertigen Fahrzeugbild entstehen Motive, Clips und Fahrzeugseiten. Direkt auf dem Smartphone.</p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-border">
+            {SPEED.map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center justify-center gap-3 py-2">
+                <Icon className="h-8 w-8 text-accent" strokeWidth={1.5} aria-hidden />
+                <span className="text-sm font-bold">{label}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 4 · Zwischenaussage */}
-      <section className="border-b border-border bg-card py-16 sm:py-20">
-        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-          <p className="font-display text-3xl font-bold leading-tight sm:text-5xl">Das Problem ist nicht die Idee. <span className="text-accent">Das Problem ist die Umsetzung.</span></p>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground">Fahrzeug, Preis und Ausstattung stehen fest. Trotzdem muss für jeden Kanal wieder ein neues Werbemittel gebaut werden.</p>
+      {/* 3 · Format-Slider */}
+      <section id="formate" className="scroll-mt-20 bg-secondary/40 py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Ein Fahrzeug. Dein Marketing für mehrere Kanäle.</h2>
+          <div className="mt-6"><FormatSlider /></div>
         </div>
       </section>
 
-      {/* 5 · Prozessvergleich */}
-      <section id="so-funktionierts" className="funnel-section-tint scroll-mt-20 border-b border-border py-14">
+      {/* 4 · Ablauf */}
+      <section id="so-funktionierts" className="scroll-mt-20 bg-card py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">So funktioniert's</p>
-          <div className="relative mt-4 grid gap-5 lg:grid-cols-2 lg:gap-12">
-            <div className="rounded-lg border border-destructive/25 bg-card p-6 shadow-card">
-              <h3 className="flex items-center gap-3 font-display text-xl font-bold">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10"><X className="h-4 w-4 text-destructive" /></span>Der klassische Weg
-              </h3>
-              <ol className="mt-5 space-y-2.5">
-                {CLASSIC_WAY.map((s, i) => (
-                  <li key={s} className="flex items-center gap-3 text-sm">
-                    <span className="w-5 text-right text-xs font-bold text-muted-foreground">{i + 1}</span>
-                    <X className="h-4 w-4 shrink-0 text-destructive" />{s}
-                  </li>
-                ))}
-              </ol>
-            </div>
-            <span className="absolute left-1/2 top-1/2 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-glow lg:flex" aria-hidden="true"><ArrowRight className="h-5 w-5" /></span>
-            <div className="rounded-lg border-2 border-accent/50 bg-card p-6 shadow-elevated">
-              <h3 className="flex items-center gap-3 font-display text-xl font-bold">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/15"><Check className="h-4 w-4 text-accent" /></span>Mit autohaus.ai
-              </h3>
-              <ol className="mt-5 space-y-5">
-                {AI_WAY.map(([t, d], i) => (
-                  <li key={t} className="flex gap-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent font-display text-base font-bold text-accent-foreground">{i + 1}</span>
-                    <div><p className="font-display text-base font-bold">{t}</p><p className="mt-0.5 text-sm text-muted-foreground">{d}</p></div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fällt weg:</span>
-            {DROP_CHIPS.map((c) => (
-              <span key={c} className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground line-through"><X className="h-3 w-3 text-destructive" />{c}</span>
-            ))}
-          </div>
-          <p className="mt-6 font-display text-2xl font-bold text-accent">Vom Fahrzeug zum Werbemittel.</p>
-        </div>
-      </section>
-
-      {/* 6 · Marketing-Wall */}
-      <section id="formate" className="scroll-mt-20 border-b border-border bg-secondary/45 py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold leading-tight sm:text-4xl">Ein Fahrzeug. Eine Kampagne. Alle Formate.</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Jeder Kanal bekommt das Format, das dort funktioniert – im gleichen Auftritt.</p>
-          <div className="mt-8 grid items-center gap-6 lg:grid-cols-[.8fr_2.2fr]">
-            <div className="rounded-lg border-2 border-accent/50 bg-card p-3 shadow-elevated">
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent"><ImageIcon className="h-4 w-4" />Ausgangspunkt</p>
-              <img src={carImage} alt="Fahrzeug aus dem Bestand als Ausgangsbild" className="mt-2 aspect-[4/3] w-full rounded object-cover" loading="lazy" />
-              <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Tag className="h-3.5 w-3.5" />Bilder, Daten und Aktion</p>
-            </div>
-            <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
-              {[FeedMock, StoryMock, PortalMock, WebsiteMock, DisplayMock, VideoMock].map((M, i) => (
-                <div key={i} className="w-[62%] shrink-0 snap-start sm:w-auto"><M /></div>
-              ))}
-            </div>
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">Beispielhafte Darstellung. Die tatsächlichen Formate richten sich nach Ihrem Paket und Ihrem Corporate Design.</p>
-        </div>
-      </section>
-
-      {/* 7 · Nutzen */}
-      <section className="border-b border-border bg-card py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="max-w-3xl font-display text-3xl font-bold leading-tight">Marketing, wenn Sie es brauchen. Nicht wenn jemand Zeit dafür hat.</h2>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {BENEFITS.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="rounded-lg border border-border bg-card p-5 shadow-card">
-                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/10"><Icon className="h-5 w-5 text-accent" /></span>
-                <h3 className="mt-4 font-display text-base font-bold leading-tight">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex flex-col gap-4 rounded-lg border border-accent/30 bg-accent/5 p-5 sm:flex-row sm:items-center">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground"><RefreshCw className="h-5 w-5" /></span>
-            <div>
-              <h3 className="font-display text-base font-bold">Aktionen schneller aktualisieren</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Preis geändert? Leasingrate angepasst? Neues Motiv erstellen statt altes Banner umbauen lassen.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8 · Praxissituation */}
-      <section className="funnel-section-tint border-b border-border py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Typischer Freitagnachmittag</p>
-          <h2 className="mt-2 font-display text-3xl font-bold leading-tight">14:30 Uhr. Das Angebot soll am Wochenende raus.</h2>
-          <div className="mt-7 grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-destructive/25 bg-card p-6 shadow-card">
-              <p className="text-xs font-bold uppercase tracking-wider text-destructive">Ohne autohaus.ai</p>
-              <ul className="mt-4 space-y-2.5">{FRIDAY_PROBLEM.map((t) => <li key={t} className="flex items-center gap-2.5 text-sm"><X className="h-4 w-4 shrink-0 text-destructive" />{t}</li>)}</ul>
-            </div>
-            <div className="rounded-lg border-2 border-accent/50 bg-card p-6 shadow-elevated">
-              <p className="text-xs font-bold uppercase tracking-wider text-accent">Mit autohaus.ai</p>
-              <ol className="mt-4 space-y-2.5">{FRIDAY_SOLUTION.map((t, i) => <li key={t} className="flex items-center gap-2.5 text-sm"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">{i + 1}</span>{t}</li>)}</ol>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 9 · Corporate Design */}
-      <section className="border-b border-border bg-card py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold leading-tight">Nicht irgendeine Werbung. Ihre Werbung.</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Logo, Farben und Gestaltung werden einmal definiert. Danach entstehen neue Motive im gleichen Auftritt.</p>
-          <div className="mt-7 grid gap-4 sm:grid-cols-3">
-            <CiWorld world="ci-world-blue" name="Autohaus Muster" headline="Sachlich. Klar. Verlässlich." />
-            <CiWorld world="ci-world-black" name="Muster Premium" headline="Exklusiv im Bestand." />
-            <CiWorld world="ci-world-red" name="Muster Mobile" headline="Jetzt zuschlagen!" />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">Drei beispielhafte Autohaus-Auftritte, keine echten Marken.</p>
-        </div>
-      </section>
-
-      {/* 10 · Test & Vertrauen */}
-      <section className="funnel-section-tint border-b border-border py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">So testen Sie autohaus.ai</h2>
-          <ol className="mt-7 grid gap-4 md:grid-cols-3">
-            {TEST_STEPS.map((s, i) => (
-              <li key={s.title} className="rounded-lg border border-border bg-card p-5 shadow-card">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent font-display text-base font-bold text-accent-foreground">{i + 1}</span>
-                <p className="mt-4 font-display text-base font-bold leading-tight">{s.title}</p>
-                <p className="mt-1.5 text-sm text-muted-foreground">{s.text}</p>
+          <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">In vier Schritten zum fertigen Fahrzeugmarketing.</h2>
+          <p className="mt-3 text-center text-sm text-muted-foreground">Direkt nach der Bildaufbereitung. Direkt am Fahrzeug.</p>
+          <ol className="relative mt-10 grid gap-8 md:grid-cols-4 md:gap-4">
+            <span className="absolute left-[12.5%] right-[12.5%] top-4 hidden h-0.5 bg-accent/60 md:block" aria-hidden />
+            {STEPS.map(({ icon: Icon, title, text }, i) => (
+              <li key={title} className="relative flex items-start gap-4 md:flex-col md:items-center md:text-center">
+                <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">{i + 1}</span>
+                <div className="md:flex md:flex-col md:items-center">
+                  <Icon className="h-7 w-7 text-foreground md:mt-4" strokeWidth={1.5} aria-hidden />
+                  <h3 className="mt-2 font-bold">{title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
+                </div>
               </li>
             ))}
           </ol>
-          <ul className="mt-6 grid gap-2 rounded-lg border border-border bg-card p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3">
-            {TRUST.map((t) => <li key={t} className="flex gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{t}</li>)}
-          </ul>
         </div>
       </section>
 
-      {/* 11 · FAQ */}
-      <section id="fragen" className="scroll-mt-20 border-b border-border bg-secondary/45 py-14">
+      {/* 5 · Was entfällt */}
+      <section className="bg-accent/10 py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Mehr Fahrzeugmarketing. Weniger Vorbereitung.</h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {NOT_NEEDED.map(([title, text]) => (
+              <article key={title} className="flex gap-3 rounded-xl border border-border bg-card p-5 shadow-card">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground"><Check className="h-4 w-4" /></span>
+                <div>
+                  <h3 className="text-sm font-bold">{title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6 · Branding */}
+      <section className="bg-card py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Nicht irgendeine Werbung. Deine Werbung.</h2>
+          <p className="mt-2 text-center font-display text-lg font-bold text-accent">Dein Logo. Deine Farben. Dein Angebot.</p>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-6 text-muted-foreground">Dein Logo, deine Farben und deine Angebotsbotschaft geben den Auftritt vor. So passt dein Fahrzeugmarketing zu deinem Autohaus.</p>
+          <div className="mt-10 grid items-start gap-6 md:grid-cols-[.8fr_1.1fr_1.1fr]">
+            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Social Media</figcaption><SocialFrame /></figure>
+            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Display-Banner</figcaption><BannerFrame label="Display-Banner" ratio="4 / 3" /></figure>
+            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Fahrzeugseite</figcaption><BrowserFrame /></figure>
+          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">Beispieldesign mit autohaus.ai. Für dein Autohaus individuell anpassbar.</p>
+        </div>
+      </section>
+
+      {/* 7 · FAQ */}
+      <section id="fragen" className="scroll-mt-20 border-t border-border bg-secondary/40 py-14">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Häufige Fragen</p>
-            <h2 className="mt-2 font-display text-3xl font-bold">Noch Fragen?</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">Kurze Antworten rund um Werbemittel aus Ihrem Bestand.</p>
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-accent">FAQ</p>
+            <h2 className="mt-2 font-display text-3xl font-bold">Fragen zum Fahrzeugmarketing</h2>
           </div>
           <Accordion type="single" collapsible className="space-y-3">
             {FAQ.map(([q, a], i) => (
               <AccordionItem key={q} value={`faq-${i}`} className="rounded-lg border border-border bg-card px-5 shadow-card last:border-b">
                 <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline">{q}</AccordionTrigger>
-                <AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
+                <AccordionContent forceMount data-faq-answer className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
       </section>
 
-      {/* 12 · Abschluss-CTA */}
-      <section className="px-4 py-14 sm:px-6">
-        <div className="gradient-hero mx-auto max-w-6xl rounded-lg px-6 py-10 text-primary-foreground sm:px-10 sm:py-14">
-          <h2 className="font-display text-3xl font-bold leading-tight sm:text-4xl">Nehmen Sie ein Fahrzeug aus Ihrem Bestand.</h2>
-          <p className="mt-2 font-display text-xl font-bold text-primary-foreground/90">Wir machen daraus Ihr Marketing-Set.</p>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-primary-foreground/80">Sehen Sie selbst, wie Ihr Fahrzeug als Social Post, Banner, Portalwerbung und Verkaufsanzeige aussehen kann.</p>
-          <Button asChild size="lg" variant="secondary" className="mt-6 w-full sm:w-auto">
-            <Link to={TEST_URL} data-cta="werbemittel_test">Marketing-Set kostenlos testen <ArrowRight className="h-4 w-4" /></Link>
-          </Button>
-          <p className="mt-3 text-xs text-primary-foreground/70">Ein Fahrzeug · mehrere Formate · Ihr Corporate Design</p>
-        </div>
+      {/* 8 · Abschluss-CTA */}
+      <section className="bg-accent px-4 py-14 text-center text-accent-foreground sm:px-6">
+        <h2 className="font-display text-2xl font-bold sm:text-3xl">Nimm ein Fahrzeug aus deinem Bestand.</h2>
+        <p className="mt-1 font-display text-xl sm:text-2xl">Mach dein nächstes Marketing daraus.</p>
+        <p className="mt-3 text-sm opacity-90">In wenigen Minuten. Direkt am Fahrzeug.</p>
+        <Button asChild size="lg" variant="secondary" className="mt-6">
+          <Link to={TEST_URL} data-cta="werbemittel_test">Kostenlos testen <ArrowRight className="h-4 w-4" /></Link>
+        </Button>
       </section>
     </FunnelLayout>
   );
