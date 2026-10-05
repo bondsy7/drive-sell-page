@@ -299,7 +299,7 @@ export default function AutohausWerbemittel() {
               <IconGroup label="Social Media">
                 <BrandImage src={logoInstagram.url} label="Instagram" /><BrandImage src={logoFacebook.url} label="Facebook" /><BrandImage src={logoLinkedin.url} label="LinkedIn" /><BrandImage src={logoX.url} label="X" />
               </IconGroup>
-              <IconGroup label="Display-Banner"><BrandIcon icon={siGoogle} label="Google" /></IconGroup>
+              <IconGroup label="Display-Banner"><BrandImage src={logoGoogle.url} label="Google" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
               <StoryFrame className="w-full max-w-[180px]" />
