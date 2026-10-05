@@ -215,7 +215,7 @@ export default function AutohausFahrzeugbilder() {
       {/* Ablauf + Vergleich */}
       <section id="ablauf" className="border-t border-border bg-secondary/40 py-14 scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">Ihr Fahrzeugbild – aufbereitet und online in drei Schritten.</h2>
+          <h2 className="font-display text-3xl font-bold">Dein Fahrzeugbild – aufbereitet und online in drei Schritten.</h2>
           <ol className="mt-7 flex flex-col items-stretch gap-3 md:flex-row md:items-center">
             {STEPS.map((s, i) => (
               <li key={s.title} className="contents">
