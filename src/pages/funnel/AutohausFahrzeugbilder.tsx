@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Camera, CalendarDays, Car, Check, Crop, Download, Gem, Home, ImageIcon, ImagePlus, Layers, Layers3, Maximize2, X, Zap } from 'lucide-react';
+import { ArrowDown, ArrowRight, Camera, CalendarDays, Car, Check, Crop, Download, Gem, Home, ImageIcon, ImagePlus, Layers, Layers3, Maximize2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -72,23 +72,7 @@ export default function AutohausFahrzeugbilder() {
   usePageMeta({ title: 'Professionelle Fahrzeugbilder direkt auf dem Hof | autohaus.ai', description: 'Aus Smartphone-Fotos werden in wenigen Minuten hochwertige Verkaufsbilder – ohne Fototermin, mit einheitlichem Look für deinen Bestand.', canonicalPath: '/autohaus-fahrzeugbilder' });
   useEffect(() => { captureAttribution('lp_fahrzeugbilder'); }, []);
 
-  const [activeSpot, setActiveSpot] = useState<number | null>(0);
   const [scene, setScene] = useState<number | null>(null);
-  const toggleSpot = (i: number) => setActiveSpot((cur) => (cur === i ? null : i));
-  const spot = activeSpot !== null ? HOTSPOTS[activeSpot] : null;
-
-  const SpotCard = ({ className = '' }: { className?: string }) => spot && activeSpot !== null ? (
-    <div className={`rounded-lg border border-border bg-card p-4 shadow-elevated ${className}`} role="status">
-      <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-primary-foreground">{activeSpot + 1}</span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">{spot.title}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{spot.text}</p>
-        </div>
-        <button type="button" onClick={() => setActiveSpot(null)} className="rounded p-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Erklärung schließen"><X className="h-4 w-4" /></button>
-      </div>
-    </div>
-  ) : null;
 
   return (
     <FunnelLayout ctaHref={TEST_URL} ctaLabel="Kostenlos testen" anchors={[{ href: '#bildqualitaet', label: 'Bildqualität' }, { href: '#ablauf', label: 'Ablauf' }, { href: '#szenen', label: 'Szenen' }, { href: '#fragen', label: 'Fragen' }]}>
@@ -123,30 +107,28 @@ export default function AutohausFahrzeugbilder() {
       {/* Detailbild */}
       <section id="bildqualitaet" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6">
         <h2 className="font-display text-3xl font-bold">Qualität steckt im Detail.</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Klicke auf die Punkte und entdecke die Details.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Fahre über die Punkte und entdecke die Details.</p>
         <div className="relative mt-6 overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
           <img src={showroomAsset.url} alt="Silberner SUV im modernen Showroom mit autohaus.ai-Logo" width={1536} height={1024} className="block h-auto w-full" loading="lazy" />
-          {HOTSPOTS.map((h, i) => (
-            <button
-              key={h.title}
-              type="button"
-              onClick={() => toggleSpot(i)}
-              aria-label={`Detail ${i + 1}: ${h.title}`}
-              aria-pressed={activeSpot === i}
-              className={`absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-card text-xs font-bold shadow-elevated transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:hover:scale-110 sm:h-9 sm:w-9 ${activeSpot === i ? 'scale-110 bg-foreground text-background' : 'bg-accent text-primary-foreground'}`}
-              style={{ left: `${h.x}%`, top: `${h.y}%` }}
-            >{i + 1}</button>
-          ))}
-          {spot && <SpotCard className={`absolute bottom-4 hidden w-72 md:block ${spot.x > 50 ? 'left-4' : 'right-4'}`} />}
-        </div>
-        {spot && <SpotCard className="mt-3 md:hidden" />}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {HOTSPOTS.map((h, i) => (
-            <button key={h.title} type="button" onClick={() => toggleSpot(i)} aria-pressed={activeSpot === i}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${activeSpot === i ? 'border-accent bg-accent text-primary-foreground' : 'border-border bg-card text-foreground hover:border-accent'}`}>
-              <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] ${activeSpot === i ? 'border-primary-foreground' : 'border-accent text-accent'}`}>{i + 1}</span>{h.title}
-            </button>
-          ))}
+          {HOTSPOTS.map((h, i) => {
+            const flipX = h.x > 55;
+            const flipY = h.y < 22;
+            return (
+              <div key={h.title} className="group absolute" style={{ left: `${h.x}%`, top: `${h.y}%` }}>
+                <button
+                  type="button"
+                  aria-label={`Detail ${i + 1}: ${h.title}`}
+                  aria-describedby={`hotspot-note-${i}`}
+                  className="peer flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-card bg-accent text-xs font-bold text-primary-foreground shadow-elevated transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:hover:scale-110 sm:h-9 sm:w-9"
+                >{i + 1}</button>
+                <div id={`hotspot-note-${i}`} role="tooltip"
+                  className={`pointer-events-none absolute z-10 w-52 rounded-lg border border-border bg-card p-3 text-left opacity-0 shadow-elevated transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:w-64 ${flipX ? 'right-3' : 'left-3'} ${flipY ? 'top-3' : 'bottom-3'}`}>
+                  <p className="text-sm font-bold">{h.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{h.text}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
