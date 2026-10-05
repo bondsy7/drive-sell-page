@@ -92,6 +92,13 @@
       "when": 1790942461531,
       "tag": "0012_website_publications_versioning",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791187155703,
+      "tag": "0013_add_auto3_tenant_connection",
+      "breakpoints": true
     }
   ]
 }
