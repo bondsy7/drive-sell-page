@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Camera, CalendarDays, Car, Check, Crop, Download, Gem, Home, ImageIcon, ImagePlus, Layers, Layers3, Maximize2, Zap } from 'lucide-react';
+import { ArrowDown, ArrowRight, Camera, CalendarDays, Car, Check, Crop, Download, Gem, Home, ImageIcon, ImagePlus, Layers, Layers3, Maximize2, Store, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -13,6 +13,7 @@ import studioAsset from '@/assets/funnel/fb-03-studio.webp.asset.json';
 import outdoorAsset from '@/assets/funnel/fb-04-outdoor.webp.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fb-05-kennzeichen.webp.asset.json';
 import logoShowroomAsset from '@/assets/funnel/fb-06-logo-showroom.webp.asset.json';
+import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp';
 
 const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
 
@@ -183,8 +184,8 @@ export default function AutohausFahrzeugbilder() {
       {/* Szenen */}
       <section id="szenen" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6">
         <h2 className="font-display text-3xl font-bold">Ein Fahrzeug. Verschiedene Szenen.</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Wähle deinen Look und nutze ihn einheitlich für deinen Bestand.</p>
-        <div className="mt-7 grid gap-5 md:grid-cols-3">
+        <p className="mt-2 text-sm text-muted-foreground">Wähle deinen Look und nutze ihn einheitlich für deinen Bestand – oder zeige dein Fahrzeug in deinem eigenen Showroom.</p>
+        <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {SCENES.map((s, i) => (
             <figure key={s.label}>
               <button type="button" onClick={() => setScene(i)} className="group relative block w-full overflow-hidden rounded-lg border border-border bg-secondary shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${s.label} vollständig ansehen`}>
@@ -194,6 +195,13 @@ export default function AutohausFahrzeugbilder() {
               <figcaption className="mt-2 text-sm font-semibold">{s.label}</figcaption>
             </figure>
           ))}
+          <article className="flex flex-col">
+            <div className="overflow-hidden rounded-lg border border-accent/40 bg-secondary shadow-card">
+              <img src={eigenerShowroomAsset} alt="Silberner SUV im Showroom eines Autohauses mit Glasfassade und Übergabebereich" width={1264} height={848} className="block h-auto w-full" loading="lazy" />
+            </div>
+            <p className="mt-2 flex items-center gap-2 text-sm font-semibold"><Store className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />Eigener Showroom</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Du nutzt lieber deinen eigenen Showroom? Dann bleibt er dein Hintergrund: Wir setzen dein Fahrzeug in deinen bestehenden Räumlichkeiten professionell in Szene.</p>
+          </article>
         </div>
         <p className="mt-5 flex items-center justify-center gap-2 rounded-md bg-accent/10 px-4 py-3 text-center text-sm text-accent"><Layers3 className="h-4 w-4 shrink-0" aria-hidden="true" /><span><strong>Dein gewählter Look.</strong> Für deinen gesamten Fahrzeugbestand.</span></p>
         <FunnelImageLightbox open={scene !== null} onOpenChange={(o) => !o && setScene(null)} src={scene !== null ? SCENES[scene].image : ''} alt={scene !== null ? `Silberner SUV – ${SCENES[scene].label}` : ''} title={scene !== null ? SCENES[scene].label : ''} />
