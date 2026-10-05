@@ -26,6 +26,7 @@ import storyVelmora from '@/assets/story-velmora.webp.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
+import headerMockup from '@/assets/funnel/header-mockup.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
@@ -475,8 +476,10 @@ export default function AutohausWerbemittel() {
       anchors={[{ href: '#so-funktionierts', label: "So funktioniert's" }, { href: '#formate', label: 'Formate' }, { href: '#fragen', label: 'Fragen' }]}
     >
       {/* 1 · Header */}
-      <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:py-16">
+      <section className="relative overflow-hidden border-b border-border bg-card">
+        <img src={headerMockup.url} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/35" aria-hidden />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:py-16">
           <div className="min-w-0">
             <h1 className="font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl">Aus deinem Fahrzeugbild wird dein nächstes Marketing.</h1>
             <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">Social-Media-Motive, kurze Videos und Fahrzeugseiten. In wenigen Minuten. Passend zu deinem Autohaus.</p>
