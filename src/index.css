@@ -342,3 +342,6 @@
 @media (prefers-reduced-motion: reduce) {
   .video-concept-image, .video-concept-progress { animation: none; }
 }
+
+/* FAQ-Antworten bleiben für Suchmaschinen im DOM, sind aber sichtbar nur bei geöffneter Frage da. */
+[data-faq-answer][data-state="closed"] { display: none; }
