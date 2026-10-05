@@ -4,7 +4,6 @@ import {
   ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
   LayoutTemplate, MessageCircle, MoreHorizontal, PanelsTopLeft, PenLine, Send, Smartphone, Upload, UserRound, Video,
 } from 'lucide-react';
-import { siTiktok, siYoutube, type SimpleIcon } from 'simple-icons';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -17,18 +16,13 @@ import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
 import logoLinkedin from '@/assets/funnel/logo-linkedin.png.asset.json';
 import logoX from '@/assets/funnel/logo-x.png.asset.json';
 import logoGoogle from '@/assets/funnel/logo-google.png.asset.json';
+import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
+import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
 /* ---------- Plattform-Icons (Markenzeichen in Originalfarbe) ---------- */
 
-function BrandIcon({ icon, label }: { icon: SimpleIcon; label: string }) {
-  return (
-    <svg role="img" aria-label={label} viewBox="0 0 24 24" className="h-6 w-6" fill={`#${icon.hex}`}>
-      <path d={icon.path} />
-    </svg>
-  );
-}
 
 function BrandImage({ src, label }: { src: string; label: string }) {
   return <img src={src} alt={label} className="h-6 w-6 rounded-[5px]" loading="lazy" />;
@@ -303,7 +297,7 @@ export default function AutohausWerbemittel() {
             </div>
             <div className="flex flex-col items-center gap-4">
               <StoryFrame className="w-full max-w-[180px]" />
-              <IconGroup label="Video"><BrandIcon icon={siTiktok} label="TikTok" /><BrandIcon icon={siYoutube} label="YouTube" /></IconGroup>
+              <IconGroup label="Video"><BrandImage src={logoTiktok.url} label="TikTok" /><BrandImage src={logoYoutube.url} label="YouTube" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
               <BrowserFrame className="w-full max-w-[260px]" />
