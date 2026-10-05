@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Camera, Car, Check, CheckCircle2, CircleX, Crop, Download, Gem, Home, ImageIcon, Layers3, Maximize2, Store, Timer, X, Zap } from 'lucide-react';
+import { Armchair, ArrowDown, ArrowRight, Camera, Car, CarFront, Check, CheckCircle2, CircleX, Crop, Download, Gem, Home, ImageIcon, Images, Layers3, Maximize2, Store, Timer, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -14,6 +14,13 @@ import outdoorAsset from '@/assets/funnel/fb-04-outdoor.webp.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fb-05-kennzeichen.webp.asset.json';
 import logoShowroomAsset from '@/assets/funnel/fb-06-logo-showroom.webp.asset.json';
 import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp';
+import perspFrontAsset from '@/assets/funnel/fb-08-front.webp.asset.json';
+import perspSideAsset from '@/assets/funnel/fb-08-side.webp.asset.json';
+import perspRearAsset from '@/assets/funnel/fb-08-rear.webp.asset.json';
+import perspWheelAsset from '@/assets/funnel/fb-08-wheel.webp.asset.json';
+import perspLightAsset from '@/assets/funnel/fb-08-light.webp.asset.json';
+import perspCockpitAsset from '@/assets/funnel/fb-08-cockpit.webp.asset.json';
+import perspRearSeatsAsset from '@/assets/funnel/fb-08-rearseats.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
 
@@ -55,6 +62,39 @@ const SCENES = [
   { label: 'Outdoor-Szene', image: outdoorAsset.url },
 ];
 
+// Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
+type Perspective = { label: string; text: string; image: string };
+const PERSPECTIVE_GROUPS: { title: string; hint: string; icon: typeof Car; items: Perspective[] }[] = [
+  {
+    title: 'Außenansichten',
+    hint: 'Winkel, die dein Fahrzeug vollständig zeigen.',
+    icon: CarFront,
+    items: [
+      { label: 'Dreiviertel Front', text: 'Die Verkaufsansicht für Anzeige und Website.', image: perspFrontAsset.url },
+      { label: 'Seite', text: 'Linienführung und Proportionen im Profil.', image: perspSideAsset.url },
+      { label: 'Dreiviertel Heck', text: 'Heck und Seitenpartie in einer Aufnahme.', image: perspRearAsset.url },
+    ],
+  },
+  {
+    title: 'Details',
+    hint: 'Aufnahmen, die Ausstattung und Zustand betonen.',
+    icon: Gem,
+    items: [
+      { label: 'Felge', text: 'Rad und Reifen als eigene Detailaufnahme.', image: perspWheelAsset.url },
+      { label: 'Scheinwerfer', text: 'Lichtsignatur und Frontdetails nah betrachtet.', image: perspLightAsset.url },
+    ],
+  },
+  {
+    title: 'Innenraum',
+    hint: 'Bilder, die den Innenraum wirklich zeigen.',
+    icon: Armchair,
+    items: [
+      { label: 'Cockpit', text: 'Lenkrad, Displays und Mittelkonsole.', image: perspCockpitAsset.url },
+      { label: 'Rücksitzbank', text: 'Fond und Platzangebot aus eigener Aufnahme.', image: perspRearSeatsAsset.url },
+    ],
+  },
+];
+
 const MORE = [
   { icon: Car, title: 'Außen- & Innenansichten', text: 'Erstelle professionelle Außen- und Innenraumaufnahmen.' },
   { icon: Home, title: 'Eigener Showroom-Look', text: 'Nutze deinen individuellen Look für einen einheitlichen Markenauftritt.' },
@@ -77,9 +117,10 @@ export default function AutohausFahrzeugbilder() {
   useEffect(() => { captureAttribution('lp_fahrzeugbilder'); }, []);
 
   const [scene, setScene] = useState<number | null>(null);
+  const [perspective, setPerspective] = useState<Perspective | null>(null);
 
   return (
-    <FunnelLayout ctaHref={TEST_URL} ctaLabel="Kostenlos testen" anchors={[{ href: '#bildqualitaet', label: 'Bildqualität' }, { href: '#ablauf', label: 'Ablauf' }, { href: '#szenen', label: 'Szenen' }, { href: '#fragen', label: 'Fragen' }]}>
+    <FunnelLayout ctaHref={TEST_URL} ctaLabel="Kostenlos testen" anchors={[{ href: '#bildqualitaet', label: 'Bildqualität' }, { href: '#perspektiven', label: 'Perspektiven' }, { href: '#ablauf', label: 'Ablauf' }, { href: '#szenen', label: 'Szenen' }, { href: '#fragen', label: 'Fragen' }]}>
       {/* Einstieg */}
       <section className="overflow-hidden bg-card">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16">
