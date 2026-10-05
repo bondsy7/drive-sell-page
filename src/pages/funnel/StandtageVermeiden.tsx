@@ -285,7 +285,7 @@ export default function StandtageVermeiden() {
             {FAQ.map(([q, a], i) => (
               <AccordionItem key={q} value={`f${i}`} className="rounded-lg border border-border bg-card px-4">
                 <AccordionTrigger className="min-h-12 py-4 text-left text-sm font-semibold sm:text-base">{q}</AccordionTrigger>
-                <AccordionContent forceMount className="text-sm leading-6 text-muted-foreground data-[state=closed]:hidden">{a}</AccordionContent>
+                <AccordionContent forceMount data-faq-answer className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
