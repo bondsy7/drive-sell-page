@@ -21,6 +21,7 @@ import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/social-post-velmora.png.asset.json';
+import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
