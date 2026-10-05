@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
-  LayoutTemplate, MessageCircle, MoreHorizontal, PanelsTopLeft, PenLine, Send, Smartphone, Upload, UserRound, Video,
+  LayoutTemplate, MessageCircle, MoreHorizontal, PenLine, Send, Smartphone, Upload, UserRound, Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -18,6 +18,7 @@ import logoX from '@/assets/funnel/logo-x.png.asset.json';
 import logoGoogle from '@/assets/funnel/logo-google.png.asset.json';
 import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
+import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
@@ -301,7 +302,7 @@ export default function AutohausWerbemittel() {
             </div>
             <div className="flex flex-col items-center gap-4">
               <BrowserFrame className="w-full max-w-[260px]" />
-              <IconGroup label="Fahrzeugseite"><PanelsTopLeft className="h-6 w-6 text-foreground" aria-label="Website" /></IconGroup>
+              <IconGroup label="Fahrzeugseite"><BrandImage src={logoWebsite.url} label="Website" /></IconGroup>
             </div>
           </div>
         </div>
