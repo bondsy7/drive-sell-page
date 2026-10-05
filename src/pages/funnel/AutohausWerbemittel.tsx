@@ -528,12 +528,7 @@ export default function AutohausWerbemittel() {
           <h2 className="text-center font-display text-2xl font-bold sm:text-3xl">Nicht irgendeine Werbung. Deine Werbung.</h2>
           <p className="mt-2 text-center font-display text-lg font-bold text-accent">Dein Logo. Deine Farben. Dein Angebot.</p>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-6 text-muted-foreground">Dein Logo, deine Farben und deine Angebotsbotschaft geben den Auftritt vor. So passt dein Fahrzeugmarketing zu deinem Autohaus.</p>
-          <div className="mt-10 grid items-start gap-6 md:grid-cols-[.8fr_1.1fr_1.1fr]">
-            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Social Media</figcaption><SocialFrame imageSrc={socialPostVelmora.url} /></figure>
-            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Display-Banner</figcaption><BannerFrame label="Display-Banner" ratio="4 / 3" /></figure>
-            <figure><figcaption className="mb-2 text-xs font-semibold text-muted-foreground">Fahrzeugseite</figcaption><BrowserFrame previewSrc={VEHICLE_PAGE_URL} /></figure>
-          </div>
-          <p className="mt-6 text-center text-xs text-muted-foreground">Beispieldesign mit autohaus.ai. Für dein Autohaus individuell anpassbar.</p>
+          <p className="mt-10 text-center text-xs text-muted-foreground">Beispieldesign mit autohaus.ai. Für dein Autohaus individuell anpassbar.</p>
         </div>
       </section>
 
