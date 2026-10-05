@@ -186,7 +186,7 @@ const CATEGORIES: Category[] = [
   {
     id: 'video', label: 'Videos', description: 'Kurze Fahrzeugclips für deine Videokanäle.',
     slides: [
-      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" videoSrc={clipHeadlights.url} poster={clipHeadlightsPoster.url} /> },
+      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={HEADLIGHT_CLIP} /> },
       { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><MediaPlaceholder label="Video (16:9)" ratio="16 / 9" kind="video" /></div> },
     ],
   },
@@ -351,7 +351,7 @@ export default function AutohausWerbemittel() {
               </IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <StoryFrame className="w-full max-w-[170px]" videoSrc={clipHeadlights.url} poster={clipHeadlightsPoster.url} />
+              <StoryFrame className="w-full max-w-[170px]" clip={HEADLIGHT_CLIP} />
               <IconGroup label="Video"><BrandImage src={logoTiktok.url} label="TikTok" /><BrandImage src={logoYoutube.url} label="YouTube" /></IconGroup>
             </div>
             <div className="flex flex-col items-center gap-4">
