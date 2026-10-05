@@ -147,3 +147,6 @@
 - [x] Gruppen Außenansichten, Details und Innenraum mit sieben Ansichten befüllen (CDN-Pointer fb-08-*)
 - [x] Kacheln mit vollständiger Ansicht ohne Beschnitt verknüpfen; Sprunglink „Perspektiven" ergänzen
 - [ ] Händler-Originale aus Winkeln, Details, Interieur und Exterieur einsetzen (Fotos kamen in der Sandbox nicht an)
+
+## Werbemittel-Seite /autohaus-werbemittel
+- [x] Plattform-Logos als hochgeladene Icons8-Motive (Instagram, Facebook, LinkedIn, X, Google, TikTok, YouTube, Website)
