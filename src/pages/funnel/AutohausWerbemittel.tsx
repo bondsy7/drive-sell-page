@@ -290,7 +290,7 @@ export default function AutohausWerbemittel() {
             <h1 className="font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl">Aus deinem Fahrzeugbild wird dein nächstes Marketing.</h1>
             <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">Social-Media-Motive, kurze Videos und Fahrzeugseiten. In wenigen Minuten. Passend zu deinem Autohaus.</p>
             <Button asChild size="lg" className="mt-7 w-full bg-accent text-accent-foreground shadow-glow hover:bg-accent/90 sm:w-auto">
-              <Link to={TEST_URL} data-cta="werbemittel_test">Marketing erstellen <ArrowRight className="h-4 w-4" /></Link>
+              <Link to={TEST_URL} data-cta="werbemittel_test">Marketing erstellen lassen{"\n"} <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </div>
           <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-3 sm:gap-4">
