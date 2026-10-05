@@ -38,6 +38,7 @@ interface ActionTile {
   description: string;
   group: ToolGroup;
   badge?: string;
+  cta?: string;
   image?: string;
   disabled?: boolean;
 }
@@ -47,8 +48,8 @@ const TILE_MODULE_KEY: Partial<Record<HubAction, ModuleKey>> = {
 };
 
 const TILES: ActionTile[] = [
-  { id: 'studio', icon: <Zap />, title: 'One-Shot Studio', description: 'Fahrzeugfotos, komplettes Bilderset, Banner und Video in einem Durchgang.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url },
-  { id: 'photos', icon: <Camera />, title: 'Fotos & Remastering', description: 'Fahrzeugfotos aufnehmen oder hochladen und als professionelle Showroom-Bilder aufbereiten.', group: 'fahrzeugbilder', image: photoAsset.url },
+  { id: 'photos', icon: <Camera />, title: 'Fotos & Remastering', description: 'Fahrzeugfotos aufnehmen oder hochladen und als professionelle Showroom-Bilder aufbereiten.', group: 'fahrzeugbilder', image: photoAsset.url, cta: 'Fotos starten' },
+  { id: 'studio', icon: <Zap />, title: 'One-Shot Studio', description: 'Fahrzeugfotos, komplettes Bilderset, Banner und Video in einem Durchgang.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url, cta: 'Studio öffnen' },
   { id: 'background-swap', icon: <Scissors />, title: 'Hintergrund tauschen', description: 'Fahrzeug freistellen und auf Showroom, eigenen Hintergrund, Farbe oder KI-Szene setzen.', group: 'fahrzeugbilder', badge: 'Neu', image: cityAsset.url },
   { id: 'spin360', icon: <RotateCw />, title: '360° Spin', description: 'Aus vier oder mehr Fahrzeugfotos einen interaktiven Rundumblick mit 48 Bildern erzeugen.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url },
   { id: 'banner', icon: <Image />, title: 'Banner Generator', description: 'Werbebanner für soziale Medien und Anzeigen aus Fahrzeugdaten erstellen.', group: 'werbung', image: marketingAsset.url },
@@ -76,7 +77,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
     return !disabledModules.has(key);
   });
 
-  const renderTool = (tile: ActionTile, featured = false) => {
+  const renderTool = (tile: ActionTile, featured = false, primary = false) => {
     const moduleKey = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
     const isDisabled = Boolean(tile.disabled || disabledModules.has(moduleKey));
 
@@ -90,6 +91,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           'group relative h-full min-h-40 w-full items-stretch justify-start overflow-hidden rounded-lg border-border bg-card p-0 text-left whitespace-normal shadow-card transition-all duration-300',
           'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:text-card-foreground hover:shadow-elevated',
           featured && 'min-h-64 border-primary/20 bg-primary/10 hover:bg-primary/10',
+          primary && 'min-h-72 border-primary/40 hover:border-primary/60',
         )}
       >
         <div className={cn('relative z-10 flex w-full flex-col p-5', featured && 'sm:w-[54%] sm:p-7')}>
@@ -106,7 +108,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           <p className={cn('mt-2 max-w-md text-xs leading-relaxed text-muted-foreground', featured && 'text-sm')}>{tile.description}</p>
           {featured && (
             <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-              Studio öffnen <ArrowRight className="size-3.5" />
+              {tile.cta ?? 'Studio öffnen'} <ArrowRight className="size-3.5" />
             </span>
           )}
         </div>
@@ -120,9 +122,10 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
     );
   };
 
-  const hero = availableTiles.find((tile) => tile.id === 'studio');
+  const hero = availableTiles.find((tile) => tile.id === 'photos');
+  const studio = availableTiles.find((tile) => tile.id === 'studio');
   const backgroundSwap = availableTiles.find((tile) => tile.id === 'background-swap');
-  const remainingPhotoTiles = availableTiles.filter((tile) => tile.group === 'fahrzeugbilder' && tile.id !== 'studio' && tile.id !== 'background-swap');
+  const remainingPhotoTiles = availableTiles.filter((tile) => tile.group === 'fahrzeugbilder' && tile.id !== 'photos' && tile.id !== 'studio' && tile.id !== 'background-swap');
   const remainingTiles = availableTiles.filter((tile) => tile.group !== 'fahrzeugbilder');
 
   return (
@@ -148,7 +151,8 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           <p className="text-xs text-muted-foreground">Aufnahmen optimieren und neue Perspektiven erstellen</p>
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          {hero && <div className="lg:col-span-8">{renderTool(hero, true)}</div>}
+          {hero && <div className="lg:col-span-12">{renderTool(hero, true, true)}</div>}
+          {studio && <div className="lg:col-span-8">{renderTool(studio, true)}</div>}
           {backgroundSwap && <div className="lg:col-span-4">{renderTool(backgroundSwap)}</div>}
           {remainingPhotoTiles.map((tile) => <div key={tile.id} className="lg:col-span-6">{renderTool(tile)}</div>)}
         </div>
