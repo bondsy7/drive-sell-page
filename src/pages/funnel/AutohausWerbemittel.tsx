@@ -21,6 +21,9 @@ import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/social-post-velmora-v2.webp.asset.json';
+import bannerHalfpageVelmora from '@/assets/funnel/banner-halfpage-velmora.png.asset.json';
+import bannerSkyscraperVelmora from '@/assets/funnel/banner-skyscraper-velmora.png.asset.json';
+import bannerSquareVelmora from '@/assets/funnel/banner-square-velmora.png.asset.json';
 import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
 import storyVelmora from '@/assets/story-velmora.webp.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
@@ -265,13 +268,19 @@ function BrowserFrame({
   );
 }
 
-function BannerFrame({ label, ratio, className }: { label: string; ratio: string; className?: string }) {
+function BannerFrame({ label, ratio, imageSrc, stackedFooter, className }: { label: string; ratio: string; imageSrc?: string; stackedFooter?: boolean; className?: string }) {
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
-      <MediaPlaceholder label={label} ratio={ratio} />
-      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
+      {imageSrc ? (
+        <div className="w-full" style={{ aspectRatio: ratio }}>
+          <img src={imageSrc} alt={label} className="h-full w-full object-cover" loading="lazy" />
+        </div>
+      ) : (
+        <MediaPlaceholder label={label} ratio={ratio} />
+      )}
+      <div className={cn('flex items-center justify-between gap-2 border-t border-border px-3 py-1.5', stackedFooter && 'flex-col items-stretch gap-1')}>
         <span className="text-[10px] font-bold">autohaus<span className="text-accent">.ai</span></span>
-        <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Jetzt entdecken</span>
+        <span className="whitespace-nowrap rounded bg-accent px-2 py-0.5 text-center text-[9px] font-bold text-accent-foreground">Jetzt entdecken</span>
       </div>
     </div>
   );
@@ -301,9 +310,9 @@ const CATEGORIES: Category[] = [
     id: 'banner', label: 'Display-Banner', description: 'Dein Fahrzeugangebot in passenden Formaten für Display-Werbung.',
     icons: [{ src: logoGoogle.url, label: 'Google' }],
     slides: [
-      { key: 'wide', width: 'w-[300px] sm:w-[440px]', node: <BannerFrame label="Breites Banner" ratio="728 / 180" /> },
-      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" /> },
-      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" /> },
+      { key: 'halfpage', width: 'w-[150px] sm:w-[180px]', node: <BannerFrame label="Half-Page Banner" ratio="300 / 600" imageSrc={bannerHalfpageVelmora.url} /> },
+      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" imageSrc={bannerSquareVelmora.url} /> },
+      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" imageSrc={bannerSkyscraperVelmora.url} stackedFooter /> },
     ],
   },
   {
