@@ -19,6 +19,7 @@ import logoGoogle from '@/assets/funnel/logo-google.png.asset.json';
 import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
+import socialPostVelmora from '@/assets/funnel/social-post-velmora.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
@@ -50,7 +51,7 @@ function MediaPlaceholder({ label, ratio, className, kind = 'image' }: { label: 
   );
 }
 
-function SocialFrame({ label = 'Social-Media-Motiv', className }: { label?: string; className?: string }) {
+function SocialFrame({ label = 'Social-Media-Motiv', className, imageSrc }: { label?: string; className?: string; imageSrc?: string }) {
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
       <div className="flex items-center gap-2 px-3 py-2">
@@ -61,7 +62,11 @@ function SocialFrame({ label = 'Social-Media-Motiv', className }: { label?: stri
         </div>
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
       </div>
-      <MediaPlaceholder label={label} ratio="1 / 1" />
+      {imageSrc ? (
+        <img src={imageSrc} alt={label} className="aspect-square w-full object-cover" loading="lazy" />
+      ) : (
+        <MediaPlaceholder label={label} ratio="1 / 1" />
+      )}
       <div className="flex items-center gap-3 px-3 py-2 text-foreground/70">
         <Heart className="h-4 w-4" aria-hidden /><MessageCircle className="h-4 w-4" aria-hidden /><Send className="h-4 w-4" aria-hidden />
         <Bookmark className="ml-auto h-4 w-4" aria-hidden />
