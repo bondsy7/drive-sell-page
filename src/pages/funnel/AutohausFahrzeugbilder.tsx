@@ -247,7 +247,7 @@ export default function AutohausFahrzeugbilder() {
             ))}
           </div>
 
-          <p className="mt-5 flex items-center justify-center gap-2.5 rounded-md bg-accent/10 px-4 py-3.5 text-center text-sm font-semibold text-accent"><Timer className="h-5 w-5 shrink-0" aria-hidden="true" /><span>Ihr perfektes Fahrzeugbild. Fertig zur Vermarktung direkt am Fahrzeug.</span></p>
+          <p className="mt-5 flex items-center justify-center gap-2.5 rounded-md bg-accent/10 px-4 py-3.5 text-center text-sm font-semibold text-accent"><Timer className="h-5 w-5 shrink-0" aria-hidden="true" /><span>Dein perfektes Fahrzeugbild. Fertig zur Vermarktung direkt am Fahrzeug.</span></p>
 
           {/* Kennzeichen-/Logo-Blöcke ausgeblendet – wird bereits im Hauptbild behandelt */}
           {false && (<div className="mt-6 grid gap-4 md:grid-cols-2">
