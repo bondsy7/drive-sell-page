@@ -141,3 +141,9 @@
 - [x] Bestand, Import und Automatik in ein eigenes Auto3-Center verschieben
 - [x] Globale Bildregeln einklappen; Kosten und ausdrückliche Credit-Freigabe sichtbar halten
 - [x] Desktop, Smartphone, Verbindung und Bestand im echten Nutzerzustand prüfen
+
+## Fahrzeugbilder: Perspektiven-Sektion (05.10.2026)
+- [x] Sektion „Vielfältige Perspektiven ab zwei Fahrzeugfotos" unter „Qualität steckt im Detail" einfügen
+- [x] Gruppen Außenansichten, Details und Innenraum mit sieben Ansichten befüllen (CDN-Pointer fb-08-*)
+- [x] Kacheln mit vollständiger Ansicht ohne Beschnitt verknüpfen; Sprunglink „Perspektiven" ergänzen
+- [ ] Händler-Originale aus Winkeln, Details, Interieur und Exterieur einsetzen (Fotos kamen in der Sandbox nicht an)
