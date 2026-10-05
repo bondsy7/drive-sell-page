@@ -37,14 +37,6 @@ function BrandImage({ src, label }: { src: string; label: string }) {
   return <img src={src} alt={label} className="h-[30px] w-[30px] rounded-[6px]" loading="lazy" />;
 }
 
-function IconGroup({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="flex items-center gap-2.5">{children}</div>
-      <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
-    </div>
-  );
-}
 
 /* ---------- Platzhalter (später durch echte Medien ersetzbar) ---------- */
 
@@ -477,35 +469,24 @@ export default function AutohausWerbemittel() {
     >
       {/* 1 · Header */}
       <section className="relative overflow-hidden border-b border-border bg-card">
-        <img src={headerMockup.url} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-center" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/35" aria-hidden />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:py-16">
-          <div className="min-w-0">
+        <img src={headerMockup.url} alt="" aria-hidden className="absolute inset-0 hidden h-full w-full object-cover object-center lg:block" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-45% to-background/45" aria-hidden />
+        <div className="relative mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
+          <div className="max-w-xl">
             <h1 className="font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl">Aus deinem Fahrzeugbild wird dein nächstes Marketing.</h1>
             <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">Social-Media-Motive, kurze Videos und Fahrzeugseiten. In wenigen Minuten. Passend zu deinem Autohaus.</p>
             <Button asChild size="lg" className="mt-7 w-full bg-accent text-accent-foreground shadow-glow hover:bg-accent/90 sm:w-auto">
               <Link to={TEST_URL} data-cta="werbemittel_test">Marketing erstellen lassen{"\n"} <ArrowRight className="h-4 w-4" /></Link>
             </Button>
-          </div>
-          <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-            <div className="flex flex-col items-center gap-4">
-              <SocialFrame className="w-full max-w-[240px]" imageSrc={socialPostVelmora.url} />
-              <IconGroup label="Social Media">
-                <BrandImage src={logoInstagram.url} label="Instagram" /><BrandImage src={logoFacebook.url} label="Facebook" /><BrandImage src={logoLinkedin.url} label="LinkedIn" /><BrandImage src={logoX.url} label="X" />
-              </IconGroup>
-            </div>
-            <div className="flex flex-col items-center gap-4">
-              <StoryFrame className="w-full max-w-[170px]" clip={HEADLIGHT_CLIP} />
-              <IconGroup label="Video"><BrandImage src={logoTiktok.url} label="TikTok" /><BrandImage src={logoYoutube.url} label="YouTube" /></IconGroup>
-            </div>
-            <div className="flex flex-col items-center gap-4">
-              <BannerFrame label="Display-Banner" ratio="3 / 2" className="w-full max-w-[220px]" />
-              <IconGroup label="Display-Banner"><BrandImage src={logoGoogle.url} label="Google" /></IconGroup>
-            </div>
-            <div className="flex flex-col items-center gap-4">
-              <BrowserFrame className="w-full max-w-[240px]" previewSrc={VEHICLE_PAGE_URL} onOpen={() => setPagePreviewOpen(true)} />
-              <IconGroup label="Fahrzeugseite"><BrandImage src={logoWebsite.url} label="Website" /></IconGroup>
-              <span className="text-[10px] font-semibold text-muted-foreground">Antippen und durchscrollen</span>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <BrandImage src={logoInstagram.url} label="Instagram" />
+              <BrandImage src={logoFacebook.url} label="Facebook" />
+              <BrandImage src={logoLinkedin.url} label="LinkedIn" />
+              <BrandImage src={logoX.url} label="X" />
+              <BrandImage src={logoGoogle.url} label="Google" />
+              <BrandImage src={logoTiktok.url} label="TikTok" />
+              <BrandImage src={logoYoutube.url} label="YouTube" />
+              <BrandImage src={logoWebsite.url} label="Website" />
             </div>
           </div>
         </div>
