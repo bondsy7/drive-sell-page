@@ -194,7 +194,7 @@ function ScaledPagePreview({ src, className, viewportWidth = 1280 }: { src: stri
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [viewportWidth]);
   return (
     <div ref={containerRef} className={cn('relative overflow-hidden bg-white', className)}>
       <iframe
