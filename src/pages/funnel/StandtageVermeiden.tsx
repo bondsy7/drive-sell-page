@@ -40,9 +40,14 @@ const BENEFITS = [
 ];
 
 const FAQ = [
-  ['Reicht ein Smartphone?', 'Ja. Du kannst dein Fahrzeug direkt auf dem Hof mit dem Smartphone fotografieren. Für mehrere Ansichten nimm entsprechende Fotos aus verschiedenen Perspektiven auf.'],
-  ['Muss ich das Fahrzeug vorher aufbereiten?', 'Für den Start der Bilderstellung musst du nicht auf die Aufbereitung warten. Die tatsächliche Fahrzeugaufbereitung kann parallel zur Vermarktung erfolgen.'],
-  ['Veröffentlicht autohaus.ai das Inserat automatisch?', 'Nein. Du lädst die erstellten Bilder herunter und nutzt sie für dein Inserat.'],
+  ['Was kann ich mit autohaus.ai für meine Fahrzeugvermarktung erstellen?', 'Mit autohaus.ai erstellst du aus deinen Fahrzeugfotos professionelle Verkaufsbilder und weitere Marketinginhalte, etwa Social-Media-Beiträge, Werbebanner und Videos. So nutzt du deine Aufnahmen für unterschiedliche Kanäle, ohne jedes Format von Grund auf gestalten zu müssen.'],
+  ['Wie schnell entstehen aus meinen Fotos fertige Marketinginhalte?', 'Aus einfachen Smartphone-Fotos entstehen in wenigen Minuten fertige Motive und Banner für deine Social-Media-Kanäle und Google-Display-Anzeigen. Social-Media-Inhalte kannst du direkt über die angebundenen Kanäle posten. So wird aus tagelanger Marketingvorbereitung in wenigen Schritten fertiges Kampagnenmaterial.'],
+  ['Reicht ein Smartphone-Foto für den Einstieg?', 'Ja. Schon ein Smartphone-Foto kann die Grundlage für ein Verkaufsbild und weitere Marketinginhalte sein. Für eine vollständige Fahrzeuggalerie mit mehreren Ansichten brauchst du zusätzliche Aufnahmen aus den jeweiligen Perspektiven. Fotografiere möglichst scharf und bei ausreichendem Licht.'],
+  ['Brauche ich eine Fotobox oder einen professionellen Fotografen?', 'Nein. Du kannst deine Aufnahmen mit dem Smartphone direkt am Fahrzeug machen. autohaus.ai erstellt daraus Verkaufsbilder im gewünschten Look. Du brauchst dafür weder eine Fotobox noch einen separaten Fototermin.'],
+  ['Muss ich das Fahrzeug vorher aufbereiten oder vom Hof bewegen?', 'Du kannst das Fahrzeug dort fotografieren, wo es steht, ohne erst auf die Aufbereitung zu warten. Wichtig ist, dass es auf den Aufnahmen gut sichtbar und möglichst vollständig zu erkennen ist. Die tatsächliche Fahrzeugaufbereitung für Besichtigung und Übergabe kann parallel zur Vermarktung erfolgen.'],
+  ['Kann ich die Ergebnisse für Fahrzeugbörsen, meine Website und Social Media nutzen?', 'Ja. Du kannst die erstellten Inhalte herunterladen und passend zum jeweiligen Kanal einsetzen: Verkaufsbilder für Fahrzeuganzeigen und deine Website, Beiträge für Social Media oder Banner für deine Werbung. Social-Media-Inhalte kannst du außerdem direkt über die angebundenen Kanäle veröffentlichen. Beachte dabei die jeweiligen Formatvorgaben der Plattform.'],
+  ['Wie hilft mir autohaus.ai, Fahrzeuge früher zu vermarkten?', 'Du kannst direkt nach der Fahrzeugankunft mit der Erstellung deiner Verkaufsbilder und Marketinginhalte beginnen. Die Vermarktung muss dadurch nicht auf einen freien Fotoplatz, einen Fotografen oder die abgeschlossene Aufbereitung warten. Das verkürzt die Zeit bis zur ersten Anzeige und kann unnötige Standtage reduzieren.'],
+  ['Wie kann ich autohaus.ai mit einem eigenen Fahrzeug testen?', 'Klicke auf „Mit eigenem Fahrzeug testen“ und folge dem Testablauf. Nutze dafür eine Smartphone-Aufnahme aus deinem eigenen Fahrzeugbestand. So siehst du an einem konkreten Beispiel, was aus deinem Foto entstehen kann.'],
 ];
 
 function AiMark() {
@@ -275,14 +280,20 @@ export default function StandtageVermeiden() {
       <section id="fragen" className="scroll-mt-20 bg-background pb-16">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <h2 className="text-center font-display text-3xl font-bold text-foreground">Noch Fragen?</h2>
+          <p className="mt-2 text-center text-base text-muted-foreground">So wird aus deinen Fahrzeugfotos fertiges Marketing.</p>
           <Accordion type="single" collapsible className="mt-6 space-y-3">
             {FAQ.map(([q, a], i) => (
               <AccordionItem key={q} value={`f${i}`} className="rounded-lg border border-border bg-card px-4">
-                <AccordionTrigger className="text-left text-sm font-semibold">{q}</AccordionTrigger>
-                <AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
+                <AccordionTrigger className="min-h-12 py-4 text-left text-sm font-semibold sm:text-base">{q}</AccordionTrigger>
+                <AccordionContent forceMount className="text-sm leading-6 text-muted-foreground data-[state=closed]:hidden">{a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
+          <div className="mt-8 text-center">
+            <Button asChild size="lg" className="w-full sm:w-auto">
+              <Link to={TEST_URL}>Mit eigenem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+          </div>
         </div>
       </section>
     </FunnelLayout>
