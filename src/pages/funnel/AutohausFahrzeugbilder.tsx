@@ -111,10 +111,13 @@ export default function AutohausFahrzeugbilder() {
         <div className="relative mt-6 overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
           <img src={showroomAsset.url} alt="Silberner SUV im modernen Showroom mit autohaus.ai-Logo" width={1536} height={1024} className="block h-auto w-full" loading="lazy" />
           {HOTSPOTS.map((h, i) => {
-            const flipX = h.x > 55;
-            const flipY = h.y < 22;
+            // Notizseite: vorgegeben (noteSide) oder automatisch zur breiteren Bildseite.
+            const toRight = h.noteSide ? h.noteSide === 'right' : h.x <= 55;
+            // Seitlich mittig neben dem Punkt, sonst darüber bzw. darunter.
+            const centerV = h.noteSide !== undefined && h.y > 15 && h.y < 90;
+            const below = h.y < 22;
             return (
-              <div key={h.title} className="group absolute" style={{ left: `${h.x}%`, top: `${h.y}%` }}>
+              <div key={h.title} className="group absolute h-0 w-0" style={{ left: `${h.x}%`, top: `${h.y}%` }}>
                 <button
                   type="button"
                   aria-label={`Detail ${i + 1}: ${h.title}`}
@@ -122,7 +125,7 @@ export default function AutohausFahrzeugbilder() {
                   className="peer flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-card bg-accent text-xs font-bold text-primary-foreground shadow-elevated transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:hover:scale-110 sm:h-9 sm:w-9"
                 >{i + 1}</button>
                 <div id={`hotspot-note-${i}`} role="tooltip"
-                  className={`pointer-events-none absolute z-10 w-52 rounded-lg border border-border bg-card p-3 text-left opacity-0 shadow-elevated transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:w-64 ${flipX ? 'right-3' : 'left-3'} ${flipY ? 'top-3' : 'bottom-3'}`}>
+                  className={`pointer-events-none absolute z-10 w-52 rounded-lg border border-border bg-card p-3 text-left opacity-0 shadow-elevated transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 lg:w-64 ${toRight ? 'left-[26px]' : 'right-[26px]'} ${centerV ? 'top-0 -translate-y-1/2' : below ? 'top-[26px]' : 'bottom-[26px]'}`}>
                   <p className="text-sm font-bold">{h.title}</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{h.text}</p>
                 </div>
