@@ -90,26 +90,29 @@ function AiMark() {
   );
 }
 
+const HEADLIGHT_CLIP = {
+  webm: clipHeadlightsWebm.url,
+  mp4: clipHeadlights.url,
+  poster: clipHeadlightsPoster.url,
+};
+
 function StoryFrame({
   label = 'Fahrzeugclip',
   className,
   video = true,
-  videoSrc,
-  poster,
+  clip,
 }: {
   label?: string;
   className?: string;
   video?: boolean;
-  videoSrc?: string;
-  poster?: string;
+  clip?: { webm: string; mp4: string; poster: string };
 }) {
   return (
     <div className={cn('relative overflow-hidden rounded-2xl border-4 border-foreground bg-foreground shadow-card', className)}>
-      {videoSrc ? (
+      {clip ? (
         <>
           <video
-            src={videoSrc}
-            poster={poster}
+            poster={clip.poster}
             muted
             loop
             autoPlay
@@ -117,7 +120,10 @@ function StoryFrame({
             preload="metadata"
             aria-label={label}
             className="aspect-[9 / 16] w-full rounded-xl object-cover"
-          />
+          >
+            <source src={clip.webm} type="video/webm" />
+            <source src={clip.mp4} type="video/mp4" />
+          </video>
           <AiMark />
         </>
       ) : (
