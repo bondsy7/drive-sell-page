@@ -470,7 +470,7 @@ export default function AutohausWerbemittel() {
       {/* 1 · Header */}
       <section className="relative overflow-hidden border-b border-border bg-card">
         <img src={headerMockup.url} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-center" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/35" aria-hidden />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/92 to-background/70 sm:bg-gradient-to-r sm:from-background sm:via-background/85 sm:to-background/35" aria-hidden />
         <div className="relative mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
           <div className="max-w-xl">
             <h1 className="font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl">Aus deinem Fahrzeugbild wird dein nächstes Marketing.</h1>
