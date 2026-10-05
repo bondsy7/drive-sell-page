@@ -314,9 +314,26 @@ function FormatSlider() {
   const trackRef = useRef<HTMLDivElement>(null);
   const slides = CATEGORIES[cat].slides;
 
-  useEffect(() => { setActive(0); trackRef.current?.scrollTo({ left: 0 }); }, [cat]);
+  const pendingRef = useRef<'start' | 'end'>('start');
+  useEffect(() => {
+    const track = trackRef.current;
+    if (pendingRef.current === 'end') {
+      const last = CATEGORIES[cat].slides.length - 1;
+      setActive(last);
+      requestAnimationFrame(() => {
+        const el = track?.children[last] as HTMLElement | undefined;
+        if (track && el) track.scrollTo({ left: el.offsetLeft - track.offsetLeft - 16 });
+      });
+    } else {
+      setActive(0);
+      track?.scrollTo({ left: 0 });
+    }
+    pendingRef.current = 'start';
+  }, [cat]);
 
   const goTo = (i: number) => {
+    if (i >= slides.length && cat < CATEGORIES.length - 1) { pendingRef.current = 'start'; setCat(cat + 1); return; }
+    if (i < 0 && cat > 0) { pendingRef.current = 'end'; setCat(cat - 1); return; }
     const idx = Math.max(0, Math.min(slides.length - 1, i));
     const track = trackRef.current;
     const el = track?.children[idx] as HTMLElement | undefined;
