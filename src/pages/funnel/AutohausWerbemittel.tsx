@@ -34,7 +34,14 @@ const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
 
 function BrandImage({ src, label }: { src: string; label: string }) {
-  return <img src={src} alt={label} className="h-[60px] w-[60px] rounded-[12px]" loading="lazy" />;
+  return (
+    <img
+      src={src}
+      alt={label}
+      className="h-[60px] w-[60px] rounded-[12px] origin-center transition-transform duration-300 ease-out will-change-transform hover:scale-125"
+      loading="lazy"
+    />
+  );
 }
 
 
@@ -361,7 +368,7 @@ function FormatSlider() {
               cat === i ? 'bg-accent text-accent-foreground' : 'bg-card text-foreground hover:bg-muted')}>
             <span className="flex items-center gap-1.5" aria-hidden>
               {c.icons.map((ic) => (
-                <img key={ic.label} src={ic.src} alt="" className="h-[18px] w-[18px] rounded-[4px]" loading="lazy" />
+                <img key={ic.label} src={ic.src} alt="" className="h-[18px] w-[18px] rounded-[4px] origin-center transition-transform duration-300 ease-out will-change-transform hover:scale-125" loading="lazy" />
               ))}
             </span>
             {c.label}
