@@ -4,7 +4,7 @@ import {
   ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
   LayoutTemplate, MessageCircle, MoreHorizontal, PanelsTopLeft, PenLine, Send, Smartphone, Upload, UserRound, Video,
 } from 'lucide-react';
-import { siFacebook, siGoogle, siInstagram, siTiktok, siX, siYoutube, type SimpleIcon } from 'simple-icons';
+import { siGoogle, siTiktok, siYoutube, type SimpleIcon } from 'simple-icons';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
