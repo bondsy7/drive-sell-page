@@ -4,7 +4,7 @@ import {
   ArrowRight, Bookmark, Car, Check, ChevronLeft, ChevronRight, Clock3, Globe, Heart, Image as ImageIcon,
   LayoutTemplate, MessageCircle, MoreHorizontal, PanelsTopLeft, PenLine, Send, Smartphone, Upload, UserRound, Video,
 } from 'lucide-react';
-import { siFacebook, siGoogle, siInstagram, siTiktok, siX, siYoutube, type SimpleIcon } from 'simple-icons';
+import { siGoogle, siTiktok, siYoutube, type SimpleIcon } from 'simple-icons';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -12,6 +12,10 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution, captureLastTouch } from '@/lib/funnel-attribution';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
 import { cn } from '@/lib/utils';
+import logoInstagram from '@/assets/funnel/logo-instagram.png.asset.json';
+import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
+import logoLinkedin from '@/assets/funnel/logo-linkedin.png.asset.json';
+import logoX from '@/assets/funnel/logo-x.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
@@ -25,13 +29,8 @@ function BrandIcon({ icon, label }: { icon: SimpleIcon; label: string }) {
   );
 }
 
-function LinkedInIcon() {
-  return (
-    <svg role="img" aria-label="LinkedIn" viewBox="0 0 24 24" className="h-6 w-6">
-      <rect width="24" height="24" rx="4" fill="#0A66C2" />
-      <path fill="#fff" d="M6.9 9.4h2.6V18H6.9zM8.2 5.3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM11.1 9.4h2.5v1.2c.4-.7 1.3-1.4 2.6-1.4 2.7 0 3.2 1.8 3.2 4.1V18h-2.6v-4.1c0-1 0-2.2-1.4-2.2s-1.6 1.1-1.6 2.2V18h-2.7z" />
-    </svg>
-  );
+function BrandImage({ src, label }: { src: string; label: string }) {
+  return <img src={src} alt={label} className="h-6 w-6 rounded-[5px]" loading="lazy" />;
 }
 
 function IconGroup({ children, label }: { children: ReactNode; label: string }) {
@@ -297,7 +296,7 @@ export default function AutohausWerbemittel() {
             <div className="flex flex-col items-center gap-4">
               <SocialFrame className="w-full max-w-[260px]" />
               <IconGroup label="Social Media">
-                <BrandIcon icon={siInstagram} label="Instagram" /><BrandIcon icon={siFacebook} label="Facebook" /><LinkedInIcon /><BrandIcon icon={siX} label="X" />
+                <BrandImage src={logoInstagram.url} label="Instagram" /><BrandImage src={logoFacebook.url} label="Facebook" /><BrandImage src={logoLinkedin.url} label="LinkedIn" /><BrandImage src={logoX.url} label="X" />
               </IconGroup>
               <IconGroup label="Display-Banner"><BrandIcon icon={siGoogle} label="Google" /></IconGroup>
             </div>
