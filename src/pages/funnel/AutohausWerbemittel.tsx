@@ -34,7 +34,7 @@ const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
 
 function BrandImage({ src, label }: { src: string; label: string }) {
-  return <img src={src} alt={label} className="h-[30px] w-[30px] rounded-[6px]" loading="lazy" />;
+  return <img src={src} alt={label} className="h-[60px] w-[60px] rounded-[12px]" loading="lazy" />;
 }
 
 
