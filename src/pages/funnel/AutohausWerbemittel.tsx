@@ -368,7 +368,7 @@ function FormatSlider() {
               cat === i ? 'bg-accent text-accent-foreground' : 'bg-card text-foreground hover:bg-muted')}>
             <span className="flex items-center gap-1.5" aria-hidden>
               {c.icons.map((ic) => (
-                <img key={ic.label} src={ic.src} alt="" className="h-[18px] w-[18px] rounded-[4px]" loading="lazy" />
+                <img key={ic.label} src={ic.src} alt="" className="h-[18px] w-[18px] rounded-[4px] origin-center transition-transform duration-300 ease-out will-change-transform hover:scale-125" loading="lazy" />
               ))}
             </span>
             {c.label}
