@@ -268,7 +268,7 @@ function BrowserFrame({
   );
 }
 
-function BannerFrame({ label, ratio, imageSrc, className }: { label: string; ratio: string; imageSrc?: string; className?: string }) {
+function BannerFrame({ label, ratio, imageSrc, stackedFooter, className }: { label: string; ratio: string; imageSrc?: string; stackedFooter?: boolean; className?: string }) {
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border bg-card shadow-card', className)}>
       {imageSrc ? (
@@ -278,9 +278,9 @@ function BannerFrame({ label, ratio, imageSrc, className }: { label: string; rat
       ) : (
         <MediaPlaceholder label={label} ratio={ratio} />
       )}
-      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5">
+      <div className={cn('flex items-center justify-between gap-2 border-t border-border px-3 py-1.5', stackedFooter && 'flex-col items-stretch gap-1')}>
         <span className="text-[10px] font-bold">autohaus<span className="text-accent">.ai</span></span>
-        <span className="rounded bg-accent px-2 py-0.5 text-[9px] font-bold text-accent-foreground">Jetzt entdecken</span>
+        <span className="whitespace-nowrap rounded bg-accent px-2 py-0.5 text-center text-[9px] font-bold text-accent-foreground">Jetzt entdecken</span>
       </div>
     </div>
   );
