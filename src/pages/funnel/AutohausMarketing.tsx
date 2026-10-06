@@ -168,10 +168,10 @@ export default function AutohausMarketing() {
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-accent">Jetzt, mit autohaus.ai</p>
             <ol className="mt-4 space-y-4 border-l-2 border-accent/40 pl-6">
-              {['Fahrzeug kommt an.', 'Ohne Aufbereitung direkt mit dem Smartphone fotografiert.', 'Bilder werden automatisiert erstellt.', 'Marketingmaterial wird automatisiert erstellt.', 'Fahrzeug und Marketing sind direkt online.'].map((step, i) => (
+              {['Fahrzeug kommt an und wird ohne Aufbereitung direkt mit dem Smartphone fotografiert.', 'Bilder und Marketingmaterial werden automatisiert erstellt.', 'Fahrzeug und Marketing sind direkt online.'].map((step, i) => (
                 <li key={step} className="relative">
-                  <span aria-hidden="true" className={`absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 text-[9px] font-bold ${i === 4 ? 'border-accent bg-accent text-accent-foreground' : 'border-accent/40 bg-card text-accent'}`}>{i + 1}</span>
-                  <span className={`block text-sm font-semibold leading-6 ${i === 4 ? 'text-accent' : 'text-foreground'}`}>{step}</span>
+                  <span aria-hidden="true" className={`absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 text-[9px] font-bold ${i === 2 ? 'border-accent bg-accent text-accent-foreground' : 'border-accent/40 bg-card text-accent'}`}>{i + 1}</span>
+                  <span className={`block text-sm font-semibold leading-6 ${i === 2 ? 'text-accent' : 'text-foreground'}`}>{step}</span>
                 </li>
               ))}
             </ol>
