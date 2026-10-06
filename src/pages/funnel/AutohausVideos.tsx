@@ -12,6 +12,11 @@ import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
 import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
+import video169Webm from '@/assets/videos-169.webm.asset.json';
+import video169Mp4 from '@/assets/videos-169.mp4.asset.json';
+import video916Webm from '@/assets/videos-916.webm.asset.json';
+import video916Mp4 from '@/assets/videos-916.mp4.asset.json';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 
 const TEST_URL = '/fahrzeug-testen?source=videos';
 
@@ -25,6 +30,26 @@ function MediaPlaceholder({ label, ratio, className = '' }: { label: string; rat
       className={`flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/60 p-3 text-center text-xs font-medium text-muted-foreground ${className}`}
     >
       {label}
+    </div>
+  );
+}
+
+/** Stummes Loop-Video mit KI-Kennzeichnung (WebM zuerst, MP4 als Fallback). */
+function VideoSlot({ ratio, ariaLabel, className = '' }: { ratio: '16/9' | '9/16'; ariaLabel: string; className?: string }) {
+  const webm = ratio === '16/9' ? video169Webm.url : video916Webm.url;
+  const mp4 = ratio === '16/9' ? video169Mp4.url : video916Mp4.url;
+  return (
+    <div className={`relative overflow-hidden rounded-lg border border-border bg-secondary/70 ${className}`} style={{ aspectRatio: ratio }}>
+      <video className="h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" aria-label={ariaLabel}>
+        <source src={webm} type="video/webm" />
+        <source src={mp4} type="video/mp4" />
+      </video>
+      <img
+        src={getAiDisclosureLabelVector('landing')}
+        alt={getAiDisclosureLabelAlt('landing')}
+        title={getAiDisclosureText('landing')}
+        className={AI_DISCLOSURE_OVERLAY_CLASS}
+      />
     </div>
   );
 }
@@ -80,11 +105,11 @@ export default function AutohausVideos() {
         </div>
         <div className="flex items-end gap-4">
           <figure className="min-w-0 flex-[3]">
-            <MediaPlaceholder ratio="16/9" label="Videoplatzhalter 16:9" />
+            <VideoSlot ratio="16/9" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Querformat" />
             <figcaption className="mt-2 text-xs text-muted-foreground">16:9 · Querformat</figcaption>
           </figure>
           <figure className="min-w-0 flex-1">
-            <MediaPlaceholder ratio="9/16" label="Videoplatzhalter 9:16" />
+            <VideoSlot ratio="9/16" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Hochformat" />
             <figcaption className="mt-2 text-xs text-muted-foreground">9:16 · Hochformat</figcaption>
           </figure>
         </div>
@@ -105,7 +130,7 @@ export default function AutohausVideos() {
           <div className="mt-10 grid gap-12 md:grid-cols-2 md:gap-0 md:divide-x md:divide-border">
             <div className="flex flex-col items-center md:px-8">
               <div className="flex w-full items-end justify-center md:h-[440px]">
-                <MediaPlaceholder ratio="9/16" label="Videoplatzhalter 9:16" className="w-[220px] md:w-auto md:h-full" />
+                <VideoSlot ratio="9/16" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Hochformat" className="w-[220px] md:w-auto md:h-full" />
               </div>
               <p className="mt-5 font-semibold">9:16 · Hochformat</p>
               <p className="mt-1 text-sm text-muted-foreground">Für Reels, Stories und Shorts.</p>
@@ -113,7 +138,7 @@ export default function AutohausVideos() {
             </div>
             <div className="flex flex-col items-center md:px-8">
               <div className="flex w-full items-center justify-center md:h-[440px]">
-                <MediaPlaceholder ratio="16/9" label="Videoplatzhalter 16:9" className="w-full" />
+                <VideoSlot ratio="16/9" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Querformat" className="w-full" />
               </div>
               <p className="mt-5 font-semibold">16:9 · Querformat</p>
               <p className="mt-1 text-sm text-muted-foreground">Für deine Website und YouTube.</p>
