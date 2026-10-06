@@ -34,10 +34,10 @@ import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
 import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
 import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
-import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json';
-import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
-import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
-import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
+import bannerStoryAsset from '@/assets/home/social/banner-story.png.asset.json';
+import bannerPostAsset from '@/assets/home/social/banner-post.png.asset.json';
+import bannerHeroAsset from '@/assets/home/social/banner-hero.png.asset.json';
+import bannerSkyscraperAsset from '@/assets/home/social/banner-skyscraper.png.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -192,20 +192,20 @@ export function HomeProcess() {
 /** Social-Media-Werbemittel in ihren echten Seitenverhältnissen. */
 const SOCIAL_FORMATS = {
   story: {
-    src: socialStoryAsset.url,
-    alt: 'Instagram Story im Hochformat 1080 × 1920 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerStoryAsset.url,
+    alt: 'Instagram Story im Hochformat 1080 × 1920 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
   post: {
-    src: socialPostAsset.url,
-    alt: 'Instagram Beitrag im Quadrat 1080 × 1080 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerPostAsset.url,
+    alt: 'Instagram Beitrag im Quadrat 1080 × 1080 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
   fbAd: {
-    src: socialFbAdAsset.url,
-    alt: 'Facebook-Werbeanzeige 1200 × 628 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerHeroAsset.url,
+    alt: 'Werbeanzeige im Breitformat 1920 × 1080 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
   skyscraper: {
-    src: socialSkyscraperAsset.url,
-    alt: 'Schmales Anzeigen-Hochformat 160 × 600 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerSkyscraperAsset.url,
+    alt: 'Schmales Anzeigen-Hochformat 160 × 600 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
 };
 
@@ -247,7 +247,7 @@ function SocialFormatCollage({ onOpen }: { onOpen: (index: number) => void }) {
               alt={SOCIAL_FORMATS.fbAd.alt}
               loading="lazy"
               className="w-full rounded-lg border border-border"
-              style={{ aspectRatio: '1200 / 628' }}
+              style={{ aspectRatio: '1920 / 1080' }}
             />
           </button>
           <button type="button" onClick={() => onOpen(1)} aria-label={`${SOCIAL_FORMATS.post.alt} – vergrößern`} className={cn('w-full', zoomClass)}>
