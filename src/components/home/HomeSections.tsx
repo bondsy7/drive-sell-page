@@ -16,7 +16,7 @@ import bannerMockupAsset from '@/assets/home/mobilede-mockup-banner-ford.png.ass
 import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look-ford.jpeg.asset.json';
-import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
+import outdoorLookAsset from '@/assets/home/looks/outdoor-look-ford.jpg.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look.webp.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
@@ -508,7 +508,7 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
   },
   Outdoor: {
     src: outdoorLookAsset.url,
-    alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht – mit KI erstellt',
+    alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
     detail: {
       src: outdoorDetailAsset.url,
