@@ -147,19 +147,20 @@ export default function AutohausMarketing() {
             <Button asChild size="lg" className="mt-7"><Link to={TEST_URL} data-cta="marketing_hero_test">Mit eigenem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link></Button>
             <div className="mt-5 flex flex-wrap gap-4 text-sm text-muted-foreground">{['Zeit sparen', 'Erstellungskosten reduzieren', 'Mitarbeiter entlasten'].map((x) => <span key={x} className="flex items-center gap-1.5"><Check className="h-4 w-4 text-accent" />{x}</span>)}</div>
           </div>
-          <div className="grid grid-cols-[.8fr_1.2fr] items-center gap-4">
-            <figure>
-              <button type="button" onClick={() => setHeroLarge(heroKey(heroLeft))} aria-label={`${heroLeft.label} groß anzeigen`} className="block w-full cursor-pointer text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg">
-                <MediaSlot m={heroLeft} />
-              </button>
-              <figcaption className="mt-2 text-xs font-semibold text-muted-foreground">{heroLeft.label}</figcaption>
-            </figure>
-            <figure>
-              <button type="button" onClick={() => setHeroLarge(heroKey(heroRight))} aria-label={`${heroRight.label} groß anzeigen`} className="block w-full cursor-pointer text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg">
-                <MediaSlot m={heroRight} className="shadow-elevated" />
-              </button>
-              <figcaption className={`mt-2 text-xs font-semibold ${heroRight === MEDIA.heroAfter ? 'text-accent' : 'text-muted-foreground'}`}>{heroRight.label}</figcaption>
-            </figure>
+          <div className="flex items-center gap-4">
+            {[MEDIA.heroBefore, MEDIA.heroAfter]
+              .sort((a) => (heroLarge === heroKey(a) ? 1 : -1))
+              .map((m, idx) => {
+                const large = idx === 1;
+                return (
+                  <motion.figure key={m.label} layout transition={{ type: 'spring', stiffness: 230, damping: 28 }} className={large ? 'w-[62%]' : 'w-[38%]'}>
+                    <motion.button layout type="button" onClick={() => setHeroLarge(heroKey(m))} aria-label={`${m.label} groß anzeigen`} className="block w-full cursor-pointer text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                      <MediaSlot m={m} className={large ? 'shadow-elevated' : ''} />
+                    </motion.button>
+                    <motion.figcaption layout="position" transition={{ duration: 0.3 }} className={`mt-2 text-xs font-semibold transition-colors duration-300 ${m === MEDIA.heroAfter ? 'text-accent' : 'text-muted-foreground'}`}>{m.label}</motion.figcaption>
+                  </motion.figure>
+                );
+              })}
           </div>
         </div>
       </section>
