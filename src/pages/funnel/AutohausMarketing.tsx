@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, Camera, Check, Clock, Coins, FileText, Images, Megaphone, Palette, Plug, RotateCcw, Send, Sparkles, Users, Video, Wand2, X } from 'lucide-react';
+import { ArrowRight, Building2, Camera, Check, Clock, Coins, FileText, Images, Megaphone, Palette, Plug, Send, Sparkles, Users, Video, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
