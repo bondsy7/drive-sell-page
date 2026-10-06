@@ -9,10 +9,8 @@ import {
   getAiDisclosureLabelVector,
   getAiDisclosureText,
 } from '@/lib/ai-disclosure';
-import headerGraphicAsset from '@/assets/home/before_after_header.png.asset.json';
+import headerGraphicAsset from '@/assets/home/before_after_header_explorer.png.asset.json';
 import mockupAsset from '@/assets/home/mockup-gesamt.png.asset.json';
-import headlightsWebmAsset from '@/assets/home/fahrzeugscheinwerfer-loop2.webm.asset.json';
-import headlightsMp4Asset from '@/assets/home/fahrzeugscheinwerfer-loop2.mp4.asset.json';
 
 const SLIDE_COUNT = 2;
 const AUTOPLAY_MS = 5000;
@@ -33,14 +31,6 @@ export default function HomeHero() {
     return () => window.clearTimeout(id);
   }, [index, paused, tick]);
 
-  // Browser pausieren stumme Autoplay-Videos teils beim Verschieben aus dem Sichtbereich – bei Slide 1 aktiv neu starten.
-  const videoRef = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || index !== 0) return;
-    v.muted = true;
-    v.play().catch(() => {});
-  }, [index]);
 
   return (
     <section className="overflow-hidden border-b border-border bg-card">
@@ -87,23 +77,9 @@ export default function HomeHero() {
                 <div className="relative">
                   <img
                     src={headerGraphicAsset.url}
-                    alt="Vom Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild und Social-Media-Auftritt – Für schnelles Social Media Marketing"
+                    alt="Vom schmutzigen Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild mit Social-Media-Motiv auf dem Smartphone – mit KI erstellt"
                     className="block h-auto w-full"
                   />
-                  <video
-                    ref={videoRef}
-                    aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
-                    onCanPlay={(e) => { e.currentTarget.muted = true; e.currentTarget.play().catch(() => {}); }}
-                    className="absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover"
-                  >
-                    <source src={headlightsWebmAsset.url} type="video/webm" />
-                    <source src={headlightsMp4Asset.url} type="video/mp4" />
-                  </video>
               <img
                 src={getAiDisclosureLabelVector('landing')}
                 alt={getAiDisclosureLabelAlt('landing')}
