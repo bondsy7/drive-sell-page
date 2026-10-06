@@ -583,7 +583,7 @@ export function HomeClosingCta({ destination }: { destination: string }) {
             ratio="3/2"
             className="h-full w-full border-primary-foreground/30"
             src={dealerCapturingAsset.url}
-            alt="Händler fotografiert mit dem Smartphone ein verschmutztes Fahrzeug auf dem Hof"
+            alt="Händler fotografiert mit dem Smartphone einen hellblauen Ford Explorer vor dem Autohaus"
           />
         </div>
         <div className="flex flex-col justify-center border-t border-primary-foreground/20 p-7 sm:p-10 lg:border-l lg:border-t-0">
