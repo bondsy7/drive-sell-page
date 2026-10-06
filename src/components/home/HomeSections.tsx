@@ -20,7 +20,7 @@ import brandingLookAsset from '@/assets/home/looks/branding-look-ford.jpg.asset.
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
-import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
+import outdoorCollageDetailAsset from '@/assets/home/looks/outdoor-collage-detail.jpg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
 import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
@@ -509,8 +509,8 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: outdoorDetailAsset.url,
-      alt: 'Detailansicht des Fahrzeugs im Outdoor-Look – mit KI erstellt',
+      src: outdoorCollageDetailAsset.url,
+      alt: 'Vier KI erstellte Outdoor-Szenen als Hintergrundvorlagen – mit KI erstellt',
     },
   },
   Branding: {
