@@ -19,6 +19,9 @@ import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json'
 import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
 import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
 import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
+import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
+import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
+import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
