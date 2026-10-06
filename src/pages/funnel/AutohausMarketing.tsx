@@ -149,6 +149,37 @@ export default function AutohausMarketing() {
         </div>
       </section>
 
+      {/* Zwei Zeitlinien: früher vs. jetzt */}
+      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <h2 className="font-display text-3xl font-bold">Vom Ankommen bis online. Früher und heute.</h2>
+        <p className="mt-2 text-muted-foreground">Der bisherige Ablauf neben dem Ablauf mit autohaus.ai.</p>
+        <div className="mt-8 grid gap-10 md:grid-cols-2 md:gap-8">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Früher</p>
+            <ol className="mt-4 space-y-4 border-l-2 border-border pl-6">
+              {['Fahrzeug kommt an und wird erfasst.', 'Fahrzeug muss aufbereitet werden.', 'Fahrzeug muss fotografiert werden.', 'Fahrzeug muss online eingerichtet werden.', 'Marketing muss erstellt werden.'].map((step, i) => (
+                <li key={step} className="relative">
+                  <span aria-hidden="true" className="absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-border bg-card text-[9px] font-bold text-muted-foreground">{i + 1}</span>
+                  <span className="block text-sm font-semibold leading-6 text-muted-foreground">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Jetzt, mit autohaus.ai</p>
+            <ol className="mt-4 space-y-4 border-l-2 border-accent/40 pl-6">
+              {['Fahrzeug kommt an.', 'Ohne Aufbereitung direkt mit dem Smartphone fotografiert.', 'Bilder werden automatisiert erstellt.', 'Marketingmaterial wird automatisiert erstellt.', 'Fahrzeug und Marketing sind direkt online.'].map((step, i) => (
+                <li key={step} className="relative">
+                  <span aria-hidden="true" className={`absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 text-[9px] font-bold ${i === 4 ? 'border-accent bg-accent text-accent-foreground' : 'border-accent/40 bg-card text-accent'}`}>{i + 1}</span>
+                  <span className={`block text-sm font-semibold leading-6 ${i === 4 ? 'text-accent' : 'text-foreground'}`}>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <div className="grid gap-4 md:grid-cols-3">{IBR.map(([Icon, t, x]) => <article key={t} className="rounded-lg border border-border bg-card p-6 shadow-card"><Icon className="h-6 w-6 text-accent" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-bold">{t}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{x}</p></article>)}</div>
       </section>
