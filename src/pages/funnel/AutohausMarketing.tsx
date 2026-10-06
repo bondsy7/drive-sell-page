@@ -112,10 +112,6 @@ function ResultCarousel() {
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
-        <dl className="mx-auto mt-6 grid max-w-3xl gap-3 text-sm sm:grid-cols-2">
-          <div><dt className="font-bold">Dafür nötig</dt><dd className="mt-1 text-muted-foreground">{r.need}</dd></div>
-          <div><dt className="font-bold">Einsetzbar</dt><dd className="mt-1 text-muted-foreground">{r.use}</dd></div>
-        </dl>
         <div className="mt-6 flex items-center justify-center gap-4">
           <Button variant="outline" size="icon" onClick={() => go(-1)} aria-label="Vorheriges Ergebnis"><ChevronLeft className="h-4 w-4" /></Button>
           <div className="flex gap-2" aria-label={`Ergebnis ${i + 1} von ${RESULTS.length}`}>
