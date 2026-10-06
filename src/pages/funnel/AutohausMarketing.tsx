@@ -3,7 +3,20 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import dealerOriginal from '@/assets/funnel/dealer-original.webp.asset.json';
 import dealerRemastered from '@/assets/funnel/branding-2.jpg.asset.json';
-import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2 } from 'lucide-react';
+import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
+import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
+import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
+import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
+import resultImage5Asset from '@/assets/home/results/web-5.jpeg.asset.json';
+import resultImage6Asset from '@/assets/home/results/web-6.jpeg.asset.json';
+import resultImage7Asset from '@/assets/home/results/web-7.jpeg.asset.json';
+import resultImage8Asset from '@/assets/home/results/web-8.jpeg.asset.json';
+import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
+import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
+import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
+import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
+import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -55,8 +68,68 @@ const FLOWS = [
   { icon: Megaphone, title: 'Werbemotive', you: 'Bild und Format wählen, Angebot ergänzen', app: 'Gestaltung mit passenden Vorlagen', get: 'Fertige Motive und Banner' },
 ];
 
+/** 12 aufbereitete Fahrzeugbilder – dieselbe Galerie wie auf der Homepage („Das alles entsteht ab einem einzigen Foto.“). */
+const GALLERY_IMAGES = [
+  resultImage1Asset.url,
+  resultImage2Asset.url,
+  resultImage3Asset.url,
+  resultImage4Asset.url,
+  resultImage5Asset.url,
+  resultImage7Asset.url,
+  resultImage6Asset.url,
+  resultImage11Asset.url,
+  resultImage12Asset.url,
+  resultImage8Asset.url,
+  resultImage9Asset.url,
+  resultImage10Asset.url,
+];
+
+function FahrzeugbilderGallery() {
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const step = (d: 1 | -1) => setLightbox((c) => (c === null ? c : (c + d + GALLERY_IMAGES.length) % GALLERY_IMAGES.length));
+  useEffect(() => {
+    if (lightbox === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
+      else if (e.key === 'Escape') setLightbox(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightbox === null]);
+  return (
+    <div>
+      <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse</p>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
+        {GALLERY_IMAGES.map((src, index) => (
+          <button
+            key={src}
+            type="button"
+            onClick={() => setLightbox(index)}
+            aria-label={`Fahrzeugansicht ${index + 1} vergrößern`}
+            className="relative cursor-zoom-in overflow-hidden rounded-lg border border-border bg-secondary/70 text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            style={{ aspectRatio: '16 / 9' }}
+          >
+            <img src={src} alt={`Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt`} className="h-full w-full object-cover" loading="lazy" />
+            <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />
+          </button>
+        ))}
+      </div>
+      {lightbox !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label={`Fahrzeugansicht ${lightbox + 1} von ${GALLERY_IMAGES.length}`} onClick={() => setLightbox(null)}>
+          <button type="button" onClick={() => setLightbox(null)} aria-label="Schließen" className="absolute right-4 top-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); step(-1); }} aria-label="Vorheriges Bild" className="absolute left-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronLeft className="h-5 w-5" /></button>
+          <img src={GALLERY_IMAGES[lightbox]} alt={`Fahrzeugansicht ${lightbox + 1} im Showroom – mit KI erstellt`} className="max-h-[85vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <button type="button" onClick={(e) => { e.stopPropagation(); step(1); }} aria-label="Nächstes Bild" className="absolute right-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronRight className="h-5 w-5" /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: string; use: string }[] = [
-  { label: 'Fahrzeugbilder', icon: Images, media: [MEDIA.bildAussen, MEDIA.bildInnen], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
+  { label: 'Fahrzeugbilder', icon: Images, media: [], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
   { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivSocial, MEDIA.motivDisplay], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Google Display.' },
   { label: 'Videos', icon: Video, media: [MEDIA.clip], need: 'Fahrzeugbilder und die Auswahl der Videofunktion.', use: 'Social Media und deine Website.' },
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
@@ -106,12 +179,16 @@ function ResultCarousel() {
         onTouchEnd={(e) => { if (touch.current === null) return; const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); touch.current = null; }}
         className="mt-6 rounded-lg border border-border bg-card p-5 shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:p-8"
       >
+        {r.label === 'Fahrzeugbilder' ? (
+          <FahrzeugbilderGallery />
+        ) : (
         <div className="flex flex-wrap items-start justify-center gap-5">
           {r.media.map((m) => {
             const w = m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md';
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
+        )}
         <div className="mt-6 flex items-center justify-center gap-4">
           <Button variant="outline" size="icon" onClick={() => go(-1)} aria-label="Vorheriges Ergebnis"><ChevronLeft className="h-4 w-4" /></Button>
           <div className="flex gap-2" aria-label={`Ergebnis ${i + 1} von ${RESULTS.length}`}>
