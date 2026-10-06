@@ -103,7 +103,7 @@ const RESULT_IMAGES = [
   resultImage5Asset.url,
   resultImage7Asset.url,
   resultImage6Asset.url,
-  resultImage11Asset.url,
+  fordFrontShowroomAsset.url,
   resultImage12Asset.url,
   resultImage8Asset.url,
   resultImage9Asset.url,
