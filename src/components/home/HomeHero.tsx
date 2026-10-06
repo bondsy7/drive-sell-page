@@ -85,7 +85,7 @@ export default function HomeHero() {
                   {/* Scheinwerfer-Video: Overlay in Prozenten des unbeschnittenen Quellbilds (1672x941),
                       positioniert auf dem leeren Gerät-Display rechts. */}
                   <video
-                    className="absolute left-[78.3%] top-[51.8%] h-[41.3%] w-[16.7%] object-cover"
+                    className="absolute left-[78.2%] top-[51.8%] h-[41.3%] w-[12.5%] object-cover"
                     muted
                     autoPlay
                     loop
