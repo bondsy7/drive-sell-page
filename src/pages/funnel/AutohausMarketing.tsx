@@ -37,7 +37,7 @@ const TEST_URL = '/fahrzeug-testen?source=marketing';
  * Austauschbare Medien. `src` später einzeln setzen (Bild-URL oder für Videos { webm, mp4 }).
  * Solange `src` leer ist, wird ein Platzhalter ohne Bildquelle/Player gezeigt.
  */
-type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean; w?: string };
+type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean; w?: string; fit?: 'cover' };
 const MEDIA = {
   heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url },
   heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image', src: dealerRemastered.url },
