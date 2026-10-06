@@ -45,7 +45,7 @@ function MediaSlot({ m, className = '' }: { m: Media; className?: string }) {
 }
 
 const IBR = [
-  [Clock, 'Heute oft Tage.', 'Fototermine, Bildbearbeitung und Gestaltung brauchen Zeit und Abstimmung.'],
+  [Clock, 'Bisher oft Tage.', 'Fototermine, Bildbearbeitung und Gestaltung brauchen Zeit und Abstimmung.'],
   [Camera, 'Mit der App wenige Minuten.', 'Direkt am Fahrzeug Bilder und Marketing erstellen. Bereits ab einem Smartphone-Foto.'],
   [Wand2, 'KI übernimmt die Erstellung.', 'KI bereitet deine Aufnahmen auf. Vorlagen gestalten passende Inhalte.'],
 ] as const;
