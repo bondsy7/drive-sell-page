@@ -98,6 +98,8 @@ function VideoClickToPlay({ ariaLabel, className = '' }: { ariaLabel: string; cl
     </div>
   );
 }
+
+function Icons({ items }: { items: { src: string; alt: string }[] }) {
   return (
     <ul className="mt-4 flex items-center justify-center gap-4" aria-label="Einsatzmöglichkeiten">
       {items.map((i) => (
