@@ -34,16 +34,16 @@ const TEST_URL = '/fahrzeug-testen?source=marketing';
  * Austauschbare Medien. `src` später einzeln setzen (Bild-URL oder für Videos { webm, mp4 }).
  * Solange `src` leer ist, wird ein Platzhalter ohne Bildquelle/Player gezeigt.
  */
-type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean };
+type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean; w?: string };
 const MEDIA = {
   heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url },
   heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image', src: dealerRemastered.url },
   bildAussen: { label: 'Fahrzeugbild außen', ratio: '4 / 3', kind: 'image' },
   bildInnen: { label: 'Fahrzeugbild innen', ratio: '4 / 3', kind: 'image' },
-  motivStory: { label: 'Social-Media-Story (9:16)', ratio: '9 / 16', kind: 'image', src: socialStoryAsset.url, ai: true },
-  motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image', src: socialPostAsset.url, ai: true },
-  motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '1.91 / 1', kind: 'image', src: socialFbAdAsset.url, ai: true },
-  motivDisplay: { label: 'Display-Banner (160×600)', ratio: '160 / 600', kind: 'image', src: socialSkyscraperAsset.url, ai: true },
+  motivStory: { label: 'Social-Media-Story (9:16)', ratio: '9 / 16', kind: 'image', src: socialStoryAsset.url, ai: true, w: 'w-28 sm:w-32' },
+  motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image', src: socialPostAsset.url, ai: true, w: 'w-40 sm:w-44' },
+  motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '1.91 / 1', kind: 'image', src: socialFbAdAsset.url, ai: true, w: 'w-56 sm:w-72' },
+  motivDisplay: { label: 'Display-Banner (160×600)', ratio: '160 / 600', kind: 'image', src: socialSkyscraperAsset.url, ai: true, w: 'w-16 sm:w-20' },
   clip: { label: 'Fahrzeugclip', ratio: '9 / 16', kind: 'video' },
   seite: { label: 'Fahrzeugseite', ratio: '16 / 10', kind: 'page' },
 } satisfies Record<string, Media>;
@@ -136,7 +136,7 @@ function FahrzeugbilderGallery() {
 
 const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: string; use: string }[] = [
   { label: 'Fahrzeugbilder', icon: Images, media: [], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
-  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd, MEDIA.motivDisplay], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
+  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivDisplay, MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
   { label: 'Videos', icon: Video, media: [MEDIA.clip], need: 'Fahrzeugbilder und die Auswahl der Videofunktion.', use: 'Social Media und deine Website.' },
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
 ];
@@ -190,7 +190,7 @@ function ResultCarousel() {
         ) : (
         <div className="flex flex-wrap items-start justify-center gap-5">
           {r.media.map((m) => {
-            const w = m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md';
+            const w = m.w ?? (m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md');
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
