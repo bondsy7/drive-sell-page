@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Scissors, Images } from 'lucide-react';
+import { Camera, Scissors, Images, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -56,6 +56,49 @@ function VideoSlot({ ratio, ariaLabel, className = '' }: { ratio: '16/9' | '9/16
   );
 }
 
+/** 16:9-Video, das nur per Play-Button startet – kein Autoplay, kein Loop. */
+function VideoClickToPlay({ ariaLabel, className = '' }: { ariaLabel: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  return (
+    <div className={`relative overflow-hidden rounded-lg border border-border bg-secondary/70 ${className}`} style={{ aspectRatio: '16/9' }}>
+      <video
+        ref={videoRef}
+        className="h-full w-full object-cover"
+        controls={playing}
+        muted
+        playsInline
+        preload="metadata"
+        aria-label={ariaLabel}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      >
+        <source src={video169Webm.url} type="video/webm" />
+        <source src={video169Mp4.url} type="video/mp4" />
+      </video>
+      {!playing && (
+        <button
+          type="button"
+          aria-label="Video abspielen"
+          onClick={() => { videoRef.current?.play(); }}
+          className="absolute inset-0 flex items-center justify-center bg-secondary/40 transition-colors hover:bg-secondary/20"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-glow">
+            <Play className="ml-1 h-7 w-7" aria-hidden="true" />
+          </span>
+        </button>
+      )}
+      <img
+        src={getAiDisclosureLabelVector('landing')}
+        alt={getAiDisclosureLabelAlt('landing')}
+        title={getAiDisclosureText('landing')}
+        className={AI_DISCLOSURE_OVERLAY_CLASS}
+      />
+    </div>
+  );
+}
+
 function Icons({ items }: { items: { src: string; alt: string }[] }) {
   return (
     <ul className="mt-4 flex items-center justify-center gap-4" aria-label="Einsatzmöglichkeiten">
@@ -69,7 +112,7 @@ function Icons({ items }: { items: { src: string; alt: string }[] }) {
 const steps = [
   { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild', img: ablaufBild.url, imgAlt: 'Fahrzeugbild eines silbernen SUV im Showroom' },
   { t: 'Video gestalten', d: 'Wähle Format und Videostil.', ph: 'Platzhalter Screenshot der Funktion', img: videoEditScreen.url, imgAlt: 'Screenshot der Videofunktion: Fahrzeugbild auswählen, Format 16:9 oder 9:16 wählen, optionaler Video-Prompt' },
-  { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau' },
+  { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau', video: true },
 ];
 
 const benefits = [
@@ -165,7 +208,11 @@ export default function AutohausVideos() {
                   </div>
                 </div>
                 {i < steps.length - 1 && <span aria-hidden="true" className="absolute left-[calc(100%-1rem)] top-4 hidden h-px w-8 bg-accent/50 md:block" />}
-                {'img' in s && s.img ? (
+                {'video' in s && s.video ? (
+                  <div className="mt-4">
+                    <VideoClickToPlay ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Querformat" />
+                  </div>
+                ) : 'img' in s && s.img ? (
                   <figure className="relative mt-4 overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
                     <img src={s.img} alt={s.imgAlt} className="h-full w-full object-cover" loading="lazy" />
                     <img
