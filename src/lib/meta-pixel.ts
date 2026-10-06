@@ -12,7 +12,7 @@ declare global {
   interface Window { fbq?: Fbq; _fbq?: Fbq }
 }
 
-const DEFAULT_PIXEL_ID = '1491394502834323';
+const DEFAULT_PIXEL_ID = '1461821229193734';
 /** Query-Parameter, die nie an Meta gehen dürfen (Lead-Zugang, Kontaktdaten). */
 const SENSITIVE_PARAMS = ['lead', 't', 'token', 'email', 'name', 'phone'];
 
