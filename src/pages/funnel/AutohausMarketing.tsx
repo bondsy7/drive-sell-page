@@ -133,8 +133,6 @@ export default function AutohausMarketing() {
   useEffect(() => { captureAttribution('lp_marketing'); }, []);
   const [showGroup, setShowGroup] = useState(false);
   const [heroLarge, setHeroLarge] = useState<'before' | 'after'>('after');
-  const heroLeft = heroLarge === 'before' ? MEDIA.heroAfter : MEDIA.heroBefore;
-  const heroRight = heroLarge === 'before' ? MEDIA.heroBefore : MEDIA.heroAfter;
   const heroKey = (m: Media) => (m === MEDIA.heroBefore ? 'before' : 'after');
 
   return (
