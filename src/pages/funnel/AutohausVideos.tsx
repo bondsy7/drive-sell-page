@@ -130,7 +130,7 @@ export default function AutohausVideos() {
           <div className="mt-10 grid gap-12 md:grid-cols-2 md:gap-0 md:divide-x md:divide-border">
             <div className="flex flex-col items-center md:px-8">
               <div className="flex w-full items-end justify-center md:h-[440px]">
-                <MediaPlaceholder ratio="9/16" label="Videoplatzhalter 9:16" className="w-[220px] md:w-auto md:h-full" />
+                <VideoSlot ratio="9/16" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Hochformat" className="w-[220px] md:w-auto md:h-full" />
               </div>
               <p className="mt-5 font-semibold">9:16 · Hochformat</p>
               <p className="mt-1 text-sm text-muted-foreground">Für Reels, Stories und Shorts.</p>
@@ -138,7 +138,7 @@ export default function AutohausVideos() {
             </div>
             <div className="flex flex-col items-center md:px-8">
               <div className="flex w-full items-center justify-center md:h-[440px]">
-                <MediaPlaceholder ratio="16/9" label="Videoplatzhalter 16:9" className="w-full" />
+                <VideoSlot ratio="16/9" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Querformat" className="w-full" />
               </div>
               <p className="mt-5 font-semibold">16:9 · Querformat</p>
               <p className="mt-1 text-sm text-muted-foreground">Für deine Website und YouTube.</p>
