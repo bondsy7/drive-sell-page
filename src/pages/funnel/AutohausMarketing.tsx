@@ -15,6 +15,10 @@ import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
 import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
 import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
+import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json';
+import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
+import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
+import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,14 +34,16 @@ const TEST_URL = '/fahrzeug-testen?source=marketing';
  * Austauschbare Medien. `src` später einzeln setzen (Bild-URL oder für Videos { webm, mp4 }).
  * Solange `src` leer ist, wird ein Platzhalter ohne Bildquelle/Player gezeigt.
  */
-type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string };
+type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean };
 const MEDIA = {
   heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url },
   heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image', src: dealerRemastered.url },
   bildAussen: { label: 'Fahrzeugbild außen', ratio: '4 / 3', kind: 'image' },
   bildInnen: { label: 'Fahrzeugbild innen', ratio: '4 / 3', kind: 'image' },
-  motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image' },
-  motivDisplay: { label: 'Google-Display-Banner (300×600)', ratio: '300 / 600', kind: 'image' },
+  motivStory: { label: 'Social-Media-Story (9:16)', ratio: '9 / 16', kind: 'image', src: socialStoryAsset.url, ai: true },
+  motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image', src: socialPostAsset.url, ai: true },
+  motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '1.91 / 1', kind: 'image', src: socialFbAdAsset.url, ai: true },
+  motivDisplay: { label: 'Display-Banner (160×600)', ratio: '160 / 600', kind: 'image', src: socialSkyscraperAsset.url, ai: true },
   clip: { label: 'Fahrzeugclip', ratio: '9 / 16', kind: 'video' },
   seite: { label: 'Fahrzeugseite', ratio: '16 / 10', kind: 'page' },
 } satisfies Record<string, Media>;
