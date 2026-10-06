@@ -508,7 +508,7 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
   },
   Outdoor: {
     src: outdoorLookAsset.url,
-    alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht – mit KI erstellt',
+    alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
     detail: {
       src: outdoorDetailAsset.url,
