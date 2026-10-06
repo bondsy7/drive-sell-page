@@ -9,10 +9,7 @@ import {
   getAiDisclosureLabelVector,
   getAiDisclosureText,
 } from '@/lib/ai-disclosure';
-import headerGraphicAsset from '@/assets/home/before_after_header.png.asset.json';
-import mockupAsset from '@/assets/home/mockup-gesamt.png.asset.json';
-import headlightsWebmAsset from '@/assets/home/fahrzeugscheinwerfer-loop2.webm.asset.json';
-import headlightsMp4Asset from '@/assets/home/fahrzeugscheinwerfer-loop2.mp4.asset.json';
+import headerGraphicAsset from '@/assets/home/before_after_header_explorer.png.asset.json';
 
 const SLIDE_COUNT = 2;
 const AUTOPLAY_MS = 5000;
