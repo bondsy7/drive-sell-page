@@ -82,6 +82,20 @@ export default function HomeHero() {
                     alt="Vom schmutzigen Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild mit Social-Media-Motiv auf dem Smartphone – mit KI erstellt"
                     className="block h-auto w-full"
                   />
+                  {/* Scheinwerfer-Video: Overlay in Prozenten des unbeschnittenen Quellbilds (1672x941),
+                      positioniert auf dem leeren Gerät-Display rechts. */}
+                  <video
+                    className="absolute left-[78.3%] top-[51.8%] h-[41.3%] w-[16.7%] object-cover"
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="auto"
+                    aria-hidden="true"
+                  >
+                    <source src={headlightsFogWebmAsset.url} type="video/webm" />
+                    <source src={headlightsFogMp4Asset.url} type="video/mp4" />
+                  </video>
               <img
                 src={getAiDisclosureLabelVector('landing')}
                 alt={getAiDisclosureLabelAlt('landing')}
