@@ -77,23 +77,9 @@ export default function HomeHero() {
                 <div className="relative">
                   <img
                     src={headerGraphicAsset.url}
-                    alt="Vom Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild und Social-Media-Auftritt – Für schnelles Social Media Marketing"
+                    alt="Vom schmutzigen Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild mit Social-Media-Motiv auf dem Smartphone – mit KI erstellt"
                     className="block h-auto w-full"
                   />
-                  <video
-                    ref={videoRef}
-                    aria-label="Fahrzeugvideo mit aufblinkenden Scheinwerfern – mit KI erstellt"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
-                    onCanPlay={(e) => { e.currentTarget.muted = true; e.currentTarget.play().catch(() => {}); }}
-                    className="absolute left-[78.15%] top-[51.5%] h-[41.8%] w-[12.8%] rounded-[8%/5%] object-cover"
-                  >
-                    <source src={headlightsWebmAsset.url} type="video/webm" />
-                    <source src={headlightsMp4Asset.url} type="video/mp4" />
-                  </video>
               <img
                 src={getAiDisclosureLabelVector('landing')}
                 alt={getAiDisclosureLabelAlt('landing')}
