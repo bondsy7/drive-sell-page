@@ -34,10 +34,10 @@ import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
 import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
 import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
-import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json';
-import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
-import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
-import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
+import bannerStoryAsset from '@/assets/home/social/banner-story.png.asset.json';
+import bannerPostAsset from '@/assets/home/social/banner-post.png.asset.json';
+import bannerHeroAsset from '@/assets/home/social/banner-hero.png.asset.json';
+import bannerSkyscraperAsset from '@/assets/home/social/banner-skyscraper.png.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
