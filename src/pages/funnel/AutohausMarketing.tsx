@@ -37,10 +37,10 @@ const TEST_URL = '/fahrzeug-testen?source=marketing';
  * Austauschbare Medien. `src` später einzeln setzen (Bild-URL oder für Videos { webm, mp4 }).
  * Solange `src` leer ist, wird ein Platzhalter ohne Bildquelle/Player gezeigt.
  */
-type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean; w?: string };
+type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string; ai?: boolean; w?: string; fit?: 'cover' };
 const MEDIA = {
-  heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url },
-  heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image', src: dealerRemastered.url },
+  heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url, fit: 'cover' },
+  heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image', src: dealerRemastered.url, fit: 'cover' },
   bildAussen: { label: 'Fahrzeugbild außen', ratio: '4 / 3', kind: 'image' },
   bildInnen: { label: 'Fahrzeugbild innen', ratio: '4 / 3', kind: 'image' },
   motivStory: { label: 'Social-Media-Story (9:16)', ratio: '9 / 16', kind: 'image', src: socialStoryAsset.url, ai: true, w: 'w-28 sm:w-32' },
@@ -56,7 +56,7 @@ function MediaSlot({ m, className = '' }: { m: Media; className?: string }) {
   if (m.kind === 'video' && (m.webm || m.mp4)) {
     return <div className={`relative ${className}`}><video className="w-full rounded-lg border border-border object-contain" style={style} muted loop autoPlay playsInline aria-label={m.label}>{m.webm && <source src={m.webm} type="video/webm" />}{m.mp4 && <source src={m.mp4} type="video/mp4" />}</video>{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   }
-  if (m.src) return <div className={`relative ${className}`}><img src={m.src} alt={m.label} className="w-full rounded-lg border border-border bg-secondary object-contain" style={style} loading="lazy" />{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
+  if (m.src) return <div className={`relative ${className}`}><img src={m.src} alt={m.label} className={`w-full rounded-lg border border-border bg-secondary ${m.fit === 'cover' ? 'object-cover' : 'object-contain'}`} style={style} loading="lazy" />{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   const Icon = m.kind === 'video' ? Video : m.kind === 'page' ? FileText : ImageIcon;
   return (
     <div className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-secondary/50 p-3 text-center text-muted-foreground ${className}`} style={style} role="img" aria-label={`Platzhalter: ${m.label}`}>
