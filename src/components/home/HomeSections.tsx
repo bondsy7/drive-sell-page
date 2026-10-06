@@ -509,8 +509,8 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: outdoorDetailAsset.url,
-      alt: 'Detailansicht des Fahrzeugs im Outdoor-Look – mit KI erstellt',
+      src: outdoorCollageDetailAsset.url,
+      alt: 'Vier KI erstellte Outdoor-Szenen als Hintergrundvorlagen – mit KI erstellt',
     },
   },
   Branding: {
