@@ -15,7 +15,6 @@ import verkaufsseiteAsset from '@/assets/home/verkaufsseite-ford.png.asset.json'
 import bannerMockupAsset from '@/assets/home/mobilede-mockup-banner-ford.png.asset.json';
 import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
-import showroomLookAsset from '@/assets/home/looks/showroom-look-ford.jpeg.asset.json';
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look-ford.jpg.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look-ford.jpg.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
@@ -498,8 +497,8 @@ type LookEntry = {
 
 const LOOK_IMAGES: Record<string, LookEntry> = {
   Showroom: {
-    src: showroomLookAsset.url,
-    alt: 'Heckansicht des hellblauen Ford Explorers im hellen Showroom – mit KI erstellt',
+    src: resultImage1Asset.url,
+    alt: 'Hellblauer Ford Explorer in der Frontansicht im hellen Showroom – mit KI erstellt',
     aiContext: 'landing',
     detail: {
       src: fahrzeugdetailAsset.url,
