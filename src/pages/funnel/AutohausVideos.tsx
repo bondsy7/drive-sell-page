@@ -105,11 +105,11 @@ export default function AutohausVideos() {
         </div>
         <div className="flex items-end gap-4">
           <figure className="min-w-0 flex-[3]">
-            <MediaPlaceholder ratio="16/9" label="Videoplatzhalter 16:9" />
+            <VideoSlot ratio="16/9" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Querformat" />
             <figcaption className="mt-2 text-xs text-muted-foreground">16:9 · Querformat</figcaption>
           </figure>
           <figure className="min-w-0 flex-1">
-            <MediaPlaceholder ratio="9/16" label="Videoplatzhalter 9:16" />
+            <VideoSlot ratio="9/16" ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Hochformat" />
             <figcaption className="mt-2 text-xs text-muted-foreground">9:16 · Hochformat</figcaption>
           </figure>
         </div>
