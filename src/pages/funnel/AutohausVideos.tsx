@@ -112,7 +112,7 @@ function Icons({ items }: { items: { src: string; alt: string }[] }) {
 const steps = [
   { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild', img: ablaufBild.url, imgAlt: 'Fahrzeugbild eines silbernen SUV im Showroom' },
   { t: 'Video gestalten', d: 'Wähle Format und Videostil.', ph: 'Platzhalter Screenshot der Funktion', img: videoEditScreen.url, imgAlt: 'Screenshot der Videofunktion: Fahrzeugbild auswählen, Format 16:9 oder 9:16 wählen, optionaler Video-Prompt' },
-  { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau' },
+  { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau', video: true },
 ];
 
 const benefits = [
@@ -208,7 +208,11 @@ export default function AutohausVideos() {
                   </div>
                 </div>
                 {i < steps.length - 1 && <span aria-hidden="true" className="absolute left-[calc(100%-1rem)] top-4 hidden h-px w-8 bg-accent/50 md:block" />}
-                {'img' in s && s.img ? (
+                {'video' in s && s.video ? (
+                  <div className="mt-4">
+                    <VideoClickToPlay ariaLabel="Beispiel: KI-erstelltes Fahrzeugvideo im Querformat" />
+                  </div>
+                ) : 'img' in s && s.img ? (
                   <figure className="relative mt-4 overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
                     <img src={s.img} alt={s.imgAlt} className="h-full w-full object-cover" loading="lazy" />
                     <img
