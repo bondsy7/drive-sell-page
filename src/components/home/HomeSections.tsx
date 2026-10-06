@@ -247,7 +247,7 @@ function SocialFormatCollage({ onOpen }: { onOpen: (index: number) => void }) {
               alt={SOCIAL_FORMATS.fbAd.alt}
               loading="lazy"
               className="w-full rounded-lg border border-border"
-              style={{ aspectRatio: '1200 / 628' }}
+              style={{ aspectRatio: '1920 / 1080' }}
             />
           </button>
           <button type="button" onClick={() => onOpen(1)} aria-label={`${SOCIAL_FORMATS.post.alt} – vergrößern`} className={cn('w-full', zoomClass)}>
