@@ -219,7 +219,7 @@ export default function AutohausMarketing() {
       <section className="border-b border-border bg-card">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16">
           <div>
-            <h1 className="font-display text-4xl font-bold leading-[1.05] sm:text-5xl">Fahrzeuge schneller vermarkten. Mit weniger Aufwand im Autohaus.</h1>
+            <h1 className="font-display text-4xl font-bold leading-[1.05] sm:text-5xl">Professionelle Fahrzeugbilder. Fertiges Marketing.<br />In wenigen Minuten.</h1>
             <p className="mt-5 text-base leading-7 text-muted-foreground">Smartphone-Fotos aufnehmen. In der App aufbereiten. Fahrzeugbilder und Marketingmaterial in wenigen Minuten erstellen.</p>
             <Button asChild size="lg" className="mt-7"><Link to={TEST_URL} data-cta="marketing_hero_test">Mit eigenem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link></Button>
             <div className="mt-5 flex flex-wrap gap-4 text-sm text-muted-foreground">{['Zeit sparen', 'Erstellungskosten reduzieren', 'Mitarbeiter entlasten'].map((x) => <span key={x} className="flex items-center gap-1.5"><Check className="h-4 w-4 text-accent" />{x}</span>)}</div>
