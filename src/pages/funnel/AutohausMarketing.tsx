@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dealerOriginal from '@/assets/funnel/dealer-original.webp.asset.json';
-import { Button } from '@/components/ui/button';
+import { ArrowRight, Building2, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, Palette, Users, Video, Wand2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
 import ProcessCheckForm from '@/components/funnel/ProcessCheckForm';
