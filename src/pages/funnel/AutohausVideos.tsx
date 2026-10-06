@@ -18,6 +18,7 @@ import video916Webm from '@/assets/videos-916.webm.asset.json';
 import video916Mp4 from '@/assets/videos-916.mp4.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import ablaufBild from '@/assets/ablauf-fahrzeugbild.jpg.asset.json';
+import videoEditScreen from '@/assets/video-edit-screen.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=videos';
 
@@ -67,7 +68,7 @@ function Icons({ items }: { items: { src: string; alt: string }[] }) {
 
 const steps = [
   { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild', img: ablaufBild.url, imgAlt: 'Fahrzeugbild eines silbernen SUV im Showroom' },
-  { t: 'Video gestalten', d: 'Wähle Format und Videostil.', ph: 'Platzhalter Screenshot der Funktion' },
+  { t: 'Video gestalten', d: 'Wähle Format und Videostil.', ph: 'Platzhalter Screenshot der Funktion', img: videoEditScreen.url, imgAlt: 'Screenshot der Videofunktion: Fahrzeugbild auswählen, Format 16:9 oder 9:16 wählen, optionaler Video-Prompt' },
   { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau' },
 ];
 
