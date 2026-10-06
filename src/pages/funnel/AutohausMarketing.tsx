@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dealerOriginal from '@/assets/funnel/dealer-original.webp.asset.json';
 import dealerRemastered from '@/assets/funnel/dealer-remastered.webp.asset.json';
-import { ArrowRight, Building2, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, Palette, Users, Video, Wand2 } from 'lucide-react';
+import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -61,10 +61,10 @@ const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: strin
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
 ];
 
-const SAVED = [
-  ['Separate Fototermine', 'Fahrzeuge für Aufnahmen umstellen und Termine koordinieren.'],
-  ['Manuelle Gestaltung', 'Bilder bearbeiten, Banner gestalten und Formate anpassen.'],
-  ['Externe Abstimmung', 'Die gezeigten Inhalte direkt selbst erstellen.'],
+const SAVED: [typeof Calendar, string, string][] = [
+  [Calendar, 'Separate Fototermine', 'Fahrzeuge für Aufnahmen umstellen und Termine koordinieren.'],
+  [PenTool, 'Manuelle Gestaltung', 'Bilder bearbeiten, Banner gestalten und Formate anpassen.'],
+  [MessagesSquare, 'Externe Abstimmung', 'Die gezeigten Inhalte direkt selbst erstellen.'],
 ];
 
 const STEPS = [
@@ -185,7 +185,7 @@ export default function AutohausMarketing() {
       <section className="border-y border-border bg-card py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="font-display text-3xl font-bold">Diese Arbeit sparst du dir.</h2>
-          <div className="mt-7 grid gap-4 md:grid-cols-3">{SAVED.map(([t, x]) => <article key={t} className="rounded-lg border border-border bg-background p-6"><h3 className="font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{x}</p></article>)}</div>
+          <div className="mt-7 grid gap-4 md:grid-cols-3">{SAVED.map(([Icon, t, x]) => <article key={t} className="rounded-lg border border-border bg-background p-6"><Icon className="h-6 w-6 text-accent" aria-hidden="true" /><h3 className="mt-4 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{x}</p></article>)}</div>
           <p className="mt-6 font-display text-xl font-bold text-accent">Mehr Kapazität für den Verkauf.</p>
         </div>
       </section>
