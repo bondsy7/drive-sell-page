@@ -188,6 +188,7 @@ function ResultCarousel() {
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
+        )}
         <div className="mt-6 flex items-center justify-center gap-4">
           <Button variant="outline" size="icon" onClick={() => go(-1)} aria-label="Vorheriges Ergebnis"><ChevronLeft className="h-4 w-4" /></Button>
           <div className="flex gap-2" aria-label={`Ergebnis ${i + 1} von ${RESULTS.length}`}>
