@@ -185,7 +185,7 @@ export default function AutohausMarketing() {
       <section className="border-y border-border bg-card py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="font-display text-3xl font-bold">Diese Arbeit sparst du dir.</h2>
-          <div className="mt-7 grid gap-4 md:grid-cols-3">{SAVED.map(([t, x]) => <article key={t} className="rounded-lg border border-border bg-background p-6"><h3 className="font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{x}</p></article>)}</div>
+          <div className="mt-7 grid gap-4 md:grid-cols-3">{SAVED.map(([Icon, t, x]) => <article key={t} className="rounded-lg border border-border bg-background p-6"><Icon className="h-6 w-6 text-accent" aria-hidden="true" /><h3 className="mt-4 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{x}</p></article>)}</div>
           <p className="mt-6 font-display text-xl font-bold text-accent">Mehr Kapazität für den Verkauf.</p>
         </div>
       </section>
