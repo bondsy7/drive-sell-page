@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Scissors, Images } from 'lucide-react';
+import { Camera, Scissors, Images, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -56,7 +56,48 @@ function VideoSlot({ ratio, ariaLabel, className = '' }: { ratio: '16/9' | '9/16
   );
 }
 
-function Icons({ items }: { items: { src: string; alt: string }[] }) {
+/** 16:9-Video, das nur per Play-Button startet – kein Autoplay, kein Loop. */
+function VideoClickToPlay({ ariaLabel, className = '' }: { ariaLabel: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  return (
+    <div className={`relative overflow-hidden rounded-lg border border-border bg-secondary/70 ${className}`} style={{ aspectRatio: '16/9' }}>
+      <video
+        ref={videoRef}
+        className="h-full w-full object-cover"
+        controls={playing}
+        muted
+        playsInline
+        preload="metadata"
+        aria-label={ariaLabel}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      >
+        <source src={video169Webm.url} type="video/webm" />
+        <source src={video169Mp4.url} type="video/mp4" />
+      </video>
+      {!playing && (
+        <button
+          type="button"
+          aria-label="Video abspielen"
+          onClick={() => { videoRef.current?.play(); }}
+          className="absolute inset-0 flex items-center justify-center bg-secondary/40 transition-colors hover:bg-secondary/20"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-glow">
+            <Play className="ml-1 h-7 w-7" aria-hidden="true" />
+          </span>
+        </button>
+      )}
+      <img
+        src={getAiDisclosureLabelVector('landing')}
+        alt={getAiDisclosureLabelAlt('landing')}
+        title={getAiDisclosureText('landing')}
+        className={AI_DISCLOSURE_OVERLAY_CLASS}
+      />
+    </div>
+  );
+}
   return (
     <ul className="mt-4 flex items-center justify-center gap-4" aria-label="Einsatzmöglichkeiten">
       {items.map((i) => (
