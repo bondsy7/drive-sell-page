@@ -10,6 +10,7 @@ import {
   getAiDisclosureText,
 } from '@/lib/ai-disclosure';
 import headerGraphicAsset from '@/assets/home/before_after_header_explorer.png.asset.json';
+import mockupAsset from '@/assets/home/mockup-gesamt.png.asset.json';
 
 const SLIDE_COUNT = 2;
 const AUTOPLAY_MS = 5000;
