@@ -143,7 +143,8 @@ export default function FahrzeugTestenDanke() {
         return;
       }
       setEmailRequested(true);
-      trackFunnelEvent('demo_requested', { method: 'email' }, { eventId: `demo_requested:${leadId}`, leadId });
+      // Eigenes Ereignis (GA4/intern), bewusst KEIN Ads-Terminlabel und KEIN Meta Schedule.
+      trackFunnelEvent('results_by_email_requested', { method: 'email' }, { eventId: `results_by_email_requested:${leadId}`, leadId });
       toast({ title: 'Vermerkt', description: 'Wir senden Ihnen ein persönliches Beispiel per E-Mail.' });
     } finally {
       setSending(false);
