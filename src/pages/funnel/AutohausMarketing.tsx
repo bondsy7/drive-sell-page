@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import dealerOriginal from '@/assets/funnel/dealer-original.webp.asset.json';
 import { ArrowRight, Building2, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, Palette, Users, Video, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -16,7 +17,7 @@ const TEST_URL = '/fahrzeug-testen?source=marketing';
  */
 type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string };
 const MEDIA = {
-  heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image' },
+  heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url },
   heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image' },
   bildAussen: { label: 'Fahrzeugbild außen', ratio: '4 / 3', kind: 'image' },
   bildInnen: { label: 'Fahrzeugbild innen', ratio: '4 / 3', kind: 'image' },
