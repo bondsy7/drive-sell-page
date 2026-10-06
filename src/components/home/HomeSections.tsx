@@ -509,10 +509,8 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: outdoorLookAsset.url,
-      alt: 'Detailansicht des hellblauen Ford Explorers vor schneebedeckten Bergen – mit KI erstellt',
-      position: '50% 60%',
-      zoom: 2.2,
+      src: outdoorDetailAsset.url,
+      alt: 'Detailansicht des Fahrzeugs im Outdoor-Look – mit KI erstellt',
     },
   },
   Branding: {
@@ -520,10 +518,8 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Blauer Ford Explorer im Showroom vor einer Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: brandingLookAsset.url,
-      alt: 'Detailansicht des blauen Ford Explorers mit autohaus.ai-Schriftzug im Showroom – mit KI erstellt',
-      position: '50% 35%',
-      zoom: 2.2,
+      src: brandingDetailAsset.url,
+      alt: 'Detailansicht des Fahrzeugs mit Branding im Showroom – mit KI erstellt',
     },
   },
   Kennzeichen: {
