@@ -31,14 +31,6 @@ export default function HomeHero() {
     return () => window.clearTimeout(id);
   }, [index, paused, tick]);
 
-  // Browser pausieren stumme Autoplay-Videos teils beim Verschieben aus dem Sichtbereich – bei Slide 1 aktiv neu starten.
-  const videoRef = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || index !== 0) return;
-    v.muted = true;
-    v.play().catch(() => {});
-  }, [index]);
 
   return (
     <section className="overflow-hidden border-b border-border bg-card">
