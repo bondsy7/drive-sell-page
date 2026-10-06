@@ -54,7 +54,7 @@ const MEDIA = {
 function MediaSlot({ m, className = '' }: { m: Media; className?: string }) {
   const style = { aspectRatio: m.ratio };
   if (m.kind === 'video' && (m.webm || m.mp4)) {
-    return <video className={`w-full rounded-lg border border-border object-contain ${className}`} style={style} muted loop autoPlay playsInline>{m.webm && <source src={m.webm} type="video/webm" />}{m.mp4 && <source src={m.mp4} type="video/mp4" />}</video>;
+    return <div className={`relative ${className}`}><video className="w-full rounded-lg border border-border object-contain" style={style} muted loop autoPlay playsInline aria-label={m.label}>{m.webm && <source src={m.webm} type="video/webm" />}{m.mp4 && <source src={m.mp4} type="video/mp4" />}</video>{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   }
   if (m.src) return <div className={`relative ${className}`}><img src={m.src} alt={m.label} className="w-full rounded-lg border border-border bg-secondary object-contain" style={style} loading="lazy" />{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   const Icon = m.kind === 'video' ? Video : m.kind === 'page' ? FileText : ImageIcon;
