@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-explorer.webp.asset.json';
-import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
+import remasterShowroomAsset from '@/assets/home/remaster-explorer-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
@@ -74,7 +74,7 @@ const PROCESS_STEPS: ProcessStep[] = [
     label: 'Aufbereitetes Fahrzeug im Autohaus-Look',
     icon: Palette,
     image: remasterShowroomAsset.url,
-    alt: 'Derselbe SUV sauber freigestellt im hellen Showroom – mit KI aufbereitet',
+    alt: 'Derselbe hellblaue Ford Explorer sauber im hellen Showroom – mit KI aufbereitet',
     objectPosition: 'center',
     aiContext: 'landing',
   },
