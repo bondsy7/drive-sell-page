@@ -53,7 +53,7 @@ function MediaSlot({ m, className = '' }: { m: Media; className?: string }) {
   if (m.kind === 'video' && (m.webm || m.mp4)) {
     return <video className={`w-full rounded-lg border border-border object-contain ${className}`} style={style} muted loop autoPlay playsInline>{m.webm && <source src={m.webm} type="video/webm" />}{m.mp4 && <source src={m.mp4} type="video/mp4" />}</video>;
   }
-  if (m.src) return <img src={m.src} alt={m.label} className={`w-full rounded-lg border border-border bg-secondary object-contain ${className}`} style={style} loading="lazy" />;
+  if (m.src) return <div className={`relative ${className}`}><img src={m.src} alt={m.label} className="w-full rounded-lg border border-border bg-secondary object-contain" style={style} loading="lazy" />{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   const Icon = m.kind === 'video' ? Video : m.kind === 'page' ? FileText : ImageIcon;
   return (
     <div className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-secondary/50 p-3 text-center text-muted-foreground ${className}`} style={style} role="img" aria-label={`Platzhalter: ${m.label}`}>
@@ -136,7 +136,7 @@ function FahrzeugbilderGallery() {
 
 const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: string; use: string }[] = [
   { label: 'Fahrzeugbilder', icon: Images, media: [], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
-  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivSocial, MEDIA.motivDisplay], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Google Display.' },
+  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd, MEDIA.motivDisplay], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
   { label: 'Videos', icon: Video, media: [MEDIA.clip], need: 'Fahrzeugbilder und die Auswahl der Videofunktion.', use: 'Social Media und deine Website.' },
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
 ];
@@ -190,7 +190,7 @@ function ResultCarousel() {
         ) : (
         <div className="flex flex-wrap items-start justify-center gap-5">
           {r.media.map((m) => {
-            const w = m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md';
+            const w = m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md';
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
