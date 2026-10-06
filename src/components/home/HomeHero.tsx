@@ -11,6 +11,8 @@ import {
 } from '@/lib/ai-disclosure';
 import headerGraphicAsset from '@/assets/home/before_after_header_explorer.png.asset.json';
 import mockupAsset from '@/assets/home/mockup-gesamt.png.asset.json';
+import headlightsFogWebmAsset from '@/assets/home/headlights-fog.webm.asset.json';
+import headlightsFogMp4Asset from '@/assets/home/headlights-fog.mp4.asset.json';
 
 const SLIDE_COUNT = 2;
 const AUTOPLAY_MS = 5000;
