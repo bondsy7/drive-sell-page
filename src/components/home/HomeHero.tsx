@@ -11,6 +11,8 @@ import {
 } from '@/lib/ai-disclosure';
 import headerGraphicAsset from '@/assets/home/before_after_header_explorer.png.asset.json';
 import mockupAsset from '@/assets/home/mockup-gesamt.png.asset.json';
+import headlightsFogWebmAsset from '@/assets/home/headlights-fog.webm.asset.json';
+import headlightsFogMp4Asset from '@/assets/home/headlights-fog.mp4.asset.json';
 
 const SLIDE_COUNT = 2;
 const AUTOPLAY_MS = 5000;
@@ -80,6 +82,20 @@ export default function HomeHero() {
                     alt="Vom schmutzigen Fahrzeugfoto auf dem Händlerhof zum professionellen Showroom-Bild mit Social-Media-Motiv auf dem Smartphone – mit KI erstellt"
                     className="block h-auto w-full"
                   />
+                  {/* Scheinwerfer-Video: Overlay in Prozenten des unbeschnittenen Quellbilds (1672x941),
+                      positioniert auf dem leeren Gerät-Display rechts. */}
+                  <video
+                    className="absolute left-[78.2%] top-[51.8%] h-[41.3%] w-[12.5%] object-cover"
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="auto"
+                    aria-hidden="true"
+                  >
+                    <source src={headlightsFogWebmAsset.url} type="video/webm" />
+                    <source src={headlightsFogMp4Asset.url} type="video/mp4" />
+                  </video>
               <img
                 src={getAiDisclosureLabelVector('landing')}
                 alt={getAiDisclosureLabelAlt('landing')}
