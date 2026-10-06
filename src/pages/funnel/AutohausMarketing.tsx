@@ -147,8 +147,18 @@ export default function AutohausMarketing() {
             <div className="mt-5 flex flex-wrap gap-4 text-sm text-muted-foreground">{['Zeit sparen', 'Erstellungskosten reduzieren', 'Mitarbeiter entlasten'].map((x) => <span key={x} className="flex items-center gap-1.5"><Check className="h-4 w-4 text-accent" />{x}</span>)}</div>
           </div>
           <div className="grid grid-cols-[.8fr_1.2fr] items-center gap-4">
-            <figure><MediaSlot m={MEDIA.heroBefore} /><figcaption className="mt-2 text-xs font-semibold text-muted-foreground">Deine Aufnahme</figcaption></figure>
-            <figure><MediaSlot m={MEDIA.heroAfter} className="shadow-elevated" /><figcaption className="mt-2 text-xs font-semibold text-accent">Dein Fahrzeugbild</figcaption></figure>
+            <figure>
+              <button type="button" onClick={() => setHeroLarge(heroKey(heroLeft))} aria-label={`${heroLeft.label} groß anzeigen`} className="block w-full cursor-pointer text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg">
+                <MediaSlot m={heroLeft} />
+              </button>
+              <figcaption className="mt-2 text-xs font-semibold text-muted-foreground">{heroLeft.label}</figcaption>
+            </figure>
+            <figure>
+              <button type="button" onClick={() => setHeroLarge(heroKey(heroRight))} aria-label={`${heroRight.label} groß anzeigen`} className="block w-full cursor-pointer text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg">
+                <MediaSlot m={heroRight} className="shadow-elevated" />
+              </button>
+              <figcaption className={`mt-2 text-xs font-semibold ${heroRight === MEDIA.heroAfter ? 'text-accent' : 'text-muted-foreground'}`}>{heroRight.label}</figcaption>
+            </figure>
           </div>
         </div>
       </section>
