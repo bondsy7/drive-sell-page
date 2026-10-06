@@ -19,6 +19,9 @@ import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json'
 import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
 import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
 import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
+import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
+import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
+import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,14 +47,14 @@ const MEDIA = {
   motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image', src: socialPostAsset.url, ai: true, w: 'w-40 sm:w-44' },
   motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '1.91 / 1', kind: 'image', src: socialFbAdAsset.url, ai: true, w: 'w-56 sm:w-72' },
   motivDisplay: { label: 'Display-Banner (160×600)', ratio: '160 / 600', kind: 'image', src: socialSkyscraperAsset.url, ai: true, w: 'w-16 sm:w-20' },
-  clip: { label: 'Fahrzeugclip', ratio: '9 / 16', kind: 'video' },
-  seite: { label: 'Fahrzeugseite', ratio: '16 / 10', kind: 'page' },
+  clip: { label: 'Fahrzeugclip', ratio: '16 / 9', kind: 'video', webm: resultVideoWebmAsset.url, mp4: resultVideoMp4Asset.url, ai: true },
+  seite: { label: 'Fahrzeugseite', ratio: '16 / 9', kind: 'image', src: verkaufsseiteAsset.url, ai: true },
 } satisfies Record<string, Media>;
 
 function MediaSlot({ m, className = '' }: { m: Media; className?: string }) {
   const style = { aspectRatio: m.ratio };
   if (m.kind === 'video' && (m.webm || m.mp4)) {
-    return <video className={`w-full rounded-lg border border-border object-contain ${className}`} style={style} muted loop autoPlay playsInline>{m.webm && <source src={m.webm} type="video/webm" />}{m.mp4 && <source src={m.mp4} type="video/mp4" />}</video>;
+    return <div className={`relative ${className}`}><video className="w-full rounded-lg border border-border object-contain" style={style} muted loop autoPlay playsInline aria-label={m.label}>{m.webm && <source src={m.webm} type="video/webm" />}{m.mp4 && <source src={m.mp4} type="video/mp4" />}</video>{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   }
   if (m.src) return <div className={`relative ${className}`}><img src={m.src} alt={m.label} className="w-full rounded-lg border border-border bg-secondary object-contain" style={style} loading="lazy" />{m.ai && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />}</div>;
   const Icon = m.kind === 'video' ? Video : m.kind === 'page' ? FileText : ImageIcon;
@@ -190,7 +193,7 @@ function ResultCarousel() {
         ) : (
         <div className="flex flex-wrap items-start justify-center gap-5">
           {r.media.map((m) => {
-            const w = m.w ?? (m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md');
+            const w = m.w ?? (m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' || m.ratio === '16 / 9' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md');
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
