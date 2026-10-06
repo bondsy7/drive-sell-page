@@ -68,8 +68,68 @@ const FLOWS = [
   { icon: Megaphone, title: 'Werbemotive', you: 'Bild und Format wählen, Angebot ergänzen', app: 'Gestaltung mit passenden Vorlagen', get: 'Fertige Motive und Banner' },
 ];
 
+/** 12 aufbereitete Fahrzeugbilder – dieselbe Galerie wie auf der Homepage („Das alles entsteht ab einem einzigen Foto.“). */
+const GALLERY_IMAGES = [
+  resultImage1Asset.url,
+  resultImage2Asset.url,
+  resultImage3Asset.url,
+  resultImage4Asset.url,
+  resultImage5Asset.url,
+  resultImage7Asset.url,
+  resultImage6Asset.url,
+  resultImage11Asset.url,
+  resultImage12Asset.url,
+  resultImage8Asset.url,
+  resultImage9Asset.url,
+  resultImage10Asset.url,
+];
+
+function FahrzeugbilderGallery() {
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const step = (d: 1 | -1) => setLightbox((c) => (c === null ? c : (c + d + GALLERY_IMAGES.length) % GALLERY_IMAGES.length));
+  useEffect(() => {
+    if (lightbox === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
+      else if (e.key === 'Escape') setLightbox(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightbox === null]);
+  return (
+    <div>
+      <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse</p>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
+        {GALLERY_IMAGES.map((src, index) => (
+          <button
+            key={src}
+            type="button"
+            onClick={() => setLightbox(index)}
+            aria-label={`Fahrzeugansicht ${index + 1} vergrößern`}
+            className="relative cursor-zoom-in overflow-hidden rounded-lg border border-border bg-secondary/70 text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            style={{ aspectRatio: '16 / 9' }}
+          >
+            <img src={src} alt={`Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt`} className="h-full w-full object-cover" loading="lazy" />
+            <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} title={getAiDisclosureText('landing')} className={AI_DISCLOSURE_OVERLAY_CLASS} />
+          </button>
+        ))}
+      </div>
+      {lightbox !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label={`Fahrzeugansicht ${lightbox + 1} von ${GALLERY_IMAGES.length}`} onClick={() => setLightbox(null)}>
+          <button type="button" onClick={() => setLightbox(null)} aria-label="Schließen" className="absolute right-4 top-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); step(-1); }} aria-label="Vorheriges Bild" className="absolute left-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronLeft className="h-5 w-5" /></button>
+          <img src={GALLERY_IMAGES[lightbox]} alt={`Fahrzeugansicht ${lightbox + 1} im Showroom – mit KI erstellt`} className="max-h-[85vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <button type="button" onClick={(e) => { e.stopPropagation(); step(1); }} aria-label="Nächstes Bild" className="absolute right-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronRight className="h-5 w-5" /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: string; use: string }[] = [
-  { label: 'Fahrzeugbilder', icon: Images, media: [MEDIA.bildAussen, MEDIA.bildInnen], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
+  { label: 'Fahrzeugbilder', icon: Images, media: [], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
   { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivSocial, MEDIA.motivDisplay], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Google Display.' },
   { label: 'Videos', icon: Video, media: [MEDIA.clip], need: 'Fahrzeugbilder und die Auswahl der Videofunktion.', use: 'Social Media und deine Website.' },
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
