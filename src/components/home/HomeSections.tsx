@@ -17,9 +17,8 @@ import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look-ford.jpg.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look-ford.jpg.asset.json';
-import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
+import kennzeichenExplorerHintenAsset from '@/assets/home/looks/kennzeichen-explorer-hinten.jpg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
-import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
 import outdoorCollageDetailAsset from '@/assets/home/looks/outdoor-collage-detail.jpg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
@@ -524,12 +523,14 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     },
   },
   Kennzeichen: {
-    src: kennzeichenLookAsset.url,
-    alt: 'Silbernes SUV in der Dreiviertelansicht von vorne mit dem Kennzeichen autohaus.ai – mit KI erstellt',
+    src: kennzeichenExplorerHintenAsset.url,
+    alt: 'Heckansicht des hellblauen Ford Explorers im hellen Showroom mit dem Kennzeichen autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: kennzeichenDetailAsset.url,
-      alt: 'Detailaufnahme des Kennzeichens mit der Aufschrift autohaus.ai – mit KI erstellt',
+      src: kennzeichenExplorerHintenAsset.url,
+      alt: 'Nahaufnahme des Kennzeichens autohaus.ai am Heck des hellblauen Ford Explorers – mit KI erstellt',
+      position: 'center 62%',
+      zoom: 2.2,
     },
   },
 };
