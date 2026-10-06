@@ -21,10 +21,13 @@ export type FunnelEventName =
   | 'process_check_started'
   | 'generate_lead'
   | 'lead_details_completed'
-  | 'demo_requested';
+  /** Nur nach bestätigtem calendly.event_scheduled. Löst Ads-Demo-Label + Meta Schedule aus. */
+  | 'demo_requested'
+  /** „Ergebnisse lieber per E-Mail" erfolgreich gespeichert. Nur GA4/intern, keine Ads-/Meta-Conversion. */
+  | 'results_by_email_requested';
 
 const SERVER_EVENTS = new Set<FunnelEventName>([
-  'page_view', 'cta_click', 'scroll_depth', 'form_start', 'vehicle_test_started', 'demo_requested', 'process_check_started', 'lead_details_completed',
+  'page_view', 'cta_click', 'scroll_depth', 'form_start', 'vehicle_test_started', 'demo_requested', 'results_by_email_requested', 'process_check_started', 'lead_details_completed',
 ]);
 
 const SESSION_KEY = 'auto3_funnel_session';
@@ -91,7 +94,7 @@ export function trackFunnelEvent(name: FunnelEventName, params: Record<string, u
     trackMetaEvent('Lead', eventId);
   }
   if (name === 'demo_requested') {
-    // Zweites, wertvolleres Ziel: nur mit eigenem Label, nie als Haupt-Conversion.
+    // Terminbuchung: ausschließlich nach bestätigtem calendly.event_scheduled auslösen.
     const label = (import.meta.env.VITE_GOOGLE_ADS_DEMO_LABEL as string | undefined)?.trim();
     if (label && adsId) trackGoogleAdsConversion(`${adsId}/${label}`, { transaction_id: eventId });
     trackMetaEvent('Schedule', eventId);

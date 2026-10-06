@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 /** Nimmt anonyme Funnel-Ereignisse entgegen. Keine personenbezogenen Daten. */
 const ALLOWED = new Set([
   "page_view", "cta_click", "scroll_depth", "form_start", "vehicle_test_started",
-  "demo_requested", "process_check_started", "lead_details_completed",
+  "demo_requested", "results_by_email_requested", "process_check_started", "lead_details_completed",
 ]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
