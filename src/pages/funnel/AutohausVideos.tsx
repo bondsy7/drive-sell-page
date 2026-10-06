@@ -18,6 +18,7 @@ import video916Webm from '@/assets/videos-916.webm.asset.json';
 import video916Mp4 from '@/assets/videos-916.mp4.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import ablaufBild from '@/assets/ablauf-fahrzeugbild.jpg.asset.json';
+import videoEditScreen from '@/assets/video-edit-screen.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=videos';
 
