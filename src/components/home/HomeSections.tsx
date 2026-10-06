@@ -21,7 +21,6 @@ import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asse
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
 import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
-import brandingDetailAsset from '@/assets/home/looks/branding-detail.webp.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
 import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
@@ -519,8 +518,9 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Blauer Ford Explorer im Showroom vor einer Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: brandingDetailAsset.url,
-      alt: 'Detailansicht des Fahrzeugs mit Branding im Showroom – mit KI erstellt',
+      src: brandingLookAsset.url,
+      alt: 'Ausschnitt der Showroom-Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
+      position: '100% 50%',
     },
   },
   Kennzeichen: {
