@@ -16,7 +16,7 @@ const TEST_URL = '/fahrzeug-testen?source=marketing';
  */
 type Media = { label: string; ratio: string; kind: 'image' | 'video' | 'page'; src?: string; webm?: string; mp4?: string };
 const MEDIA = {
-  heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image' },
+  heroBefore: { label: 'Deine Aufnahme', ratio: '4 / 3', kind: 'image', src: dealerOriginal.url },
   heroAfter: { label: 'Dein Fahrzeugbild', ratio: '4 / 3', kind: 'image' },
   bildAussen: { label: 'Fahrzeugbild außen', ratio: '4 / 3', kind: 'image' },
   bildInnen: { label: 'Fahrzeugbild innen', ratio: '4 / 3', kind: 'image' },
