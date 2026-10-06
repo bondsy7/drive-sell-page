@@ -17,7 +17,7 @@ import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look-ford.jpg.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look-ford.jpg.asset.json';
-import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
+import kennzeichenExplorerHintenAsset from '@/assets/home/looks/kennzeichen-explorer-hinten.jpg.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
 import outdoorCollageDetailAsset from '@/assets/home/looks/outdoor-collage-detail.jpg.asset.json';
