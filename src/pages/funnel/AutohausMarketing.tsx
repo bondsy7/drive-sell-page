@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dealerOriginal from '@/assets/funnel/dealer-original.webp.asset.json';
-import dealerRemastered from '@/assets/funnel/dealer-remastered.webp.asset.json';
+import dealerRemastered from '@/assets/funnel/branding-2.jpg.asset.json';
 import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
