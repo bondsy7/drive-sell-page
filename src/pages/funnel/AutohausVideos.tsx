@@ -98,7 +98,7 @@ export default function AutohausVideos() {
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.4fr] lg:py-16">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-accent">Fahrzeugvideos</p>
-          <h1 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-5xl">Aus Fahrzeugbildern werden Videos für dein Marketing.</h1>
+          <h1 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-5xl">Aus Bildern werden Videos für dein Marketing.<br />In einem Schritt.</h1>
           <p className="mt-4 text-base text-muted-foreground">Kurze Clips in 9:16 und 16:9. In wenigen Minuten erstellt, ohne zusätzlichen Videodreh.</p>
           <Button asChild size="lg" className="mt-6 shadow-glow"><Link to={TEST_URL} data-cta="videos_hero">Mit eigenem Fahrzeug testen</Link></Button>
           <p className="mt-3 text-sm text-muted-foreground">Fahrzeugbild auswählen. Video erstellen. Fertig.</p>
