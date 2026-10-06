@@ -20,6 +20,8 @@ interface ImagePlaceholderProps {
   objectPosition?: string;
   /** KI-pflichtiges Bild: setzt das zentrale Kennzeichnungs-Overlay oben rechts. */
   aiContext?: AiDisclosureContext;
+  /** Vergrößerung des Bildausschnitts (gezoomte Detailansicht), Ursprung = objectPosition. */
+  zoom?: number;
 }
 
 /** Bildplatzhalter – wird durch echte App-Ergebnisse ersetzt, sobald src gesetzt ist. */
@@ -31,6 +33,7 @@ export default function ImagePlaceholder({
   alt,
   objectPosition,
   aiContext,
+  zoom,
 }: ImagePlaceholderProps) {
   if (src) {
     return (
@@ -43,7 +46,10 @@ export default function ImagePlaceholder({
           alt={alt ?? label}
           loading="lazy"
           className="h-full w-full object-cover"
-          style={objectPosition ? { objectPosition } : undefined}
+          style={{
+            ...(objectPosition ? { objectPosition } : {}),
+            ...(zoom ? { transform: `scale(${zoom})`, transformOrigin: objectPosition ?? 'center' } : {}),
+          }}
         />
         {aiContext ? (
           <img
