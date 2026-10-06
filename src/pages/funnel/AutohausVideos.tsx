@@ -17,6 +17,7 @@ import video169Mp4 from '@/assets/videos-169.mp4.asset.json';
 import video916Webm from '@/assets/videos-916.webm.asset.json';
 import video916Mp4 from '@/assets/videos-916.mp4.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
+import ablaufBild from '@/assets/ablauf-fahrzeugbild.jpg.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=videos';
 
@@ -65,7 +66,7 @@ function Icons({ items }: { items: { src: string; alt: string }[] }) {
 }
 
 const steps = [
-  { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild' },
+  { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild', img: ablaufBild.url, imgAlt: 'Fahrzeugbild eines silbernen SUV im Showroom' },
   { t: 'Video gestalten', d: 'Wähle Format und Videostil.', ph: 'Platzhalter Screenshot der Funktion' },
   { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau' },
 ];
@@ -163,7 +164,19 @@ export default function AutohausVideos() {
                   </div>
                 </div>
                 {i < steps.length - 1 && <span aria-hidden="true" className="absolute left-[calc(100%-1rem)] top-4 hidden h-px w-8 bg-accent/50 md:block" />}
-                <MediaPlaceholder ratio="16/9" label={s.ph} className="mt-4" />
+                {'img' in s && s.img ? (
+                  <figure className="relative mt-4 overflow-hidden rounded-lg border border-border bg-secondary/70" style={{ aspectRatio: '16/9' }}>
+                    <img src={s.img} alt={s.imgAlt} className="h-full w-full object-cover" loading="lazy" />
+                    <img
+                      src={getAiDisclosureLabelVector('landing')}
+                      alt={getAiDisclosureLabelAlt('landing')}
+                      title={getAiDisclosureText('landing')}
+                      className={AI_DISCLOSURE_OVERLAY_CLASS}
+                    />
+                  </figure>
+                ) : (
+                  <MediaPlaceholder ratio="16/9" label={s.ph} className="mt-4" />
+                )}
               </li>
             ))}
           </ol>
