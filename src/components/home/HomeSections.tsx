@@ -85,7 +85,7 @@ const PROCESS_STEPS: ProcessStep[] = [
     label: 'Marketingformate aus demselben Fahrzeug',
     icon: LayoutTemplate,
     image: marketingBannerAsset.url,
-    alt: 'Werbebanner mit SUV vor Neonkulisse, Aktionspreis und Anfrage-Button – mit KI erstellt',
+    alt: 'Werbebanner mit hellblauem Ford Explorer, Aufpreis „ab 40.900 €“ und Anfrage-Button – mit KI erstellt',
     objectPosition: 'center',
     ratio: '1200/628',
   },
