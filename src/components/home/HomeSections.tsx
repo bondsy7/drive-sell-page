@@ -503,7 +503,7 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     aiContext: 'landing',
     detail: {
       src: fahrzeugdetailAsset.url,
-      alt: 'Scheinwerfer-Detail eines silbernen SUVs – mit KI erstellt',
+      alt: 'Scheinwerfer-Detail des blauen Ford Explorers – mit KI erstellt',
     },
   },
   Outdoor: {
