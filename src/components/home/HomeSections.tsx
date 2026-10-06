@@ -32,7 +32,7 @@ import resultImage7Asset from '@/assets/home/results/web-7.jpeg.asset.json';
 import resultImage8Asset from '@/assets/home/results/web-8.jpeg.asset.json';
 import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
-import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
+import fordFrontShowroomAsset from '@/assets/home/results/ford-front-showroom.jpg.asset.json';
 import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
 import bannerStoryAsset from '@/assets/home/social/banner-story.png.asset.json';
 import bannerPostAsset from '@/assets/home/social/banner-post.png.asset.json';
