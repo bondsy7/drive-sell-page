@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
-import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
+import originalDealerAsset from '@/assets/home/original-dealer-explorer.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
