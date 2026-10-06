@@ -193,7 +193,7 @@ function ResultCarousel() {
         ) : (
         <div className="flex flex-wrap items-start justify-center gap-5">
           {r.media.map((m) => {
-            const w = m.w ?? (m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md');
+            const w = m.w ?? (m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' || m.ratio === '16 / 9' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md');
             return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
           })}
         </div>
