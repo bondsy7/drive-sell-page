@@ -12,6 +12,11 @@ import logoFacebook from '@/assets/funnel/logo-facebook.png.asset.json';
 import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
+import video169Webm from '@/assets/videos-169.webm.asset.json';
+import video169Mp4 from '@/assets/videos-169.mp4.asset.json';
+import video916Webm from '@/assets/videos-916.webm.asset.json';
+import video916Mp4 from '@/assets/videos-916.mp4.asset.json';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 
 const TEST_URL = '/fahrzeug-testen?source=videos';
 
@@ -25,6 +30,26 @@ function MediaPlaceholder({ label, ratio, className = '' }: { label: string; rat
       className={`flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/60 p-3 text-center text-xs font-medium text-muted-foreground ${className}`}
     >
       {label}
+    </div>
+  );
+}
+
+/** Stummes Loop-Video mit KI-Kennzeichnung (WebM zuerst, MP4 als Fallback). */
+function VideoSlot({ ratio, ariaLabel, className = '' }: { ratio: '16/9' | '9/16'; ariaLabel: string; className?: string }) {
+  const webm = ratio === '16/9' ? video169Webm.url : video916Webm.url;
+  const mp4 = ratio === '16/9' ? video169Mp4.url : video916Mp4.url;
+  return (
+    <div className={`relative overflow-hidden rounded-lg border border-border bg-secondary/70 ${className}`} style={{ aspectRatio: ratio }}>
+      <video className="h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" aria-label={ariaLabel}>
+        <source src={webm} type="video/webm" />
+        <source src={mp4} type="video/mp4" />
+      </video>
+      <img
+        src={getAiDisclosureLabelVector('landing')}
+        alt={getAiDisclosureLabelAlt('landing')}
+        title={getAiDisclosureText('landing')}
+        className={AI_DISCLOSURE_OVERLAY_CLASS}
+      />
     </div>
   );
 }
