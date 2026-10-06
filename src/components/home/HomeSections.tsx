@@ -498,8 +498,8 @@ type LookEntry = {
 
 const LOOK_IMAGES: Record<string, LookEntry> = {
   Showroom: {
-    src: showroomLookAsset.url,
-    alt: 'Heckansicht des hellblauen Ford Explorers im hellen Showroom – mit KI erstellt',
+    src: resultImage1Asset.url,
+    alt: 'Hellblauer Ford Explorer in der Frontansicht im hellen Showroom – mit KI erstellt',
     aiContext: 'landing',
     detail: {
       src: fahrzeugdetailAsset.url,
