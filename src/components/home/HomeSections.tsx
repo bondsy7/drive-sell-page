@@ -519,8 +519,9 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Blauer Ford Explorer im Showroom vor einer Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: brandingDetailAsset.url,
-      alt: 'Detailansicht des Fahrzeugs mit Branding im Showroom – mit KI erstellt',
+      src: brandingLookAsset.url,
+      alt: 'Ausschnitt der Showroom-Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
+      position: '100% 50%',
     },
   },
   Kennzeichen: {
