@@ -20,8 +20,6 @@ import outdoorLookAsset from '@/assets/home/looks/outdoor-look-ford.jpg.asset.js
 import brandingLookAsset from '@/assets/home/looks/branding-look-ford.jpg.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
-import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
-import brandingDetailAsset from '@/assets/home/looks/branding-detail.webp.asset.json';
 import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
@@ -493,7 +491,7 @@ type LookEntry = {
   alt: string;
   aiContext?: AiDisclosureContext;
   /** Kleines Detailbild im überlagernden Kasten – wechselt mit der Kategorie. */
-  detail: { src: string; alt: string };
+  detail: { src: string; alt: string; position?: string; zoom?: number };
 };
 
 const LOOK_IMAGES: Record<string, LookEntry> = {
@@ -511,8 +509,10 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: outdoorDetailAsset.url,
-      alt: 'Collage mit vier Ansichten des silbernen SUVs auf einem Parkplatz im Abendlicht – mit KI erstellt',
+      src: outdoorLookAsset.url,
+      alt: 'Detailansicht des hellblauen Ford Explorers vor schneebedeckten Bergen – mit KI erstellt',
+      position: '50% 60%',
+      zoom: 2.2,
     },
   },
   Branding: {
@@ -520,8 +520,10 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     alt: 'Blauer Ford Explorer im Showroom vor einer Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
     detail: {
-      src: brandingDetailAsset.url,
-      alt: 'Detailaufnahme der Wand mit dem Schriftzug autohaus.ai – mit KI erstellt',
+      src: brandingLookAsset.url,
+      alt: 'Detailansicht des blauen Ford Explorers mit autohaus.ai-Schriftzug im Showroom – mit KI erstellt',
+      position: '50% 35%',
+      zoom: 2.2,
     },
   },
   Kennzeichen: {
@@ -552,7 +554,7 @@ export function HomeQuality() {
             aiContext={lookImage?.aiContext}
           />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
-            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={lookImage?.detail.src} alt={lookImage?.detail.alt} aiContext="landing" />
+            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={lookImage?.detail.src} alt={lookImage?.detail.alt} objectPosition={lookImage?.detail.position} zoom={lookImage?.detail.zoom} aiContext="landing" />
           </div>
         </div>
         <div>
