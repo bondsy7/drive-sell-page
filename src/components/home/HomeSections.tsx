@@ -11,7 +11,7 @@ import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
-import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
+import verkaufsseiteAsset from '@/assets/home/verkaufsseite-ford.png.asset.json';
 import bannerMockupAsset from '@/assets/home/mobilede-mockup-banner-ford.png.asset.json';
 import dealerCapturingAsset from '@/assets/home/dealer-capturing.webp.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
