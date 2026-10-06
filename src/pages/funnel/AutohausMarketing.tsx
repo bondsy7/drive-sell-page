@@ -131,6 +131,10 @@ export default function AutohausMarketing() {
   usePageMeta({ title: 'Fahrzeuge schneller vermarkten | autohaus.ai', description: 'Smartphone-Fotos aufnehmen, in der App aufbereiten und Fahrzeugbilder sowie Marketingmaterial in wenigen Minuten erstellen.', canonicalPath: '/autohaus-marketing' });
   useEffect(() => { captureAttribution('lp_marketing'); }, []);
   const [showGroup, setShowGroup] = useState(false);
+  const [heroLarge, setHeroLarge] = useState<'before' | 'after'>('after');
+  const heroLeft = heroLarge === 'before' ? MEDIA.heroAfter : MEDIA.heroBefore;
+  const heroRight = heroLarge === 'before' ? MEDIA.heroBefore : MEDIA.heroAfter;
+  const heroKey = (m: Media) => (m === MEDIA.heroBefore ? 'before' : 'after');
 
   return (
     <FunnelLayout ctaHref={TEST_URL} ctaLabel="Mit Fahrzeug testen" anchors={[{ href: '#ablauf', label: 'Ablauf' }, { href: '#ergebnisse', label: 'Ergebnisse' }, { href: '#start', label: 'Einstieg' }, { href: '#faq', label: 'FAQ' }]}>
