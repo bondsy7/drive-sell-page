@@ -47,8 +47,8 @@ const MEDIA = {
   motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image', src: socialPostAsset.url, ai: true, w: 'w-40 sm:w-44' },
   motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '1.91 / 1', kind: 'image', src: socialFbAdAsset.url, ai: true, w: 'w-56 sm:w-72' },
   motivDisplay: { label: 'Display-Banner (160×600)', ratio: '160 / 600', kind: 'image', src: socialSkyscraperAsset.url, ai: true, w: 'w-16 sm:w-20' },
-  clip: { label: 'Fahrzeugclip', ratio: '9 / 16', kind: 'video' },
-  seite: { label: 'Fahrzeugseite', ratio: '16 / 10', kind: 'page' },
+  clip: { label: 'Fahrzeugclip', ratio: '16 / 9', kind: 'video', webm: resultVideoWebmAsset.url, mp4: resultVideoMp4Asset.url, ai: true },
+  seite: { label: 'Fahrzeugseite', ratio: '16 / 9', kind: 'image', src: verkaufsseiteAsset.url, ai: true },
 } satisfies Record<string, Media>;
 
 function MediaSlot({ m, className = '' }: { m: Media; className?: string }) {
