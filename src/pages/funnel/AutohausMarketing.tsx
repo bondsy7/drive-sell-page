@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, Camera, Check, Clock, Coins, FileText, Images, Megaphone, Palette, Plug, RotateCcw, Send, Sparkles, Users, Video, Wand2, X } from 'lucide-react';
+import { ArrowRight, Building2, Camera, Check, Clock, Coins, FileText, Images, Megaphone, Palette, Plug, Send, Sparkles, Users, Video, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -36,13 +36,12 @@ const NEW_WAY = [
   [Send, 'Inhalte veröffentlichen oder übergeben'],
 ] as const;
 
-type ResultKey = 'bilder' | 'motive' | 'videos' | 'seiten' | '360';
+type ResultKey = 'bilder' | 'motive' | 'videos' | 'seiten';
 const RESULTS: { key: ResultKey; icon: typeof Images; label: string; text: string }[] = [
   { key: 'bilder', icon: Images, label: 'Fahrzeugbilder', text: 'Außen- und Innenaufnahmen in einheitlicher, professioneller Szene.' },
   { key: 'motive', icon: Megaphone, label: 'Werbemotive', text: 'Social-Media-Posts, Stories und Google-Display-Banner in passenden Formaten.' },
   { key: 'videos', icon: Video, label: 'Videos', text: 'Kurze Fahrzeugclips für Reels, Stories und Portale.' },
   { key: 'seiten', icon: FileText, label: 'Fahrzeugseiten', text: 'Fahrzeugdarstellung, Angebot und Kontaktmöglichkeit auf einer Seite.' },
-  { key: '360', icon: RotateCcw, label: '360°', text: 'Interaktive Rundumansicht des Fahrzeugs.' },
 ];
 
 const VALUE = [
@@ -78,7 +77,6 @@ function ResultView({ k, onZoom }: { k: ResultKey; onZoom: (src: string, alt: st
   if (k === 'motive') return <div className="flex flex-wrap items-start justify-center gap-4"><Zoom src={socialPost.url} alt="Social-Media-Post" className="w-56" /><Zoom src={story.url} alt="Story-Motiv" className="w-36" /><Zoom src={fbAd.url} alt="Anzeige im Querformat" className="w-80" /></div>;
   if (k === 'videos') return <div className="flex justify-center"><video className="w-56 rounded-lg border border-border shadow-card" autoPlay muted loop playsInline controls poster={clipPoster.url}><source src={clipWebm.url} type="video/webm" /><source src={clipMp4.url} type="video/mp4" /></video></div>;
   if (k === 'seiten') return <div className="flex flex-col items-center gap-3"><div className="relative h-[420px] w-full max-w-3xl overflow-hidden rounded-lg border border-border bg-card shadow-card"><iframe src={VEHICLE_PAGE_URL} title="Beispiel Fahrzeugseite" className="h-full w-full" loading="lazy" /></div><a href={VEHICLE_PAGE_URL} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-accent hover:underline">Fahrzeugseite vollständig öffnen</a></div>;
-  return <div className="mx-auto flex max-w-md flex-col items-center rounded-lg border border-dashed border-border bg-card p-8 text-center"><RotateCcw className="h-8 w-8 text-muted-foreground" aria-hidden="true" /><p className="mt-3 font-semibold">Beispiel folgt</p><p className="mt-1 text-sm text-muted-foreground">Ein interaktives 360°-Beispiel wird hier ergänzt. Im Test kannst du die Rundumansicht mit deinen Aufnahmen kennenlernen.</p></div>;
 }
 
 export default function AutohausMarketing() {

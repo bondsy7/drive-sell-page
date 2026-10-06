@@ -35,7 +35,6 @@ export const GOAL_OPTIONS = [
   { value: 'social-banner', label: 'Social Media & Banner' },
   { value: 'video', label: 'Video' },
   { value: 'landingpages', label: 'Landingpages' },
-  { value: 'spin360', label: '360°' },
   { value: 'multi-standort', label: 'Standortübergreifender Prozess' },
 ] as const;
 
@@ -82,7 +81,7 @@ function toMap(options: readonly { value: string; label: string }[]): Record<str
 export const VOLUME_LABELS = toMap(VOLUME_OPTIONS);
 export const LOCATION_LABELS = toMap(LOCATION_OPTIONS);
 export const ROLE_LABELS = toMap(ROLE_OPTIONS);
-export const GOAL_LABELS = toMap(GOAL_OPTIONS);
+export const GOAL_LABELS: Record<string, string> = { ...toMap(GOAL_OPTIONS), spin360: '360°' };
 export const STATUS_LABELS = toMap(STATUS_OPTIONS);
 
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;

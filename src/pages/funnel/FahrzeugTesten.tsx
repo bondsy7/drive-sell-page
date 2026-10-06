@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Loader2, X, ShieldCheck, CheckCircle2, Lock, ArrowRight, CloudUpload,
-  User, Target, Camera, FileText, Trophy, Building2, RotateCcw, Zap,
+  User, Target, Camera, FileText, Trophy, Building2, Zap,
   Share2, PlayCircle, LayoutTemplate, Layers3, Quote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,7 @@ const GOAL_META: Record<string, { label: string; sub: string; icon: typeof Camer
   'schneller-online': { label: 'Schneller online', sub: 'Fahrzeuge in Minuten statt Stunden', icon: Zap },
   'social-banner': { label: 'Social Media & Banner', sub: 'Content für alle Kanäle', icon: Share2 },
   'video': { label: 'Video', sub: 'Automatische Fahrzeugvideos', icon: PlayCircle },
-  'landingpages': { label: 'Landingpages', sub: 'Verkaufsstarke Fahrzeugseiten', icon: LayoutTemplate },
-  'spin360': { label: '360°', sub: 'Interaktive Rundgänge', icon: RotateCcw },
+'landingpages': { label: 'Landingpages', sub: 'Verkaufsstarke Fahrzeugseiten', icon: LayoutTemplate },
   'multi-standort': { label: 'Standortübergreifender Prozess', sub: 'Einheitliche Abläufe für alle Standorte', icon: Building2 },
 };
 
