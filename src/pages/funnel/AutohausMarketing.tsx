@@ -277,10 +277,13 @@ export default function AutohausMarketing() {
               .map((m, idx) => {
                 const large = idx === 1;
                 return (
-                  <motion.figure key={m.label} layout transition={{ type: 'spring', stiffness: 230, damping: 28 }} className={large ? 'w-[62%]' : 'w-[38%]'}>
+                  <motion.figure key={m.label} layout transition={{ type: 'spring', stiffness: 230, damping: 28 }} className={`relative ${large ? 'w-[62%]' : 'w-[38%]'}`}>
                     <motion.button layout type="button" onClick={() => setHeroLarge(heroKey(m))} aria-label={`${m.label} groß anzeigen`} className="block w-full cursor-pointer text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                       <MediaSlot m={m} className={large ? 'shadow-elevated' : ''} />
                     </motion.button>
+                    <button type="button" onClick={() => setHeroZoom(heroKey(m) === 'before' ? 0 : 1)} aria-label={`${m.label} vergrößern`} className="absolute bottom-2 right-2 z-10 rounded-full bg-card/90 p-2 text-foreground shadow-elevated transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                      <ZoomIn className="h-4 w-4" aria-hidden="true" />
+                    </button>
                     <motion.figcaption layout="position" transition={{ duration: 0.3 }} className={`mt-2 text-xs font-semibold transition-colors duration-300 ${m === MEDIA.heroAfter ? 'text-accent' : 'text-muted-foreground'}`}>{m.label}</motion.figcaption>
                   </motion.figure>
                 );
@@ -401,6 +404,7 @@ export default function AutohausMarketing() {
           {showGroup && <div className="mt-5"><ProcessCheckForm submitLabel="Einsatz besprechen" /></div>}
         </div>
       </section>
+      {heroZoom !== null && <MediaLightbox items={heroItems} index={heroZoom} onClose={() => setHeroZoom(null)} onStep={stepHeroZoom} />}
     </FunnelLayout>
   );
 }
