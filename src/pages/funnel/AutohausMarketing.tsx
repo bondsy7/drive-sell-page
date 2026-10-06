@@ -23,7 +23,7 @@ import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
 import verkaufsseiteAsset from '@/assets/home/verkaufsseite-169.png.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
-import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2, X } from 'lucide-react';
+import { ArrowRight, Building2, Calendar, Camera, Check, ChevronLeft, ChevronRight, Clock, FileText, ImageIcon, Images, Megaphone, MessagesSquare, Palette, PenTool, Users, Video, Wand2, X, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -93,20 +93,50 @@ const GALLERY_IMAGES = [
   resultImage10Asset.url,
 ];
 
-function FahrzeugbilderGallery() {
-  const [lightbox, setLightbox] = useState<number | null>(null);
-  const step = (d: 1 | -1) => setLightbox((c) => (c === null ? c : (c + d + GALLERY_IMAGES.length) % GALLERY_IMAGES.length));
+/** Gemeinsame Lightbox für Bilder und Videos (Pfeile, Tastatur, Escape). */
+type LightboxItem = { kind: 'image' | 'video'; src?: string; webm?: string; mp4?: string; label: string };
+
+function toLightboxItem(m: Media): LightboxItem {
+  return { kind: m.kind === 'video' ? 'video' : 'image', src: m.src, webm: m.webm, mp4: m.mp4, label: m.label };
+}
+
+function MediaLightbox({ items, index, onClose, onStep }: { items: LightboxItem[]; index: number; onClose: () => void; onStep: (d: 1 | -1) => void }) {
   useEffect(() => {
-    if (lightbox === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') step(-1);
-      else if (e.key === 'ArrowRight') step(1);
-      else if (e.key === 'Escape') setLightbox(null);
+      if (e.key === 'ArrowLeft') onStep(-1);
+      else if (e.key === 'ArrowRight') onStep(1);
+      else if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lightbox === null]);
+  }, [onClose, onStep]);
+  const item = items[index];
+  if (!item) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label={item.label} onClick={onClose}>
+      <button type="button" onClick={onClose} aria-label="Schließen" className="absolute right-4 top-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><X className="h-5 w-5" /></button>
+      {items.length > 1 && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onStep(-1); }} aria-label="Vorheriges Bild" className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronLeft className="h-5 w-5" /></button>
+      )}
+      {item.kind === 'video' ? (
+        <video className="max-h-[85vh] w-full max-w-5xl rounded-lg" controls autoPlay loop muted playsInline aria-label={item.label} onClick={(e) => e.stopPropagation()}>
+          {item.webm && <source src={item.webm} type="video/webm" />}
+          {item.mp4 && <source src={item.mp4} type="video/mp4" />}
+        </video>
+      ) : (
+        <img src={item.src} alt={`${item.label} – vergrößert`} className="max-h-[85vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+      )}
+      {items.length > 1 && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onStep(1); }} aria-label="Nächstes Bild" className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronRight className="h-5 w-5" /></button>
+      )}
+    </div>
+  );
+}
+
+function FahrzeugbilderGallery() {
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const items: LightboxItem[] = GALLERY_IMAGES.map((src, index) => ({ kind: 'image', src, label: `Fahrzeugansicht ${index + 1}` }));
+  const step = (d: 1 | -1) => setLightbox((c) => (c === null ? c : (c + d + GALLERY_IMAGES.length) % GALLERY_IMAGES.length));
   return (
     <div>
       <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse</p>
@@ -125,14 +155,7 @@ function FahrzeugbilderGallery() {
           </button>
         ))}
       </div>
-      {lightbox !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label={`Fahrzeugansicht ${lightbox + 1} von ${GALLERY_IMAGES.length}`} onClick={() => setLightbox(null)}>
-          <button type="button" onClick={() => setLightbox(null)} aria-label="Schließen" className="absolute right-4 top-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><X className="h-5 w-5" /></button>
-          <button type="button" onClick={(e) => { e.stopPropagation(); step(-1); }} aria-label="Vorheriges Bild" className="absolute left-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronLeft className="h-5 w-5" /></button>
-          <img src={GALLERY_IMAGES[lightbox]} alt={`Fahrzeugansicht ${lightbox + 1} im Showroom – mit KI erstellt`} className="max-h-[85vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
-          <button type="button" onClick={(e) => { e.stopPropagation(); step(1); }} aria-label="Nächstes Bild" className="absolute right-4 rounded-full bg-card p-2 text-foreground shadow-elevated"><ChevronRight className="h-5 w-5" /></button>
-        </div>
-      )}
+      {lightbox !== null && <MediaLightbox items={items} index={lightbox} onClose={() => setLightbox(null)} onStep={step} />}
     </div>
   );
 }
@@ -167,9 +190,15 @@ const FAQ: [string, string][] = [
 
 function ResultCarousel() {
   const [i, setI] = useState(0);
+  const [zoom, setZoom] = useState<{ items: LightboxItem[]; index: number } | null>(null);
   const touch = useRef<number | null>(null);
   const r = RESULTS[i];
   const go = (d: number) => setI((v) => (v + d + RESULTS.length) % RESULTS.length);
+  const openZoom = (m: Media) => {
+    const items = r.media.filter((x) => (x.kind === 'video' ? Boolean(x.webm || x.mp4) : Boolean(x.src))).map(toLightboxItem);
+    setZoom({ items, index: Math.max(0, items.findIndex((x) => x.label === m.label)) });
+  };
+  const stepZoom = (d: 1 | -1) => setZoom((z) => (z === null ? z : { ...z, index: (z.index + d + z.items.length) % z.items.length }));
   return (
     <div>
       <div role="tablist" aria-label="Ergebnisse" className="mt-7 flex flex-wrap gap-2">
@@ -194,7 +223,18 @@ function ResultCarousel() {
         <div className="flex flex-wrap items-start justify-center gap-5">
           {r.media.map((m) => {
             const w = m.w ?? (m.ratio === '160 / 600' ? 'w-20 sm:w-24' : m.ratio === '300 / 600' || m.ratio === '9 / 16' ? 'w-36 sm:w-44' : m.ratio === '1 / 1' ? 'w-56 sm:w-72' : m.ratio === '16 / 10' || m.ratio === '16 / 9' ? 'w-full max-w-2xl' : 'w-full sm:w-[calc(50%-10px)] max-w-md');
-            return <div key={m.label} className={w}><MediaSlot m={m} /></div>;
+            const zoomable = m.kind === 'video' ? Boolean(m.webm || m.mp4) : Boolean(m.src);
+            return (
+              <div key={m.label} className={w}>
+                {zoomable ? (
+                  <button type="button" onClick={() => openZoom(m)} aria-label={`${m.label} vergrößern`} className="block w-full cursor-zoom-in rounded-lg text-left transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <MediaSlot m={m} />
+                  </button>
+                ) : (
+                  <MediaSlot m={m} />
+                )}
+              </div>
+            );
           })}
         </div>
         )}
@@ -206,6 +246,7 @@ function ResultCarousel() {
           <Button variant="outline" size="icon" onClick={() => go(1)} aria-label="Nächstes Ergebnis"><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
+      {zoom !== null && <MediaLightbox items={zoom.items} index={zoom.index} onClose={() => setZoom(null)} onStep={stepZoom} />}
     </div>
   );
 }
@@ -215,7 +256,10 @@ export default function AutohausMarketing() {
   useEffect(() => { captureAttribution('lp_marketing'); }, []);
   const [showGroup, setShowGroup] = useState(false);
   const [heroLarge, setHeroLarge] = useState<'before' | 'after'>('after');
+  const [heroZoom, setHeroZoom] = useState<number | null>(null);
   const heroKey = (m: Media) => (m === MEDIA.heroBefore ? 'before' : 'after');
+  const heroItems: LightboxItem[] = [MEDIA.heroBefore, MEDIA.heroAfter].map(toLightboxItem);
+  const stepHeroZoom = (d: 1 | -1) => setHeroZoom((z) => (z === null ? z : (z + d + heroItems.length) % heroItems.length));
 
   return (
     <FunnelLayout ctaHref={TEST_URL} ctaLabel="Mit Fahrzeug testen" anchors={[{ href: '#ablauf', label: 'Ablauf' }, { href: '#ergebnisse', label: 'Ergebnisse' }, { href: '#start', label: 'Einstieg' }, { href: '#faq', label: 'FAQ' }]}>
