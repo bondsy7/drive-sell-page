@@ -271,7 +271,15 @@ export default function AutohausVideos() {
             <p className="mt-3 text-sm opacity-90">Teste die Videofunktion mit einem Fahrzeug aus deinem Bestand.</p>
             <Button asChild size="lg" variant="secondary" className="mt-6"><Link to={TEST_URL} data-cta="videos_final">Mit eigenem Fahrzeug testen</Link></Button>
           </div>
-          <div role="img" aria-label="Platzhalter: Fahrzeugbild" style={{ aspectRatio: '16/9' }} className="flex items-center justify-center rounded-lg border border-dashed border-primary-foreground/40 text-xs opacity-80">Platzhalter Fahrzeugbild</div>
+          <div role="img" aria-label="Fahrzeugbild: Silberner SUV im Showroom von autohaus.ai" style={{ aspectRatio: '16/9' }} className="relative overflow-hidden rounded-lg">
+            <img src={abschlussBild.url} alt="Silberner SUV im Showroom von autohaus.ai" className="h-full w-full object-cover" />
+            <img
+              src={getAiDisclosureLabelVector('landing')}
+              alt={getAiDisclosureLabelAlt('landing')}
+              title={getAiDisclosureText('landing')}
+              className={AI_DISCLOSURE_OVERLAY_CLASS}
+            />
+          </div>
         </div>
       </section>
     </FunnelLayout>
