@@ -192,20 +192,20 @@ export function HomeProcess() {
 /** Social-Media-Werbemittel in ihren echten Seitenverhältnissen. */
 const SOCIAL_FORMATS = {
   story: {
-    src: socialStoryAsset.url,
-    alt: 'Instagram Story im Hochformat 1080 × 1920 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerStoryAsset.url,
+    alt: 'Instagram Story im Hochformat 1080 × 1920 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
   post: {
-    src: socialPostAsset.url,
-    alt: 'Instagram Beitrag im Quadrat 1080 × 1080 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerPostAsset.url,
+    alt: 'Instagram Beitrag im Quadrat 1080 × 1080 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
   fbAd: {
-    src: socialFbAdAsset.url,
-    alt: 'Facebook-Werbeanzeige 1200 × 628 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerHeroAsset.url,
+    alt: 'Werbeanzeige im Breitformat 1920 × 1080 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
   skyscraper: {
-    src: socialSkyscraperAsset.url,
-    alt: 'Schmales Anzeigen-Hochformat 160 × 600 – Fahrzeuganzeige mit Preis und Anfragebutton',
+    src: bannerSkyscraperAsset.url,
+    alt: 'Schmales Anzeigen-Hochformat 160 × 600 – Ford-Explorer-Anzeige mit Preis und Anfragebutton',
   },
 };
 
