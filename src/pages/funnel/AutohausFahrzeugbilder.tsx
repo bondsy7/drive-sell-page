@@ -90,7 +90,7 @@ const PERSPECTIVE_GROUPS: { title: string; hint: string; icon: typeof Car; items
     hint: 'Bilder, die den Innenraum wirklich zeigen.',
     icon: Armchair,
     items: [
-      { label: 'Cockpit', text: 'Lenkrad, Displays und Mittelkonsole.', image: perspCockpitAsset.url },
+      { label: 'Cockpit', text: 'Lenkrad, Displays und Mittelkonsole.', image: perspCockpitAsset.url, alt: 'Ford Explorer Cockpit mit Lenkrad, zentralem Display und hellem Innenraum – mit KI erstellt' },
       { label: 'Rücksitzbank', text: 'Fond und Platzangebot aus eigener Aufnahme.', image: perspRearSeatsAsset.url },
     ],
   },
