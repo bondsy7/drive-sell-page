@@ -14,7 +14,7 @@ import studioAsset from '@/assets/funnel/fb-03-studio.webp.asset.json';
 import outdoorAsset from '@/assets/funnel/fb-04-outdoor.webp.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fb-05-kennzeichen.webp.asset.json';
 import logoShowroomAsset from '@/assets/funnel/fb-06-logo-showroom.webp.asset.json';
-import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp';
+import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp.asset.json';
 import perspFrontAsset from '@/assets/funnel/fb-08-front.webp.asset.json';
 import perspSideAsset from '@/assets/funnel/fb-08-side.webp.asset.json';
 import perspRearAsset from '@/assets/funnel/fb-08-rear.webp.asset.json';
@@ -279,7 +279,7 @@ export default function AutohausFahrzeugbilder() {
           ))}
           <article className="flex flex-col">
             <div className="overflow-hidden rounded-lg border border-accent/40 bg-secondary shadow-card">
-              <img src={eigenerShowroomAsset} alt="Silberner SUV im Showroom eines Autohauses mit Glasfassade und Übergabebereich" width={1264} height={848} className="block h-auto w-full" loading="lazy" />
+              <img src={eigenerShowroomAsset.url} alt="Hellblauer Ford Explorer in der Dreiviertel-Frontansicht im klassischen Autohaus mit Glasfassade – mit KI erstellt" width={1451} height={1084} className="block h-auto w-full" loading="lazy" />
             </div>
             <p className="mt-2 flex items-center gap-2 text-sm font-semibold"><Store className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />Eigener Showroom</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">Du nutzt lieber deinen eigenen Showroom? Dann bleibt er dein Hintergrund: Wir setzen dein Fahrzeug in deinen bestehenden Räumlichkeiten professionell in Szene.</p>
