@@ -280,7 +280,7 @@ export default function AdminUsers() {
       </div>
 
       <div className="bg-card rounded-xl border border-border overflow-x-auto">
-        <table className="w-full text-sm table-fixed">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="text-left px-2.5 py-2 font-medium text-muted-foreground">E-Mail</th>
@@ -304,11 +304,11 @@ export default function AdminUsers() {
 
               return (
                 <tr key={u.id} className="border-b border-border last:border-0">
-                  <td className="p-3 text-foreground truncate max-w-[200px]">{u.email || '—'}</td>
-                  <td className="p-3 text-muted-foreground truncate max-w-[150px]">{u.company_name || '—'}</td>
-                  <td className="p-3 text-center">
+                  <td className="px-2.5 py-2 text-foreground truncate max-w-[200px]">{u.email || '—'}</td>
+                  <td className="px-2.5 py-2 text-muted-foreground truncate max-w-[140px]">{u.company_name || '—'}</td>
+                  <td className="px-2.5 py-2 text-center">
                     <Select value={primaryRole || 'none'} onValueChange={(val) => assignRole(u.id, val)}>
-                      <SelectTrigger className="h-7 w-[130px] text-xs mx-auto">
+                      <SelectTrigger className="h-7 w-[120px] text-xs mx-auto">
                         <SelectValue>
                           {roleInfo ? (
                             <Badge variant="outline" className={`text-xs ${roleInfo.color}`}>{roleInfo.label}</Badge>
@@ -325,9 +325,9 @@ export default function AdminUsers() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="p-3 text-center">
+                  <td className="px-2.5 py-2 text-center">
                     <Select value={u.plan?.id || 'none'} onValueChange={(val) => assignPlan(u.id, val)}>
-                      <SelectTrigger className="h-7 w-[150px] text-xs mx-auto">
+                      <SelectTrigger className="h-7 w-[140px] text-xs mx-auto">
                         <SelectValue>
                           {u.plan ? (
                             <div className="flex items-center gap-1">
@@ -352,15 +352,15 @@ export default function AdminUsers() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="p-3 text-center font-semibold text-foreground">{u.balance}</td>
-                  <td className="p-3 text-center text-muted-foreground">{u.lifetime_used}</td>
-                  <td className="p-3 text-center text-muted-foreground">{u.project_count}</td>
-                  <td className="p-3 text-center text-muted-foreground">{u.lead_count}</td>
-                  <td className="p-3 text-muted-foreground text-xs">
+                  <td className="px-2.5 py-2 text-center font-semibold text-foreground whitespace-nowrap">{u.balance}</td>
+                  <td className="px-2.5 py-2 text-center text-muted-foreground whitespace-nowrap">{u.lifetime_used}</td>
+                  <td className="px-2.5 py-2 text-center text-muted-foreground whitespace-nowrap">{u.project_count}</td>
+                  <td className="px-2.5 py-2 text-center text-muted-foreground whitespace-nowrap">{u.lead_count}</td>
+                  <td className="px-2.5 py-2 text-muted-foreground text-xs whitespace-nowrap">
                     {u.last_transaction ? new Date(u.last_transaction).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'}
                   </td>
-                  <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
-                  <td className="p-3">
+                  <td className="px-2.5 py-2 text-muted-foreground whitespace-nowrap">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
+                  <td className="px-2.5 py-2">
                     <div className="flex items-center gap-1">
                       {adjusting === u.id ? (
                         <>
