@@ -11,6 +11,8 @@ import {
 interface AiDisclosureBadgeProps {
   context?: AiDisclosureContext;
   className?: string;
+  /** Zusätzliche Klassen für das Label-Bild selbst (z. B. kleinere Höhe in Kompaktansichten) */
+  imgClassName?: string;
   /** Als Overlay auf einem Bild/Viewer positionieren */
   overlay?: boolean;
 }
@@ -22,6 +24,7 @@ interface AiDisclosureBadgeProps {
 const AiDisclosureBadge: React.FC<AiDisclosureBadgeProps> = ({
   context = "banner",
   className,
+  imgClassName,
   overlay = false,
 }) => (
   <span
@@ -40,6 +43,7 @@ const AiDisclosureBadge: React.FC<AiDisclosureBadgeProps> = ({
       className={cn(
         "block w-auto object-contain",
         getAiDisclosureKind(context) === "basic" ? "h-7" : "h-5 sm:h-6",
+        imgClassName,
       )}
     />
   </span>
