@@ -9,6 +9,7 @@ import FunnelImageLightbox from '@/components/funnel/FunnelImageLightbox';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
 import showroomAsset from '@/assets/funnel/fb-02-showroom-detail.webp.asset.json';
+import detailExplorerAsset from '@/assets/funnel/fahrzeugbilder-detail-explorer.jpg.asset.json';
 import studioAsset from '@/assets/funnel/fb-03-studio.webp.asset.json';
 import outdoorAsset from '@/assets/funnel/fb-04-outdoor.webp.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fb-05-kennzeichen.webp.asset.json';
@@ -36,13 +37,13 @@ const BENEFITS = [
 type Hotspot = { title: string; text: string; x: number; y: number; noteSide?: 'left' | 'right' };
 
 const HOTSPOTS: Hotspot[] = [
-  { title: 'Licht & Reflexionen', text: 'Stimmige Reflexionen betonen die Linien und Oberflächen des Fahrzeugs.', x: 36, y: 41 },
-  { title: 'Bodenkontakt & Schatten', text: 'Ein natürlicher Schatten verbindet das Fahrzeug mit dem Boden und unterstützt einen realistischen Gesamteindruck.', x: 66, y: 84, noteSide: 'right' },
-  { title: 'Fahrzeugdetails', text: 'Klare Konturen und gut erkennbare Details rücken die Merkmale deines Fahrzeugs in den Mittelpunkt.', x: 45, y: 48 },
-  { title: 'Showroom', text: 'Ein ruhiger Showroom-Hintergrund sorgt für eine hochwertige und einheitliche Fahrzeugpräsentation.', x: 15, y: 19 },
-  { title: 'Kennzeichen', text: 'Zeige dein Fahrzeug mit Kennzeichen, ohne Kennzeichen oder mit deiner gewünschten Kennzeichendarstellung.', x: 24, y: 62 },
-  { title: 'Logo im Showroom', text: 'Integriere dein Autohaus-Logo in den Showroom und gib deinen Fahrzeugbildern einen eigenen Markenauftritt.', x: 87, y: 15 },
-  { title: 'Richtige Fahrzeugdimensionen', text: 'Dein Original-Fahrzeug wird harmonisch und mit korrekten Proportionen in den gewünschten Showroom eingefügt – kein statisch dahintergelegtes Hintergrundbild wie bei einfachen Foto-Apps.', x: 50, y: 28, noteSide: 'right' },
+  { title: 'Licht & Reflexionen', text: 'Stimmige Reflexionen betonen die Linien und Oberflächen des Fahrzeugs.', x: 42, y: 40 },
+  { title: 'Bodenkontakt & Schatten', text: 'Ein natürlicher Schatten verbindet das Fahrzeug mit dem Boden und unterstützt einen realistischen Gesamteindruck.', x: 58, y: 82, noteSide: 'right' },
+  { title: 'Fahrzeugdetails', text: 'Klare Konturen und gut erkennbare Details rücken die Merkmale deines Fahrzeugs in den Mittelpunkt.', x: 44, y: 55 },
+  { title: 'Showroom', text: 'Ein ruhiger Showroom-Hintergrund sorgt für eine hochwertige und einheitliche Fahrzeugpräsentation.', x: 13, y: 22 },
+  { title: 'Kennzeichen', text: 'Zeige dein Fahrzeug mit Kennzeichen, ohne Kennzeichen oder mit deiner gewünschten Kennzeichendarstellung.', x: 29, y: 52 },
+  { title: 'Logo im Showroom', text: 'Integriere dein Autohaus-Logo in den Showroom und gib deinen Fahrzeugbildern einen eigenen Markenauftritt.', x: 86, y: 20 },
+  { title: 'Richtige Fahrzeugdimensionen', text: 'Dein Original-Fahrzeug wird harmonisch und mit korrekten Proportionen in den gewünschten Showroom eingefügt – kein statisch dahintergelegtes Hintergrundbild wie bei einfachen Foto-Apps.', x: 60, y: 38, noteSide: 'right' },
 ];
 
 const STEPS = [
@@ -155,7 +156,7 @@ export default function AutohausFahrzeugbilder() {
         <h2 className="font-display text-3xl font-bold">Qualität steckt im Detail.</h2>
         <p className="mt-2 text-sm text-muted-foreground">Fahre über die Punkte und entdecke die Details.</p>
         <div className="relative mt-6 overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
-          <img src={showroomAsset.url} alt="Silberner SUV im modernen Showroom mit autohaus.ai-Logo" width={1536} height={1024} className="block h-auto w-full" loading="lazy" />
+          <img src={detailExplorerAsset.url} alt="Hellblauer Ford Explorer in der Frontansicht im hellen Showroom – mit KI erstellt" width={1200} height={900} className="block h-auto w-full" loading="lazy" />
           {HOTSPOTS.map((h, i) => {
             // Notizseite: vorgegeben (noteSide) oder automatisch zur breiteren Bildseite.
             const toRight = h.noteSide ? h.noteSide === 'right' : h.x <= 55;
