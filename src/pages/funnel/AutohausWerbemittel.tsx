@@ -319,8 +319,8 @@ const CATEGORIES: Category[] = [
     id: 'video', label: 'Videos', description: 'Kurze Fahrzeugclips für deine Videokanäle.',
     icons: [{ src: logoTiktok.url, label: 'TikTok' }, { src: logoYoutube.url, label: 'YouTube' }],
     slides: [
-      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={HEADLIGHT_CLIP} /> },
-      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><div className="relative"><video poster={HORIZON_CLIP.poster} muted loop autoPlay playsInline preload="metadata" aria-label="Video (16:9)" className="aspect-[16 / 9] w-full object-cover"><source src={HORIZON_CLIP.webm} type="video/webm" /><source src={HORIZON_CLIP.mp4} type="video/mp4" /></video><AiMark /></div></div> },
+      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={LIGHTS_FOG_CLIP} /> },
+      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><div className="relative"><video poster={LIGHTS_TEXT_CLIP.poster} muted loop autoPlay playsInline preload="metadata" aria-label="Video (16:9)" className="aspect-[16 / 9] w-full object-cover"><source src={LIGHTS_TEXT_CLIP.webm} type="video/webm" /><source src={LIGHTS_TEXT_CLIP.mp4} type="video/mp4" /></video><AiMark /></div></div> },
     ],
   },
   {
