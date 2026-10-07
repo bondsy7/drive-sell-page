@@ -26,6 +26,9 @@ import bannerSkyscraperVelmora from '@/assets/funnel/banner-skyscraper-velmora.p
 import bannerSquareVelmora from '@/assets/funnel/banner-square-velmora.png.asset.json';
 import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
 import storyVelmora from '@/assets/story-velmora.png.asset.json';
+import bannerSquareV3 from '@/assets/funnel/banner-post-1080x1080-v3.png.asset.json';
+import bannerHalfpageV3 from '@/assets/funnel/banner-story-1080x1920-v3.png.asset.json';
+import bannerSkyscraperV2 from '@/assets/funnel/banner-wide-skyscraper-160x600-v2.png.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
