@@ -14,7 +14,7 @@ import studioAsset from '@/assets/funnel/fb-03-studio.webp.asset.json';
 import outdoorAsset from '@/assets/funnel/fb-04-outdoor.webp.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fb-05-kennzeichen.webp.asset.json';
 import logoShowroomAsset from '@/assets/funnel/fb-06-logo-showroom.webp.asset.json';
-import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp';
+import eigenerShowroomAsset from '@/assets/funnel/fb-07-eigener-showroom.webp.asset.json';
 import perspFrontAsset from '@/assets/funnel/fb-08-front.webp.asset.json';
 import perspSideAsset from '@/assets/funnel/fb-08-side.webp.asset.json';
 import perspRearAsset from '@/assets/funnel/fb-08-rear.webp.asset.json';
