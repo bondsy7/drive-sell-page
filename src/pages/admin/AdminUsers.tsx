@@ -283,17 +283,17 @@ export default function AdminUsers() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="text-left p-3 font-medium text-muted-foreground">E-Mail</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Firma</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Rolle</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Plan</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Credits</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Verbraucht</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Projekte</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Leads</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Letzte Aktivität</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Registriert</th>
-              <th className="p-3"></th>
+              <th className="text-left px-2 py-2 font-medium text-muted-foreground">E-Mail</th>
+              <th className="text-left px-2 py-2 font-medium text-muted-foreground">Firma</th>
+              <th className="text-center px-2 py-2 font-medium text-muted-foreground">Rolle</th>
+              <th className="text-center px-2 py-2 font-medium text-muted-foreground">Plan</th>
+              <th className="text-center px-2 py-2 font-medium text-muted-foreground">Credits</th>
+              <th className="text-center px-2 py-2 font-medium text-muted-foreground">Verbraucht</th>
+              <th className="text-center px-2 py-2 font-medium text-muted-foreground">Projekte</th>
+              <th className="text-center px-2 py-2 font-medium text-muted-foreground">Leads</th>
+              <th className="text-left px-2 py-2 font-medium text-muted-foreground">Letzte Aktivität</th>
+              <th className="text-left px-2 py-2 font-medium text-muted-foreground">Registriert</th>
+              <th className="px-2 py-2 w-[150px]"></th>
             </tr>
           </thead>
           <tbody>
@@ -304,11 +304,11 @@ export default function AdminUsers() {
 
               return (
                 <tr key={u.id} className="border-b border-border last:border-0">
-                  <td className="p-3 text-foreground truncate max-w-[200px]">{u.email || '—'}</td>
-                  <td className="p-3 text-muted-foreground truncate max-w-[150px]">{u.company_name || '—'}</td>
-                  <td className="p-3 text-center">
+                  <td className="px-2 py-2 text-foreground truncate max-w-[200px]">{u.email || '—'}</td>
+                  <td className="px-2 py-2 text-muted-foreground truncate max-w-[130px]">{u.company_name || '—'}</td>
+                  <td className="px-2 py-2 text-center">
                     <Select value={primaryRole || 'none'} onValueChange={(val) => assignRole(u.id, val)}>
-                      <SelectTrigger className="h-7 w-[130px] text-xs mx-auto">
+                      <SelectTrigger className="h-7 w-[120px] text-xs mx-auto">
                         <SelectValue>
                           {roleInfo ? (
                             <Badge variant="outline" className={`text-xs ${roleInfo.color}`}>{roleInfo.label}</Badge>
@@ -325,9 +325,9 @@ export default function AdminUsers() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="p-3 text-center">
+                  <td className="px-2 py-2 text-center">
                     <Select value={u.plan?.id || 'none'} onValueChange={(val) => assignPlan(u.id, val)}>
-                      <SelectTrigger className="h-7 w-[150px] text-xs mx-auto">
+                      <SelectTrigger className="h-7 w-[130px] text-xs mx-auto">
                         <SelectValue>
                           {u.plan ? (
                             <div className="flex items-center gap-1">
@@ -352,21 +352,21 @@ export default function AdminUsers() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="p-3 text-center font-semibold text-foreground">{u.balance}</td>
-                  <td className="p-3 text-center text-muted-foreground">{u.lifetime_used}</td>
-                  <td className="p-3 text-center text-muted-foreground">{u.project_count}</td>
-                  <td className="p-3 text-center text-muted-foreground">{u.lead_count}</td>
-                  <td className="p-3 text-muted-foreground text-xs">
+                  <td className="px-2 py-2 text-center font-semibold text-foreground whitespace-nowrap">{u.balance}</td>
+                  <td className="px-2 py-2 text-center text-muted-foreground whitespace-nowrap">{u.lifetime_used}</td>
+                  <td className="px-2 py-2 text-center text-muted-foreground whitespace-nowrap">{u.project_count}</td>
+                  <td className="px-2 py-2 text-center text-muted-foreground whitespace-nowrap">{u.lead_count}</td>
+                  <td className="px-2 py-2 text-muted-foreground text-xs whitespace-nowrap">
                     {u.last_transaction ? new Date(u.last_transaction).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'}
                   </td>
-                  <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
-                  <td className="p-3">
+                  <td className="px-2 py-2 text-muted-foreground whitespace-nowrap">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
+                  <td className="px-2 py-2">
                     <div className="flex items-center gap-1">
                       {adjusting === u.id ? (
                         <>
                           <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
-                          <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
+                          <Button size="sm" variant="outline" className="h-7 px-1.5" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-1.5" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
                         </>
                       ) : (
                         <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAdjusting(u.id)}>
@@ -377,7 +377,7 @@ export default function AdminUsers() {
                       {u.stripe_subscription_id && u.plan?.status === 'active' && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-amber-600 hover:text-amber-700" title="Abo kündigen">
+                            <Button size="sm" variant="outline" className="h-7 px-1.5 text-amber-600 hover:text-amber-700" title="Abo kündigen">
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
                           </AlertDialogTrigger>
@@ -396,17 +396,17 @@ export default function AdminUsers() {
                         </AlertDialog>
                       )}
 
-                      <Button size="sm" variant="outline" className="h-7 px-2" title="QR-Code Login" onClick={() => navigate(`/admin/qr-login?email=${encodeURIComponent(u.email || '')}`)}>
+                      <Button size="sm" variant="outline" className="h-7 px-1.5" title="QR-Code Login" onClick={() => navigate(`/admin/qr-login?email=${encodeURIComponent(u.email || '')}`)}>
                         <QrCode className="w-3.5 h-3.5" />
                       </Button>
 
-                      <Button size="sm" variant="outline" className="h-7 px-2" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
+                      <Button size="sm" variant="outline" className="h-7 px-1.5" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
                         <Settings2 className="w-3.5 h-3.5" />
                       </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" title="Nutzer löschen">
+                          <Button size="sm" variant="outline" className="h-7 px-1.5 text-destructive hover:text-destructive" title="Nutzer löschen">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </AlertDialogTrigger>
