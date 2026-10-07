@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import dealerOriginal from '@/assets/funnel/dealer-original.webp.asset.json';
+import dealerOriginal from '@/assets/funnel/original-explorer-2.png.asset.json';
 import dealerRemastered from '@/assets/funnel/branding-2.jpg.asset.json';
 import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
