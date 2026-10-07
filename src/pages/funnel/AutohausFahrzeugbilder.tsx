@@ -185,7 +185,7 @@ export default function AutohausFahrzeugbilder() {
       <section id="perspektiven" className="border-t border-border bg-secondary/40 py-14 scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="font-display text-3xl font-bold">Vielfältige Perspektiven ab drei Fahrzeugfotos</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Ab zwei Fahrzeugfotos entsteht eine echte Galerie: weitere Außenwinkel, gezielte Detailaufnahmen und Innenraumbilder. Jede Ansicht beruht auf einer Aufnahme, die du tatsächlich gemacht hast.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Ab drei Fahrzeugfotos entsteht eine echte Galerie: weitere Außenwinkel, gezielte Detailaufnahmen und Innenraumbilder. Jede Ansicht beruht auf einer Aufnahme, die du tatsächlich gemacht hast.</p>
           <div className="mt-8 space-y-9">
             {PERSPECTIVE_GROUPS.map((g) => (
               <div key={g.title}>
