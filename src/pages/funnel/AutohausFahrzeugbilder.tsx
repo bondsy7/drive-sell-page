@@ -64,7 +64,7 @@ const SCENES = [
 ];
 
 // Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
-type Perspective = { label: string; text: string; image: string };
+type Perspective = { label: string; text: string; image: string; alt?: string };
 const PERSPECTIVE_GROUPS: { title: string; hint: string; icon: typeof Car; items: Perspective[] }[] = [
   {
     title: 'Außenansichten',
@@ -90,7 +90,7 @@ const PERSPECTIVE_GROUPS: { title: string; hint: string; icon: typeof Car; items
     hint: 'Bilder, die den Innenraum wirklich zeigen.',
     icon: Armchair,
     items: [
-      { label: 'Cockpit', text: 'Lenkrad, Displays und Mittelkonsole.', image: perspCockpitAsset.url },
+      { label: 'Cockpit', text: 'Lenkrad, Displays und Mittelkonsole.', image: perspCockpitAsset.url, alt: 'Ford Explorer Cockpit mit Lenkrad, zentralem Display und hellem Innenraum – mit KI erstellt' },
       { label: 'Rücksitzbank', text: 'Fond und Platzangebot aus eigener Aufnahme.', image: perspRearSeatsAsset.url },
     ],
   },
@@ -197,7 +197,7 @@ export default function AutohausFahrzeugbilder() {
                   {g.items.map((p) => (
                     <figure key={p.label}>
                       <button type="button" onClick={() => setPerspective(p)} aria-label={`${p.label} vollständig ansehen`} className="group relative block w-full overflow-hidden rounded-lg border border-border bg-card shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                        <img src={p.image} alt={`${p.label} – ${g.title}`} width={1024} height={768} className="block aspect-[4/3] w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02]" loading="lazy" />
+                        <img src={p.image} alt={p.alt ?? `${p.label} – ${g.title}`} width={1024} height={768} className="block aspect-[4/3] w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02]" loading="lazy" />
                         <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-card/90 text-foreground shadow-card"><Maximize2 className="h-4 w-4" aria-hidden="true" /></span>
                       </button>
                       <figcaption className="mt-2 text-sm font-semibold">{p.label}</figcaption>
