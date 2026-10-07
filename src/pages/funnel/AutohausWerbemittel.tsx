@@ -128,16 +128,16 @@ function AiMark() {
   );
 }
 
-const HEADLIGHT_CLIP = {
-  webm: clipHeadlightsWebm.url,
-  mp4: clipHeadlights.url,
-  poster: clipHeadlightsPoster.url,
+const LIGHTS_FOG_CLIP = {
+  webm: clipLightsFogWebm.url,
+  mp4: clipLightsFog.url,
+  poster: clipLightsFogPoster.url,
 };
 
-const HORIZON_CLIP = {
-  webm: clipHorizonWebm.url,
-  mp4: clipHorizon.url,
-  poster: clipHorizonPoster.url,
+const LIGHTS_TEXT_CLIP = {
+  webm: clipLightsTextWebm.url,
+  mp4: clipLightsText.url,
+  poster: clipLightsTextPoster.url,
 };
 
 function StoryFrame({
