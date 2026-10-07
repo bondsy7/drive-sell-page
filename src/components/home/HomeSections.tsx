@@ -529,8 +529,8 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     detail: {
       src: kennzeichenExplorerHintenAsset.url,
       alt: 'Nahaufnahme des Kennzeichens autohaus.ai am Heck des hellblauen Ford Explorers – mit KI erstellt',
-      position: 'center 62%',
-      zoom: 2.2,
+      position: 'center 68%',
+      zoom: 3.5,
     },
   },
 };
