@@ -57,10 +57,10 @@ const COMPARE = [
   { before: 'Unterschiedliche Hintergründe im Bestand', after: 'Einen gewählten Look einheitlich nutzen' },
 ];
 
-const SCENES = [
-  { label: 'Helles Studio', image: studioAsset.url },
-  { label: 'Moderner Showroom', image: showroomAsset.url },
-  { label: 'Outdoor-Szene', image: outdoorAsset.url },
+const SCENES: { label: string; image: string; alt: string }[] = [
+  { label: 'Helles Studio', image: studioAsset.url, alt: 'Hellblauer Ford Explorer in der Dreiviertel-Frontansicht im hellen Studio mit Deckenlicht – mit KI erstellt' },
+  { label: 'Moderner Showroom', image: showroomAsset.url, alt: 'Silberner SUV – Moderner Showroom' },
+  { label: 'Outdoor-Szene', image: outdoorAsset.url, alt: 'Silberner SUV – Outdoor-Szene' },
 ];
 
 // Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
@@ -271,7 +271,7 @@ export default function AutohausFahrzeugbilder() {
           {SCENES.map((s, i) => (
             <figure key={s.label}>
               <button type="button" onClick={() => setScene(i)} className="group relative block w-full overflow-hidden rounded-lg border border-border bg-secondary shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${s.label} vollständig ansehen`}>
-                <img src={s.image} alt={`Silberner SUV – ${s.label}`} width={1536} height={1024} className="block h-auto w-full transition-transform duration-300 motion-safe:group-hover:scale-[1.02]" loading="lazy" />
+                <img src={s.image} alt={s.alt} width={1200} height={896} className="block h-auto w-full transition-transform duration-300 motion-safe:group-hover:scale-[1.02]" loading="lazy" />
                 <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-card/90 text-foreground shadow-card"><Maximize2 className="h-4 w-4" aria-hidden="true" /></span>
               </button>
               <figcaption className="mt-2 text-sm font-semibold">{s.label}</figcaption>
@@ -286,7 +286,7 @@ export default function AutohausFahrzeugbilder() {
           </article>
         </div>
         <p className="mt-5 flex items-center justify-center gap-2 rounded-md bg-accent/10 px-4 py-3 text-center text-sm text-accent"><Layers3 className="h-4 w-4 shrink-0" aria-hidden="true" /><span><strong>Dein gewählter Look.</strong> Für deinen gesamten Fahrzeugbestand.</span></p>
-        <FunnelImageLightbox open={scene !== null} onOpenChange={(o) => !o && setScene(null)} src={scene !== null ? SCENES[scene].image : ''} alt={scene !== null ? `Silberner SUV – ${SCENES[scene].label}` : ''} title={scene !== null ? SCENES[scene].label : ''} />
+        <FunnelImageLightbox open={scene !== null} onOpenChange={(o) => !o && setScene(null)} src={scene !== null ? SCENES[scene].image : ''} alt={scene !== null ? SCENES[scene].alt : ''} title={scene !== null ? SCENES[scene].label : ''} />
       </section>
 
       {/* Mehr Möglichkeiten */}
