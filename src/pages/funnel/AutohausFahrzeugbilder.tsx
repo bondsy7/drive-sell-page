@@ -57,10 +57,10 @@ const COMPARE = [
   { before: 'Unterschiedliche Hintergründe im Bestand', after: 'Einen gewählten Look einheitlich nutzen' },
 ];
 
-const SCENES = [
-  { label: 'Helles Studio', image: studioAsset.url },
-  { label: 'Moderner Showroom', image: showroomAsset.url },
-  { label: 'Outdoor-Szene', image: outdoorAsset.url },
+const SCENES: { label: string; image: string; alt: string }[] = [
+  { label: 'Helles Studio', image: studioAsset.url, alt: 'Hellblauer Ford Explorer in der Dreiviertel-Frontansicht im hellen Studio mit Deckenlicht – mit KI erstellt' },
+  { label: 'Moderner Showroom', image: showroomAsset.url, alt: 'Silberner SUV – Moderner Showroom' },
+  { label: 'Outdoor-Szene', image: outdoorAsset.url, alt: 'Silberner SUV – Outdoor-Szene' },
 ];
 
 // Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
