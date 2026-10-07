@@ -19,7 +19,7 @@ import video916Mp4 from '@/assets/funnel/lights-fog.mp4.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
 import ablaufBild from '@/assets/ablauf-frontansicht.jpg.asset.json';
 import videoEditScreen from '@/assets/video-edit-screen.png.asset.json';
-import abschlussBild from '@/assets/funnel/abschluss-fahrzeugbild.jpg.asset.json';
+import abschlussBild from '@/assets/funnel/abschluss-fahrzeugbild-2.jpg.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=videos';
 
@@ -271,8 +271,8 @@ export default function AutohausVideos() {
             <p className="mt-3 text-sm opacity-90">Teste die Videofunktion mit einem Fahrzeug aus deinem Bestand.</p>
             <Button asChild size="lg" variant="secondary" className="mt-6"><Link to={TEST_URL} data-cta="videos_final">Mit eigenem Fahrzeug testen</Link></Button>
           </div>
-          <div role="img" aria-label="Fahrzeugbild: Silberner SUV im Showroom von autohaus.ai" style={{ aspectRatio: '16/9' }} className="relative overflow-hidden rounded-lg">
-            <img src={abschlussBild.url} alt="Silberner SUV im Showroom von autohaus.ai" className="h-full w-full object-cover" />
+          <div role="img" aria-label="Hellblauer Ford Explorer im Showroom von autohaus.ai" style={{ aspectRatio: '16/9' }} className="relative overflow-hidden rounded-lg">
+            <img src={abschlussBild.url} alt="Hellblauer Ford Explorer im Showroom von autohaus.ai" className="h-full w-full object-cover" />
             <img
               src={getAiDisclosureLabelVector('landing')}
               alt={getAiDisclosureLabelAlt('landing')}
