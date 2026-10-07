@@ -15,10 +15,11 @@ import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
 import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
 import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
-import socialStoryAsset from '@/assets/home/social/social-story.webp.asset.json';
-import socialPostAsset from '@/assets/home/social/social-post.webp.asset.json';
-import socialFbAdAsset from '@/assets/home/social/social-fb-ad.webp.asset.json';
-import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper.webp.asset.json';
+import socialStoryAsset from '@/assets/home/social/social-story-2.png.asset.json';
+import socialPostAsset from '@/assets/home/social/social-post-2.png.asset.json';
+import socialFbHeroAsset from '@/assets/home/social/social-fb-hero-2.png.asset.json';
+import socialSkyscraperAsset from '@/assets/home/social/social-skyscraper-2.png.asset.json';
+import socialBillboardAsset from '@/assets/home/social/social-billboard-970x250.png.asset.json';
 import resultVideoWebmAsset from '@/assets/home/ergebnis-video.webm.asset.json';
 import resultVideoMp4Asset from '@/assets/home/ergebnis-video.mp4.asset.json';
 import verkaufsseiteAsset from '@/assets/home/verkaufsseite-ford.png.asset.json';
@@ -45,7 +46,8 @@ const MEDIA = {
   bildInnen: { label: 'Fahrzeugbild innen', ratio: '4 / 3', kind: 'image' },
   motivStory: { label: 'Social-Media-Story (9:16)', ratio: '9 / 16', kind: 'image', src: socialStoryAsset.url, ai: true, w: 'w-28 sm:w-32' },
   motivSocial: { label: 'Social-Media-Motiv (1:1)', ratio: '1 / 1', kind: 'image', src: socialPostAsset.url, ai: true, w: 'w-40 sm:w-44' },
-  motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '1.91 / 1', kind: 'image', src: socialFbAdAsset.url, ai: true, w: 'w-56 sm:w-72' },
+  motivFbAd: { label: 'Facebook-Werbeanzeige', ratio: '16 / 9', kind: 'image', src: socialFbHeroAsset.url, ai: true, w: 'w-64 sm:w-96' },
+  motivBillboard: { label: 'Display-Banner (970×250)', ratio: '970 / 250', kind: 'image', src: socialBillboardAsset.url, ai: true, w: 'w-full max-w-xl' },
   motivDisplay: { label: 'Display-Banner (160×600)', ratio: '160 / 600', kind: 'image', src: socialSkyscraperAsset.url, ai: true, w: 'w-16 sm:w-20' },
   clip: { label: 'Fahrzeugclip', ratio: '16 / 9', kind: 'video', webm: resultVideoWebmAsset.url, mp4: resultVideoMp4Asset.url, ai: true },
   seite: { label: 'Fahrzeugseite', ratio: '16 / 9', kind: 'image', src: verkaufsseiteAsset.url, ai: true },
@@ -162,7 +164,7 @@ function FahrzeugbilderGallery() {
 
 const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: string; use: string }[] = [
   { label: 'Fahrzeugbilder', icon: Images, media: [], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
-  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivDisplay, MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
+  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivDisplay, MEDIA.motivBillboard, MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
   { label: 'Videos', icon: Video, media: [MEDIA.clip], need: 'Fahrzeugbilder und die Auswahl der Videofunktion.', use: 'Social Media und deine Website.' },
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
 ];
