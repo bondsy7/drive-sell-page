@@ -32,7 +32,7 @@ import clipLightsFogWebm from '@/assets/funnel/lights-fog.webm.asset.json';
 import clipLightsText from '@/assets/funnel/lights-text.mp4.asset.json';
 import clipLightsTextPoster from '@/assets/funnel/lights-text-poster.jpg.asset.json';
 import clipLightsTextWebm from '@/assets/funnel/lights-text.webm.asset.json';
-import headerMockup from '@/assets/funnel/header-mockup-content-2.png.asset.json';
+import headerMockup from '@/assets/funnel/header-background-2.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
 
