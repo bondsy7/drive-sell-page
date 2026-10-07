@@ -26,12 +26,12 @@ import storyVelmora from '@/assets/story-velmora.png.asset.json';
 import bannerSquareV3 from '@/assets/funnel/banner-post-1080x1080-v3.png.asset.json';
 import bannerHalfpageV3 from '@/assets/funnel/banner-story-1080x1920-v3.png.asset.json';
 import bannerSkyscraperV2 from '@/assets/funnel/banner-wide-skyscraper-160x600-v2.png.asset.json';
-import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
-import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
-import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
-import clipHorizon from '@/assets/funnel/fahrzeug-horizont.mp4.asset.json';
-import clipHorizonPoster from '@/assets/funnel/fahrzeug-horizont-poster.jpg.asset.json';
-import clipHorizonWebm from '@/assets/funnel/fahrzeug-horizont.webm.asset.json';
+import clipLightsFog from '@/assets/funnel/lights-fog.mp4.asset.json';
+import clipLightsFogPoster from '@/assets/funnel/lights-fog-poster.jpg.asset.json';
+import clipLightsFogWebm from '@/assets/funnel/lights-fog.webm.asset.json';
+import clipLightsText from '@/assets/funnel/lights-text.mp4.asset.json';
+import clipLightsTextPoster from '@/assets/funnel/lights-text-poster.jpg.asset.json';
+import clipLightsTextWebm from '@/assets/funnel/lights-text.webm.asset.json';
 import headerMockup from '@/assets/funnel/header-mockup-content-2.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
@@ -128,16 +128,16 @@ function AiMark() {
   );
 }
 
-const HEADLIGHT_CLIP = {
-  webm: clipHeadlightsWebm.url,
-  mp4: clipHeadlights.url,
-  poster: clipHeadlightsPoster.url,
+const LIGHTS_FOG_CLIP = {
+  webm: clipLightsFogWebm.url,
+  mp4: clipLightsFog.url,
+  poster: clipLightsFogPoster.url,
 };
 
-const HORIZON_CLIP = {
-  webm: clipHorizonWebm.url,
-  mp4: clipHorizon.url,
-  poster: clipHorizonPoster.url,
+const LIGHTS_TEXT_CLIP = {
+  webm: clipLightsTextWebm.url,
+  mp4: clipLightsText.url,
+  poster: clipLightsTextPoster.url,
 };
 
 function StoryFrame({
@@ -319,8 +319,8 @@ const CATEGORIES: Category[] = [
     id: 'video', label: 'Videos', description: 'Kurze Fahrzeugclips für deine Videokanäle.',
     icons: [{ src: logoTiktok.url, label: 'TikTok' }, { src: logoYoutube.url, label: 'YouTube' }],
     slides: [
-      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={HEADLIGHT_CLIP} /> },
-      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><div className="relative"><video poster={HORIZON_CLIP.poster} muted loop autoPlay playsInline preload="metadata" aria-label="Video (16:9)" className="aspect-[16 / 9] w-full object-cover"><source src={HORIZON_CLIP.webm} type="video/webm" /><source src={HORIZON_CLIP.mp4} type="video/mp4" /></video><AiMark /></div></div> },
+      { key: 'vertical', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Fahrzeugclip (9:16)" clip={LIGHTS_FOG_CLIP} /> },
+      { key: 'landscape', width: 'w-[300px] sm:w-[440px]', node: <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card"><div className="relative"><video poster={LIGHTS_TEXT_CLIP.poster} muted loop autoPlay playsInline preload="metadata" aria-label="Video (16:9)" className="aspect-[16 / 9] w-full object-cover"><source src={LIGHTS_TEXT_CLIP.webm} type="video/webm" /><source src={LIGHTS_TEXT_CLIP.mp4} type="video/mp4" /></video><AiMark /></div></div> },
     ],
   },
   {
