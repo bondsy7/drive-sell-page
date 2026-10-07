@@ -20,7 +20,7 @@ import logoGoogle from '@/assets/funnel/logo-google.png.asset.json';
 import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
-import socialPostVelmora from '@/assets/funnel/social-post-velmora-v2.webp.asset.json';
+import socialPostVelmora from '@/assets/funnel/banner-post-1080x1080.png.asset.json';
 import bannerHalfpageVelmora from '@/assets/funnel/banner-halfpage-velmora.png.asset.json';
 import bannerSkyscraperVelmora from '@/assets/funnel/banner-skyscraper-velmora.png.asset.json';
 import bannerSquareVelmora from '@/assets/funnel/banner-square-velmora.png.asset.json';
