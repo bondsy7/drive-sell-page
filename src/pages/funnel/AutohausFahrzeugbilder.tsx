@@ -279,7 +279,7 @@ export default function AutohausFahrzeugbilder() {
           ))}
           <article className="flex flex-col">
             <div className="overflow-hidden rounded-lg border border-accent/40 bg-secondary shadow-card">
-              <img src={eigenerShowroomAsset} alt="Silberner SUV im Showroom eines Autohauses mit Glasfassade und Übergabebereich" width={1264} height={848} className="block h-auto w-full" loading="lazy" />
+              <img src={eigenerShowroomAsset.url} alt="Hellblauer Ford Explorer in der Dreiviertel-Frontansicht im klassischen Autohaus mit Glasfassade – mit KI erstellt" width={1451} height={1084} className="block h-auto w-full" loading="lazy" />
             </div>
             <p className="mt-2 flex items-center gap-2 text-sm font-semibold"><Store className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />Eigener Showroom</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">Du nutzt lieber deinen eigenen Showroom? Dann bleibt er dein Hintergrund: Wir setzen dein Fahrzeug in deinen bestehenden Räumlichkeiten professionell in Szene.</p>
