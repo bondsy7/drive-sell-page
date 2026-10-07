@@ -17,7 +17,7 @@ import video169Mp4 from '@/assets/funnel/lights-text.mp4.asset.json';
 import video916Webm from '@/assets/funnel/lights-fog.webm.asset.json';
 import video916Mp4 from '@/assets/funnel/lights-fog.mp4.asset.json';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
-import ablaufBild from '@/assets/ablauf-fahrzeugbild.jpg.asset.json';
+import ablaufBild from '@/assets/ablauf-frontansicht.jpg.asset.json';
 import videoEditScreen from '@/assets/video-edit-screen.png.asset.json';
 import abschlussBild from '@/assets/funnel/abschluss-fahrzeugbild.jpg.asset.json';
 
