@@ -271,7 +271,7 @@ export default function StandtageVermeiden() {
             <p className="mt-3 text-xs opacity-85">Persönliche Rückmeldung in der Regel innerhalb eines Werktags.</p>
           </div>
           <div className="relative">
-            <img src={ctaCarAsset.url} alt="Fahrzeug als professionelles Verkaufsbild" loading="lazy" className="mx-auto w-full max-w-md object-contain md:max-w-none" />
+            <img src={ctaCarAsset.url} alt="Freigestellter hellblauer Ford Explorer als professionelles Verkaufsbild" loading="lazy" className="mx-auto w-full max-w-md object-contain md:max-w-none" width={1536} height={1024} />
           </div>
         </div>
       </section>
