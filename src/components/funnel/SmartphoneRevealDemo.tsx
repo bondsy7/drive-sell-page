@@ -107,7 +107,7 @@ export default function SmartphoneRevealDemo() {
       >
         <img
           src={beforeAsset.url}
-          alt="BMW X7 als unbearbeitetes Bestandsfoto vor dem Autohaus"
+          alt="Hellblauer Ford Explorer als unbearbeitetes Bestandsfoto auf dem Händlerhof"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           draggable={false}
           loading="eager"
