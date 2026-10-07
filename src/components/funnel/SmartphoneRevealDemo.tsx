@@ -2,20 +2,20 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Maximize2, Move } from 'lucide-react';
 import FunnelImageLightbox from '@/components/funnel/FunnelImageLightbox';
 import { Button } from '@/components/ui/button';
-import beforeAsset from '@/assets/funnel/before.webp.asset.json';
-import after1Asset from '@/assets/funnel/after1.webp.asset.json';
-import after2Asset from '@/assets/funnel/after2.webp.asset.json';
-import after3Asset from '@/assets/funnel/after3.webp.asset.json';
-import after4Asset from '@/assets/funnel/after4.webp.asset.json';
-import after5Asset from '@/assets/funnel/after5.webp.asset.json';
+import beforeAsset from '@/assets/funnel/original_explorer.png.asset.json';
+import preparationAsset from '@/assets/funnel/aufbereitung_explorer.png.asset.json';
+import brandingAsset from '@/assets/funnel/brandign_explorer.png.asset.json';
+import paintAsset from '@/assets/funnel/lackierung_explorer.png.asset.json';
+import wheelsAsset from '@/assets/funnel/felgen_explorer.png.asset.json';
+import showroomAsset from '@/assets/funnel/showroom_explorer.png.asset.json';
 
 // Zum Austauschen eines Zustands nur die jeweilige Bildquelle hier ändern.
 const REVEAL_VARIANTS = [
-  { label: 'Aufbereitung', image: after1Asset.url },
-  { label: 'Branding', image: after5Asset.url },
-  { label: 'Lackierung', image: after3Asset.url },
-  { label: 'Felgen', image: after4Asset.url },
-  { label: 'Showroom', image: after2Asset.url },
+  { label: 'Aufbereitung', image: preparationAsset.url },
+  { label: 'Branding', image: brandingAsset.url },
+  { label: 'Lackierung', image: paintAsset.url },
+  { label: 'Felgen', image: wheelsAsset.url },
+  { label: 'Showroom', image: showroomAsset.url },
 ] as const;
 
 type Position = { x: number; y: number };
@@ -107,7 +107,7 @@ export default function SmartphoneRevealDemo() {
       >
         <img
           src={beforeAsset.url}
-          alt="BMW X7 als unbearbeitetes Bestandsfoto vor dem Autohaus"
+          alt="Hellblauer Ford Explorer als unbearbeitetes Bestandsfoto auf dem Händlerhof"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           draggable={false}
           loading="eager"
