@@ -41,7 +41,6 @@ const HOTSPOTS: Hotspot[] = [
   { title: 'Bodenkontakt & Schatten', text: 'Ein natürlicher Schatten verbindet das Fahrzeug mit dem Boden und unterstützt einen realistischen Gesamteindruck.', x: 58, y: 82, noteSide: 'right' },
   { title: 'Fahrzeugdetails', text: 'Klare Konturen und gut erkennbare Details rücken die Merkmale deines Fahrzeugs in den Mittelpunkt.', x: 44, y: 55 },
   { title: 'Showroom', text: 'Ein ruhiger Showroom-Hintergrund sorgt für eine hochwertige und einheitliche Fahrzeugpräsentation.', x: 13, y: 22 },
-  { title: 'Kennzeichen', text: 'Zeige dein Fahrzeug mit Kennzeichen, ohne Kennzeichen oder mit deiner gewünschten Kennzeichendarstellung.', x: 29, y: 52 },
   { title: 'Logo im Showroom', text: 'Integriere dein Autohaus-Logo in den Showroom und gib deinen Fahrzeugbildern einen eigenen Markenauftritt.', x: 86, y: 20 },
   { title: 'Richtige Fahrzeugdimensionen', text: 'Dein Original-Fahrzeug wird harmonisch und mit korrekten Proportionen in den gewünschten Showroom eingefügt – kein statisch dahintergelegtes Hintergrundbild wie bei einfachen Foto-Apps.', x: 60, y: 38, noteSide: 'right' },
 ];
