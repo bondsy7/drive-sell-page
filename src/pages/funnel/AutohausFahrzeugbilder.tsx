@@ -64,7 +64,7 @@ const SCENES = [
 ];
 
 // Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
-type Perspective = { label: string; text: string; image: string };
+type Perspective = { label: string; text: string; image: string; alt?: string };
 const PERSPECTIVE_GROUPS: { title: string; hint: string; icon: typeof Car; items: Perspective[] }[] = [
   {
     title: 'Außenansichten',
