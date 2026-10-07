@@ -26,12 +26,12 @@ import storyVelmora from '@/assets/story-velmora.png.asset.json';
 import bannerSquareV3 from '@/assets/funnel/banner-post-1080x1080-v3.png.asset.json';
 import bannerHalfpageV3 from '@/assets/funnel/banner-story-1080x1920-v3.png.asset.json';
 import bannerSkyscraperV2 from '@/assets/funnel/banner-wide-skyscraper-160x600-v2.png.asset.json';
-import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
-import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
-import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
-import clipHorizon from '@/assets/funnel/fahrzeug-horizont.mp4.asset.json';
-import clipHorizonPoster from '@/assets/funnel/fahrzeug-horizont-poster.jpg.asset.json';
-import clipHorizonWebm from '@/assets/funnel/fahrzeug-horizont.webm.asset.json';
+import clipLightsFog from '@/assets/funnel/lights-fog.mp4.asset.json';
+import clipLightsFogPoster from '@/assets/funnel/lights-fog-poster.jpg.asset.json';
+import clipLightsFogWebm from '@/assets/funnel/lights-fog.webm.asset.json';
+import clipLightsText from '@/assets/funnel/lights-text.mp4.asset.json';
+import clipLightsTextPoster from '@/assets/funnel/lights-text-poster.jpg.asset.json';
+import clipLightsTextWebm from '@/assets/funnel/lights-text.webm.asset.json';
 import headerMockup from '@/assets/funnel/header-mockup-content-2.png.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=werbemittel';
