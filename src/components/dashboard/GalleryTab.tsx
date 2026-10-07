@@ -148,7 +148,7 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
                         <div className="cursor-pointer" onClick={() => onLightbox(folder, idxInFolder)}>
                           <div className="aspect-video relative">
                             <img src={getImageSrc(img)} alt={withAiDisclosureAlt(img.perspective || 'Fahrzeugbild')} className="w-full h-full object-cover" />
-                            <AiDisclosureBadge overlay imgClassName="h-[22px]" />
+                            <AiDisclosureBadge overlay imgClassName="h-[22px] sm:h-[22px]" />
                           </div>
 
                           <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
