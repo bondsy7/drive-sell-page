@@ -313,9 +313,9 @@ const CATEGORIES: Category[] = [
     id: 'banner', label: 'Display-Banner', description: 'Dein Fahrzeugangebot in passenden Formaten für Display-Werbung.',
     icons: [{ src: logoGoogle.url, label: 'Google' }],
     slides: [
-      { key: 'halfpage', width: 'w-[150px] sm:w-[180px]', node: <BannerFrame label="Half-Page Banner" ratio="300 / 600" imageSrc={bannerHalfpageVelmora.url} /> },
-      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" imageSrc={bannerSquareVelmora.url} /> },
-      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" imageSrc={bannerSkyscraperVelmora.url} stackedFooter /> },
+      { key: 'halfpage', width: 'w-[150px] sm:w-[180px]', node: <BannerFrame label="Half-Page Banner" ratio="300 / 600" imageSrc={bannerHalfpageV3.url} /> },
+      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" imageSrc={bannerSquareV3.url} /> },
+      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" imageSrc={bannerSkyscraperV2.url} stackedFooter /> },
     ],
   },
   {
