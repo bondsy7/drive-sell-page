@@ -111,7 +111,7 @@ function Icons({ items }: { items: { src: string; alt: string }[] }) {
 }
 
 const steps = [
-  { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild', img: ablaufBild.url, imgAlt: 'Fahrzeugbild eines silbernen SUV im Showroom' },
+  { t: 'Bild auswählen', d: 'Nutze dein Fahrzeugbild aus der App.', ph: 'Platzhalter Fahrzeugbild', img: ablaufBild.url, imgAlt: 'Frontansicht eines hellblauen Ford Explorer im Showroom' },
   { t: 'Video gestalten', d: 'Wähle Format und Videostil.', ph: 'Platzhalter Screenshot der Funktion', img: videoEditScreen.url, imgAlt: 'Screenshot der Videofunktion: Fahrzeugbild auswählen, Format 16:9 oder 9:16 wählen, optionaler Video-Prompt' },
   { t: 'Clip verwenden', d: 'Herunterladen und für dein Marketing nutzen.', ph: 'Platzhalter Videovorschau', video: true },
 ];
