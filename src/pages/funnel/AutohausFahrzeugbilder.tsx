@@ -286,7 +286,7 @@ export default function AutohausFahrzeugbilder() {
           </article>
         </div>
         <p className="mt-5 flex items-center justify-center gap-2 rounded-md bg-accent/10 px-4 py-3 text-center text-sm text-accent"><Layers3 className="h-4 w-4 shrink-0" aria-hidden="true" /><span><strong>Dein gewählter Look.</strong> Für deinen gesamten Fahrzeugbestand.</span></p>
-        <FunnelImageLightbox open={scene !== null} onOpenChange={(o) => !o && setScene(null)} src={scene !== null ? SCENES[scene].image : ''} alt={scene !== null ? `Silberner SUV – ${SCENES[scene].label}` : ''} title={scene !== null ? SCENES[scene].label : ''} />
+        <FunnelImageLightbox open={scene !== null} onOpenChange={(o) => !o && setScene(null)} src={scene !== null ? SCENES[scene].image : ''} alt={scene !== null ? SCENES[scene].alt : ''} title={scene !== null ? SCENES[scene].label : ''} />
       </section>
 
       {/* Mehr Möglichkeiten */}
