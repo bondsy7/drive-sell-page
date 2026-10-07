@@ -365,8 +365,8 @@ export default function AdminUsers() {
                       {adjusting === u.id ? (
                         <>
                           <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
-                          <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
+                          <Button size="sm" variant="outline" className="h-7 px-1.5" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-1.5" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
                         </>
                       ) : (
                         <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAdjusting(u.id)}>
@@ -377,7 +377,7 @@ export default function AdminUsers() {
                       {u.stripe_subscription_id && u.plan?.status === 'active' && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-amber-600 hover:text-amber-700" title="Abo kündigen">
+                            <Button size="sm" variant="outline" className="h-7 px-1.5 text-amber-600 hover:text-amber-700" title="Abo kündigen">
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
                           </AlertDialogTrigger>
@@ -396,17 +396,17 @@ export default function AdminUsers() {
                         </AlertDialog>
                       )}
 
-                      <Button size="sm" variant="outline" className="h-7 px-2" title="QR-Code Login" onClick={() => navigate(`/admin/qr-login?email=${encodeURIComponent(u.email || '')}`)}>
+                      <Button size="sm" variant="outline" className="h-7 px-1.5" title="QR-Code Login" onClick={() => navigate(`/admin/qr-login?email=${encodeURIComponent(u.email || '')}`)}>
                         <QrCode className="w-3.5 h-3.5" />
                       </Button>
 
-                      <Button size="sm" variant="outline" className="h-7 px-2" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
+                      <Button size="sm" variant="outline" className="h-7 px-1.5" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
                         <Settings2 className="w-3.5 h-3.5" />
                       </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" title="Nutzer löschen">
+                          <Button size="sm" variant="outline" className="h-7 px-1.5 text-destructive hover:text-destructive" title="Nutzer löschen">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </AlertDialogTrigger>
