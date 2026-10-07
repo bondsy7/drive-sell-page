@@ -164,7 +164,7 @@ function FahrzeugbilderGallery() {
 
 const RESULTS: { label: string; icon: typeof Images; media: Media[]; need: string; use: string }[] = [
   { label: 'Fahrzeugbilder', icon: Images, media: [], need: 'Smartphone-Aufnahmen und die gewünschte Szene.', use: 'Fahrzeugpräsentation auf deiner Website und in Inseraten.' },
-  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivDisplay, MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
+  { label: 'Werbemotive', icon: Megaphone, media: [MEDIA.motivDisplay, MEDIA.motivBillboard, MEDIA.motivStory, MEDIA.motivSocial, MEDIA.motivFbAd], need: 'Fahrzeugbild, Format und Angebotsangaben.', use: 'Social Media und Display-Banner.' },
   { label: 'Videos', icon: Video, media: [MEDIA.clip], need: 'Fahrzeugbilder und die Auswahl der Videofunktion.', use: 'Social Media und deine Website.' },
   { label: 'Fahrzeugseiten', icon: FileText, media: [MEDIA.seite], need: 'Fahrzeugbilder sowie Fahrzeug- und Angebotsdaten.', use: 'Eine eigene Fahrzeugseite mit Angebot und Kontaktmöglichkeit.' },
 ];
