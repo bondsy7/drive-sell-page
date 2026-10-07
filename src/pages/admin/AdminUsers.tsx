@@ -280,20 +280,20 @@ export default function AdminUsers() {
       </div>
 
       <div className="bg-card rounded-xl border border-border overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="text-left p-3 font-medium text-muted-foreground">E-Mail</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Firma</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Rolle</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Plan</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Credits</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Verbraucht</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Projekte</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Leads</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Letzte Aktivität</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Registriert</th>
-              <th className="p-3"></th>
+              <th className="text-left px-2.5 py-2 font-medium text-muted-foreground">E-Mail</th>
+              <th className="text-left px-2.5 py-2 font-medium text-muted-foreground">Firma</th>
+              <th className="text-center px-2.5 py-2 font-medium text-muted-foreground">Rolle</th>
+              <th className="text-center px-2.5 py-2 font-medium text-muted-foreground">Plan</th>
+              <th className="text-center px-2.5 py-2 font-medium text-muted-foreground">Credits</th>
+              <th className="text-center px-2.5 py-2 font-medium text-muted-foreground">Verbraucht</th>
+              <th className="text-center px-2.5 py-2 font-medium text-muted-foreground">Projekte</th>
+              <th className="text-center px-2.5 py-2 font-medium text-muted-foreground">Leads</th>
+              <th className="text-left px-2.5 py-2 font-medium text-muted-foreground">Letzte Aktivität</th>
+              <th className="text-left px-2.5 py-2 font-medium text-muted-foreground">Registriert</th>
+              <th className="px-2.5 py-2 w-[150px]"></th>
             </tr>
           </thead>
           <tbody>
