@@ -21,11 +21,11 @@ import logoTiktok from '@/assets/funnel/logo-tiktok.png.asset.json';
 import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/banner-post-1080x1080.png.asset.json';
-import bannerHalfpageVelmora from '@/assets/funnel/banner-halfpage-velmora.png.asset.json';
-import bannerSkyscraperVelmora from '@/assets/funnel/banner-skyscraper-velmora.png.asset.json';
-import bannerSquareVelmora from '@/assets/funnel/banner-square-velmora.png.asset.json';
 import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
 import storyVelmora from '@/assets/story-velmora.png.asset.json';
+import bannerSquareV3 from '@/assets/funnel/banner-post-1080x1080-v3.png.asset.json';
+import bannerHalfpageV3 from '@/assets/funnel/banner-story-1080x1920-v3.png.asset.json';
+import bannerSkyscraperV2 from '@/assets/funnel/banner-wide-skyscraper-160x600-v2.png.asset.json';
 import clipHeadlights from '@/assets/funnel/fahrzeugscheinwerfer-blinken.mp4.asset.json';
 import clipHeadlightsPoster from '@/assets/funnel/fahrzeugscheinwerfer-blinken-poster.jpg.asset.json';
 import clipHeadlightsWebm from '@/assets/funnel/fahrzeugscheinwerfer-blinken.webm.asset.json';
@@ -310,9 +310,9 @@ const CATEGORIES: Category[] = [
     id: 'banner', label: 'Display-Banner', description: 'Dein Fahrzeugangebot in passenden Formaten für Display-Werbung.',
     icons: [{ src: logoGoogle.url, label: 'Google' }],
     slides: [
-      { key: 'halfpage', width: 'w-[150px] sm:w-[180px]', node: <BannerFrame label="Half-Page Banner" ratio="300 / 600" imageSrc={bannerHalfpageVelmora.url} /> },
-      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" imageSrc={bannerSquareVelmora.url} /> },
-      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" imageSrc={bannerSkyscraperVelmora.url} stackedFooter /> },
+      { key: 'halfpage', width: 'w-[150px] sm:w-[180px]', node: <BannerFrame label="Half-Page Banner" ratio="300 / 600" imageSrc={bannerHalfpageV3.url} /> },
+      { key: 'square', width: 'w-[220px] sm:w-[260px]', node: <BannerFrame label="Quadratisches Motiv" ratio="1 / 1" imageSrc={bannerSquareV3.url} /> },
+      { key: 'tall', width: 'w-[100px] sm:w-[120px]', node: <BannerFrame label="Hohes Banner" ratio="160 / 600" imageSrc={bannerSkyscraperV2.url} stackedFooter /> },
     ],
   },
   {
