@@ -60,7 +60,7 @@ const COMPARE = [
 const SCENES: { label: string; image: string; alt: string }[] = [
   { label: 'Helles Studio', image: studioAsset.url, alt: 'Hellblauer Ford Explorer in der Dreiviertel-Frontansicht im hellen Studio mit Deckenlicht – mit KI erstellt' },
   { label: 'Moderner Showroom', image: showroomAsset.url, alt: 'Hellblauer Ford Explorer in der Dreiviertel-Frontansicht in einem modernen Showroom mit Marmorboden – mit KI erstellt' },
-  { label: 'Outdoor-Szene', image: outdoorAsset.url, alt: 'Silberner SUV – Outdoor-Szene' },
+  { label: 'Outdoor-Szene', image: outdoorAsset.url, alt: 'Hellblauer Ford Explorer in der Dreiviertel-Frontansicht auf einer Bergstraße – mit KI erstellt' },
 ];
 
 // Perspektiven: Jede Ansicht beruht auf einer tatsächlich aufgenommenen Aufnahme.
