@@ -5,30 +5,46 @@ import { Button } from '@/components/ui/button';
 import beforeAsset from '@/assets/funnel/original_explorer.png.asset.json';
 import preparationAsset from '@/assets/funnel/aufbereitung_explorer.png.asset.json';
 import brandingAsset from '@/assets/funnel/brandign_explorer.png.asset.json';
-import paintAsset from '@/assets/funnel/lackierung_explorer.png.asset.json';
+import paintPosterAsset from '@/assets/funnel/lackierung-poster.webp.asset.json';
+import paintVideoWebmAsset from '@/assets/funnel/lackierung-loop.webm.asset.json';
+import paintVideoMp4Asset from '@/assets/funnel/lackierung-loop.mp4.asset.json';
 import wheelsAsset from '@/assets/funnel/felgen_explorer.png.asset.json';
 import showroomAsset from '@/assets/funnel/showroom_explorer.png.asset.json';
 
-// Zum Austauschen eines Zustands nur die jeweilige Bildquelle hier ändern.
-const REVEAL_VARIANTS = [
+type RevealVariant = {
+  label: string;
+  /** Standbild – dient als Poster, Vorher-Nachher-Vergleich und Vollbildansicht. */
+  image: string;
+  /** Optionales Endlosvideo (tonlos) anstelle des Standbildes. */
+  video?: { webm: string; mp4: string };
+};
+
+// Zum Austauschen eines Zustands nur die jeweilige Bild- bzw. Videoquelle hier ändern.
+const REVEAL_VARIANTS: RevealVariant[] = [
   { label: 'Aufbereitung', image: preparationAsset.url },
   { label: 'Branding', image: brandingAsset.url },
-  { label: 'Lackierung', image: paintAsset.url },
+  {
+    label: 'Lackierung',
+    image: paintPosterAsset.url,
+    video: { webm: paintVideoWebmAsset.url, mp4: paintVideoMp4Asset.url },
+  },
   { label: 'Felgen', image: wheelsAsset.url },
   { label: 'Showroom', image: showroomAsset.url },
-] as const;
+];
 
 type Position = { x: number; y: number };
 
 export default function SmartphoneRevealDemo() {
   const stageRef = useRef<HTMLDivElement>(null);
   const phoneRef = useRef<HTMLDivElement>(null);
+  const phoneScreenRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
   const [position, setPosition] = useState<Position | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [intro, setIntro] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const hasPosition = position !== null;
 
   const clampToStage = (x: number, y: number): Position => {
     const stage = stageRef.current;
@@ -67,6 +83,21 @@ export default function SmartphoneRevealDemo() {
     const timer = window.setTimeout(() => setIntro(false), 2400);
     return () => window.clearTimeout(timer);
   }, [intro]);
+
+  // Nur das sichtbare Video läuft – ausgeblendete Zustände stehen still.
+  useEffect(() => {
+    if (!hasPosition) return;
+    const screen = phoneScreenRef.current;
+    if (!screen) return;
+    screen.querySelectorAll('video[data-variant-index]').forEach((element) => {
+      const video = element as HTMLVideoElement;
+      if (Number(video.dataset.variantIndex) === activeIndex) {
+        void video.play().catch(() => undefined);
+      } else {
+        video.pause();
+      }
+    });
+  }, [activeIndex, hasPosition]);
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!position) return;
@@ -129,23 +160,53 @@ export default function SmartphoneRevealDemo() {
           role="img"
           aria-label={`${REVEAL_VARIANTS[activeIndex].label}: Ziehen Sie das Smartphone über das Bild, um die Bearbeitung zu sehen.`}
         >
-          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.35rem] bg-card">
-            {position && REVEAL_VARIANTS.map((variant, index) => (
-              <img
-                key={variant.label}
-                src={variant.image}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className={`absolute max-w-none object-cover transition-opacity duration-300 ${activeIndex === index ? 'opacity-100' : 'opacity-0'}`}
-                style={{
-                  left: -position.x - 6,
-                  top: -position.y - 6,
-                  width: `${stageRef.current?.clientWidth ?? 0}px`,
-                  height: `${stageRef.current?.clientHeight ?? 0}px`,
-                }}
-              />
-            ))}
+          <div
+            ref={phoneScreenRef}
+            className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.35rem] bg-card"
+          >
+            {position && REVEAL_VARIANTS.map((variant, index) => {
+              const layerClass = `absolute max-w-none object-cover transition-opacity duration-300 ${activeIndex === index ? 'opacity-100' : 'opacity-0'}`;
+              const layerStyle = {
+                left: -position.x - 6,
+                top: -position.y - 6,
+                width: `${stageRef.current?.clientWidth ?? 0}px`,
+                height: `${stageRef.current?.clientHeight ?? 0}px`,
+              };
+
+              if (variant.video) {
+                return (
+                  <video
+                    key={variant.label}
+                    data-variant-index={index}
+                    aria-hidden="true"
+                    className={layerClass}
+                    style={layerStyle}
+                    poster={variant.image}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    preload="auto"
+                    disablePictureInPicture
+                  >
+                    <source src={variant.video.webm} type="video/webm" />
+                    <source src={variant.video.mp4} type="video/mp4" />
+                  </video>
+                );
+              }
+
+              return (
+                <img
+                  key={variant.label}
+                  src={variant.image}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className={layerClass}
+                  style={layerStyle}
+                />
+              );
+            })}
             <div className="absolute left-1/2 top-1.5 z-10 h-1.5 w-10 -translate-x-1/2 rounded-full bg-foreground/80" />
             <div className="absolute inset-x-0 bottom-2 z-10 mx-auto h-1 w-10 rounded-full bg-foreground/70" />
           </div>
