@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
-import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
+import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference, buildHeadlightModeRule } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
