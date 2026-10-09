@@ -1,4 +1,5 @@
 Use the existing FunnelLayout and funnel attribution/tracking utilities for new paid landing pages, because consistent consent handling and conversion measurement must be preserved.
+Animated wordmarks use an opt-in BrandLogo variant with a fixed layout footprint and animation bounds separate from visible wordmark bounds, because motion must not resize navigation or shrink the wordmark.
 Use the locally hosted Dessau font only through `font-display` headings; retain the system sans stack for body text to preserve readability.
 Use `downloadMediaFile` for browser media downloads, because local Blob URLs reliably trigger file saving on desktop and mobile.
 Write `.asset.json` pointer files to a temporary path first and move them into place afterwards, because a shell redirect truncates the file and the dev server can transform the empty JSON and blank the preview.- Website publishing is an isolated layer (website_publications + website-media read-only function); pipeline results never auto-publish, so remaster logic stays untouched.
