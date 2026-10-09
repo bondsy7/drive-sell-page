@@ -16,6 +16,7 @@ interface OriginalFile {
   name: string;
   url: string;
   created_at: string;
+  fullPath: string;
 }
 
 export default function OriginalsTab({ vehicleId }: Props) {
@@ -97,10 +98,10 @@ export default function OriginalsTab({ vehicleId }: Props) {
     refresh();
   };
 
-  const handleDelete = async (name: string) => {
-    if (!confirm(`"${name}" wirklich löschen?`)) return;
-    setDeleting(name);
-    const { error } = await supabase.storage.from('originals').remove([`${prefix}/${name}`]);
+  const handleDelete = async (file: OriginalFile) => {
+    if (!confirm(`"${file.name}" wirklich löschen?`)) return;
+    setDeleting(file.name);
+    const { error } = await supabase.storage.from('originals').remove([file.fullPath]);
     setDeleting(null);
     if (error) toast.error(`Löschen fehlgeschlagen: ${error.message}`);
     else {
