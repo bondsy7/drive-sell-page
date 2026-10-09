@@ -126,7 +126,7 @@ export default function AutohausFahrzeugbilder() {
       <section className="overflow-hidden bg-card">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Fahrzeugbilder für dein Autohaus</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">PROFESSIONELLE FAHRZEUGBILDER IN SEKUNDEN</p>
             <h1 className="mt-4 font-display text-4xl font-bold leading-[1.06] text-foreground sm:text-5xl">Aus einem Smartphone-Foto wird ein professionelles Fahrzeugbild.</h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">Erstelle aus einfachen Smartphone-Fotos hochwertige Verkaufsbilder. Ohne Fototermin und ohne zusätzliches Personal für ein Fotoshooting.</p>
             <Button asChild size="lg" className="mt-7 shadow-glow"><Link to={TEST_URL}>Mit eigenem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link></Button>
