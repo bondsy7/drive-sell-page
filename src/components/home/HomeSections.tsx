@@ -92,7 +92,7 @@ const PROCESS_STEPS: ProcessStep[] = [
 const RESULT_TILE_COUNT = 12;
 
 const RESULT_IMAGES = [
-  resultImage1Asset.url,
+  explorerShowroomNeuAsset.url,
   resultImage2Asset.url,
   resultImage3Asset.url,
   resultImage4Asset.url,
@@ -492,7 +492,7 @@ type LookEntry = {
 
 const LOOK_IMAGES: Record<string, LookEntry> = {
   Showroom: {
-    src: resultImage1Asset.url,
+    src: explorerShowroomNeuAsset.url,
     alt: 'Hellblauer Ford Explorer in der Frontansicht im hellen Showroom – mit KI erstellt',
     aiContext: 'landing',
   },
