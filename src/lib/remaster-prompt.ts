@@ -294,6 +294,16 @@ const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
 - Never invent a new interior color, upholstery variant, trim insert, ambient light color, badge, text, button legend, or equipment line.`;
 
+/** Verhindert erfundene Zweifarblackierungen (Katalog-Vorwissen, z. B. Bicolor-Bullis). */
+export const PAINT_SCHEME_LOCK = `<PAINT_SCHEME_LOCK>
+PAINT SCHEME IS IMMUTABLE (single-color vs. two-tone):
+1. Determine the paint scheme ONLY from the reference photos. If the photographed body is ONE color, the output MUST be that ONE color on every painted panel: roof, upper body, pillars, hood, doors, bumpers, mirrors.
+2. FORBIDDEN on single-color vehicles: inventing a two-tone/bicolor paint, a contrasting roof, a silver/white upper half, a differently colored hood or upper body section — even if this model is commonly advertised in two-tone (e.g. vans, buses, campers, pop-up-roof models).
+3. Chrome/trim strips, belt-line mouldings, light reflections, highlights and pop-up-roof fabric are NOT paint borders. Never convert reflections or trim lines into a second paint color. Dark paint stays dark under bright showroom light.
+4. Only if the reference photos clearly show a factory two-tone paint, reproduce exactly that split line and both colors.
+5. SELF-CHECK: Is the number of paint colors identical to the reference? If not, regenerate the body paint.
+</PAINT_SCHEME_LOCK>`;
+
 /**
  * Build the master prompt from admin-editable blocks.
  * @param config - Remaster configuration
@@ -371,7 +381,8 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
 6. This color change applies to ALL images in this batch – front, rear, side, 3/4, hero, low-angle – EVERY SINGLE ONE must show the vehicle in ${config.colorHex}.
 7. VERIFICATION: Before finalizing, confirm that NO original paint color is visible ANYWHERE on the vehicle body.
 </COLOR_CHANGE_MANDATE>`
-    : 'PAINT COLOR: Reproduce the EXACT paint color, shade, and finish (metallic/matte/pearl) from the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Applies to ALL body panels, bumpers, mirrors, and painted surfaces.';
+    : `PAINT COLOR: Reproduce the EXACT paint color, shade, and finish (metallic/matte/pearl) from the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Applies to ALL body panels, bumpers, mirrors, and painted surfaces.
+${PAINT_SCHEME_LOCK}`;
 
   parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
 
