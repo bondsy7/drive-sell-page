@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
-import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
+import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference, buildHeadlightModeRule } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
@@ -479,7 +479,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // buildMasterPrompt already includes INTERIOR_RULES when interiorSlotKey is set
     // No need for a separate interiorOverride – this was the source of triple redundancy
-    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}${needsWheel ? `\n\n${WHEEL_VISIBILITY_RULE}` : ''}`;
+    const isHeadlightJob = (job?.key || '').toUpperCase() === 'DET_HEADLIGHT';
+    const hasHeadlightCloseUp = isHeadlightJob && (
+      (cfg.additionalImages?.length ?? 0) > 0 ||
+      (cfg.referenceRoles || []).some(r => /headlight|scheinwerfer/i.test(r))
+    );
+    const headlightModeRule = isHeadlightJob ? `\n\n${buildHeadlightModeRule(hasHeadlightCloseUp)}` : '';
+    if (isHeadlightJob) console.log(`[Pipeline][headlight] closeUp=${hasHeadlightCloseUp}`);
+    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}${needsWheel ? `\n\n${WHEEL_VISIBILITY_RULE}` : ''}${headlightModeRule}`;
 
     // Always prefer cached base64 logos over URLs for consistency
     const manufacturerLogoBase64 = cfg.remasterConfig.showManufacturerLogo

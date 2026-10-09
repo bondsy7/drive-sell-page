@@ -1016,3 +1016,13 @@ export const ALL_PIPELINE_JOBS: PipelineJob[] = [
   ...VAN_PIPELINE_JOBS,
   ...MACHINERY_PIPELINE_JOBS,
 ];
+
+/**
+ * Scheinwerfer-Weiche: Mit echter Nahaufnahme → Lampendetails strikt aus der Nahaufnahme.
+ * Ohne Nahaufnahme → sauberer, stimmiger OEM-Scheinwerfer statt erratener Mischformen.
+ */
+export function buildHeadlightModeRule(hasCloseUp: boolean): string {
+  return hasCloseUp
+    ? `HEADLIGHT SOURCE MODE: CLOSE-UP. The attached detail close-up photo(s) are the ONLY source for the lamp's internal design. Use IMAGE 1 only for body, paint, panel gaps and framing. Copy the lamp's hardware structure, not the photo's reflections, glare or distortion. Never combine elements of two different lamp designs. If the close-up is too blurry or glare-covered to read, render one clean coherent OEM headlight instead of guessing.`
+    : `HEADLIGHT SOURCE MODE: NO CLOSE-UP. Reproduce only lamp details that are clearly readable in IMAGE 1. Where the internals are not readable, render one clean, coherent factory OEM LED headlight fitting this body and consistent with IMAGE 1. Never invent matrix cubes or mix two lamp designs; rules 1-12 apply only to clearly visible details.`;
+}
