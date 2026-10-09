@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
+import HoverZoomImage from './HoverZoomImage';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-explorer.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-explorer-showroom.jpg.asset.json';
@@ -18,8 +19,6 @@ import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look-ford.jpg.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look-ford.jpg.asset.json';
 import kennzeichenExplorerHintenAsset from '@/assets/home/looks/kennzeichen-explorer-hinten.jpg.asset.json';
-import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
-import outdoorCollageDetailAsset from '@/assets/home/looks/outdoor-collage-detail.jpg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
 import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
@@ -489,8 +488,6 @@ type LookEntry = {
   src: string;
   alt: string;
   aiContext?: AiDisclosureContext;
-  /** Kleines Detailbild im überlagernden Kasten – wechselt mit der Kategorie. */
-  detail: { src: string; alt: string; position?: string; zoom?: number };
 };
 
 const LOOK_IMAGES: Record<string, LookEntry> = {
@@ -498,40 +495,21 @@ const LOOK_IMAGES: Record<string, LookEntry> = {
     src: resultImage1Asset.url,
     alt: 'Hellblauer Ford Explorer in der Frontansicht im hellen Showroom – mit KI erstellt',
     aiContext: 'landing',
-    detail: {
-      src: fahrzeugdetailAsset.url,
-      alt: 'Scheinwerfer-Detail des blauen Ford Explorers – mit KI erstellt',
-    },
   },
   Outdoor: {
     src: outdoorLookAsset.url,
     alt: 'Hellblauer Ford Explorer in der Frontansicht vor schneebedeckten Bergen – mit KI erstellt',
     aiContext: 'landing',
-    detail: {
-      src: outdoorCollageDetailAsset.url,
-      alt: 'Vier KI erstellte Outdoor-Szenen als Hintergrundvorlagen – mit KI erstellt',
-    },
   },
   Branding: {
     src: brandingLookAsset.url,
     alt: 'Blauer Ford Explorer im Showroom vor einer Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
-    detail: {
-      src: brandingLookAsset.url,
-      alt: 'Ausschnitt der Showroom-Wand mit Ford-Logo und der Aufschrift autohaus.ai – mit KI erstellt',
-      position: '100% 50%',
-    },
   },
   Kennzeichen: {
     src: kennzeichenExplorerHintenAsset.url,
     alt: 'Heckansicht des hellblauen Ford Explorers im hellen Showroom mit dem Kennzeichen autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
-    detail: {
-      src: kennzeichenExplorerHintenAsset.url,
-      alt: 'Nahaufnahme von Ford-Logo und Kennzeichen autohaus.ai am Heck des hellblauen Ford Explorers – mit KI erstellt',
-      position: 'center 62%',
-      zoom: 2.4,
-    },
   },
 };
 
@@ -542,19 +520,13 @@ export function HomeQuality() {
   return (
     <section className="py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <div className="relative pb-10 pr-0 sm:pr-20">
-          <ImagePlaceholder
+          <HoverZoomImage
+            key={activeLook}
             label={`${activeLook} · großes Fahrzeugbild`}
-            ratio="4/3"
-            className="w-full bg-secondary"
-            src={lookImage?.src}
-            alt={lookImage?.alt}
-            aiContext={lookImage?.aiContext}
+            src={lookImage.src}
+            alt={lookImage.alt}
+            aiContext={lookImage.aiContext}
           />
-          <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
-            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={lookImage?.detail.src} alt={lookImage?.detail.alt} objectPosition={lookImage?.detail.position} zoom={lookImage?.detail.zoom} aiContext="landing" />
-          </div>
-        </div>
         <div>
           <p className="text-xs font-bold uppercase text-primary">Bis ins Detail</p>
           <h2 className="mt-4 font-display text-3xl font-bold sm:text-4xl">Dein Fahrzeug. Bis ins Detail. In deinem Look.</h2>
