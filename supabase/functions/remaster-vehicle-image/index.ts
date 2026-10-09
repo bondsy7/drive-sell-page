@@ -154,7 +154,7 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
     selectedLength += separatorLength + trimmed.length;
   };
 
-  append(`You are a professional automotive retoucher. Edit IMAGE 1; do not create a different vehicle.\n${REFERENCE_TRUTH_PROTOCOL}\nThe first attached image is the primary vehicle blueprint and outranks every other image. Preserve its camera angle, generation, body geometry, paint, lights, grille/front panel, glasshouse, trim and equipment exactly. Secondary images may clarify only their labelled detail and must never replace IMAGE 1. Never mirror or rotate the vehicle.`);
+  append(`You are a professional automotive retoucher. Edit IMAGE 1; do not create a different vehicle.\n${REFERENCE_TRUTH_PROTOCOL}\nThe first attached image is the primary vehicle blueprint and outranks every other image. Preserve its camera angle, generation, body geometry, paint, lights, grille/front panel, glasshouse, trim and equipment exactly. Secondary images may clarify only their labelled detail and must never replace IMAGE 1. Never mirror or rotate the vehicle.\nPAINT SCHEME LOCK: keep the exact number of paint colors from IMAGE 1. A single-color vehicle stays single-color on every panel; never invent a two-tone/bicolor scheme or contrasting roof/upper body from catalogue memory. Trim strips and reflections are not paint borders.`);
   for (const tag of priorityTags) {
     const expression = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`, "g");
     for (const match of normalized.matchAll(expression)) append(match[0]);
