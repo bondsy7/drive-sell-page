@@ -286,9 +286,6 @@ MANDATORY MATCHING CHECKLIST – verify EACH item against the reference:
 7. TURN SIGNAL POSITION: If visible in reference, place turn signal elements in the EXACT same location.
 8. FACELIFT CONTEXT: Copy the adjacent hood edge, closed panel/grille edge and bumper seam together with the lamp. A headlight from another generation that merely fits the body is forbidden.
 9. GENERATION CHECK: Many models have older pre-facelift images in common knowledge. The reference shows the CURRENT version – never fall back to an older generation, halogen or pre-facelift lamp layout.
-10. MATRIX LED: If the reference shows a row of separate small square/rectangular LED cubes or micro-modules, render exactly that segmented matrix array. Never simplify it into one projector lens or a plain DRL bracket.
-11. NO INVENTED LENS: If no round projector lens is visible in the reference, never add one.
-12. CLOSE-UP PRIORITY: A real headlight close-up among the references overrides any distant full-vehicle view for every lamp detail.
 
 WHAT TO LOOK AT: Study the reference headlight photo with extreme attention. If the reference shows 3 LED projectors stacked vertically – reproduce exactly 3, not 2 or 4. If the DRL is a thin horizontal strip – do NOT make it a thick bar or C-shape. If there are small individual LED dots – reproduce each one.
 
@@ -1016,13 +1013,3 @@ export const ALL_PIPELINE_JOBS: PipelineJob[] = [
   ...VAN_PIPELINE_JOBS,
   ...MACHINERY_PIPELINE_JOBS,
 ];
-
-/**
- * Scheinwerfer-Weiche: Mit echter Nahaufnahme → Lampendetails strikt aus der Nahaufnahme.
- * Ohne Nahaufnahme → sauberer, stimmiger OEM-Scheinwerfer statt erratener Mischformen.
- */
-export function buildHeadlightModeRule(hasCloseUp: boolean): string {
-  return hasCloseUp
-    ? `HEADLIGHT SOURCE MODE: CLOSE-UP. The attached detail close-up photo(s) are the ONLY source for the lamp's internal design. Use IMAGE 1 only for body, paint, panel gaps and framing. Copy the lamp's hardware structure, not the photo's reflections, glare or distortion. Never combine elements of two different lamp designs. If the close-up is too blurry or glare-covered to read, render one clean coherent OEM headlight instead of guessing.`
-    : `HEADLIGHT SOURCE MODE: NO CLOSE-UP. Reproduce only lamp details that are clearly readable in IMAGE 1. Where the internals are not readable, render one clean, coherent factory OEM LED headlight fitting this body and consistent with IMAGE 1. Never invent matrix cubes or mix two lamp designs; rules 1-12 apply only to clearly visible details.`;
-}

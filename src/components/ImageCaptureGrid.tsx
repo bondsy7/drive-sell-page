@@ -967,9 +967,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     // So jede Aufnahme, die der Nutzer draußen am Auto macht, landet später
     // im Dashboard unter "Originale".
     const originals = [
-      // Alle fotografierten Rohbilder sichern – auch Slots, deren Remastering
-      // fehlgeschlagen ist, damit im Dashboard unter "Originale" nichts fehlt.
-      ...vehicleSlots.map(s => captures[s.key]?.base64).filter((b): b is string => !!b),
+      ...doneSlots.map(s => captures[s.key].base64),
       ...detailImages,
       ...(wheelReference?.image ? [wheelReference.image] : []),
     ].filter(img => !prefilledOriginalsRef.current.has(img)); // Auto3-Originale liegen bereits im Speicher
