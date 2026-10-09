@@ -33,23 +33,42 @@ export default function OriginalsTab({ vehicleId }: Props) {
     queryKey: ['originals', user?.id, vehicleId],
     enabled: !!user && !!vehicleId,
     queryFn: async (): Promise<OriginalFile[]> => {
-      const { data } = await supabase.storage
-        .from('originals')
+      const bucket = supabase.storage.from('originals');
+      const { data } = await bucket
         .list(prefix, { limit: 500, sortBy: { column: 'created_at', order: 'desc' } });
+
+      const topLevel = (data || []).filter(f => f.name && !f.name.startsWith('.') && f.id);
+
+      // Detailaufnahmen liegen verschachtelt unter reference-v2/<workspace>/<assetKey>/original.*
+      const detailPaths: string[] = [];
+      const { data: workspaces } = await bucket.list(`${prefix}/reference-v2`, { limit: 200 });
+      for (const ws of (workspaces || []).filter(w => w.name && !w.id)) {
+        const { data: assets } = await bucket.list(`${prefix}/reference-v2/${ws.name}`, { limit: 200 });
+        for (const asset of (assets || []).filter(a => a.name && !a.id)) {
+          const { data: files } = await bucket.list(`${prefix}/reference-v2/${ws.name}/${asset.name}`, { limit: 50 });
+          for (const file of (files || []).filter(f => f.id && f.name.startsWith('original.'))) {
+            detailPaths.push(`${prefix}/reference-v2/${ws.name}/${asset.name}/${file.name}`);
+          }
+        }
+      }
+
+      const allPaths = [
+        ...topLevel.map(f => `${prefix}/${f.name}`),
+        ...detailPaths,
+      ];
+
       return await Promise.all(
-        (data || [])
-          .filter(f => f.name && !f.name.startsWith('.'))
-          .map(async f => {
-            const fullPath = `${prefix}/${f.name}`;
-            const { data: signed } = await supabase.storage
-              .from('originals')
-              .createSignedUrl(fullPath, 60 * 60);
-            return {
-              name: f.name,
-              url: signed?.signedUrl || '',
-              created_at: f.created_at || '',
-            };
-          }),
+        allPaths.map(async fullPath => {
+          const { data: signed } = await bucket.createSignedUrl(fullPath, 60 * 60);
+          const isDetail = fullPath.includes('/reference-v2/');
+          const assetKey = isDetail ? fullPath.split('/').slice(-2, -1)[0] : '';
+          return {
+            name: isDetail ? `Detail: ${assetKey}` : fullPath.split('/').pop() || fullPath,
+            url: signed?.signedUrl || '',
+            created_at: '',
+            fullPath,
+          };
+        }),
       );
     },
   });
