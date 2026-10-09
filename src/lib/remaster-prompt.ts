@@ -425,6 +425,11 @@ ${PAINT_SCHEME_LOCK}`;
   // ── MIRROR & CAMERA SYSTEM LOCK (LKW / Nutzfahrzeuge: Glasspiegel vs. MirrorCam / OptiView / CMS) ──
   if (!interior) {
     parts.push(`<MIRROR_SYSTEM_LOCK>\n${getBlock(overrides, 'mirror_system_lock')}\n</MIRROR_SYSTEM_LOCK>`);
+    // Kurze Zusatzregeln (nur Außenansichten): alte Szene im Spiegelglas, Anbauteile nicht wegretuschieren
+    parts.push(`<EXTERIOR_FIDELITY_ADDENDUM>
+- Mirror glass and all glossy/glass surfaces must reflect ONLY the new scene; never keep reflections of the old environment, workshop or people from the reference photo.
+- If a trailer hitch / tow bar (ball head, socket, bracket) is mounted in the reference, keep it exactly; never smooth it out of the bumper.
+</EXTERIOR_FIDELITY_ADDENDUM>`);
   }
 
   // ── SIDE SKIRT / CHASSIS FAIRING LOCK (LKW: keine erfundenen Seitenverkleidungen) ──
