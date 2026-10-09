@@ -169,7 +169,7 @@ export default function OriginalsTab({ vehicleId }: Props) {
                 size="icon"
                 className="absolute top-1.5 right-1.5 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
                 disabled={deleting === f.name}
-                onClick={() => handleDelete(f.name)}
+                onClick={() => handleDelete(f)}
                 aria-label="Löschen"
               >
                 {deleting === f.name
