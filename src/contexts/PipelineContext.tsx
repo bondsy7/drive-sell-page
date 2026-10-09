@@ -211,6 +211,11 @@ function inferPrimaryReferenceIndex(
       if (idx >= 0 && idx < availableCount) return idx;
     }
   }
+  // Scheinwerfer-Detail: echte Nahaufnahme des Scheinwerfers als Primärreferenz bevorzugen.
+  if ((job?.key || '').toUpperCase() === 'DET_HEADLIGHT') {
+    const idx = findRole(/headlight/, /scheinwerfer/);
+    if (idx >= 0 && idx < availableCount) return idx;
+  }
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
