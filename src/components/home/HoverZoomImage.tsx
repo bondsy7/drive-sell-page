@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import ImagePlaceholder from './ImagePlaceholder';
+import { Button } from '@/components/ui/button';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
 
 interface HoverZoomImageProps {
@@ -13,6 +14,7 @@ export default function HoverZoomImage({ src, alt, label, aiContext }: HoverZoom
   const mainRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
   const pointRef = useRef({ x: 0.5, y: 0.5 });
+  const [zoomActive, setZoomActive] = useState(false);
   const [geometry, setGeometry] = useState({ width: 0, height: 0, left: 0, top: 0 });
 
   const updateZoom = useCallback(() => {
@@ -46,6 +48,7 @@ export default function HoverZoomImage({ src, alt, label, aiContext }: HoverZoom
   }, [updateZoom]);
 
   const moveZoom = (event: PointerEvent<HTMLDivElement>) => {
+    if (!zoomActive) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     pointRef.current = {
       x: Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width)),
@@ -56,8 +59,16 @@ export default function HoverZoomImage({ src, alt, label, aiContext }: HoverZoom
 
   return (
     <div className="relative pb-10 pr-0 sm:pr-20">
-      <div ref={mainRef} className="cursor-crosshair" onPointerMove={moveZoom} onPointerDown={moveZoom} onLoadCapture={updateZoom}>
+      <div ref={mainRef} className="relative" onPointerMove={moveZoom} onLoadCapture={updateZoom}>
         <ImagePlaceholder label={label} ratio="4/3" className="w-full bg-secondary" src={src} alt={alt} aiContext={aiContext} />
+        <Button
+          type="button"
+          variant="ghost"
+          aria-label={`Zoom ${zoomActive ? 'stoppen' : 'aktivieren'}: ${label}`}
+          aria-pressed={zoomActive}
+          className={`absolute inset-0 h-full w-full p-0 hover:bg-transparent ${zoomActive ? 'cursor-crosshair' : 'cursor-zoom-in'}`}
+          onClick={() => setZoomActive(active => !active)}
+        />
       </div>
       <div className="pointer-events-none absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
         <div ref={detailRef} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-secondary/70">
