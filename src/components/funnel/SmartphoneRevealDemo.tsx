@@ -140,7 +140,7 @@ export default function SmartphoneRevealDemo() {
                 className={`absolute max-w-none object-cover transition-opacity duration-300 ${activeIndex === index ? 'opacity-100' : 'opacity-0'}`}
                 style={{
                   left: -position.x - 6,
-                  top: -position.y - 6,
+                  top: -position.y - 1,
                   width: `${stageRef.current?.clientWidth ?? 0}px`,
                   height: `${stageRef.current?.clientHeight ?? 0}px`,
                 }}
