@@ -52,20 +52,20 @@ export default function OriginalsTab({ vehicleId }: Props) {
         }
       }
 
-      const allPaths = [
-        ...topLevel.map(f => `${prefix}/${f.name}`),
-        ...detailPaths,
+      const allEntries = [
+        ...topLevel.map(f => ({ path: `${prefix}/${f.name}`, created_at: f.created_at || '' })),
+        ...detailPaths.map(p => ({ path: p, created_at: '' })),
       ];
 
       return await Promise.all(
-        allPaths.map(async fullPath => {
+        allEntries.map(async ({ path: fullPath, created_at }) => {
           const { data: signed } = await bucket.createSignedUrl(fullPath, 60 * 60);
           const isDetail = fullPath.includes('/reference-v2/');
           const assetKey = isDetail ? fullPath.split('/').slice(-2, -1)[0] : '';
           return {
             name: isDetail ? `Detail: ${assetKey}` : fullPath.split('/').pop() || fullPath,
             url: signed?.signedUrl || '',
-            created_at: '',
+            created_at,
             fullPath,
           };
         }),
