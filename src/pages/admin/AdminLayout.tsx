@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link } from 'react-router-dom';
 import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import logoLight from '@/assets/logo-light.png';
+import BrandLogo from '@/components/brand/BrandLogo';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -129,7 +129,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
     <>
       <div className="p-4 border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <img src={logoLight} alt="Autohaus.AI" className="h-7" />
+          <BrandLogo className="h-7" />
           <span className="font-display font-bold text-foreground text-xs bg-accent/10 text-accent px-2 py-0.5 rounded">Admin</span>
         </Link>
       </div>
@@ -158,7 +158,7 @@ export default function AdminLayout() {
 
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-card/95 backdrop-blur-sm flex items-center justify-between px-3">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <img src={logoLight} alt="Autohaus.AI" className="h-6" />
+          <BrandLogo className="h-6" />
           <span className="font-display font-bold text-foreground text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">Admin</span>
         </Link>
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
