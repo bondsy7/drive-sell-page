@@ -6,6 +6,7 @@ import { FolderOpen, Upload, Trash2, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 
 interface Props {
   vehicleId: string;
@@ -23,6 +24,8 @@ export default function OriginalsTab({ vehicleId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+
 
   const prefix = user ? `${user.id}/${vehicleId}` : '';
 
@@ -52,6 +55,7 @@ export default function OriginalsTab({ vehicleId }: Props) {
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['originals', user?.id, vehicleId] });
+  const previewImages = files.filter(f => f.url).map(f => ({ id: f.name, src: f.url, label: f.name }));
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || !user) return;
@@ -128,9 +132,15 @@ export default function OriginalsTab({ vehicleId }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {files.map(f => (
             <Card key={f.name} className="overflow-hidden group relative">
-              <div className="aspect-square bg-muted">
+              <Button
+                variant="ghost"
+                className="block h-auto w-full aspect-square rounded-none bg-muted p-0 cursor-zoom-in overflow-hidden"
+                disabled={!f.url}
+                aria-label={`Originalbild vergrößern: ${f.name}`}
+                onClick={() => setPreviewIndex(previewImages.findIndex(image => image.id === f.name))}
+              >
                 {f.url && <img src={f.url} alt={f.name} className="w-full h-full object-cover" loading="lazy" />}
-              </div>
+              </Button>
               <div className="p-2">
                 <p className="text-xs text-foreground truncate" title={f.name}>{f.name}</p>
               </div>
@@ -149,6 +159,15 @@ export default function OriginalsTab({ vehicleId }: Props) {
             </Card>
           ))}
         </div>
+      )}
+      {previewIndex !== null && (
+        <ImagePreviewLightbox
+          key={vehicleId}
+          images={previewImages}
+          initialIndex={previewIndex}
+          open
+          onClose={() => setPreviewIndex(null)}
+        />
       )}
     </div>
   );
