@@ -64,7 +64,7 @@ export default function FunnelLayout({
       <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            <BrandLogo className="h-7" />
+            <BrandLogo className="h-7" animated={location.pathname === '/autohaus-fahrzeugbilder'} />
             <span className="sr-only">autohaus.ai Startseite</span>
           </Link>
 
