@@ -5,7 +5,7 @@ import {
   ArrowLeft, Copy, Check, ChevronDown, ChevronRight,
   Key, List, FileText, Code2, Globe, Zap, Shield
 } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
+import BrandLogo from '@/components/brand/BrandLogo';
 
 const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-vehicles`;
 
@@ -303,7 +303,7 @@ const ApiDocs = () => {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center">
-              <img src={logoDark} alt="Autohaus.AI" className="h-8" />
+              <BrandLogo tone="light" className="h-8" />
             </Link>
             <span className="text-primary-foreground/30 text-sm">/</span>
             <span className="text-primary-foreground/80 text-sm font-medium">API Dokumentation</span>
