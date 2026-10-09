@@ -286,6 +286,9 @@ MANDATORY MATCHING CHECKLIST – verify EACH item against the reference:
 7. TURN SIGNAL POSITION: If visible in reference, place turn signal elements in the EXACT same location.
 8. FACELIFT CONTEXT: Copy the adjacent hood edge, closed panel/grille edge and bumper seam together with the lamp. A headlight from another generation that merely fits the body is forbidden.
 9. GENERATION CHECK: Many models have older pre-facelift images in common knowledge. The reference shows the CURRENT version – never fall back to an older generation, halogen or pre-facelift lamp layout.
+10. MATRIX LED: If the reference shows a row of separate small square/rectangular LED cubes or micro-modules, render exactly that segmented matrix array. Never simplify it into one projector lens or a plain DRL bracket.
+11. NO INVENTED LENS: If no round projector lens is visible in the reference, never add one.
+12. CLOSE-UP PRIORITY: A real headlight close-up among the references overrides any distant full-vehicle view for every lamp detail.
 
 WHAT TO LOOK AT: Study the reference headlight photo with extreme attention. If the reference shows 3 LED projectors stacked vertically – reproduce exactly 3, not 2 or 4. If the DRL is a thin horizontal strip – do NOT make it a thick bar or C-shape. If there are small individual LED dots – reproduce each one.
 
