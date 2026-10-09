@@ -95,7 +95,7 @@ SHOT_TYPE: Exterior - Direct Rear View
 CAMERA_ANGLE: Eye-level, perfectly centered on rear axis.
 FRAMING: Both taillights, exhaust outlets, rear badge, model designation symmetrically framed. Full width visible.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
-LIGHTING: Shadows consistent with showroom lighting.
+LIGHTING: Shadows consistent with showroom lighting. If a trailer hitch / tow bar is mounted in the reference, keep it exactly on the rear bumper; never remove it.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -219,7 +219,7 @@ SHOT_TYPE: Interior - Driver's Seat POV
 CAMERA_ANGLE: Eye-level from driver's head position, looking at steering wheel, instrument cluster, and full dashboard.
 FOCUS_ELEMENTS: Steering wheel must be perfectly circular with accurate brand badging. Dashboard, infotainment screens, center console visible.
 STEERING_WHEEL_LOCK: Copy the steering wheel only from the closest front-interior blueprint: exact outer rim shape, spoke count and angles, lower spoke, centre hub/airbag outline, button-island shapes, switch count, badge position, stalks and paddle geometry. Do not use a generic or remembered steering wheel. If any control is unclear, preserve the visible reference geometry conservatively rather than inventing it.
-RULES: Steering wheel on correct side (left for LHD, right for RHD) as in reference. Do NOT rotate or flip. View through windshield MUST show the selected showroom/scene environment. ${LOGO_LINE}
+RULES: Steering wheel on correct side (left for LHD, right for RHD) as in reference. Do NOT rotate or flip. View through windshield MUST show the selected showroom/scene environment. TRANSMISSION_LOCK: Copy the exact gear selector type from the reference (automatic/DSG lever, steering-column selector, buttons or rotary knob). Never invent a manual gear stick or shift boot. Mirror glass must reflect only the new scene. ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -284,6 +284,7 @@ MANDATORY MATCHING CHECKLIST – verify EACH item against the reference:
 5. CHROME/DARK ACCENTS: Match every chrome trim piece, dark separator, and internal housing color exactly.
 6. REFLECTOR GEOMETRY: Internal reflector bowls, their count, size, and finish (smooth vs. textured) from the reference.
 7. TURN SIGNAL POSITION: If visible in reference, place turn signal elements in the EXACT same location.
+9. GENERATION CHECK: Many models have older pre-facelift images in common knowledge. The reference shows the CURRENT version – never fall back to an older generation, halogen or pre-facelift lamp layout.
 8. FACELIFT CONTEXT: Copy the adjacent hood edge, closed panel/grille edge and bumper seam together with the lamp. A headlight from another generation that merely fits the body is forbidden.
 
 WHAT TO LOOK AT: Study the reference headlight photo with extreme attention. If the reference shows 3 LED projectors stacked vertically – reproduce exactly 3, not 2 or 4. If the DRL is a thin horizontal strip – do NOT make it a thick bar or C-shape. If there are small individual LED dots – reproduce each one.
@@ -367,7 +368,7 @@ RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM wit
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Interior 2×2 Grid
 LAYOUT: Top-left: full dashboard from driver seat. Top-right: center console close-up. Bottom-left: rear seats from front. Bottom-right: steering wheel close-up.
-RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighting. Thin white dividers. Do NOT rotate or flip any perspective. View through windows MUST show the selected showroom/scene.
+RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighting. Thin white dividers. Do NOT rotate or flip any perspective. View through windows MUST show the selected showroom/scene. TRANSMISSION_LOCK: Copy the exact gear selector type from the reference (automatic/DSG lever, steering-column selector, buttons or rotary knob). Never invent a manual gear stick or shift boot. Mirror glass must reflect only the new scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
