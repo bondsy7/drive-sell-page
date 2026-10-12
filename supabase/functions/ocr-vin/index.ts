@@ -143,7 +143,23 @@ serve(async (req) => {
     // Never cut a 17-char window out of a longer misread (e.g. 18 chars).
     const cleaned = content.toUpperCase().replace(/[\s\-_.:\/]/g, "");
     const tokens = cleaned.match(/[A-Z0-9]+/g) || [];
-    const vinToken = tokens.find((t) => t.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(t));
+    let vinToken = tokens.find((t) => t.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(t));
+
+    // VAG autocorrection: VW/Audi VINs (WV*, WAU, TRU etc.) always carry exactly
+    // three "ZZZ" filler characters. If the model misread "ZZZ" as "ZZZZ" the
+    // result is 18 chars — collapse the quadruple Z back to triple Z.
+    if (!vinToken) {
+      for (const t of tokens) {
+        if (t.length !== 18 || !t.includes("ZZZZ")) continue;
+        const corrected = t.replace("ZZZZ", "ZZZ");
+        if (corrected.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(corrected) && /^(WV|WAU|TRU|WUA)/.test(corrected)) {
+          console.log(`[ocr-vin] VAG ZZZZ->ZZZ autocorrect: ${t} -> ${corrected}`);
+          vinToken = corrected;
+          break;
+        }
+      }
+    }
+
     console.log(`[ocr-vin] raw_len=${cleaned.length} accepted=${!!vinToken}`);
     if (vinToken) {
       return new Response(JSON.stringify({ vin: vinToken }), {
