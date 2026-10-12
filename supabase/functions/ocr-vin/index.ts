@@ -10,7 +10,8 @@ const corsHeaders = {
 const DEFAULT_PROMPT = `You are a VIN (Vehicle Identification Number) OCR expert. Analyze this image and extract the VIN number.
 
 RULES:
-- Look for the VIN plate, sticker, or engraving in the image
+- The VIN may appear on a plate, sticker, engraving, registration document, screen, paper or as plain text
+- Read it character by character exactly as printed. Do NOT add, repeat or drop characters (e.g. never turn "ZZZ" into "ZZZZ")
 - A VIN is exactly 17 characters long, containing digits and uppercase letters (no I, O, Q)
 - Return ONLY the VIN in your response, nothing else
 - If you cannot find a valid VIN, respond with exactly: NO_VIN_FOUND
@@ -98,6 +99,7 @@ serve(async (req) => {
 
     const geminiBody = JSON.stringify({
       contents: [{ parts: [{ text: prompt }, imagePart] }],
+      generationConfig: { temperature: 0 },
     });
 
     const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
@@ -137,9 +139,14 @@ serve(async (req) => {
     const data = await response.json();
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 
-    const vinMatch = content.match(/[A-HJ-NPR-Z0-9]{17}/);
-    if (vinMatch) {
-      return new Response(JSON.stringify({ vin: vinMatch[0] }), {
+    // Only accept a token that is EXACTLY 17 chars after removing separators.
+    // Never cut a 17-char window out of a longer misread (e.g. 18 chars).
+    const cleaned = content.toUpperCase().replace(/[\s\-_.:\/]/g, "");
+    const tokens = cleaned.match(/[A-Z0-9]+/g) || [];
+    const vinToken = tokens.find((t) => t.length === 17 && /^[A-HJ-NPR-Z0-9]{17}$/.test(t));
+    console.log(`[ocr-vin] raw_len=${cleaned.length} accepted=${!!vinToken}`);
+    if (vinToken) {
+      return new Response(JSON.stringify({ vin: vinToken }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
