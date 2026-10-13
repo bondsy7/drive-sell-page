@@ -326,6 +326,16 @@ VERIFIED EQUIPMENT: This vehicle is factory-equipped with exterior chrome/bright
 3. Do NOT add trim where the reference photo shows none.
 </CHROME_TRIM_LOCK>`;
 
+/** Reference-conditioned console protection shared by all interior follow-up shots. */
+export const INTERIOR_CONSOLE_LOCK = `<INTERIOR_CONSOLE_LOCK>
+Use ONLY the reference image. Do NOT invent colors, badges, wheels, interior trim, stitching, or UI elements. Every visible attribute MUST match the reference exactly. Do NOT fall back on generic model knowledge.
+1. SHIFT_BY_WIRE_PRIORITY: If the interior reference shows a rocker or switch on the dashboard, reproduce that control in its exact original position. Keep the flat/open center console exactly as photographed; do not replace the dashboard control with a console-mounted selector.
+2. NO_ADDED_LEVER: If no gear selector protrudes from the center console in the reference image, adding ANY lever, stick, pin, stalk, knob, shift boot or bulge there is strictly forbidden, whether manual or automatic/DSG. Flat/open console surfaces MUST remain completely flat/open, with exactly the original contours.
+3. PRESERVE_VISIBLE_CONTROLS: If a real console-mounted selector is visible in the reference, retain its exact type, shape, size and position. Preserve existing cup holders, switches, armrests and other visible structures; this rule never flattens genuine reference geometry.
+4. NO_MODEL_INFERENCE: Missing or obscured console evidence does not authorize adding a selector from brand/model/transmission knowledge. In every follow-up view and every interior grid cell, use the original interior reference as authority, not a conflicting generated image.
+5. SELF_CHECK: Verify selector location and console contours against the original interior reference. Remove any added protrusion that is not present there before returning the image.
+</INTERIOR_CONSOLE_LOCK>`;
+
 /**
  * Build the master prompt from admin-editable blocks.
  * @param config - Remaster configuration
@@ -734,6 +744,7 @@ RECONSTRUCTION RULES:
   // ── INTERIOR RULES (ONLY for interior slots) ──
   if (interior) {
     parts.push(`<INTERIOR_RULES>\n${getBlock(overrides, 'interior_rules')}\n</INTERIOR_RULES>`);
+    parts.push(INTERIOR_CONSOLE_LOCK);
   }
 
   // ── STRICT NEGATIVE CONSTRAINTS ──

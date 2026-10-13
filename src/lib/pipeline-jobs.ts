@@ -219,7 +219,7 @@ SHOT_TYPE: Interior - Driver's Seat POV
 CAMERA_ANGLE: Eye-level from driver's head position, looking at steering wheel, instrument cluster, and full dashboard.
 FOCUS_ELEMENTS: Steering wheel must be perfectly circular with accurate brand badging. Dashboard, infotainment screens, center console visible.
 STEERING_WHEEL_LOCK: Copy the steering wheel only from the closest front-interior blueprint: exact outer rim shape, spoke count and angles, lower spoke, centre hub/airbag outline, button-island shapes, switch count, badge position, stalks and paddle geometry. Do not use a generic or remembered steering wheel. If any control is unclear, preserve the visible reference geometry conservatively rather than inventing it.
-RULES: Steering wheel on correct side (left for LHD, right for RHD) as in reference. Do NOT rotate or flip. View through windshield MUST show the selected showroom/scene environment. TRANSMISSION_LOCK: Copy the exact gear selector type from the reference (automatic/DSG lever, steering-column selector, buttons or rotary knob). Never invent a manual gear stick or shift boot. Mirror glass must reflect only the new scene. ${LOGO_LINE}
+RULES: Steering wheel on correct side (left for LHD, right for RHD) as in reference. Do NOT rotate or flip. View through windshield MUST show the selected showroom/scene environment. TRANSMISSION_LOCK: Follow INTERIOR_CONSOLE_LOCK. Copy only the selector actually visible in the original interior reference, including its exact mounting location; no reference-visible console selector means no added manual OR automatic selector or protrusion. Preserve flat/open console geometry and dashboard-mounted shift-by-wire controls. Mirror glass must reflect only the new scene. ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -368,7 +368,7 @@ RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM wit
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Interior 2×2 Grid
 LAYOUT: Top-left: full dashboard from driver seat. Top-right: center console close-up. Bottom-left: rear seats from front. Bottom-right: steering wheel close-up.
-RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighting. Thin white dividers. Do NOT rotate or flip any perspective. View through windows MUST show the selected showroom/scene. TRANSMISSION_LOCK: Copy the exact gear selector type from the reference (automatic/DSG lever, steering-column selector, buttons or rotary knob). Never invent a manual gear stick or shift boot. Mirror glass must reflect only the new scene.
+RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighting. Thin white dividers. Do NOT rotate or flip any perspective. View through windows MUST show the selected showroom/scene. TRANSMISSION_LOCK: Follow INTERIOR_CONSOLE_LOCK in EVERY cell. Copy only the selector actually visible in the original interior reference, including its exact mounting location; no reference-visible console selector means no added manual OR automatic selector or protrusion. Preserve flat/open console geometry and dashboard-mounted shift-by-wire controls. Mirror glass must reflect only the new scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
