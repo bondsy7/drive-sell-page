@@ -1330,9 +1330,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   ))}
                 </div>
 
-                <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                  Tipp: Normale Schnappschüsse reichen völlig. Bei extremem Sonnenlicht oder stark spiegelnden Zierleisten sorgt ein leicht schattiger Platz für die saubersten Kanten.
-                </p>
 
                 {vinSlot && (
                   <div className="mt-4 rounded-lg border border-border bg-card p-3 shadow-sm">
