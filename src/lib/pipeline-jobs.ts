@@ -146,6 +146,7 @@ LIGHTING: Clean studio lighting emphasizing body lines.
 SHOT_TYPE: Exterior - Front-Right 3/4 View
 CAMERA_ANGLE: Eye-level, 30-40° to the RIGHT of center axis. This is NOT a left-side view.
 FRAMING: Right headlight, right fender, and right front wheel prominently visible. Full vehicle in frame.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK — side-specific equipment stays on the physical flank evidenced in the references; never mirror it onto the visible RIGHT flank.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Realistic lighting and floor reflections.
 </CURRENT_PIPELINE_SHOT>`,
@@ -161,6 +162,7 @@ SHOT_TYPE: Exterior - Rear-Left 3/4 View
 CAMERA_ANGLE: Eye-level, camera positioned BEHIND and to the LEFT of the vehicle, roughly 30-40° off the rear center axis toward the LEFT side. The camera looks at the rear-left quarter of the car.
 FRAMING: The LEFT taillight, LEFT rear wheel, and LEFT rear fender are the most prominent elements. The rear bumper, exhaust outlets, and rear badge are clearly visible. Full vehicle in frame with no cropping.
 CRITICAL DIRECTION: The viewer sees primarily the REAR and the LEFT FLANK of the vehicle. The RIGHT side of the car is mostly hidden/foreshortened. The LEFT rear wheel is closest to the camera and appears larger. This is the OPPOSITE perspective of the 3/4 Rear Right view. Do NOT show a right-rear quarter view. Do NOT mirror or flip. The vehicle's LEFT side (driver side in LHD) MUST face the camera together with the rear.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK — side-specific equipment stays on the physical flank evidenced in the references; never mirror it onto the visible LEFT flank.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Dramatic lighting emphasizing body contours, rear shoulder line, and rear design elements. If a trailer hitch / tow bar is mounted in the reference, keep it exactly on the rear bumper; never remove it.
 </CURRENT_PIPELINE_SHOT>`,
