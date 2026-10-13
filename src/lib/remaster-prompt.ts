@@ -46,6 +46,8 @@ export interface RemasterConfig {
   manufacturerLogoBase64?: string | null;
   /** Optional list of body cleanup items to strip (Schriftzüge, Logos, Schilder, Sticker, …) */
   cleanupItems?: string[];
+  /** Ausstattungsmerkmale der Fahrzeugakte (z. B. aus VIN); steuert nur den bedingten CHROME_TRIM_LOCK. */
+  equipmentFeatures?: string[];
   /** Optional vision-pre-scan inventory of non-OEM branding on this specific image */
   detectedBranding?: import('./detect-branding').DetectedBrandingItem[];
   /**
@@ -304,6 +306,26 @@ PAINT SCHEME IS IMMUTABLE (single-color vs. two-tone):
 5. SELF-CHECK: Is the number of paint colors identical to the reference? If not, regenerate the body paint.
 </PAINT_SCHEME_LOCK>`;
 
+/** Ausstattungsbegriffe, die belegtes Chrom/Glanz-Exterieur anzeigen (aus VIN/Fahrzeugakte). */
+const CHROME_TRIM_PATTERN = /(chrom|chrome|glanzpaket|brightwork|zierleiste[n]?\s*(blank|glanz|chrom|alu)|optikpaket\s*(chrom|alu|glanz)|alu[-\s]?(optik|zierleiste)|aluminium\s*(satiniert|poliert|eloxiert)|fensterrahmen\s*(chrom|alu|blank)|exterior\s*trim\s*(chrome|polished))/i;
+
+/** True nur, wenn mindestens ein Ausstattungsmerkmal Chrom/Glanzleisten belegt. Ohne Datenbeleg kein Lock. */
+export function hasChromeTrimFeature(features?: readonly (string | null | undefined)[] | null): boolean {
+  if (!features || features.length === 0) return false;
+  return features.some((f) => {
+    if (typeof f !== 'string') return false;
+    if (/^\s*(ohne|without|kein)\b/i.test(f)) return false;
+    return CHROME_TRIM_PATTERN.test(f);
+  });
+}
+
+export const CHROME_TRIM_LOCK = `<CHROME_TRIM_LOCK>
+VERIFIED EQUIPMENT: This vehicle is factory-equipped with exterior chrome/brightwork trim (confirmed by vehicle equipment data).
+1. Retain every metallic window surround, belt-line moulding, grille accent and side moulding that is visible in the reference photo, exactly in position, width and length.
+2. Never blend these trim parts out as "old reflections" – only the environment reflected IN the trim is replaced by the new scene.
+3. Do NOT add trim where the reference photo shows none.
+</CHROME_TRIM_LOCK>`;
+
 /**
  * Build the master prompt from admin-editable blocks.
  * @param config - Remaster configuration
@@ -385,6 +407,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
 ${PAINT_SCHEME_LOCK}`;
 
   parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
+
+  // Nur bei datenbelegtem Chrom-Exterieur und nur für Außenansichten.
+  if (!interior && hasChromeTrimFeature(config.equipmentFeatures)) {
+    parts.push(CHROME_TRIM_LOCK);
+  }
 
   // ── LKW-SPEZIFISCHE BLÖCKE (niemals im Pkw-Prompt) ──
   if (isTruck) {

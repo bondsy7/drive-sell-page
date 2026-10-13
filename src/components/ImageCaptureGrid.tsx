@@ -831,7 +831,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const slotIsInterior = isInteriorSlotKey(slot.key);
       const slotWheelRef = !slotIsInterior && effectiveWheelRef?.image ? effectiveWheelRef : null;
       console.log(`[Remaster][wheel] slot=${slot.key} wheelAssetAvailable=${!!effectiveWheelRef} derived=${!!effectiveWheelRef?.derived} routed=${!!slotWheelRef}`);
-      const slotConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef };
+      const slotConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features };
       // Build per-slot prompt with perspective-specific instructions
       let dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
       if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
@@ -909,7 +909,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const slotIsInterior = isInteriorSlotKey(slotKey);
       const resolvedWheelRef = await resolveWheelReference(slotIsInterior ? null : captures[slotKey].base64);
       const slotWheelRef = !slotIsInterior && resolvedWheelRef?.image ? resolvedWheelRef : null;
-      let dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding, wheelReference: slotWheelRef }, vehicleDescription, slotKey, overrides, classContext);
+      let dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features }, vehicleDescription, slotKey, overrides, classContext);
       if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
       const { data, error } = await invokeRemasterVehicleImage({
         classContext,
@@ -1467,6 +1467,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   }}
                 />
               </CaptureSection>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tipp: Normale Schnappschüsse reichen völlig. Bei extremem Sonnenlicht oder stark spiegelnden Zierleisten sorgt ein leicht schattiger Platz für die saubersten Kanten.
+              </p>
+
 
               <CaptureSection
                 title="Weitere Detailaufnahmen"
