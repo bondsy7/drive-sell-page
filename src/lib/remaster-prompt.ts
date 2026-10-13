@@ -337,6 +337,20 @@ Use ONLY the reference image. Do NOT invent colors, badges, wheels, interior tri
 </INTERIOR_CONSOLE_LOCK>`;
 
 /**
+ * ASYMMETRIC_EQUIPMENT_LOCK – Seitenspezifische Anbauteile (Markisen,
+ * Slide-Outs, Leitern, Klappen ...) duerfen nie gespiegelt oder auf die
+ * falsche Fahrzeugflanke gerendert werden. Nur fuer Aussenansichten.
+ */
+export const ASYMMETRIC_EQUIPMENT_LOCK = `<ASYMMETRIC_EQUIPMENT_LOCK>
+SIDE-SPECIFIC EQUIPMENT IS NEVER MIRRORED:
+1. Determine from the reference photos (front, rear and every flank-visible view) on WHICH physical side of the vehicle side-specific equipment is mounted: awnings, slide-outs, exterior ladders, spare-wheel carriers, sliding doors, hinged flaps, steps, showers, tanks, exhaust positions and similar asymmetric add-ons.
+2. Reproduce each of these items on EXACTLY that physical side, in its exact position, size and state (extended/retracted/closed) as photographed. Never move them to the opposite flank, never mirror them and never render them on both sides.
+3. On the flank WITHOUT such equipment, keep the body clean: inventing, relocating or duplicating side-specific equipment is a failure. A left-side view must not show equipment the references place on the right flank, and vice versa.
+4. If a flank is not visible in any reference, its side-specific equipment status stays exactly as evidenced by the front/rear photos; never guess and never duplicate items across both sides.
+5. SELF-CHECK before output: for every side-specific item, is it on the same physical side of the vehicle as in the reference photos? If not, correct the image.
+</ASYMMETRIC_EQUIPMENT_LOCK>`;
+
+/**
  * Build the master prompt from admin-editable blocks.
  * @param config - Remaster configuration
  * @param overrides - Admin prompt overrides (fetched via fetchPromptOverrides)
@@ -467,6 +481,8 @@ ${PAINT_SCHEME_LOCK}`;
 - Mirror glass and all glossy/glass surfaces must reflect ONLY the new scene; never keep reflections of the old environment, workshop or people from the reference photo.
 - If a trailer hitch / tow bar (ball head, socket, bracket) is mounted in the reference, keep it exactly; never smooth it out of the bumper.
 </EXTERIOR_FIDELITY_ADDENDUM>`);
+    // Seitenspezifische Anbauteile nie spiegeln (nur Außenansichten).
+    parts.push(ASYMMETRIC_EQUIPMENT_LOCK);
   }
 
   // ── SIDE SKIRT / CHASSIS FAIRING LOCK (LKW: keine erfundenen Seitenverkleidungen) ──

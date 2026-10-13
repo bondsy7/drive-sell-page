@@ -110,6 +110,7 @@ CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's LEFT flank (driver s
 FRAMING: Both LEFT-side wheels COMPLETELY visible and perfectly round (zero distortion). Entire silhouette front to rear in frame.
 CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the LEFT side of the image. The REAR (trunk/taillights) MUST point to the RIGHT side of the image. This is the LEFT side view – the camera sees the driver's door. Do NOT show the passenger side. Do NOT mirror or flip.
 SIDE_IDENTITY_LOCK: Use the exact LEFT-side reference as primary authority. Copy roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and headlamp termination exactly. Never reconstruct the side from catalogue memory.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK. This view shows the vehicle's LEFT flank: reproduce side-specific equipment (awning, slide-out, ladder, flaps, steps, carriers) exactly as the references evidence it for the LEFT side; never show equipment the references place on the RIGHT flank and never mirror it.
 FINAL_SIDE_CHECK: Before returning the image, verify all three conditions: LEFT flank visible, hood/headlights at IMAGE LEFT, trunk/taillights at IMAGE RIGHT. If any condition fails, correct the image.
 ENVIRONMENT: Use ONLY the PROVIDED SHOWROOM for this run. Never substitute another showroom or retain the source-photo environment. ${LOGO_LINE}
 PRIORITY: The complete uncropped vehicle is more important than any logo. A logo must never enlarge, shift or crop the vehicle.
@@ -128,6 +129,7 @@ CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's RIGHT flank (passeng
 FRAMING: Both RIGHT-side wheels fully visible and perfectly round. Entire silhouette front to rear in frame.
 CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the RIGHT side of the image. The REAR (trunk/taillights) MUST point to the LEFT side of the image. This is the RIGHT side view – the camera sees the passenger door. Do NOT show the driver's side. Do NOT mirror or flip. This MUST be the OPPOSITE direction of the left side profile.
 SIDE_IDENTITY_LOCK: Build the physical RIGHT flank only from the supplied vehicle references. If no dedicated right-side photo exists, combine the side-profile geometry with front and rear reference evidence; do not claim that the left-side image is a right-side reference and do not pixel-mirror it. Preserve roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and lamp terminations exactly. Never reconstruct the side from catalogue memory.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK. This view shows the vehicle's RIGHT flank: reproduce side-specific equipment (awning, slide-out, ladder, flaps, steps, carriers) exactly as the references evidence it for the RIGHT side; never show equipment the references place on the LEFT flank and never mirror it.
 FINAL_SIDE_CHECK: Before returning the image, verify all three conditions: RIGHT flank visible, hood/headlights at IMAGE RIGHT, trunk/taillights at IMAGE LEFT. If any condition fails, correct the image.
 ENVIRONMENT: Use ONLY the PROVIDED SHOWROOM for this run. Never substitute another showroom or retain the source-photo environment. ${LOGO_LINE}
 PRIORITY: The complete uncropped vehicle is more important than any logo. A logo must never enlarge, shift or crop the vehicle.
@@ -144,6 +146,7 @@ LIGHTING: Clean studio lighting emphasizing body lines.
 SHOT_TYPE: Exterior - Front-Right 3/4 View
 CAMERA_ANGLE: Eye-level, 30-40° to the RIGHT of center axis. This is NOT a left-side view.
 FRAMING: Right headlight, right fender, and right front wheel prominently visible. Full vehicle in frame.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK — side-specific equipment stays on the physical flank evidenced in the references; never mirror it onto the visible RIGHT flank.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Realistic lighting and floor reflections.
 </CURRENT_PIPELINE_SHOT>`,
@@ -159,6 +162,7 @@ SHOT_TYPE: Exterior - Rear-Left 3/4 View
 CAMERA_ANGLE: Eye-level, camera positioned BEHIND and to the LEFT of the vehicle, roughly 30-40° off the rear center axis toward the LEFT side. The camera looks at the rear-left quarter of the car.
 FRAMING: The LEFT taillight, LEFT rear wheel, and LEFT rear fender are the most prominent elements. The rear bumper, exhaust outlets, and rear badge are clearly visible. Full vehicle in frame with no cropping.
 CRITICAL DIRECTION: The viewer sees primarily the REAR and the LEFT FLANK of the vehicle. The RIGHT side of the car is mostly hidden/foreshortened. The LEFT rear wheel is closest to the camera and appears larger. This is the OPPOSITE perspective of the 3/4 Rear Right view. Do NOT show a right-rear quarter view. Do NOT mirror or flip. The vehicle's LEFT side (driver side in LHD) MUST face the camera together with the rear.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK — side-specific equipment stays on the physical flank evidenced in the references; never mirror it onto the visible LEFT flank.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Dramatic lighting emphasizing body contours, rear shoulder line, and rear design elements. If a trailer hitch / tow bar is mounted in the reference, keep it exactly on the rear bumper; never remove it.
 </CURRENT_PIPELINE_SHOT>`,
@@ -174,6 +178,7 @@ SHOT_TYPE: Exterior - Rear-Right 3/4 View
 CAMERA_ANGLE: Eye-level, camera positioned BEHIND and to the RIGHT of the vehicle, roughly 30-40° off the rear center axis toward the RIGHT side. The camera looks at the rear-right quarter of the car.
 FRAMING: The RIGHT taillight, RIGHT rear wheel, and RIGHT rear fender are the most prominent elements. The rear bumper, exhaust outlets, and rear badge are clearly visible. Full vehicle in frame with no cropping.
 CRITICAL DIRECTION: The viewer sees primarily the REAR and the RIGHT FLANK of the vehicle. The LEFT side of the car is mostly hidden/foreshortened. The RIGHT rear wheel is closest to the camera and appears larger. This is the OPPOSITE perspective of the 3/4 Rear Left view. Do NOT show a left-rear quarter view. Do NOT mirror or flip. The vehicle's RIGHT side (passenger side in LHD) MUST face the camera together with the rear.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK — side-specific equipment stays on the physical flank evidenced in the references; never mirror it onto the visible RIGHT flank.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Smooth, balanced showroom lighting emphasizing body contours and rear design. If a trailer hitch / tow bar is mounted in the reference, keep it exactly on the rear bumper; never remove it.
 </CURRENT_PIPELINE_SHOT>`,
