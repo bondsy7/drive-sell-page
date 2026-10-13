@@ -178,6 +178,7 @@ SHOT_TYPE: Exterior - Rear-Right 3/4 View
 CAMERA_ANGLE: Eye-level, camera positioned BEHIND and to the RIGHT of the vehicle, roughly 30-40° off the rear center axis toward the RIGHT side. The camera looks at the rear-right quarter of the car.
 FRAMING: The RIGHT taillight, RIGHT rear wheel, and RIGHT rear fender are the most prominent elements. The rear bumper, exhaust outlets, and rear badge are clearly visible. Full vehicle in frame with no cropping.
 CRITICAL DIRECTION: The viewer sees primarily the REAR and the RIGHT FLANK of the vehicle. The LEFT side of the car is mostly hidden/foreshortened. The RIGHT rear wheel is closest to the camera and appears larger. This is the OPPOSITE perspective of the 3/4 Rear Left view. Do NOT show a left-rear quarter view. Do NOT mirror or flip. The vehicle's RIGHT side (passenger side in LHD) MUST face the camera together with the rear.
+ASYMMETRIC_EQUIPMENT: Follow ASYMMETRIC_EQUIPMENT_LOCK — side-specific equipment stays on the physical flank evidenced in the references; never mirror it onto the visible RIGHT flank.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Smooth, balanced showroom lighting emphasizing body contours and rear design. If a trailer hitch / tow bar is mounted in the reference, keep it exactly on the rear bumper; never remove it.
 </CURRENT_PIPELINE_SHOT>`,
