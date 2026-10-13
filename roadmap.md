@@ -16,6 +16,7 @@
 - [x] Doppelte Galerieeinträge verhindern und bestehende exakte Dubletten bereinigen
 - [x] VIN-lose neue Vorgänge immer als getrennte Fahrzeuge anlegen; bestehende Fahrzeugakte nur nach Eigentumsprüfung verwenden
 - [x] PKW-Seitenansichten eindeutig ausrichten und ausschließlich den gewählten Showroom verwenden
+- [ ] Referenzgebundenen Shift-by-Wire-/Konsolenschutz im Armaturenbrett und allen Innenraum-Folgejobs ergänzen und prüfen
 
 ## B2B-Paid-Funnel (Phase 1)
 - [x] Öffentliche Routen /autohaus-fahrzeugbilder, /autohaus-marketing, /fahrzeug-testen, /fahrzeug-testen/danke
