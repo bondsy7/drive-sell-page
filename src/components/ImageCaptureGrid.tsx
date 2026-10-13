@@ -1408,6 +1408,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     </div>
                   </div>
                 )}
+
+                <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                  Tipp: Normale Schnappschüsse reichen völlig. Bei extremem Sonnenlicht oder stark spiegelnden Zierleisten sorgt ein leicht schattiger Platz für die saubersten Kanten.
+                </p>
               </CaptureSection>
 
               <div className="grid gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
