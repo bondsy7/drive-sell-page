@@ -22,7 +22,7 @@ import logoYoutube from '@/assets/funnel/logo-youtube.png.asset.json';
 import logoWebsite from '@/assets/funnel/logo-website.png.asset.json';
 import socialPostVelmora from '@/assets/funnel/banner-post-1080x1080.png.asset.json';
 import facebookAdVelmora from '@/assets/funnel/facebook-ad-velmora.png.asset.json';
-import storyVelmora from '@/assets/story-velmora.png.asset.json';
+import storyExplorer from '@/assets/funnel/werbemittel-social-explorer.png.asset.json';
 import bannerSquareV3 from '@/assets/funnel/banner-post-1080x1080-v3.png.asset.json';
 import bannerHalfpageV3 from '@/assets/funnel/banner-story-1080x1920-v3.png.asset.json';
 import bannerSkyscraperV2 from '@/assets/funnel/banner-wide-skyscraper-160x600-v2.png.asset.json';
@@ -302,7 +302,7 @@ const CATEGORIES: Category[] = [
     ],
     slides: [
       { key: 'post2', width: 'w-[260px] sm:w-[300px]', node: <SocialFrame label="Feed-Post (1:1)" imageSrc={socialPostVelmora.url} /> },
-      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} imageSrc={storyVelmora.url} /> },
+      { key: 'story', width: 'w-[180px] sm:w-[210px]', node: <StoryFrame label="Story (9:16)" video={false} imageSrc={storyExplorer.url} /> },
       { key: 'post', width: 'w-[300px] sm:w-[460px]', node: <FacebookAdFrame label="Facebook-Anzeige (16:9)" imageSrc={facebookAdVelmora.url} /> },
     ],
   },
