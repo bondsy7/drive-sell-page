@@ -593,12 +593,22 @@ ${isCustomShowroom ? getBlock(overrides, 'custom_showroom_instruction') : ''}
   }
 
   // ── LICENSE PLATE ──
-  const plateContext = `LICENSE PLATE LOCATIONS (apply to ALL vehicle classes — cars AND trucks/vans/buses):
-- PASSENGER CARS: front bumper/grille plate AND rear tailgate/bumper plate.
-- TRUCKS / LORRIES: front cab plate (usually low-center on the bumper or grille), rear plate on the tailgate, box body or trailer rear door. Some trucks additionally carry a repeat plate high on the cab or on side panels — treat ALL of these as license plates.
-- VANS / TRANSPORTERS: front bumper plate and rear plate on the swing door / roller shutter.
-- TRAILERS / SEMI-TRAILERS: rear plate on the trailer, and any repeat plate on the trailer body.
+  // Kennzeichen-Positionen nur für die eigene Fahrzeugklasse – keine Lkw-/Anhänger-Texte im Pkw-Prompt.
+  const plateLinesByClass: Record<string, string[]> = {
+    car: ['- PASSENGER CARS: front bumper/grille plate AND rear tailgate/bumper plate.'],
+    van: ['- VANS / TRANSPORTERS: front bumper plate and rear plate on the swing door / tailgate / roller shutter.'],
+    motorhome: ['- MOTORHOMES / CARAVANS: front bumper plate (motorised) and rear plate on the rear wall or bumper.'],
+    motorcycle: ['- MOTORCYCLES: rear plate on the tail/number-plate holder.'],
+    machinery: ['- MACHINES: any registration plate on the front or rear of the machine.'],
+    truck: [
+      '- TRUCKS / LORRIES: front cab plate (usually low-center on the bumper or grille), rear plate on the tailgate, box body or trailer rear door. Some trucks additionally carry a repeat plate high on the cab or on side panels — treat ALL of these as license plates.',
+      '- TRAILERS / SEMI-TRAILERS: rear plate on the trailer, and any repeat plate on the trailer body.',
+    ],
+  };
+  const plateContext = `LICENSE PLATE LOCATIONS:
+${(plateLinesByClass[vehicleClass] ?? plateLinesByClass.car).join('\n')}
 Detect the plate by its standard rectangular shape, EU blue band, country code, and alphanumeric registration — even when partially obscured, dirty, angled, small in frame, or mounted at unusual heights.`;
+  const plateSpots = isTruck ? 'front, rear, cab, trailer' : 'front and rear';
 
   if (config.licensePlate === 'blur') {
     parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
@@ -607,17 +617,17 @@ Detect the plate by its standard rectangular shape, EU blue band, country code, 
 ${plateContext}
 
 CRITICAL: A separate reference image of a CUSTOM LICENSE PLATE is provided as an additional input image.
-You MUST replace EVERY license plate on the vehicle (front, rear, cab, trailer — see locations above) with this EXACT custom plate image.
+You MUST replace EVERY license plate on the vehicle (${plateSpots} — see locations above) with this EXACT custom plate image.
 Reproduce the plate PIXEL-FOR-PIXEL: exact text, font, colors, EU badge, city seal, spacing, and proportions.
 The plate must be photorealistically integrated on each mounting position — correct perspective, scale, lighting, and reflections matching that surface.
 Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided custom plate image.
 </LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
-    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nReplace EVERY license plate on the vehicle with a German plate reading "${config.customPlateText}". Photorealistic rendering on each mounting position (front, rear, cab, trailer).\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nReplace EVERY license plate on the vehicle with a German plate reading "${config.customPlateText}". Photorealistic rendering on each mounting position (${plateSpots}).\n</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'keep') {
     parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nKeep the original license plates exactly as they are on ALL mounting positions. Do NOT alter, blur, or remove them.\n</LICENSE_PLATE>`);
   } else {
-    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_remove')}\n\nApply this removal to EVERY plate location listed above — front, rear, cab-mounted repeats, trailer plates. Zero plates may remain anywhere on the vehicle.\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_remove')}\n\nApply this removal to EVERY plate location listed above. Zero plates may remain anywhere on the vehicle.\n</LICENSE_PLATE>`);
   }
 
   // ── BODY CLEANUP (Schriftzüge, Logos, Schilder, Sticker – für LKW/Flottenfahrzeuge) ──
@@ -626,7 +636,7 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
       .map(v => CLEANUP_OPTIONS.find(o => o.value === v))
       .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o);
     const lines = selectedOptions.map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
-    const removeTrailer = config.cleanupItems.includes('trailer');
+    const removeTrailer = isTruck && config.cleanupItems.includes('trailer');
 
     if (removeTrailer) {
       parts.push(`<TRACTOR_TRAILER_SEPARATION>
