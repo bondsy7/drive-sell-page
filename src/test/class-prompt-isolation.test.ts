@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { buildMasterPrompt, type RemasterConfig } from '@/lib/remaster-prompt';
 
-const config = { cleanupItems: ['trailer'] } as unknown as RemasterConfig;
+const config: RemasterConfig = {
+  scene: 'showroom-1', licensePlate: 'remove', changeColor: false,
+  showManufacturerLogo: false, showDealerLogo: false, cleanupItems: ['trailer'],
+} as RemasterConfig;
 
 describe('Prompt-Trennung nach Fahrzeugklasse', () => {
   it('Pkw-Prompt enthält keine Lkw-/Anhänger-Regeln', () => {
