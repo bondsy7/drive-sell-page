@@ -633,6 +633,7 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
   // ── BODY CLEANUP (Schriftzüge, Logos, Schilder, Sticker – für LKW/Flottenfahrzeuge) ──
   if (config.cleanupItems && config.cleanupItems.length > 0) {
     const selectedOptions = config.cleanupItems
+      .filter(v => isTruck || v !== 'trailer')
       .map(v => CLEANUP_OPTIONS.find(o => o.value === v))
       .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o);
     const lines = selectedOptions.map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
