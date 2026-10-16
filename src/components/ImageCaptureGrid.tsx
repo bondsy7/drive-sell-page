@@ -1140,7 +1140,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       >
         {slot.recommended && !cap && (
           <span className="pointer-events-none absolute right-1.5 top-1.5 z-10 rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-            Empfohlen
+            Empfohlen als Referenz
           </span>
         )}
         {cap ? (
@@ -1153,6 +1153,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             >
               <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="block w-full h-full object-cover" />
             </button>
+            {slot.referenceOnly && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-muted/80 px-2">
+                <span className="text-center text-[11px] font-semibold text-foreground">Als Referenz gespeichert</span>
+              </div>
+            )}
             {cap.status === 'processing' && (
               <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-accent animate-spin" />
