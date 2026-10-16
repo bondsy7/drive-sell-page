@@ -19,7 +19,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
-import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import { ALL_PIPELINE_JOBS, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
+import { buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
+import { ensureCachedBase64 } from '@/lib/image-base64-cache';
+import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene } from '@/lib/regeneration-context';
 import { downloadMediaFile } from '@/lib/download-file';
 
 interface LightboxImage {
@@ -167,22 +170,55 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     try {
       const mainBase64 = await fetchAsBase64(seedUrl);
 
-      const correction = buildMandatoryCorrection(extraPrompt);
-      const sourceRule = `<SOURCE_RULE>\nThe provided main image is a REAL reference photo of this exact vehicle. Generate the requested view fresh from it. Reproduce only what this photo and the vehicle's real evidence show.\n</SOURCE_RULE>`;
+      // Serien-Look wiederherstellen: Showroom, Look, Logo-/Kennzeichenregeln und Fahrzeugklasse
+      // exakt wie beim ursprünglichen Lauf (Fallback: Händler-Showroom aus dem Profil).
+      const [{ data: vRow }, { data: pRow }, overrides] = await Promise.all([
+        vehicleId
+          ? supabase.from('vehicles').select('vehicle_data').eq('id', vehicleId).maybeSingle()
+          : Promise.resolve({ data: null } as any),
+        user
+          ? supabase.from('profiles').select('custom_showroom_url').eq('id', user.id).maybeSingle()
+          : Promise.resolve({ data: null } as any),
+        fetchPromptOverrides().catch(() => ({} as Record<string, string>)),
+      ]);
+      const ctx = readRegenerationContext((vRow as any)?.vehicle_data);
+      const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
+      const config = restoreRemasterConfig(ctx, profileShowroomUrl);
+      const showroomUrl = showroomUrlForScene(config.scene, profileShowroomUrl);
+      const customShowroomBase64 = showroomUrl ? await ensureCachedBase64(showroomUrl).catch(() => null) : null;
+      const isInterior = pipelineJob?.category === 'interior';
+      const interiorSlotKey = isInterior
+        ? (/(rear seat|rücksitz|ruecksitz)/i.test(`${pipelineJob?.key} ${pipelineJob?.label} ${pipelineJob?.labelDe}`) ? 'interior-rear' : 'interior-front')
+        : undefined;
+      const vehicleDescription = ctx?.vehicleDescription || current.perspective || '';
+      const baseContext = buildMasterPrompt(
+        { ...config, customShowroomBase64 },
+        vehicleDescription,
+        interiorSlotKey,
+        overrides,
+        ctx?.classContext ?? null,
+      );
+      const hasLogo = !!(config.showManufacturerLogo || config.showDealerLogo);
 
-      let dynamicPrompt: string;
-      if (pipelineJob) {
-        dynamicPrompt = `${correction}${pipelineJob.prompt}\n\n${sourceRule}`;
-      } else {
-        dynamicPrompt = `${correction}Remaster the provided real vehicle photo${current.perspective ? ` as: ${current.perspective}` : ''}.\n\n${sourceRule}`;
-      }
+      const correction = buildMandatoryCorrection(extraPrompt);
+      const sourceRule = `<SOURCE_RULE>\nThe provided main image is a REAL reference photo of this exact vehicle. Generate the requested view fresh from it. Reproduce only what this photo and the vehicle's real evidence show. Scene, showroom, lighting and look follow the context above exactly, so this image matches the rest of the series.\n</SOURCE_RULE>`;
+
+      const perspectiveInstruction = pipelineJob
+        ? injectLogoPlaceholder(pipelineJob.prompt, hasLogo)
+        : `Remaster the provided real vehicle photo${current.perspective ? ` as: ${current.perspective}` : ''}.`;
+      const dynamicPrompt = `${correction}${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${perspectiveInstruction}\n\n${sourceRule}`;
 
       const { data, error } = await invokeRemasterVehicleImage({
+        classContext: ctx?.classContext ?? null,
         imageBase64: mainBase64,
-        vehicleDescription: current.perspective || '',
-        modelTier: 'standard',
+        vehicleDescription,
+        modelTier: ctx?.modelTier || 'standard',
         dynamicPrompt,
-      });
+        customShowroomBase64,
+        customPlateImageBase64: null,
+        dealerLogoUrl: config.showDealerLogo ? (config.dealerLogoUrl ?? null) : null,
+        manufacturerLogoUrl: config.showManufacturerLogo ? (config.manufacturerLogoUrl ?? null) : null,
+      } as any);
 
       if (error || !data?.imageBase64) {
         toast.error(data?.error || error?.message || 'Fehler beim Regenerieren');
