@@ -941,7 +941,7 @@ const Index = () => {
                 vehicleId={savedVehicleId || deepLinkVehicleId}
                 onComplete={handleStandaloneCaptureComplete}
                 onVehicleDataChange={setVehicleData}
-                onBack={() => setAppState('standalone-photo-choice')}
+                onBack={() => navigate('/dashboard')}
                 onPipelineComplete={() => navigate('/dashboard?tab=gallery')}
               />
             </div>
