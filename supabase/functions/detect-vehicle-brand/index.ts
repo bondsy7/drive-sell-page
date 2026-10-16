@@ -148,8 +148,8 @@ serve(async (req) => {
               contents: [
                 {
                   parts: [
-                    imagePart,
-                    { text: detectPrompt },
+                    ...imageParts,
+                    { text: detectPrompt + multiHint },
                   ],
                 },
               ],
