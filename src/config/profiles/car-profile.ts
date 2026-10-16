@@ -113,7 +113,6 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     key: '34front-right',
     label: '3/4 Front rechts',
     icon: frontThreeQuarterIcon.url,
-    iconFlip: true,
     capture: 'environment',
     required: false,
     recommended: true,
