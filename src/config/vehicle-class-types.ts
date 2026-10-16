@@ -68,6 +68,17 @@ export interface CaptureSlot {
   /** Short capture hint shown below the label. */
   hint?: string;
   required: boolean;
+  /** Empfohlen (weder Pflicht noch rein optional) – dezent gestrichelt dargestellt. */
+  recommended?: boolean;
+  /**
+   * Reine Eingabe-Referenz: wird NICHT einzeln remastert und erzeugt keinen
+   * eigenen Output/Credit, dient der Pipeline nur als echte Bildquelle.
+   */
+  referenceOnly?: boolean;
+  /** Anzeige-Reihenfolge im Aufnahme-Grid (Datenreihenfolge bleibt die Array-Reihenfolge). */
+  displayOrder?: number;
+  /** Icon horizontal spiegeln (z. B. rechte Flanke aus dem linken Icon). */
+  iconFlip?: boolean;
   aspect: SlotAspect;
   capture: 'environment' | 'user';
   isVin?: boolean;
