@@ -1659,6 +1659,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
       {/* Mobile Bottom Bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-2.5 backdrop-blur sm:hidden">
+        {!allVehicleDone && capturedVehicleImages.length > 0 && (
+          <p className="mx-auto mb-1.5 flex max-w-6xl items-center gap-1.5 text-[10px] leading-snug text-muted-foreground">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            Bitte kurz prüfen: Liegen alle Aufnahmen im jeweils passenden Feld?
+          </p>
+        )}
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-[10px] text-muted-foreground">Qualität</p>
