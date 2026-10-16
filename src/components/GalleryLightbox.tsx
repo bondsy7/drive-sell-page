@@ -22,7 +22,7 @@ import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
 import { ALL_PIPELINE_JOBS, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { ensureCachedBase64 } from '@/lib/image-base64-cache';
-import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene } from '@/lib/regeneration-context';
+import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene, pickSeriesEnvironmentImage } from '@/lib/regeneration-context';
 import { downloadMediaFile } from '@/lib/download-file';
 
 interface LightboxImage {
@@ -183,8 +183,11 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       ]);
       const ctx = readRegenerationContext((vRow as any)?.vehicle_data);
       const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
-      const config = restoreRemasterConfig(ctx, profileShowroomUrl);
-      const showroomUrl = showroomUrlForScene(config.scene, profileShowroomUrl);
+      // Profil-Showroom NUR, wenn er beim ursprünglichen Lauf ausgewählt war (scene=custom-showroom).
+      // Ohne gespeicherte Einstellungen: Umgebung aus einem anderen Bild derselben Serie übernehmen.
+      const seriesEnvUrl = ctx ? null : pickSeriesEnvironmentImage(images, current.id);
+      const config = restoreRemasterConfig(ctx, seriesEnvUrl);
+      const showroomUrl = ctx ? showroomUrlForScene(config.scene, profileShowroomUrl) : seriesEnvUrl;
       const customShowroomBase64 = showroomUrl ? await ensureCachedBase64(showroomUrl).catch(() => null) : null;
       const isInterior = pipelineJob?.category === 'interior';
       const interiorSlotKey = isInterior
