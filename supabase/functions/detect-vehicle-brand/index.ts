@@ -93,9 +93,25 @@ serve(async (req) => {
 
     // Marken-Erkennung beim Upload ist eine kostenlose Inklusivleistung (0 Credits).
 
-    const { imageBase64, imageFileUri } = await req.json();
-    if (!imageBase64 && !imageFileUri?.uri) {
-      return new Response(JSON.stringify({ error: "imageBase64 or imageFileUri required" }), {
+    const { imageBase64, imageFileUri, images } = await req.json();
+    // Mehrbild-Modus: images = [{ imageFileUri? , imageBase64? }] (max. 4), z. B. 3/4 Front + Heck.
+    const inputs: Array<{ imageBase64?: string; imageFileUri?: { uri: string; mimeType?: string } }> =
+      Array.isArray(images) && images.length > 0
+        ? images.slice(0, 4)
+        : [{ imageBase64, imageFileUri }];
+    const toPart = (inp: { imageBase64?: string; imageFileUri?: { uri: string; mimeType?: string } }) => {
+      if (inp?.imageFileUri?.uri) {
+        return { file_data: { mime_type: inp.imageFileUri.mimeType || "image/jpeg", file_uri: inp.imageFileUri.uri } };
+      }
+      if (typeof inp?.imageBase64 === "string" && inp.imageBase64.length > 0) {
+        const mimeMatch = inp.imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+        return { inlineData: { mimeType: mimeMatch ? mimeMatch[1] : "image/jpeg", data: inp.imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "") } };
+      }
+      return null;
+    };
+    const imageParts = inputs.map(toPart).filter(Boolean);
+    if (imageParts.length === 0) {
+      return new Response(JSON.stringify({ error: "imageBase64, imageFileUri or images required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -109,15 +125,9 @@ serve(async (req) => {
       });
     }
 
-    let imagePart: any;
-    if (imageFileUri?.uri) {
-      imagePart = { file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } };
-    } else {
-      const base64Data = imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
-      const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,/);
-      const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
-      imagePart = { inlineData: { mimeType, data: base64Data } };
-    }
+    const multiHint = imageParts.length > 1
+      ? `\n\nYou receive ${imageParts.length} photos of the SAME vehicle (e.g. front three-quarter and rear). Combine all views into ONE answer.`
+      : "";
 
     const detectPrompt = await getCustomPrompt("detect_vehicle_brand", DEFAULT_DETECT_PROMPT);
     // Retry with fallback models on 503/429
