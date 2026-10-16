@@ -1621,6 +1621,27 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   }}
                 />
               </CaptureSection>
+              <BrandDialog open={brandEditOpen} onOpenChange={setBrandEditOpen}>
+                <BrandDialogContent className="max-w-md">
+                  <BrandDialogHeader>
+                    <BrandDialogTitle>Marke ändern</BrandDialogTitle>
+                  </BrandDialogHeader>
+                  <div className="min-h-[320px]">
+                    <VehicleBrandPicker
+                      brand={vehicleData?.vehicle?.brand || ''}
+                      onBrandChange={(brand) => {
+                        patchVehicleData((current) => ({
+                          ...current,
+                          vehicle: { ...current.vehicle, brand, model: '' },
+                        }));
+                        if (brand) setBrandDetectionStatus('found');
+                        setBrandEditOpen(false);
+                        toast.success(`Marke geändert: ${brand}`);
+                      }}
+                    />
+                  </div>
+                </BrandDialogContent>
+              </BrandDialog>
             </>
           )}
         <div>
