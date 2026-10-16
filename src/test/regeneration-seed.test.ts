@@ -23,3 +23,24 @@ describe('Neu-Generierung nutzt nie das generierte Bild', () => {
     expect(resolveRegenerationSeed({ selectedReferenceUrl: null, currentGeneratedUrl: 'gen', originals: [] })).toBeNull();
   });
 });
+
+describe('Rundgang-Originale mit Slot-Key', () => {
+  const withRoles = [
+    { name: '1800-0-34front-original.jpg', url: 'r-34front' },
+    { name: '1800-1-side-original.jpg', url: 'r-side-left' },
+    { name: '1800-2-rear-original.jpg', url: 'r-rear' },
+    { name: '1800-3-side-right-original.jpg', url: 'r-side-right' },
+    { name: '1800-4-front-original.jpg', url: 'r-front' },
+  ];
+  it('rechte Seite bekommt das rechte Foto, nie das linke', () => {
+    expect(pickOriginalSeed(withRoles, 'EXT_SIDE_RIGHT')?.url).toBe('r-side-right');
+    expect(pickOriginalSeed(withRoles, 'EXT_SIDE_LEFT')?.url).toBe('r-side-left');
+  });
+  it('Totalfront nutzt das Frontfoto, das Master-Bild weiter die 3/4 Front', () => {
+    expect(pickOriginalSeed(withRoles, 'EXT_FRONT')?.url).toBe('r-front');
+    expect(pickOriginalSeed(withRoles, 'MASTER_IMAGE')?.url).toBe('r-34front');
+  });
+  it('Innenraum-Job greift ohne Innenraumfoto nicht auf Index 3 (rechte Seite)', () => {
+    expect(pickOriginalSeed(withRoles, 'INT_DASHBOARD')?.url).toBe('r-34front');
+  });
+});
