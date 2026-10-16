@@ -212,6 +212,14 @@ function inferPrimaryReferenceIndex(
       if (idx >= 0 && idx < availableCount) return idx;
     }
   }
+  // Pkw-Rundgang: exakte Slot-Keys zuerst (echtes Foto statt Spiegelung/Schätzung).
+  const exactCarRoles = CAR_EXACT_ROLE_MAP[(job?.key || '').toUpperCase()];
+  if (exactCarRoles) {
+    for (const role of exactCarRoles) {
+      const idx = normalizedRoles.indexOf(role);
+      if (idx >= 0 && idx < availableCount) return idx;
+    }
+  }
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
@@ -223,13 +231,33 @@ function inferPrimaryReferenceIndex(
   else if (REAR_REFERENCE_PATTERNS.test(signature)) roleIndex = findRole(/(^|_)rear($|_)/, /heck/, /34_rear/);
   else if (FRONT_REFERENCE_PATTERNS.test(signature)) roleIndex = findRole(/(^|_)front($|_)/, /exterior_front/, /34_front/, /34front/, /identity_anchor/);
   if (roleIndex >= 0 && roleIndex < availableCount) return roleIndex;
-  if (REAR_INTERIOR_PATTERNS.test(signature) && availableCount >= 5) return 4;
-  if (FRONT_INTERIOR_PATTERNS.test(signature) && availableCount >= 4) return 3;
-  if (REAR_REFERENCE_PATTERNS.test(signature) && availableCount >= 3) return 2;
-  if (SIDE_REFERENCE_PATTERNS.test(signature) && availableCount >= 2) return 1;
+  // Index-Fallbacks nur, wenn an der Position kein empfohlenes Rundgang-Foto
+  // und (bei Innenraum) tatsächlich eine Innenraum-Rolle liegt.
+  const idxOk = (i: number, interior = false) => {
+    const role = normalizedRoles[i];
+    if (!role) return true;
+    if (REFERENCE_ONLY_ROLES.has(role)) return false;
+    return !interior || INTERIOR_ROLE_RE.test(role);
+  };
+  if (REAR_INTERIOR_PATTERNS.test(signature) && availableCount >= 5 && idxOk(4, true)) return 4;
+  if (FRONT_INTERIOR_PATTERNS.test(signature) && availableCount >= 4 && idxOk(3, true)) return 3;
+  if (REAR_REFERENCE_PATTERNS.test(signature) && availableCount >= 3 && idxOk(2)) return 2;
+  if (SIDE_REFERENCE_PATTERNS.test(signature) && availableCount >= 2 && idxOk(1)) return 1;
   if (FRONT_REFERENCE_PATTERNS.test(signature)) return 0;
   return 0;
 }
+
+/** Exakte Pkw-Slot-Keys (normalisiert) je Pipeline-Job, Reihenfolge = Priorität. */
+const CAR_EXACT_ROLE_MAP: Record<string, string[]> = {
+  MASTER_IMAGE: ['34front'],
+  EXT_FRONT: ['front', '34front'],
+  EXT_SIDE_LEFT: ['side'],
+  EXT_SIDE_RIGHT: ['side_right'],
+  EXT_34_FRONT_RIGHT: ['34front_right'],
+  EXT_34_REAR_LEFT: ['34rear'],
+};
+const REFERENCE_ONLY_ROLES = new Set(['front', '34rear', 'side_right', '34front_right']);
+const INTERIOR_ROLE_RE = /interior|cockpit|dashboard|fahrer|driver|ruecksitz|rear_seat|cabin|kabine/;
 
 function getInteriorReferenceIndices(availableCount: number, referenceRoles: string[] = []): number[] {
   const roleMatches = referenceRoles
