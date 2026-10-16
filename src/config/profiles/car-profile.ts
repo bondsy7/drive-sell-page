@@ -34,6 +34,8 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     key: 'side',
     label: 'Seite links',
     icon: sideIcon.url,
+    // Das Referenz-Asset zeigt die rechte Fahrzeugseite; für „Seite links" gespiegelt.
+    iconFlip: true,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -99,7 +101,6 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     key: 'side-right',
     label: 'Seite rechts',
     icon: sideIcon.url,
-    iconFlip: true,
     capture: 'environment',
     required: false,
     recommended: true,
