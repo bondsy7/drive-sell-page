@@ -574,6 +574,45 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     [vehicleSlots, captures],
   );
   const lightboxIndex = Math.max(0, lightboxImages.findIndex(i => i.id === lightboxSlotKey));
+
+  // ── KI-Fahrzeugerkennung: ein gebündelter Aufruf mit 3/4 Front + Heck (0 Credits).
+  const frontForDetect = captures['34front']?.base64;
+  const rearForDetect = captures['rear']?.base64;
+  const lastDetectPairRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!frontForDetect || !rearForDetect || makes.length === 0) return;
+    if (brandDetectionStatus === 'found' || brandDetectionStatus === 'detecting') return;
+    const pairKey = `${frontForDetect.length}:${frontForDetect.slice(-32)}|${rearForDetect.length}:${rearForDetect.slice(-32)}`;
+    if (lastDetectPairRef.current === pairKey) return;
+    lastDetectPairRef.current = pairKey;
+    brandDetectionAttempted.current = true;
+    setBrandDetectionStatus('detecting');
+    (async () => {
+      try {
+        const refs = await uploadToGeminiFiles([{ imageBase64: frontForDetect }, { imageBase64: rearForDetect }]);
+        const images = [frontForDetect, rearForDetect].map((b64, i) => refs?.[i] ? { imageFileUri: refs[i] } : { imageBase64: b64 });
+        const { data: aiResult, error: aiError } = await supabase.functions.invoke('detect-vehicle-brand', { body: { images } });
+        const resolvedAiBrand = !aiError && aiResult?.brand && aiResult.confidence !== 'low' ? resolveBrandFromSource(aiResult.brand) : null;
+        if (resolvedAiBrand) {
+          setBrandDetectionStatus('found');
+          const resolvedModel = aiResult.model ? resolveModelForBrand(resolvedAiBrand, aiResult.model) : '';
+          patchVehicleData((current) => ({
+            ...current,
+            vehicle: { ...current.vehicle, brand: resolvedAiBrand, model: resolvedModel || current.vehicle.model },
+          }));
+          toast.success(`Fahrzeug per Bild erkannt: ${resolvedAiBrand}${resolvedModel ? ` ${resolvedModel}` : ''}`);
+        } else {
+          brandDetectionAttempted.current = false;
+          setBrandDetectionStatus('not-found');
+        }
+      } catch {
+        console.error('AI brand detection failed');
+        brandDetectionAttempted.current = false;
+        setBrandDetectionStatus('not-found');
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frontForDetect, rearForDetect, makes.length]);
   const coverage = useMemo(
     () => checkSourceCoverage(slots, captures),
     [slots, captures],
@@ -624,44 +663,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           ...current,
           vehicle: { ...current.vehicle, brand: matchedBrand },
         }));
-      } else {
-        setBrandDetectionStatus('detecting');
-        brandDetectionAttempted.current = true;
-        try {
-          const refs = await uploadToGeminiFiles([{ imageBase64: base64 }]);
-          const body: any = refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: base64 };
-          const { data: aiResult, error: aiError } = await supabase.functions.invoke('detect-vehicle-brand', {
-            body,
-          });
-
-          if (!aiError && aiResult?.brand && aiResult.confidence !== 'low') {
-            const resolvedAiBrand = resolveBrandFromSource(aiResult.brand);
-            if (resolvedAiBrand) {
-              setBrandDetectionStatus('found');
-              const resolvedModel = aiResult.model ? resolveModelForBrand(resolvedAiBrand, aiResult.model) : '';
-              patchVehicleData((current) => ({
-                ...current,
-                vehicle: {
-                  ...current.vehicle,
-                  brand: resolvedAiBrand,
-                  model: resolvedModel || current.vehicle.model,
-                },
-              }));
-              toast.success(`Marke per Bild erkannt: ${resolvedAiBrand}${resolvedModel ? ` ${resolvedModel}` : ''}`);
-            } else {
-              brandDetectionAttempted.current = false;
-              setBrandDetectionStatus('not-found');
-            }
-          } else {
-            brandDetectionAttempted.current = false;
-            setBrandDetectionStatus('not-found');
-          }
-        } catch {
-          brandDetectionAttempted.current = false;
-          console.error('AI brand detection failed');
-          setBrandDetectionStatus('not-found');
-        }
       }
+      // KI-Bilderkennung startet erst, wenn 3/4 Front UND Heck vorliegen (siehe Effekt unten).
     }
 
     if (slot.isVin) {
