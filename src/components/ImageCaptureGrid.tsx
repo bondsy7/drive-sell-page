@@ -51,7 +51,7 @@ interface ImageCaptureGridProps {
   modelTier?: string;
   projectId?: string | null;
   vehicleId?: string | null;
-  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[], vehicleId?: string | null) => void;
+  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[], vehicleId?: string | null, originalRoles?: (string | undefined)[]) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
   onPipelineComplete?: () => void;
@@ -485,7 +485,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = slots.filter(s => !s.isVin);
-  const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
+  // Empfohlene Rundgang-Referenzen werden nicht einzeln remastert (kein Output, keine Credits).
+  const remasterSlots = vehicleSlots.filter(s => !s.referenceOnly);
+  const displaySlots = useMemo(
+    () => vehicleSlots
+      .map((s, i) => ({ s, i }))
+      .sort((a, b) => (a.s.displayOrder ?? 100 + a.i) - (b.s.displayOrder ?? 100 + b.i))
+      .map(x => x.s),
+    [vehicleSlots],
+  );
+  const capturedVehicleImages = remasterSlots.filter(s => captures[s.key]);
   const [lightboxSlotKey, setLightboxSlotKey] = useState<string | null>(null);
 
   // ── Auto3-Handoff: ?originals=auto3 belegt die Aufnahmeplätze mit den bereits gespeicherten Originalen vor.
@@ -504,7 +513,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const { data: files } = await supabase.storage.from('originals').list(prefix, { limit: 200, sortBy: { column: 'name', order: 'asc' } });
       const auto3 = (files || []).filter(f => f.name.startsWith('auto3-')).sort((a, b) => a.name.localeCompare(b.name));
       if (!auto3.length) { toast.error('Keine Auto3-Originale in der Fahrzeugakte gefunden.'); return; }
-      const free = vehicleSlots.filter(sl => !sl.isVin);
+      const free = vehicleSlots.filter(sl => !sl.isVin && !sl.referenceOnly);
       // Auto3-Vorbereitung: KI-gewählte Referenzen je Slot (nur Perspektive/Qualität; Fahrzeugdaten bleiben aus Auto3).
       const { data: prep } = await supabase.from('auto3_oneshot_preparations')
         .select('status, selection, detail_selection').eq('vehicle_id', owned).maybeSingle();
@@ -757,7 +766,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       return;
     }
 
-    const toProcess = vehicleSlots.filter(s => captures[s.key] && captures[s.key].status !== 'done');
+    const toProcess = remasterSlots.filter(s => captures[s.key] && captures[s.key].status !== 'done');
     if (toProcess.length === 0) {
       finishUp();
       return;
@@ -955,7 +964,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   };
 
   const finishUp = async () => {
-    const doneSlots = vehicleSlots.filter(s => captures[s.key]?.status === 'done' && captures[s.key]?.remasteredBase64);
+    const doneSlots = remasterSlots.filter(s => captures[s.key]?.status === 'done' && captures[s.key]?.remasteredBase64);
+    const referenceSlots = vehicleSlots.filter(s => s.referenceOnly && captures[s.key]);
     if (doneSlots.length === 0) {
       toast.error('Keine Bilder erfolgreich verarbeitet.');
       return;
@@ -966,11 +976,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     // Detailaufnahmen (Datenblatt, Innenraum, Felgen, Motor, Schäden, …).
     // So jede Aufnahme, die der Nutzer draußen am Auto macht, landet später
     // im Dashboard unter "Originale".
-    const originals = [
-      ...doneSlots.map(s => captures[s.key].base64),
-      ...detailImages,
-      ...(wheelReference?.image ? [wheelReference.image] : []),
-    ].filter(img => !prefilledOriginalsRef.current.has(img)); // Auto3-Originale liegen bereits im Speicher
+    // Rollen parallel zu den Originalen, damit die Neu-Generierung das passende
+    // Foto über den Slot-Key findet (Index allein ist bei Lücken mehrdeutig).
+    const originalEntries: { img: string; role?: string }[] = [
+      ...doneSlots.map(s => ({ img: captures[s.key].base64, role: s.key })),
+      ...referenceSlots.map(s => ({ img: captures[s.key].base64, role: s.key })),
+      ...detailImages.map(img => ({ img })),
+      ...(wheelReference?.image ? [{ img: wheelReference.image }] : []),
+    ].filter(e => !prefilledOriginalsRef.current.has(e.img)); // Auto3-Originale liegen bereits im Speicher
+    const originals = originalEntries.map(e => e.img);
+    const originalRoles = originalEntries.map(e => e.role);
     // Immer dasselbe Fahrzeug verwenden wie ein evtl. bereits gestarteter
     // Pipeline-Lauf – sonst entstehen zwei getrennte Fahrzeugakten.
     let targetVehicleId: string | null = ensuredVehicleId || vehicleId || null;
@@ -979,7 +994,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       catch (e) { console.warn('[capture] ensureVehicle failed:', e); }
     }
     toast.success(`${doneSlots.length} Bilder erfolgreich remastered.`);
-    onComplete(main, gallery, detectedVin || undefined, originals, targetVehicleId);
+    onComplete(main, gallery, detectedVin || undefined, originals, targetVehicleId, originalRoles);
   };
 
   const allVehicleDone = capturedVehicleImages.length > 0 &&
@@ -987,6 +1002,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     !isProcessing;
 
   // Collect all captured base64 images for pipeline input
+  // Array-Reihenfolge = Datenreihenfolge: Kern-Slots zuerst, empfohlene
+  // Referenzen angehängt – so bleiben historische Indizes stabil.
   const allCapturedBase64 = vehicleSlots
     .filter(s => captures[s.key])
     .map(s => captures[s.key].remasteredBase64 || captures[s.key].base64);
@@ -1119,8 +1136,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return (
       <div
         key={slot.key}
-        className="relative group aspect-[4/3] rounded-lg border border-border bg-card transition-colors hover:border-accent/50 overflow-hidden"
+        className={`relative group aspect-[4/3] rounded-lg border bg-card transition-colors hover:border-accent/50 overflow-hidden ${slot.recommended && !cap ? 'border-dashed border-muted-foreground/40' : 'border-solid border-border'}`}
       >
+        {slot.recommended && !cap && (
+          <span className="pointer-events-none absolute right-1.5 top-1.5 z-10 rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+            Empfohlen
+          </span>
+        )}
         {cap ? (
           <>
             <button
@@ -1189,13 +1211,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             className="w-full h-full min-w-0 flex flex-col items-center justify-center gap-1 p-2 hover:bg-muted/40 transition-colors"
           >
             {slot.icon ? (
-              <img src={slot.icon} alt={slot.label} className="h-14 w-[88%] shrink-0 object-contain sm:h-16" />
+              <img src={slot.icon} alt={slot.label} className={`h-14 w-[88%] shrink-0 object-contain sm:h-16 ${slot.iconFlip ? '-scale-x-100' : ''}`} />
             ) : (
               <TruckSketch id={slot.sketch} className="h-14 w-[88%] shrink-0 text-muted-foreground sm:h-16" />
             )}
             <span className="line-clamp-2 w-full break-words text-center text-[10px] font-semibold leading-tight text-foreground sm:text-[11px]">
               {slot.label}
-              {slot.required === false && <span className="text-muted-foreground"> (optional)</span>}
+              {slot.required === false && !slot.recommended && <span className="text-muted-foreground"> (optional)</span>}
             </span>
             {slot.hint && (
               <span className="line-clamp-2 w-full break-words px-0.5 text-center text-[9px] leading-tight text-muted-foreground/70">{slot.hint}</span>
@@ -1323,7 +1345,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   </p>
                 )}
                 <div className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-5">
-                  {vehicleSlots.map((slot) => (
+                  {displaySlots.map((slot) => (
                     <div key={slot.key} className="min-w-0">
                       {renderSlotCard(slot)}
                     </div>
@@ -1611,6 +1633,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 <Progress value={(progress.current / progress.total) * 100} className="h-1.5" />
               </div>
             )}
+            {!allVehicleDone && capturedVehicleImages.length > 0 && (
+              <p className="hidden items-center gap-1.5 text-[10px] leading-snug text-muted-foreground sm:flex">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                Bitte kurz prüfen: Liegen alle Aufnahmen im jeweils passenden Feld?
+              </p>
+            )}
             <div className="hidden sm:block">{primaryAction}</div>
             {allVehicleDone && (
               <Button variant="outline" size="sm" className="w-full" onClick={finishUp}>
@@ -1631,6 +1659,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
       {/* Mobile Bottom Bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-2.5 backdrop-blur sm:hidden">
+        {!allVehicleDone && capturedVehicleImages.length > 0 && (
+          <p className="mx-auto mb-1.5 flex max-w-6xl items-center gap-1.5 text-[10px] leading-snug text-muted-foreground">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            Bitte kurz prüfen: Liegen alle Aufnahmen im jeweils passenden Feld?
+          </p>
+        )}
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-[10px] text-muted-foreground">Qualität</p>

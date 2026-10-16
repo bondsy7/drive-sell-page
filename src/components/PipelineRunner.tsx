@@ -1,3 +1,4 @@
+import { REFERENCE_ONLY_SLOT_KEYS } from '@/config/profiles/car-profile';
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Timer } from 'lucide-react';
@@ -276,8 +277,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         .eq('gallery_folder', folderName)
         .in('perspective', perspectives.slice(0, inputImages.length));
       const existingPerspectives = new Set((existing || []).map(row => row.perspective));
+      // Empfohlene Rundgang-Referenzen sind reine Eingaben: nie in die Galerie.
       const pending = inputImages
         .map((image, index) => ({ image, index, perspective: perspectives[index] || `Bild ${index + 1}` }))
+        .filter(item => !REFERENCE_ONLY_SLOT_KEYS.has(referenceRoles?.[item.index] || ''))
         .filter(item => !existingPerspectives.has(item.perspective));
       const rows = [];
       for (const item of pending) {
@@ -307,7 +310,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       console.error('Error saving remastered images:', e);
       throw e;
     }
-  }, [user, inputImages, vin, projectId, vehicleId, queryClient]);
+  }, [user, inputImages, referenceRoles, vin, projectId, vehicleId, queryClient]);
 
   /* ─── Retry job (delegates to context) ─── */
   const retryJob = useCallback(async (jobKey: string) => {

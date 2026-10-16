@@ -504,7 +504,7 @@ const Index = () => {
   }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, user, selectedTemplate, saveProject]);
 
 
-  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null) => {
+  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null, originalRoles?: (string | undefined)[]) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
     if (vehicleData) {
@@ -524,7 +524,7 @@ const Index = () => {
       // Rohfotos sichern, damit sie im Dashboard unter "Originale" erscheinen –
       // auch dann, wenn danach keine Pipeline mehr läuft.
       if (user && vehicleId && originals && originals.length > 0) {
-        try { await uploadOriginalsToVehicle(user.id, vehicleId, originals); }
+        try { await uploadOriginalsToVehicle(user.id, vehicleId, originals, originalRoles); }
         catch (e) { console.warn('[capture] originals upload failed:', e); }
       }
 
@@ -600,6 +600,7 @@ const Index = () => {
     vin?: string,
     originals?: string[],
     preferVehicleId?: string | null,
+    originalRoles?: (string | undefined)[],
   ) => {
     if (!user || allImages.length === 0) return;
     try {
@@ -623,7 +624,7 @@ const Index = () => {
       // Upload the user's original photos to the private `originals` bucket so
       // they remain associated with the vehicle (mirrors the One-Shot Studio flow).
       if (vehicleId && originals && originals.length > 0) {
-        await uploadOriginalsToVehicle(user.id, vehicleId, originals);
+        await uploadOriginalsToVehicle(user.id, vehicleId, originals, originalRoles);
       }
     } catch (e) {
       console.error('Error saving standalone images:', e);
@@ -631,11 +632,11 @@ const Index = () => {
   }, [user, savedVehicleId, deepLinkVehicleId, vehicleData]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null) => {
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null, originalRoles?: (string | undefined)[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
     if (captureVehicleId) setSavedVehicleId(captureVehicleId);
-    saveStandaloneImages(allImages, vin, originals, captureVehicleId || null);
+    saveStandaloneImages(allImages, vin, originals, captureVehicleId || null, originalRoles);
     toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
