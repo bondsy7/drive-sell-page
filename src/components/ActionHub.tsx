@@ -155,8 +155,8 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           {hero && <div className="lg:col-span-12">{renderTool(hero, true, true)}</div>}
-          {studio && <div className="lg:col-span-8">{renderTool(studio, true)}</div>}
-          {backgroundSwap && <div className="lg:col-span-4">{renderTool(backgroundSwap)}</div>}
+          {backgroundSwap && <div className="lg:col-span-12">{renderTool(backgroundSwap, true)}</div>}
+          {studio && <div className="lg:col-span-12">{renderTool(studio, true)}</div>}
           {remainingPhotoTiles.map((tile) => <div key={tile.id} className="lg:col-span-6">{renderTool(tile)}</div>)}
         </div>
       </section>
