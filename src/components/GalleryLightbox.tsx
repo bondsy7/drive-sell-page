@@ -1,3 +1,4 @@
+import { resolveRegenerationSeed, buildMandatoryCorrection } from '@/lib/regeneration-seed';
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,7 +78,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   const prefix = user && vehicleId ? `${user.id}/${vehicleId}` : '';
   const { data: originals = [], isLoading: loadingOriginals } = useQuery({
     queryKey: ['originals-picker', user?.id, vehicleId],
-    enabled: !!user && !!vehicleId && pickerOpen,
+    enabled: !!user && !!vehicleId && open,
     queryFn: async () => {
       const { data } = await supabase.storage
         .from('originals')
@@ -148,33 +149,32 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   };
 
   const runRegenerate = async (referenceUrl: string | null) => {
+    // REGEL: Das bereits generierte (ggf. fehlerhafte) KI-Bild ist NIE die Basis.
+    // Basis = gewählte Referenz, sonst passendes Originalfoto der Fahrzeugakte.
+    const seedUrl = resolveRegenerationSeed({
+      selectedReferenceUrl: referenceUrl,
+      currentGeneratedUrl: current.src,
+      originals,
+      jobKey: pipelineJob?.key,
+      perspective: current.perspective || '',
+    });
+    if (!seedUrl) {
+      toast.error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
+      return;
+    }
     setPickerOpen(false);
     setRegenerating(true);
     try {
-      // Main image = the CURRENT generated image (we improve it)
-      const mainBase64 = await fetchAsBase64(current.src);
+      const mainBase64 = await fetchAsBase64(seedUrl);
 
-      // Reference image = additional input (only as detail/quality reference)
-      const additionalImages: string[] = [];
-      if (referenceUrl) {
-        const refBase64 = await fetchAsBase64(referenceUrl);
-        additionalImages.push(refBase64);
-      }
+      const correction = buildMandatoryCorrection(extraPrompt);
+      const sourceRule = `<SOURCE_RULE>\nThe provided main image is a REAL reference photo of this exact vehicle. Generate the requested view fresh from it. Reproduce only what this photo and the vehicle's real evidence show.\n</SOURCE_RULE>`;
 
-      // Build dynamic prompt: pipeline-specific prompt + user's extra instruction
-      let dynamicPrompt: string | undefined;
-      const trimmed = extraPrompt.trim();
+      let dynamicPrompt: string;
       if (pipelineJob) {
-        let p = pipelineJob.prompt;
-        if (trimmed) {
-          p += `\n\n<USER_REFINEMENT>\nThe previous generation had issues. Apply these targeted corrections WITHOUT changing perspective, framing, or composition:\n${trimmed}\n</USER_REFINEMENT>`;
-        }
-        if (referenceUrl) {
-          p += `\n\n<REFERENCE_USAGE>\nThe additional reference photo is provided ONLY to correct specific details (e.g. interior parts, textures, badges, controls) that were wrong in the previous generation. Do NOT copy its perspective, camera angle, framing, or composition – keep the perspective defined above.\n</REFERENCE_USAGE>`;
-        }
-        dynamicPrompt = p;
-      } else if (trimmed) {
-        dynamicPrompt = `Improve the provided image. Apply these corrections WITHOUT changing perspective, framing, or composition:\n${trimmed}`;
+        dynamicPrompt = `${correction}${pipelineJob.prompt}\n\n${sourceRule}`;
+      } else {
+        dynamicPrompt = `${correction}Remaster the provided real vehicle photo${current.perspective ? ` as: ${current.perspective}` : ''}.\n\n${sourceRule}`;
       }
 
       const { data, error } = await invokeRemasterVehicleImage({
@@ -182,7 +182,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         vehicleDescription: current.perspective || '',
         modelTier: 'standard',
         dynamicPrompt,
-        additionalImages: additionalImages.length ? additionalImages : undefined,
       });
 
       if (error || !data?.imageBase64) {
@@ -323,7 +322,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Perspektive und Bildausschnitt bleiben gleich – nur Details werden verbessert.
+              Das Bild wird neu aus dem Originalfoto erzeugt – nie aus dem fehlerhaften Ergebnis. Ihre Hinweise haben höchste Priorität.
             </p>
           </div>
 
@@ -381,7 +380,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             <Button variant="ghost" onClick={() => setPickerOpen(false)}>Abbrechen</Button>
             <Button onClick={() => runRegenerate(selectedRef)} className="gap-1.5">
               <Wand2 className="w-4 h-4" />
-              {selectedRef ? 'Mit Referenz verbessern' : 'Ohne Referenz verbessern'}
+              {selectedRef ? 'Mit gewählter Referenz neu generieren' : 'Aus Originalfoto neu generieren'}
             </Button>
           </div>
         </DialogContent>
