@@ -12,6 +12,7 @@ import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, getOwnedVehicleId, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
+import { buildRegenerationContext, saveRegenerationContext } from '@/lib/regeneration-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { checkPipelineStart, markPipelineStarted, markPipelineFinished } from '@/lib/pipeline-start-guard';
 import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode, type GenerationStage } from '@/lib/generation-log';
@@ -854,6 +855,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (e) {
           console.warn('[pipeline] ensureVehicleAuto failed:', e);
         }
+      }
+
+      // Look/Showroom dieses Laufs sichern, damit „Neu generieren" denselben Serien-Look nutzt.
+      if (resolvedVehicleId) {
+        void saveRegenerationContext(resolvedVehicleId, buildRegenerationContext({
+          remasterConfig: cfg.remasterConfig,
+          classContext: cfg.classContext ?? null,
+          vehicleDescription: cfg.vehicleDescription,
+          modelTier: cfg.modelTier,
+          resolvedManufacturerLogoUrl: cfg.resolvedManufacturerLogoUrl,
+        })).catch(e => console.warn('[pipeline] save regeneration context skipped:', e));
       }
 
       // Originale im Hintergrund sichern – blockiert den Generierungsstart nicht mehr.
