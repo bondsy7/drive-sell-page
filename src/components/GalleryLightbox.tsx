@@ -1,3 +1,4 @@
+import { resolveRegenerationSeed, buildMandatoryCorrection } from '@/lib/regeneration-seed';
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -321,7 +322,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Perspektive und Bildausschnitt bleiben gleich – nur Details werden verbessert.
+              Das Bild wird neu aus dem Originalfoto erzeugt – nie aus dem fehlerhaften Ergebnis. Ihre Hinweise haben höchste Priorität.
             </p>
           </div>
 
@@ -379,7 +380,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             <Button variant="ghost" onClick={() => setPickerOpen(false)}>Abbrechen</Button>
             <Button onClick={() => runRegenerate(selectedRef)} className="gap-1.5">
               <Wand2 className="w-4 h-4" />
-              {selectedRef ? 'Mit Referenz verbessern' : 'Ohne Referenz verbessern'}
+              {selectedRef ? 'Mit gewählter Referenz neu generieren' : 'Aus Originalfoto neu generieren'}
             </Button>
           </div>
         </DialogContent>
