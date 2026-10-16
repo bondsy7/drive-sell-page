@@ -24,6 +24,8 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     key: '34front',
     label: '3/4 Front links',
     icon: frontThreeQuarterIcon.url,
+    // Das Referenz-Asset zeigt die rechte Fahrzeugseite; für „3/4 Front links" gespiegelt.
+    iconFlip: true,
     capture: 'environment',
     required: true,
     aspect: '4/3',
