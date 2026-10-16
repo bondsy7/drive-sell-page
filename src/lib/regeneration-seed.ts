@@ -22,10 +22,26 @@ export function slotIndexForJob(jobKey: string | null | undefined, perspective =
   return 0;
 }
 
-/** Liest den Aufnahme-Index aus `<ts>-<idx>-original.jpg`. */
-function parseSlotIndex(name: string): number | null {
-  const m = name.match(/^\d+-(\d+)-original\./);
-  return m ? Number(m[1]) : null;
+/**
+ * Bevorzugte Slot-Keys je Perspektive (nur für Originale mit gespeicherter
+ * Rolle im Dateinamen). Reihenfolge = Priorität; empfohlene Rundgang-Fotos
+ * zuerst, wo sie die exakte Ansicht zeigen.
+ */
+export function slotRolesForJob(jobKey: string | null | undefined, perspective = ''): string[] {
+  const key = (jobKey || '').toUpperCase();
+  const p = perspective.toLowerCase();
+  if (key === 'EXT_SIDE_RIGHT' || /seite(nansicht)? rechts|beifahrerseite/.test(p)) return ['side-right'];
+  if (key === 'EXT_34_FRONT_RIGHT' || /3\/4 front rechts|3\/4 vorne rechts/.test(p)) return ['34front-right'];
+  if (key === 'EXT_34_REAR_LEFT' || /3\/4 heck links|3\/4 hinten links/.test(p)) return ['34rear'];
+  if (key === 'EXT_FRONT' || /^front(alansicht)?$|totalfront/.test(p.trim())) return ['front', '34front'];
+  if (key === 'MASTER_IMAGE') return ['34front'];
+  return [];
+}
+
+/** Liest Aufnahme-Index und optionalen Slot-Key aus `<ts>-<idx>[-<slot>]-original.jpg`. */
+function parseOriginalName(name: string): { idx: number; role: string | null } | null {
+  const m = name.match(/^\d+-(\d+)(?:-([a-z0-9-]+?))?-original\./);
+  return m ? { idx: Number(m[1]), role: m[2] || null } : null;
 }
 
 export function pickOriginalSeed(
@@ -35,10 +51,26 @@ export function pickOriginalSeed(
 ): OriginalFile | null {
   const usable = originals.filter(o => o.url);
   if (usable.length === 0) return null;
+  const parsed = usable
+    .map(o => ({ o, p: parseOriginalName(o.name) }))
+    .filter((x): x is { o: OriginalFile; p: { idx: number; role: string | null } } => x.p !== null);
+  const hasRoles = parsed.some(x => x.p.role);
+  if (hasRoles) {
+    // Neue Akten: ausschließlich über den Slot-Key zuordnen – nie über Indizes,
+    // damit z. B. „Seite rechts" nicht versehentlich das linke Foto bekommt.
+    for (const role of slotRolesForJob(jobKey, perspective)) {
+      const hit = parsed.find(x => x.p.role === role);
+      if (hit) return hit.o;
+    }
+    const legacyRole = ['34front', 'side', 'rear', 'interior-front', 'interior-rear'][slotIndexForJob(jobKey, perspective)];
+    const hit = parsed.find(x => x.p.role === legacyRole);
+    if (hit) return hit.o;
+    const front = parsed.find(x => x.p.role === '34front');
+    if (front) return front.o;
+  }
+  // Altakten ohne Rollen: historische Index-Zuordnung.
   const wanted = slotIndexForJob(jobKey, perspective);
-  const indexed = usable
-    .map(o => ({ o, idx: parseSlotIndex(o.name) }))
-    .filter((x): x is { o: OriginalFile; idx: number } => x.idx !== null);
+  const indexed = parsed.filter(x => !x.p.role).map(x => ({ o: x.o, idx: x.p.idx }));
   const exact = indexed.find(x => x.idx === wanted);
   if (exact) return exact.o;
   const front = indexed.find(x => x.idx === 0);
