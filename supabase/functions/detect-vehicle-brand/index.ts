@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
-import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
+import { creditErrorResponse } from "../_shared/credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,7 +91,7 @@ serve(async (req) => {
       });
     }
 
-    await chargeCredits(req, "image_analysis", { description: "Marken-Erkennung" });
+    // Marken-Erkennung beim Upload ist eine kostenlose Inklusivleistung (0 Credits).
 
     const { imageBase64, imageFileUri } = await req.json();
     if (!imageBase64 && !imageFileUri?.uri) {
@@ -145,8 +145,18 @@ serve(async (req) => {
               ],
               generationConfig: {
                 temperature: 0.1,
-                maxOutputTokens: 128,
+                maxOutputTokens: 1024,
                 responseMimeType: "application/json",
+                responseSchema: {
+                  type: "OBJECT",
+                  properties: {
+                    brand: { type: "STRING" },
+                    model: { type: "STRING" },
+                    confidence: { type: "STRING", enum: ["high", "medium", "low"] },
+                  },
+                  required: ["brand", "model", "confidence"],
+                },
+                thinkingConfig: { thinkingBudget: 0 },
               },
             }),
           });
