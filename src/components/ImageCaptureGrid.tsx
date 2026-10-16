@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { useVinLookup } from '@/hooks/useVinLookup';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
+import VehicleBrandPicker from '@/components/VehicleBrandPicker';
+import { Dialog as BrandDialog, DialogContent as BrandDialogContent, DialogHeader as BrandDialogHeader, DialogTitle as BrandDialogTitle } from '@/components/ui/dialog';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
@@ -294,6 +296,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
+  const [brandEditOpen, setBrandEditOpen] = useState(false);
   const [detailImages, setDetailImages] = useState<string[]>([]);
   const detailFileRef = useRef<HTMLInputElement | null>(null);
   /** Dedizierte Felgenreferenz – bewusst eigener State, NICHT detailImages. */
@@ -595,12 +598,15 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         const resolvedAiBrand = !aiError && aiResult?.brand && aiResult.confidence !== 'low' ? resolveBrandFromSource(aiResult.brand) : null;
         if (resolvedAiBrand) {
           setBrandDetectionStatus('found');
-          const resolvedModel = aiResult.model ? resolveModelForBrand(resolvedAiBrand, aiResult.model) : '';
+          // Bilderkennung liefert nur noch die Marke – Modelle werden zu oft verwechselt (z. B. Raval/Born).
           patchVehicleData((current) => ({
             ...current,
-            vehicle: { ...current.vehicle, brand: resolvedAiBrand, model: resolvedModel || current.vehicle.model },
+            vehicle: { ...current.vehicle, brand: resolvedAiBrand },
           }));
-          toast.success(`Fahrzeug per Bild erkannt: ${resolvedAiBrand}${resolvedModel ? ` ${resolvedModel}` : ''}`);
+          toast.success(`Marke per Bild erkannt: ${resolvedAiBrand}`, {
+            duration: 10000,
+            action: { label: 'Ändern', onClick: () => setBrandEditOpen(true) },
+          });
         } else {
           brandDetectionAttempted.current = false;
           setBrandDetectionStatus('not-found');
