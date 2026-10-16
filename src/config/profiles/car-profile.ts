@@ -99,7 +99,6 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     key: 'side-right',
     label: 'Seite rechts',
     icon: sideIcon.url,
-    iconFlip: true,
     capture: 'environment',
     required: false,
     recommended: true,
