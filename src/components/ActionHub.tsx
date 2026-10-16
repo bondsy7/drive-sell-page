@@ -52,7 +52,7 @@ const TILE_MODULE_KEY: Partial<Record<HubAction, ModuleKey>> = {
 const TILES: ActionTile[] = [
   { id: 'photos', icon: <Camera />, title: 'Fotos & Remastering', description: 'Fahrzeugfotos aufnehmen oder hochladen und als professionelle Showroom-Bilder aufbereiten.', group: 'fahrzeugbilder', image: photoAsset.url, cta: 'Fotos starten' },
   { id: 'studio', icon: <Zap />, title: 'One-Shot Studio', description: 'Fahrzeugfotos, komplettes Bilderset, Banner und Video in einem Durchgang.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url, cta: 'Studio öffnen' },
-  { id: 'background-swap', icon: <Scissors />, title: 'Freisteller & Showroom', description: 'Fahrzeug freistellen und auf Showroom, eigenen Hintergrund, Farbe oder KI-Szene setzen.', group: 'fahrzeugbilder', badge: 'Neu', image: cityAsset.url },
+  { id: 'background-swap', icon: <Scissors />, title: 'Freisteller & Showroom', description: 'Original-Fahrzeug freistellen und auf Showroom, eigenen Hintergrund, Farbe oder KI-Szene setzen.', group: 'fahrzeugbilder', badge: 'Neu', image: cityAsset.url },
   { id: 'spin360', icon: <RotateCw />, title: '360° Spin', description: 'Aus vier oder mehr Fahrzeugfotos einen interaktiven Rundumblick mit 48 Bildern erzeugen.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url },
   { id: 'banner', icon: <Image />, title: 'Banner Generator', description: 'Werbebanner für soziale Medien und Anzeigen aus Fahrzeugdaten erstellen.', group: 'werbung', image: marketingAsset.url },
   { id: 'canvas-banner-studio', icon: <Layout />, title: 'Banner Studio', description: 'Banner in mehreren Formaten mit editierbaren Texten, Logos und Pflichtangaben gestalten.', group: 'werbung', badge: 'Neu' },
