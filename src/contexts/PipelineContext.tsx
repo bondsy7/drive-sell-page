@@ -878,13 +878,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             ...normalOriginals,
             ...(cfg.wheelReference?.image ? [cfg.wheelReference.image] : []),
           ];
+          const originalRoles = (cfg.originalImages?.length || cfg.inputImages?.length)
+            ? normalOriginals.map((_, i) => cfg.referenceRoles?.[i])
+            : [];
           if (originals.length > 0) {
             const { data: existing } = await supabase.storage
               .from('originals')
               .list(`${cfg.userId}/${resolvedVehicleId}`, { limit: 1 });
             const hasAny = (existing || []).some(f => f.name && !f.name.startsWith('.'));
             if (!hasAny) {
-              const uploaded = await uploadOriginalsToVehicle(cfg.userId, resolvedVehicleId, originals);
+              const uploaded = await uploadOriginalsToVehicle(cfg.userId, resolvedVehicleId, originals, originalRoles);
               console.log(`[pipeline] originals persisted: ${uploaded}/${originals.length}`);
               if (uploaded > 0) {
                 queryClient.invalidateQueries({ queryKey: ['vehicle-originals', resolvedVehicleId] });

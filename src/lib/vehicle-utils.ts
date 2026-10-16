@@ -238,6 +238,8 @@ export async function uploadOriginalsToVehicle(
   userId: string,
   vehicleId: string,
   originalsBase64: string[],
+  /** Optionaler Slot-Key je Original (z. B. `side-right`) – landet im Dateinamen. */
+  roles?: (string | undefined)[],
 ): Promise<number> {
   if (!userId || !vehicleId || !originalsBase64?.length) return 0;
   const prefix = `${userId}/${vehicleId}`;
@@ -249,7 +251,10 @@ export async function uploadOriginalsToVehicle(
       const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
       const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: contentType });
-      const path = `${prefix}/${Date.now()}-${idx}-original.jpg`;
+      const role = (roles?.[idx] || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const path = role
+        ? `${prefix}/${Date.now()}-${idx}-${role}-original.jpg`
+        : `${prefix}/${Date.now()}-${idx}-original.jpg`;
       const { error } = await supabase.storage
         .from('originals')
         .upload(path, blob, { contentType, upsert: false });
