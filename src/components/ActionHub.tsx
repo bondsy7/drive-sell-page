@@ -9,7 +9,7 @@ import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
 import { cn } from '@/lib/utils';
 import beforeAsset from '@/assets/funnel/before.webp.asset.json';
 import afterAsset from '@/assets/funnel/after1.webp.asset.json';
-import photoAsset from '@/assets/foto-aufnehmen.webp.asset.json';
+import photoAsset from '@/assets/showroom-glanz.webp.asset.json';
 import marketingAsset from '@/assets/marketing-formate.webp.asset.json';
 import backgroundSwapAsset from '@/assets/hintergrund-1.jpg.asset.json';
 import { useAuto3Config } from '@/hooks/useAuto3Config';
