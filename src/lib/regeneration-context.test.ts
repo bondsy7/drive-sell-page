@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene, REGEN_CONTEXT_KEY } from './regeneration-context';
+import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene, pickSeriesEnvironmentImage, REGEN_CONTEXT_KEY } from './regeneration-context';
 
 describe('regeneration context', () => {
   it('restores the saved scene of the original run', () => {
@@ -9,8 +9,12 @@ describe('regeneration context', () => {
     expect(cfg.licensePlate).toBe('remove');
     expect(cfg.showManufacturerLogo).toBe(true);
   });
-  it('falls back to the dealer showroom when nothing was saved', () => {
-    expect(restoreRemasterConfig(null, 'https://x/s.jpg').scene).toBe('custom-showroom');
+  it('never uses the profile showroom for legacy vehicles; uses a series image instead', () => {
+    expect(pickSeriesEnvironmentImage([
+      { id: 'a', src: 'grid.jpg', perspective: 'Interieur-Grid' },
+      { id: 'b', src: 'front.jpg', perspective: '3/4 Front' },
+    ], 'a')).toBe('front.jpg');
+    expect(restoreRemasterConfig(null, null).scene).toBe('none');
   });
   it('resolves the showroom image for custom and built-in scenes', () => {
     expect(showroomUrlForScene('custom-showroom', 'https://x/s.jpg')).toBe('https://x/s.jpg');

@@ -77,12 +77,30 @@ export function showroomUrlForScene(scene: string, profileShowroomUrl: string | 
   return opt?.reference ?? null;
 }
 
-/** Restores a RemasterConfig; without saved context the dealer showroom (if any) is the default. */
+/**
+ * Legacy vehicles (no saved context): another generated image of the SAME series
+ * serves only as environment reference, so the regenerated image keeps the
+ * showroom actually used — never the dealer's profile showroom.
+ */
+export function pickSeriesEnvironmentImage(
+  images: { id: string; src: string; perspective?: string | null }[],
+  currentId: string,
+): string | null {
+  const others = images.filter(i => i.id !== currentId && !!i.src);
+  const exterior = others.find(i => !/interi|innen|cockpit|dashboard|grid|sitz|seat/i.test(i.perspective || ''));
+  return (exterior ?? others[0])?.src ?? null;
+}
+
+/**
+ * Restores a RemasterConfig from the saved run. Without saved context, a series
+ * environment image (if any) is used as showroom reference; the profile showroom
+ * is NEVER used unless the original run selected it.
+ */
 export function restoreRemasterConfig(
   ctx: RegenerationContext | null,
-  profileShowroomUrl: string | null,
+  seriesEnvironmentUrl: string | null,
 ): RemasterConfig {
-  const scene = ctx?.scene ?? (profileShowroomUrl ? 'custom-showroom' : 'none');
+  const scene = ctx?.scene ?? (seriesEnvironmentUrl ? 'custom-showroom' : 'none');
   return {
     scene,
     licensePlate: ctx?.licensePlate ?? 'keep',

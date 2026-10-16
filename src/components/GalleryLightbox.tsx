@@ -183,8 +183,11 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       ]);
       const ctx = readRegenerationContext((vRow as any)?.vehicle_data);
       const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
-      const config = restoreRemasterConfig(ctx, profileShowroomUrl);
-      const showroomUrl = showroomUrlForScene(config.scene, profileShowroomUrl);
+      // Profil-Showroom NUR, wenn er beim ursprünglichen Lauf ausgewählt war (scene=custom-showroom).
+      // Ohne gespeicherte Einstellungen: Umgebung aus einem anderen Bild derselben Serie übernehmen.
+      const seriesEnvUrl = ctx ? null : pickSeriesEnvironmentImage(images, current.id);
+      const config = restoreRemasterConfig(ctx, seriesEnvUrl);
+      const showroomUrl = ctx ? showroomUrlForScene(config.scene, profileShowroomUrl) : seriesEnvUrl;
       const customShowroomBase64 = showroomUrl ? await ensureCachedBase64(showroomUrl).catch(() => null) : null;
       const isInterior = pipelineJob?.category === 'interior';
       const interiorSlotKey = isInterior
