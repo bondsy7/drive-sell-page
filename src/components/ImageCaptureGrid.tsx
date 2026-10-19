@@ -1016,6 +1016,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     capturedVehicleImages.every(s => captures[s.key].status === 'done' || captures[s.key].status === 'error') &&
     !isProcessing;
 
+  // „Wechsel zum Freisteller" erst zeigen, wenn mindestens ein Bild remastert wurde.
+  const hasRemasteredImage = remasterSlots.some(
+    s => captures[s.key]?.status === 'done' && !!captures[s.key]?.remasteredBase64,
+  );
+
   // Collect all captured base64 images for pipeline input
   // Array-Reihenfolge = Datenreihenfolge: Kern-Slots zuerst, empfohlene
   // Referenzen angehängt – so bleiben historische Indizes stabil.
