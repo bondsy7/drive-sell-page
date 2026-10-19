@@ -3,6 +3,9 @@ import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { DEKRA_LOGO_BASE64, DEKRA_LOGO_MIME } from "../_shared/dekra-logo.ts";
+import { resolveRemasterCost } from "../_shared/remaster-cost.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
+import { validateGalleryTarget, verifyGalleryOwnership, persistRemasterGallery } from "../_shared/remaster-gallery.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -547,15 +550,13 @@ serve(async (req) => {
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
     const TIER_ALIASES: Record<string, string> = { standard: 'qualitaet', pro: 'premium' };
-    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8, flare: 8, sunburst: 8, nb21: 3 };
     const requestedTier = typeof modelTier === 'string' ? modelTier : 'schnell';
     const tier = TIER_ALIASES[requestedTier] || requestedTier;
-    let cost = REMASTER_DEFAULTS[tier] ?? 2;
+    let cost = resolveRemasterCost({}, tier);
     try {
       const adminSb = createServiceClient();
       const { data: costData } = await adminSb.from("admin_settings").select("value").eq("key", "credit_costs").single();
-      const configuredCost = (costData?.value as Record<string, Record<string, number>>)?.["image_remaster"]?.[tier];
-      if (typeof configuredCost === 'number') cost = configuredCost;
+      cost = resolveRemasterCost((costData?.value || {}) as Record<string, Record<string, number>>, tier);
     } catch {}
     // Vor der Credit-Abbuchung prüfen, damit ein fehlerhafter Request nichts kostet.
     // ── Nano Banana 2.1: getrennter Pfad (nur Tier nb21 + Version nb21-v1) ──
@@ -577,6 +578,18 @@ serve(async (req) => {
         );
       }
     }
+
+    // Validate ownership BEFORE charging. Opt-in keeps pipeline/regeneration
+    // persistence unchanged. Save before response, even if the browser closes.
+    const rawGallerySave = JSON.parse(bodyText).gallerySave;
+    const galleryTarget = rawGallerySave ? validateGalleryTarget(rawGallerySave) : null;
+    const galleryAuth = galleryTarget ? await authenticateRequest(req) : null;
+    if (galleryTarget && galleryAuth) await verifyGalleryOwnership(galleryAuth.supabase, galleryAuth.user.id, galleryTarget);
+    const savedDelivery = async (image: string) => {
+      if (!galleryTarget || !galleryAuth) return {};
+      const saved = await persistRemasterGallery(galleryAuth.supabase, galleryAuth.user.id, galleryTarget, image);
+      return { savedImageId: saved.id, savedImageUrl: saved.imageUrl };
+    };
 
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
@@ -1289,7 +1302,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         measurement_status: measurementStatus,
       });
       return new Response(
-        JSON.stringify({ imageBase64: `data:image/png;base64,${b64}`, engine: 'openai', model: engineConfig.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }),
+        JSON.stringify({ imageBase64: `data:image/png;base64,${b64}`, ...await savedDelivery(`data:image/png;base64,${b64}`), engine: 'openai', model: engineConfig.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -1459,7 +1472,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
       if (!resultImage) throw new Error(lastError || 'OpenAI: Kein Bild generiert.');
 
-      return new Response(JSON.stringify({ imageBase64: resultImage, engine: 'openai', model: engineConfig.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
+      return new Response(JSON.stringify({ imageBase64: resultImage, ...await savedDelivery(resultImage), engine: 'openai', model: engineConfig.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -1617,7 +1630,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
       try { (globalThis as any).EdgeRuntime?.waitUntil?.(bgCheck); } catch { /* ignore */ }
     }
 
-    return new Response(JSON.stringify({ imageBase64: resultImage, ...(wheelCheck ? { wheelCheck } : {}), engine: diag.engine, model: diag.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
+    return new Response(JSON.stringify({ imageBase64: resultImage, ...await savedDelivery(resultImage), ...(wheelCheck ? { wheelCheck } : {}), engine: diag.engine, model: diag.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
