@@ -37,7 +37,7 @@ const MODE_OPTIONS: { value: BackgroundMode; label: string; icon: React.ReactNod
   { value: 'template', label: 'Vorlage', icon: <Layers className="w-4 h-4" />, hint: 'Fertige Szene wählen' },
   { value: 'upload', label: 'Eigenes Bild', icon: <ImageIcon className="w-4 h-4" />, hint: 'Eigener Hintergrund' },
   { value: 'color', label: 'Farbe', icon: <Palette className="w-4 h-4" />, hint: 'Einfarbige Fläche' },
-  { value: 'transparent', label: 'Transparent', icon: <Scissors className="w-4 h-4" />, hint: 'Freigestelltes PNG' },
+  { value: 'transparent', label: 'Freistellen', icon: <Scissors className="w-4 h-4" />, hint: 'Freigestelltes PNG' },
   { value: 'ai', label: 'KI-Hintergrund', icon: <Sparkles className="w-4 h-4" />, hint: 'Szene per Prompt' },
 ];
 
