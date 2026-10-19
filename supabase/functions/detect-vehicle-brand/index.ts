@@ -157,7 +157,7 @@ serve(async (req) => {
                 temperature: 0.1,
                 maxOutputTokens: 1024,
                 responseMimeType: "application/json",
-                responseSchema: {
+                ...(attempt < MAX_RETRIES ? { responseSchema: {
                   type: "OBJECT",
                   properties: {
                     brand: { type: "STRING" },
@@ -165,8 +165,8 @@ serve(async (req) => {
                     confidence: { type: "STRING", enum: ["high", "medium", "low"] },
                   },
                   required: ["brand", "model", "confidence"],
-                },
-                thinkingConfig: { thinkingBudget: 0 },
+                } } : {}),
+                ...(attempt < MAX_RETRIES ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
               },
             }),
           });
@@ -211,8 +211,10 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ error: lastError }), {
-      status: 500,
+    // Erkennung ist optional: bei anhaltendem Anbieterfehler kein 500, sondern leeres Ergebnis.
+    console.error("detect-vehicle-brand unavailable:", lastError);
+    return new Response(JSON.stringify({ brand: "", model: "", confidence: "low", unavailable: true }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
