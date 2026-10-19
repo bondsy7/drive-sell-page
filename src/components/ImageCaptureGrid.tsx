@@ -1,6 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon, ChevronDown, ChevronRight, Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Scissors } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { setFreistellerHandoff } from '@/lib/freisteller-handoff';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -291,6 +295,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const ensureVehiclePromiseRef = useRef<Promise<string | null> | null>(null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
+  const [switchFreistellerOpen, setSwitchFreistellerOpen] = useState(false);
+  const navigateRouter = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
@@ -1684,6 +1690,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </Button>
             )}
+            {capturedVehicleImages.length > 0 && (
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setSwitchFreistellerOpen(true)} disabled={isProcessing}>
+                <Scissors className="w-4 h-4 mr-1" /> Wechsel zum Freisteller
+              </Button>
+            )}
             <div className="flex items-center justify-between gap-3 text-[10px] leading-snug text-muted-foreground">
               <span>Geschätzter Verbrauch: 1 Credit</span>
               <span>Der tatsächliche Verbrauch kann abweichen.</span>
@@ -1707,7 +1718,34 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           </div>
           <div className="flex-1">{primaryAction}</div>
         </div>
+        {capturedVehicleImages.length > 0 && (
+          <Button variant="outline" size="sm" className="mx-auto mt-2 flex w-full max-w-6xl" onClick={() => setSwitchFreistellerOpen(true)} disabled={isProcessing}>
+            <Scissors className="w-4 h-4 mr-1" /> Wechsel zum Freisteller
+          </Button>
+        )}
       </div>
+
+      <AlertDialog open={switchFreistellerOpen} onOpenChange={setSwitchFreistellerOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Zum Freisteller wechseln?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchtest du wirklich zum Freisteller & Showroom wechseln? Bereits remasterte Bilder dieses Durchlaufs gehen dabei verloren. Deine Originalfotos werden direkt in die passenden Felder übernommen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setFreistellerHandoff(
+                Object.entries(captures)
+                  .filter(([key]) => !key.toLowerCase().includes('vin'))
+                  .map(([slotKey, c]) => ({ slotKey, base64: c.base64 })),
+              );
+              navigateRouter('/generator/background-swap');
+            }}>Ja, zum Freisteller wechseln</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* VIN Data Dialog */}
       {vehicleData && (
