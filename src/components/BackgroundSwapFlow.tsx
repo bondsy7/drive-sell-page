@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { takeFreistellerHandoff } from '@/lib/freisteller-handoff';
 import {
   Upload, X, Loader2, Check, ArrowLeft, Scissors, Download, ImageIcon,
   Palette, Sparkles, Layers, RotateCcw, ZoomIn, Images,
@@ -44,7 +45,11 @@ const MODE_OPTIONS: { value: BackgroundMode; label: string; icon: React.ReactNod
 ];
 
 const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onComplete }) => {
-  const [images, setImages] = useState<SwapImage[]>([]);
+  const [images, setImages] = useState<SwapImage[]>(() =>
+    takeFreistellerHandoff().slice(0, MAX_IMAGES).map((h) => ({
+      id: crypto.randomUUID(), slotKey: h.slotKey, originalBase64: h.base64, resultBase64: null, status: 'pending' as const,
+    })),
+  );
   const [mode, setMode] = useState<BackgroundMode>('template');
   const [templateId, setTemplateId] = useState(BACKGROUND_TEMPLATES[0].id);
   const [customBg, setCustomBg] = useState<string | null>(null);
