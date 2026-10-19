@@ -69,7 +69,7 @@ export default function BackgroundSwapUploadGrid({
                   selectedSlot.current = slot.key;
                   inputRef.current?.click();
                 }}
-                className="flex h-auto w-full flex-col gap-0 overflow-hidden rounded-lg border-dashed p-0 text-foreground"
+                className="flex h-auto w-full flex-col gap-0 overflow-hidden rounded-lg border-dashed p-0 text-foreground hover:border-solid hover:border-input hover:bg-background hover:text-foreground"
               >
                 <div className="relative flex aspect-[4/3] w-full items-center justify-center bg-muted/30">
                   <img
