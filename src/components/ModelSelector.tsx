@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useCredits } from '@/hooks/useCredits';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun } from 'lucide-react';
+import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun, Banana } from 'lucide-react';
 
-export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst';
+export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst' | 'nb21';
 
 interface ModelSelectorProps {
   actionType: string;
@@ -15,6 +15,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
   { id: 'schnell', label: 'Schnell', sublabel: 'schnell & günstig', icon: <Zap className="w-3 h-3" />, group: 'A' },
   { id: 'qualitaet', label: 'Qualität', sublabel: 'ausgewogen', icon: <Sparkles className="w-3 h-3" />, group: 'A' },
   { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" />, group: 'A' },
+  { id: 'nb21', label: 'NB 2.1 (Test)', sublabel: 'Nano Banana 2.1', icon: <Banana className="w-3 h-3" />, group: 'A' },
   { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" />, group: 'B' },
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
@@ -23,7 +24,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
 ];
 
 // OpenAI-Testmodelle: aktuell nur für Admins sichtbar/änderbar
-export const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst'];
+export const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst', 'nb21'];
 
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();
