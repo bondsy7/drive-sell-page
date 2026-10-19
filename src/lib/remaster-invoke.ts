@@ -2,8 +2,11 @@ import { supabase } from '@/integrations/supabase/client';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import type { WheelAnalysis } from '@/types/wheel-reference';
 import type { OpenAIFileRef } from '@/lib/openai-file-upload';
+import type { RemasterGalleryTarget } from '../../supabase/functions/_shared/remaster-gallery';
 
 export interface RemasterInvokePayload {
+  /** Capture results are saved server-side before a successful response. */
+  gallerySave?: RemasterGalleryTarget;
   /** Optional: omitted whenever an OpenAI file id carries the same asset. */
   imageBase64?: string | null;
   /** Neutral perspective role of the primary vehicle reference (never brand/model text). */
