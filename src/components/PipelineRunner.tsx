@@ -14,6 +14,8 @@ import { useCredits } from '@/hooks/useCredits';
 import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { getVehicleClassProfile } from '@/config/vehicle-classes';
+import { resolveCaptureSlots } from '@/config/resolve-slots';
+import { remasterPerspectives, unsavedRemasterInputs } from '@/lib/remaster-results';
 import { toast } from 'sonner';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import { PIPELINE_CREDIT_COST_PER_IMAGE } from '@/lib/auto3-oneshot';
@@ -38,6 +40,7 @@ import { checkPipelineStart } from '@/lib/pipeline-start-guard';
 interface PipelineRunnerProps {
   inputImages: string[];
   referenceRoles?: string[];
+  savedInputIds?: (string | undefined)[];
   originalImages?: string[];
   additionalImages?: string[];
   /** Dedizierte Felgenreferenz (getrennt vom allgemeinen Multiupload). */
@@ -62,6 +65,7 @@ const CREDIT_COST_PER_IMAGE = PIPELINE_CREDIT_COST_PER_IMAGE;
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
   referenceRoles,
+  savedInputIds,
   originalImages,
   additionalImages,
   wheelReference,
@@ -269,7 +273,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     inputImagesSavedRef.current = true;
     const folderName = getGalleryFolderName(vin);
     try {
-      const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
+      const slots = resolveCaptureSlots(getVehicleClassProfile(classContext?.vehicleClass || 'car'), classContext);
+      const perspectives = remasterPerspectives(slots, referenceRoles || slots.filter(s => !s.isVin && !s.referenceOnly).map(s => s.key));
       const { data: existing } = await supabase
         .from('project_images')
         .select('perspective')
@@ -278,8 +283,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         .in('perspective', perspectives.slice(0, inputImages.length));
       const existingPerspectives = new Set((existing || []).map(row => row.perspective));
       // Empfohlene Rundgang-Referenzen sind reine Eingaben: nie in die Galerie.
-      const pending = inputImages
-        .map((image, index) => ({ image, index, perspective: perspectives[index] || `Bild ${index + 1}` }))
+      const pending = unsavedRemasterInputs(inputImages, savedInputIds)
+        .map(({ item: image, index }) => ({ image, index, perspective: perspectives[index] || `Bild ${index + 1}` }))
         .filter(item => !REFERENCE_ONLY_SLOT_KEYS.has(referenceRoles?.[item.index] || ''))
         .filter(item => !existingPerspectives.has(item.perspective));
       const rows = [];
@@ -299,7 +304,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           gallery_folder: folderName,
         });
       }
-      if (rows.length > 0) await supabase.from('project_images').insert(rows as any);
+      if (rows.length > 0) {
+        const { error } = await supabase.from('project_images').insert(rows as any);
+        if (error) throw error;
+      }
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
       if (vehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', vehicleId] });
       if (projectId && rows[0]?.image_url) {
@@ -310,7 +318,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       console.error('Error saving remastered images:', e);
       throw e;
     }
-  }, [user, inputImages, referenceRoles, vin, projectId, vehicleId, queryClient]);
+  }, [user, inputImages, referenceRoles, savedInputIds, classContext, vin, projectId, vehicleId, queryClient]);
 
   /* ─── Retry job (delegates to context) ─── */
   const retryJob = useCallback(async (jobKey: string) => {
