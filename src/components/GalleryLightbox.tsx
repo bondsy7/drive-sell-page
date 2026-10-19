@@ -21,6 +21,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
 import { ALL_PIPELINE_JOBS, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
+import { buildNb21PipelinePrompt, buildNb21RemasterPrompt, resolveRegenerationPromptVersion, NB21_TIER } from '@/prompts/nb21';
 import { ensureCachedBase64 } from '@/lib/image-base64-cache';
 import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene, pickSeriesEnvironmentImage } from '@/lib/regeneration-context';
 import { downloadMediaFile } from '@/lib/download-file';
@@ -211,12 +212,30 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         : `Remaster the provided real vehicle photo${current.perspective ? ` as: ${current.perspective}` : ''}.`;
       const dynamicPrompt = `${correction}${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${perspectiveInstruction}\n\n${sourceRule}`;
 
+      // Nano Banana 2.1: Läufe mit gespeicherter Version nb21-v1 werden wieder über
+      // den 2.1-Pfad gebaut. Alte Läufe ohne Version bleiben auf ihrem 2.0-Pfad.
+      const nb21Version = resolveRegenerationPromptVersion(ctx);
+      let nb21Prompt: string | null = null;
+      if (nb21Version) {
+        const nb21Refs = {
+          primaryRole: current.perspective || pipelineJob?.labelDe || 'overall vehicle photo',
+          hasEnvironmentReference: !!customShowroomBase64,
+          hasManufacturerLogo: !!config.showManufacturerLogo,
+          hasDealerLogo: !!config.showDealerLogo,
+        };
+        const nb21Correction = extraPrompt.trim() || undefined;
+        nb21Prompt = pipelineJob
+          ? buildNb21PipelinePrompt({ job: pipelineJob, config: { ...config, customShowroomBase64 }, vehicleDescription, classContext: ctx?.classContext ?? null, references: nb21Refs, correction: nb21Correction, regenerationFromOriginal: true })
+          : buildNb21RemasterPrompt({ config: { ...config, customShowroomBase64 }, slotKey: interiorSlotKey ?? 'as-photographed', vehicleDescription, classContext: ctx?.classContext ?? null, references: nb21Refs, correction: nb21Correction });
+      }
+
       const { data, error } = await invokeRemasterVehicleImage({
         classContext: ctx?.classContext ?? null,
         imageBase64: mainBase64,
         vehicleDescription,
-        modelTier: ctx?.modelTier || 'standard',
-        dynamicPrompt,
+        modelTier: nb21Version ? NB21_TIER : (ctx?.modelTier || 'standard'),
+        dynamicPrompt: nb21Prompt ?? dynamicPrompt,
+        ...(nb21Version ? { promptVersion: nb21Version } : {}),
         customShowroomBase64,
         customPlateImageBase64: null,
         dealerLogoUrl: config.showDealerLogo ? (config.dealerLogoUrl ?? null) : null,

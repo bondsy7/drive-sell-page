@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
+import { buildNb21PipelinePrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
 import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
@@ -614,6 +615,29 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const mfgLogoFileUri = cfg.remasterConfig.showManufacturerLogo ? fileUriCache.manufacturerLogo : null;
     const dealerLogoFileUri2 = cfg.remasterConfig.showDealerLogo ? fileUriCache.dealerLogo : null;
 
+    // Nano Banana 2.1: getrennter Prompt-Pfad (nur Tier nb21). Referenzauswahl,
+    // Reihenfolge und Uploads oben bleiben identisch; 2.1 benennt nur die Rollen.
+    const useNb21 = isNb21Tier(cfg.modelTier);
+    let nb21Prompt: string | null = null;
+    if (useNb21) {
+      if (!job) throw new Error('NB21: Pipeline-Job fehlt – keine Rückfalllösung auf 2.0.');
+      nb21Prompt = buildNb21PipelinePrompt({
+        job,
+        config: { ...cfg.remasterConfig, wheelReference: needsWheel ? wheelReference : null },
+        vehicleDescription: cfg.vehicleDescription,
+        classContext: cfg.classContext ?? null,
+        references: {
+          primaryRole: primaryReferenceRole,
+          supportingRoles: [...(additionalFileUriRoles ?? []), ...(additionalImageRoles ?? [])],
+          hasWheelReference: needsWheel,
+          hasEnvironmentReference: !!(fileCache.showroom || showroomBase64ForRequest),
+          hasPlateReference: !isInteriorJob && !!(plateFileUri || cfg.remasterConfig.customPlateImageBase64),
+          hasManufacturerLogo: !!cfg.remasterConfig.showManufacturerLogo,
+          hasDealerLogo: !!cfg.remasterConfig.showDealerLogo,
+        },
+      });
+    }
+
     const { data, error } = await invokeRemasterVehicleImage({
       classContext: cfg.classContext ?? null,
       imageBase64: (mainImageOpenAIFile || mainImageFileUri) ? null : primaryReference,
@@ -628,7 +652,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       wheelReferenceAnalysis: needsWheel ? (wheelReference!.analysis ?? null) : null,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
-      dynamicPrompt: fullPrompt,
+      dynamicPrompt: useNb21 ? nb21Prompt! : fullPrompt,
+      ...(useNb21 ? { promptVersion: NB21_PROMPT_VERSION } : {}),
       customShowroomBase64: (hasFileUris || openAICache.showroom) ? null : showroomBase64ForRequest,
       customShowroomFileUri: fileCache.showroom || null,
       customPlateImageBase64: (plateFileUri || (!isInteriorJob && openAICache.plate)) ? null : (isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null)),
@@ -892,6 +917,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           classContext: cfg.classContext ?? null,
           vehicleDescription: cfg.vehicleDescription,
           modelTier: cfg.modelTier,
+          promptVersion: isNb21Tier(cfg.modelTier) ? NB21_PROMPT_VERSION : undefined,
           resolvedManufacturerLogoUrl: cfg.resolvedManufacturerLogoUrl,
         })).catch(e => console.warn('[pipeline] save regeneration context skipped:', e));
       }

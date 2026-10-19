@@ -11,6 +11,8 @@ export interface RemasterInvokePayload {
   vehicleDescription?: string;
   modelTier?: string;
   dynamicPrompt?: string;
+  /** Nur für Tier nb21: 'nb21-v1'. Fehlt bei allen 2.0-Tiers. */
+  promptVersion?: string;
   /**
    * Verbindlicher Fahrzeugklassen-Kontext. Fehlt er, behandelt die Edge Function
    * den Request als 'car' (Rückwärtskompatibilität für Altdaten).

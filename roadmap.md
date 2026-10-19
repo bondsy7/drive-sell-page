@@ -155,3 +155,5 @@
 ## Freisteller & Showroom: Upload-Perspektiven
 - [x] Einzelnes Upload-Feld durch optionale Perspektiv-Kacheln ersetzen; jedes Foto eigenständig bearbeiten, Start ab einem Foto
 - [x] Hintergrund-Auswahl und Verarbeitung unverändert erhalten; Upload, Austausch und Entfernung geprüft (7 Tests, angemeldete Vorschau; keine kostenpflichtige Verarbeitung gestartet)
+
+- [x] Nano Banana 2.1 als getrennten Prompt-Pfad (nb21-v1) für Remastering und alle Pipeline-Ansichten ergänzen; 2.0 unverändert

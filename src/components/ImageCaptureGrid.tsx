@@ -16,6 +16,7 @@ import { Dialog as BrandDialog, DialogContent as BrandDialogContent, DialogHeade
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
+import { buildNb21RemasterPrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
@@ -857,8 +858,18 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       console.log(`[Remaster][wheel] slot=${slot.key} wheelAssetAvailable=${!!effectiveWheelRef} derived=${!!effectiveWheelRef?.derived} routed=${!!slotWheelRef}`);
       const slotConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features };
       // Build per-slot prompt with perspective-specific instructions
-      let dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
-      if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
+      // Nano Banana 2.1: getrennter Prompt-Pfad, alle anderen Tiers unverändert.
+      const useNb21 = isNb21Tier(modelTier);
+      let dynamicPrompt: string;
+      if (useNb21) {
+        dynamicPrompt = buildNb21RemasterPrompt({
+          config: slotConfig, slotKey: slot.key, vehicleDescription, classContext,
+          references: nb21RemasterRefs(slot.key, !!slotWheelRef),
+        });
+      } else {
+        dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
+        if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
+      }
 
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -872,6 +883,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             vehicleDescription,
             modelTier: modelTier || 'standard',
             dynamicPrompt,
+            ...(useNb21 ? { promptVersion: NB21_PROMPT_VERSION } : {}),
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
             customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
             dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
@@ -920,6 +932,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setIsProcessing(false);
   };
 
+  /** NB21: Rollen der bereits gesendeten Bilder (Reihenfolge/Upload unverändert). */
+  const nb21RemasterRefs = (slotKey: string, hasWheel: boolean) => ({
+    primaryRole: slotKey,
+    supportingRoles: detailImages.map(() => 'detail reference'),
+    hasWheelReference: hasWheel,
+    hasEnvironmentReference: !!remasterConfig.customShowroomBase64,
+    hasPlateReference: !!remasterConfig.customPlateImageBase64,
+    hasManufacturerLogo: !!remasterConfig.showManufacturerLogo,
+    hasDealerLogo: !!remasterConfig.showDealerLogo,
+  });
+
   const retrySingleSlot = async (slotKey: string) => {
     const slot = vehicleSlots.find(s => s.key === slotKey);
     if (!slot || !captures[slotKey]) return;
@@ -933,8 +956,18 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const slotIsInterior = isInteriorSlotKey(slotKey);
       const resolvedWheelRef = await resolveWheelReference(slotIsInterior ? null : captures[slotKey].base64);
       const slotWheelRef = !slotIsInterior && resolvedWheelRef?.image ? resolvedWheelRef : null;
-      let dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features }, vehicleDescription, slotKey, overrides, classContext);
-      if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
+      const retryConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features };
+      const useNb21 = isNb21Tier(modelTier);
+      let dynamicPrompt: string;
+      if (useNb21) {
+        dynamicPrompt = buildNb21RemasterPrompt({
+          config: retryConfig, slotKey, vehicleDescription, classContext,
+          references: nb21RemasterRefs(slotKey, !!slotWheelRef),
+        });
+      } else {
+        dynamicPrompt = buildMasterPrompt(retryConfig, vehicleDescription, slotKey, overrides, classContext);
+        if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
+      }
       const { data, error } = await invokeRemasterVehicleImage({
         classContext,
         imageBase64: captures[slotKey].base64,
@@ -944,6 +977,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         vehicleDescription,
         modelTier: modelTier || 'standard',
         dynamicPrompt,
+        ...(useNb21 ? { promptVersion: NB21_PROMPT_VERSION } : {}),
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
         dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),

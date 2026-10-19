@@ -198,6 +198,52 @@ function sanitizeVehicleDescriptionForPrompt(description?: string): string {
   return kept.join("").replace(/\s{2,}/g, " ").replace(/^[\s,;:.-]+|[\s,;:.-]+$/g, "").trim();
 }
 
+// ── Nano Banana 2.1 (separater Pfad) ── Spiegel von src/prompts/nb21/version.ts
+const NB21_TIER = "nb21";
+const NB21_PROMPT_VERSION = "nb21-v1";
+const NB21_VERSION_MARKER = `PROMPT_VERSION: ${NB21_PROMPT_VERSION}`;
+const NB21_SERVER_SLOTS = {
+  identity: "{{NB21_SERVER_IDENTITY}}",
+  perspective: "{{NB21_SERVER_PERSPECTIVE}}",
+  lighting: "{{NB21_SERVER_LIGHTING}}",
+} as const;
+
+/**
+ * Setzt die verbindlichen Server-Invarianten in die strukturierten 2.1-Abschnitte
+ * ein (statt sie wie bei 2.0 ans Ende anzuhängen). Inhaltlich identisch:
+ * Generation-Lock + Klassen-Guard → VEHICLE IDENTITY LOCK, Pkw-Seitenrichtung →
+ * PERSPECTIVE LOCK, Reflexions-/Lichtstandard → LIGHTING.
+ */
+function buildNb21ServerPrompt(
+  base: string,
+  opts: { modelGenerationLock: string; classGuard: string; vehicleClass: string },
+): string {
+  const side = base.match(/NB21_PHYSICAL_SIDE: (LEFT|RIGHT|NONE)/)?.[1] ?? "NONE";
+  const profile = /NB21_VIEW_KIND: profile/.test(base);
+  const keepScene = /NB21_SCENE: keep/.test(base);
+  const sideGuard = opts.vehicleClass === "car" && profile && side !== "NONE"
+    ? (side === "LEFT"
+      ? "SERVER SIDE CHECK: physical LEFT flank; front/hood/headlights at IMAGE LEFT, rear/taillights at IMAGE RIGHT. Never mirror or flip. Verify before returning the image."
+      : "SERVER SIDE CHECK: physical RIGHT flank; front/hood/headlights at IMAGE RIGHT, rear/taillights at IMAGE LEFT. Never mirror or flip. Verify before returning the image.")
+    : "";
+  const lighting = keepScene
+    ? "SERVER LIGHTING STANDARD: keep the photographed environment and its light direction. Improve exposure and clarity only; do not add reflections of any other scene. Tyres stay grounded as photographed."
+    : [
+      "SERVER LIGHTING STANDARD (professional automotive photograph in the NEW scene, not a pasted vehicle):",
+      "1. Remove every reflection of the source environment from paint, glass, mirrors, chrome, lamps, rims and gloss trim (trees, sky, old walls, signage, people, other cars, asphalt, text).",
+      "2. Show where the new light comes from: new light sources create physically plausible highlights on hood, roof, glass, body sides, chrome and rims.",
+      "3. Rebuild subtle reflections from the new scene only, curved with the body geometry, photorealistic.",
+      "4. Tyres touch the floor with soft contact shadows and ambient occlusion; shadow direction matches the light.",
+      "5. If any old reflection remains, regenerate that surface from the new scene before returning the image.",
+    ].join("\n");
+  const identity = [opts.modelGenerationLock, opts.classGuard].filter(Boolean).join("\n");
+  return base
+    .replace(NB21_SERVER_SLOTS.identity, identity)
+    .replace(NB21_SERVER_SLOTS.perspective, sideGuard)
+    .replace(NB21_SERVER_SLOTS.lighting, lighting)
+    .replace(/^NB21_(PHYSICAL_SIDE|VIEW_KIND|SCENE): .*\n?/gm, "");
+}
+
 function buildModelGenerationLock(vehicleDescription?: string): string {
   const metadata = typeof vehicleDescription === "string" ? vehicleDescription.trim() : "";
   const enyaqYearMatch = metadata.match(/(?:modelljahr\s*)?(20\d{2})/i);
@@ -496,7 +542,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
+    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, promptVersion, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -511,6 +557,27 @@ serve(async (req) => {
       const configuredCost = (costData?.value as Record<string, Record<string, number>>)?.["image_remaster"]?.[tier];
       if (typeof configuredCost === 'number') cost = configuredCost;
     } catch {}
+    // Vor der Credit-Abbuchung prüfen, damit ein fehlerhafter Request nichts kostet.
+    // ── Nano Banana 2.1: getrennter Pfad (nur Tier nb21 + Version nb21-v1) ──
+    // Keine stillen Fallbacks: 2.1 nie mit 2.0-Prompt, 2.0-Tiers nie mit 2.1-Prompt.
+    const isNb21Request = tier === NB21_TIER;
+    const hasNb21Marker = typeof dynamicPrompt === 'string' && dynamicPrompt.includes(NB21_VERSION_MARKER);
+    if (isNb21Request !== (promptVersion === NB21_PROMPT_VERSION) || isNb21Request !== hasNb21Marker) {
+      return new Response(
+        JSON.stringify({ error: 'Prompt-Version passt nicht zur gewählten Modellstufe (Nano Banana 2.1 benötigt nb21-v1).' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (isNb21Request) {
+      const missing = Object.values(NB21_SERVER_SLOTS).filter((slot) => (dynamicPrompt as string).split(slot).length !== 2);
+      if (missing.length > 0) {
+        return new Response(
+          JSON.stringify({ error: 'Nano-Banana-2.1-Prompt unvollständig.' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
     const costUserId = (authResult as any).userId as string | undefined;
@@ -587,7 +654,9 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
     // override supplies the dynamic prompt. This prevents catalogue-memory
     // substitution of a newer photographed facelift with an older generation.
     const modelGenerationLock = buildModelGenerationLock(vehicleDescription);
-    const prompt = `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}${carSideDirectionGuard ? `\n\n${carSideDirectionGuard}` : ''}`;
+    const prompt = isNb21Request
+      ? buildNb21ServerPrompt(basePrompt, { modelGenerationLock, classGuard, vehicleClass: ctx.vehicleClass })
+      : `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}${carSideDirectionGuard ? `\n\n${carSideDirectionGuard}` : ''}`;
     console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
     console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');

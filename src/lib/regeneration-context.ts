@@ -25,6 +25,8 @@ export interface RegenerationContext {
   classContext?: VehicleClassContext | null;
   vehicleDescription?: string;
   modelTier?: string;
+  /** Prompt-Version des Laufs ('nb21-v1' für Nano Banana 2.1; fehlt = 2.0). */
+  promptVersion?: string;
   savedAt: string;
 }
 
@@ -33,6 +35,7 @@ export function buildRegenerationContext(args: {
   classContext?: VehicleClassContext | null;
   vehicleDescription?: string;
   modelTier?: string;
+  promptVersion?: string;
   resolvedManufacturerLogoUrl?: string | null;
 }): RegenerationContext {
   const c = args.remasterConfig;
@@ -51,6 +54,7 @@ export function buildRegenerationContext(args: {
     classContext: args.classContext ?? null,
     vehicleDescription: args.vehicleDescription,
     modelTier: args.modelTier,
+    ...(args.promptVersion ? { promptVersion: args.promptVersion } : {}),
     savedAt: new Date().toISOString(),
   };
 }
