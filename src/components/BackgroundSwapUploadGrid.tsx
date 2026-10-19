@@ -4,8 +4,21 @@ import { Button } from '@/components/ui/button';
 import { CAR_CAPTURE_SLOTS } from '@/config/profiles/car-profile';
 
 // Only reuse the visual perspectives, never remastering requirements or reference roles.
-const perspectives = CAR_CAPTURE_SLOTS
-  .filter(slot => !slot.isVin)
+const rearLeft = CAR_CAPTURE_SLOTS.find(slot => slot.key === '34rear');
+const perspectives = [
+  ...CAR_CAPTURE_SLOTS.filter(slot => !slot.isVin),
+  ...(rearLeft ? [{
+    ...rearLeft,
+    key: '34rear-right',
+    label: '3/4 Heck rechts',
+    iconFlip: !rearLeft.iconFlip,
+    displayOrder: 5.5,
+    required: false,
+    recommended: false,
+    referenceOnly: false,
+    coverageTags: [],
+  }] : []),
+]
   .sort((a, b) => (a.displayOrder ?? 99) - (b.displayOrder ?? 99));
 
 interface BackgroundSwapUploadGridProps {
