@@ -932,6 +932,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setIsProcessing(false);
   };
 
+  /** NB21: Rollen der bereits gesendeten Bilder (Reihenfolge/Upload unverändert). */
+  const nb21RemasterRefs = (slotKey: string, hasWheel: boolean) => ({
+    primaryRole: slotKey,
+    supportingRoles: detailImages.map(() => 'detail reference'),
+    hasWheelReference: hasWheel,
+    hasEnvironmentReference: !!remasterConfig.customShowroomBase64,
+    hasPlateReference: !!remasterConfig.customPlateImageBase64,
+    hasManufacturerLogo: !!remasterConfig.showManufacturerLogo,
+    hasDealerLogo: !!remasterConfig.showDealerLogo,
+  });
+
   const retrySingleSlot = async (slotKey: string) => {
     const slot = vehicleSlots.find(s => s.key === slotKey);
     if (!slot || !captures[slotKey]) return;
