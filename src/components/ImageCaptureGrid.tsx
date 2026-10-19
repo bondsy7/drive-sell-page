@@ -1016,6 +1016,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     capturedVehicleImages.every(s => captures[s.key].status === 'done' || captures[s.key].status === 'error') &&
     !isProcessing;
 
+  // „Wechsel zum Freisteller" erst zeigen, wenn mindestens ein Bild remastert wurde.
+  const hasRemasteredImage = remasterSlots.some(
+    s => captures[s.key]?.status === 'done' && !!captures[s.key]?.remasteredBase64,
+  );
+
   // Collect all captured base64 images for pipeline input
   // Array-Reihenfolge = Datenreihenfolge: Kern-Slots zuerst, empfohlene
   // Referenzen angehängt – so bleiben historische Indizes stabil.
@@ -1690,8 +1695,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </Button>
             )}
-            {capturedVehicleImages.length > 0 && (
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setSwitchFreistellerOpen(true)} disabled={isProcessing}>
+            {hasRemasteredImage && !isProcessing && (
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setSwitchFreistellerOpen(true)}>
                 <Scissors className="w-4 h-4 mr-1" /> Wechsel zum Freisteller
               </Button>
             )}
@@ -1718,8 +1723,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           </div>
           <div className="flex-1">{primaryAction}</div>
         </div>
-        {capturedVehicleImages.length > 0 && (
-          <Button variant="outline" size="sm" className="mx-auto mt-2 flex w-full max-w-6xl" onClick={() => setSwitchFreistellerOpen(true)} disabled={isProcessing}>
+        {hasRemasteredImage && !isProcessing && (
+          <Button variant="outline" size="sm" className="mx-auto mt-2 flex w-full max-w-6xl" onClick={() => setSwitchFreistellerOpen(true)}>
             <Scissors className="w-4 h-4 mr-1" /> Wechsel zum Freisteller
           </Button>
         )}
