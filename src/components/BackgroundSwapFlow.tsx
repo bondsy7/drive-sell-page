@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import {
   Upload, X, Loader2, Check, ArrowLeft, Scissors, Download, ImageIcon,
-  Palette, Sparkles, Layers, RotateCcw, ZoomIn,
+  Palette, Sparkles, Layers, RotateCcw, ZoomIn, Images,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -416,8 +416,8 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
             <Button variant="outline" onClick={() => setImages((prev) => prev.map((i) => ({ ...i, status: 'pending', resultBase64: null })))}>
               <RotateCcw className="w-4 h-4 mr-2" /> Neu anwenden
             </Button>
-            <Button variant="secondary" onClick={() => onComplete(doneImages)}>
-              <Check className="w-4 h-4 mr-2" /> In Galerie speichern
+            <Button onClick={() => onComplete(doneImages)}>
+              <Images className="w-4 h-4 mr-2" /> In Galerie speichern
             </Button>
           </>
         )}
