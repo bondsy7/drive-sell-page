@@ -240,7 +240,8 @@ function buildNb21ServerPrompt(
   return base
     .replace(NB21_SERVER_SLOTS.identity, identity)
     .replace(NB21_SERVER_SLOTS.perspective, sideGuard)
-    .replace(NB21_SERVER_SLOTS.lighting, lighting);
+    .replace(NB21_SERVER_SLOTS.lighting, lighting)
+    .replace(/^NB21_(PHYSICAL_SIDE|VIEW_KIND|SCENE): .*\n?/gm, "");
 }
 
 function buildModelGenerationLock(vehicleDescription?: string): string {
@@ -556,6 +557,27 @@ serve(async (req) => {
       const configuredCost = (costData?.value as Record<string, Record<string, number>>)?.["image_remaster"]?.[tier];
       if (typeof configuredCost === 'number') cost = configuredCost;
     } catch {}
+    // Vor der Credit-Abbuchung prüfen, damit ein fehlerhafter Request nichts kostet.
+    // ── Nano Banana 2.1: getrennter Pfad (nur Tier nb21 + Version nb21-v1) ──
+    // Keine stillen Fallbacks: 2.1 nie mit 2.0-Prompt, 2.0-Tiers nie mit 2.1-Prompt.
+    const isNb21Request = tier === NB21_TIER;
+    const hasNb21Marker = typeof dynamicPrompt === 'string' && dynamicPrompt.includes(NB21_VERSION_MARKER);
+    if (isNb21Request !== (promptVersion === NB21_PROMPT_VERSION) || isNb21Request !== hasNb21Marker) {
+      return new Response(
+        JSON.stringify({ error: 'Prompt-Version passt nicht zur gewählten Modellstufe (Nano Banana 2.1 benötigt nb21-v1).' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (isNb21Request) {
+      const missing = Object.values(NB21_SERVER_SLOTS).filter((slot) => (dynamicPrompt as string).split(slot).length !== 2);
+      if (missing.length > 0) {
+        return new Response(
+          JSON.stringify({ error: 'Nano-Banana-2.1-Prompt unvollständig.' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
     const costUserId = (authResult as any).userId as string | undefined;
@@ -606,26 +628,6 @@ serve(async (req) => {
         JSON.stringify({ error: `Fahrzeugkontext unvollständig: ${ctxError}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
-    }
-
-    // ── Nano Banana 2.1: getrennter Pfad (nur Tier nb21 + Version nb21-v1) ──
-    // Keine stillen Fallbacks: 2.1 nie mit 2.0-Prompt, 2.0-Tiers nie mit 2.1-Prompt.
-    const isNb21Request = tier === NB21_TIER;
-    const hasNb21Marker = typeof dynamicPrompt === 'string' && dynamicPrompt.includes(NB21_VERSION_MARKER);
-    if (isNb21Request !== (promptVersion === NB21_PROMPT_VERSION) || isNb21Request !== hasNb21Marker) {
-      return new Response(
-        JSON.stringify({ error: 'Prompt-Version passt nicht zur gewählten Modellstufe (Nano Banana 2.1 benötigt nb21-v1).' }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-    if (isNb21Request) {
-      const missing = Object.values(NB21_SERVER_SLOTS).filter((slot) => (dynamicPrompt as string).split(slot).length !== 2);
-      if (missing.length > 0) {
-        return new Response(
-          JSON.stringify({ error: 'Nano-Banana-2.1-Prompt unvollständig.' }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
     }
 
     const basePrompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
