@@ -31,7 +31,6 @@ export function legacyFingerprint() {
 describe('2.0-Prompts bleiben unverändert', () => {
   it('Pipeline-Job-Prompts und Master-Prompt sind byte-identisch zum Stand vor 2.1', () => {
     const fp = legacyFingerprint();
-    console.log('[legacy-fingerprint]', JSON.stringify(fp));
     expect(fp).toEqual(LEGACY_FINGERPRINT);
   });
 });
