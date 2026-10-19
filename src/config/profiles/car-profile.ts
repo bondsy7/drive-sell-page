@@ -124,6 +124,20 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     coverageTags: ['ext_34_front_right', '34_front_right'],
   },
   {
+    key: '34rear-right',
+    label: '3/4 Heck rechts',
+    icon: rearThreeQuarterIcon.url,
+    // Das Referenz-Asset zeigt 3/4 Heck links; für rechts gespiegelt.
+    iconFlip: true,
+    capture: 'environment',
+    required: false,
+    recommended: true,
+    referenceOnly: true,
+    aspect: '4/3',
+    displayOrder: 5.5,
+    coverageTags: ['ext_34_rear_right', '34_rear_right'],
+  },
+  {
     key: 'vin',
     label: 'VIN',
     icon: '/images/perspectives/VIN.png',
