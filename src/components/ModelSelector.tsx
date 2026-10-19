@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useCredits } from '@/hooks/useCredits';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun, Banana } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst' | 'nb21';
 
@@ -55,9 +56,11 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
           return (
             <React.Fragment key={tier.id}>
               {showDivider && <div className="h-5 w-px shrink-0 bg-border mx-0.5" />}
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onChange(tier.id)}
-                className={`flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                className={`h-auto flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                   isActive
                     ? tier.id === 'premium' || tier.id === 'ultra' || tier.id === 'neu' || tier.id === 'flare' || tier.id === 'sunburst'
                       ? 'bg-accent text-accent-foreground shadow-sm'
@@ -68,7 +71,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
                 {tier.icon}
                 {tier.label}
                 <span className="text-[10px] opacity-70">({cost} Cr.)</span>
-              </button>
+              </Button>
             </React.Fragment>
           );
         })}

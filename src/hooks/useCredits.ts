@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { resolveRemasterCost } from '../../supabase/functions/_shared/remaster-cost';
 
 interface CreditBalance {
   balance: number;
@@ -78,7 +79,9 @@ export function useCredits() {
     actionType: string, modelTier: string = 'schnell', description?: string
   ): Promise<{ success: boolean; balance: number; error?: string }> => {
     if (!user) return { success: false, balance: 0, error: 'Not authenticated' };
-    const cost = costs[actionType]?.[modelTier] ?? costs[actionType]?.['schnell'] ?? 1;
+    const cost = actionType === 'image_remaster'
+      ? resolveRemasterCost(costs, modelTier)
+      : costs[actionType]?.[modelTier] ?? costs[actionType]?.['schnell'] ?? 1;
     
     const { data, error } = await supabase.rpc('deduct_credits', {
       _user_id: user.id,
@@ -97,6 +100,7 @@ export function useCredits() {
   }, [user, costs, balance]);
 
   const getCost = useCallback((actionType: string, modelTier: string = 'schnell'): number => {
+    if (actionType === 'image_remaster') return resolveRemasterCost(costs, modelTier);
     return costs[actionType]?.[modelTier] ?? costs[actionType]?.['schnell'] ?? 0;
   }, [costs]);
 

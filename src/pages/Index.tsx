@@ -504,9 +504,18 @@ const Index = () => {
   }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, user, selectedTemplate, saveProject]);
 
 
-  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null, originalRoles?: (string | undefined)[]) => {
+  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null, originalRoles?: (string | undefined)[], resultPerspectives?: string[], savedImageIds?: (string | undefined)[]) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
+    if (savedImageIds?.length === gallery.length + 1 && savedImageIds.every(Boolean)) {
+      if (captureVehicleId) setSavedVehicleId(captureVehicleId);
+      if (savedProjectId) {
+        const { data } = await supabase.from('project_images').select('image_url').eq('id', savedImageIds[0]).maybeSingle();
+        if (data?.image_url) await supabase.from('projects').update({ main_image_url: data.image_url }).eq('id', savedProjectId);
+      }
+      setAppState('preview');
+      return;
+    }
     if (vehicleData) {
       const updatedData = vin ? { ...vehicleData, vehicle: { ...vehicleData.vehicle, vin } } : vehicleData;
       if (vin) setVehicleData(updatedData);
@@ -541,7 +550,7 @@ const Index = () => {
             const imageRows = urls.map((url, i) => ({
               project_id: savedProjectId, vehicle_id: vehicleId || null, user_id: user.id,
               image_url: url, image_base64: '',
-              perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
+              perspective: resultPerspectives?.[i] || `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
           }
@@ -601,6 +610,7 @@ const Index = () => {
     originals?: string[],
     preferVehicleId?: string | null,
     originalRoles?: (string | undefined)[],
+    resultPerspectives?: string[],
   ) => {
     if (!user || allImages.length === 0) return;
     try {
@@ -613,7 +623,7 @@ const Index = () => {
         allImages,
         user.id,
         folderName,
-        allImages.map((_, i) => PERSPECTIVES[i]?.label || `Bild ${i + 1}`),
+        allImages.map((_, i) => resultPerspectives?.[i] || PERSPECTIVES[i]?.label || `Bild ${i + 1}`),
         null,
         vehicleId,
       );
@@ -632,11 +642,13 @@ const Index = () => {
   }, [user, savedVehicleId, deepLinkVehicleId, vehicleData]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null, originalRoles?: (string | undefined)[]) => {
+  const handleStandaloneCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null, originalRoles?: (string | undefined)[], resultPerspectives?: string[], savedImageIds?: (string | undefined)[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
     if (captureVehicleId) setSavedVehicleId(captureVehicleId);
-    saveStandaloneImages(allImages, vin, originals, captureVehicleId || null, originalRoles);
+    if (!(savedImageIds?.length === allImages.length && savedImageIds.every(Boolean))) {
+      await saveStandaloneImages(allImages, vin, originals, captureVehicleId || null, originalRoles, resultPerspectives);
+    }
     toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);

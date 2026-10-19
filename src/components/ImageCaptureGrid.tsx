@@ -26,7 +26,12 @@ import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { analyzeWheelReference, deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import type { WheelReference } from '@/types/wheel-reference';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
-import { ensureVehicleAuto, getOwnedVehicleId } from '@/lib/vehicle-utils';
+import { ensureVehicleAuto, getOwnedVehicleId, uploadOriginalsToVehicle, setVehicleCoverIfMissing } from '@/lib/vehicle-utils';
+import { getGalleryFolderName } from '@/lib/storage-utils';
+import { buildRegenerationContext, saveRegenerationContext } from '@/lib/regeneration-context';
+import { useCredits } from '@/hooks/useCredits';
+import { useQueryClient } from '@tanstack/react-query';
+import type { RemasterGalleryTarget } from '../../supabase/functions/_shared/remaster-gallery';
 import { useAuth } from '@/hooks/useAuth';
 import type { VehicleData } from '@/types/vehicle';
 import type {
@@ -58,7 +63,7 @@ interface ImageCaptureGridProps {
   modelTier?: string;
   projectId?: string | null;
   vehicleId?: string | null;
-  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[], vehicleId?: string | null, originalRoles?: (string | undefined)[]) => void;
+  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[], vehicleId?: string | null, originalRoles?: (string | undefined)[], resultPerspectives?: string[], savedImageIds?: (string | undefined)[]) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
   onPipelineComplete?: () => void;
@@ -74,6 +79,8 @@ type PerspectiveSlot = CaptureSlot;
 interface CapturedImage {
   base64: string;
   remasteredBase64?: string;
+  savedImageId?: string;
+  savedImageUrl?: string;
   status: 'captured' | 'processing' | 'done' | 'error';
   error?: string;
 }
@@ -267,6 +274,12 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
 
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
   const { user } = useAuth();
+  const { getCost } = useCredits();
+  const queryClient = useQueryClient();
+  const galleryFolderRef = useRef<string | null>(null);
+  const galleryTargetsRef = useRef<Record<string, RemasterGalleryTarget>>({});
+  const archivedOriginalsRef = useRef(new Set<string>());
+  const remasterCost = getCost('image_remaster', modelTier || 'standard');
   const pipeline = usePipeline();
   const [showPipeline, setShowPipeline] = useState(false);
 
@@ -776,7 +789,46 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
   const isRemasterConfigValid = !!remasterConfig.scene;
 
+  const prepareDurableRemaster = async (slot: PerspectiveSlot): Promise<RemasterGalleryTarget> => {
+    if (!user) throw new Error('Bitte melde dich an.');
+    const targetVehicleId = await ensureVehicleForPipeline();
+    if (!targetVehicleId) throw new Error('Fahrzeug konnte nicht für die Bildsicherung angelegt werden.');
+    galleryFolderRef.current ??= getGalleryFolderName(detectedVin || latestVehicleDataRef.current?.vehicle?.vin);
+    const target = galleryTargetsRef.current[slot.key] ?? {
+      id: crypto.randomUUID(), vehicleId: targetVehicleId, projectId,
+      folder: galleryFolderRef.current, slotKey: slot.key, perspective: slot.label,
+      sortOrder: vehicleSlots.findIndex(s => s.key === slot.key),
+    };
+    galleryTargetsRef.current[slot.key] = target;
+    const sources = [
+      ...vehicleSlots.filter(s => captures[s.key]).map(s => ({ image: captures[s.key].base64, role: s.key })),
+      ...detailImages.map(image => ({ image, role: undefined })),
+      ...(wheelReference?.image ? [{ image: wheelReference.image, role: undefined }] : []),
+    ].filter(source => !prefilledOriginalsRef.current.has(source.image) && !archivedOriginalsRef.current.has(source.image));
+    // Archive sources before paid generation; never rely on the final button.
+    for (const source of sources) {
+      const saved = await uploadOriginalsToVehicle(user.id, targetVehicleId, [source.image], [source.role]);
+      if (saved !== 1) throw new Error('Originalfoto konnte nicht gesichert werden. Bitte erneut versuchen.');
+      archivedOriginalsRef.current.add(source.image);
+    }
+    await saveRegenerationContext(targetVehicleId, buildRegenerationContext({
+      remasterConfig, classContext, vehicleDescription, modelTier,
+      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_PROMPT_VERSION } : {}),
+    }));
+    return target;
+  };
+
+  const acceptDurableResult = (slotKey: string, data: { imageBase64: string; savedImageId?: string; savedImageUrl?: string }) => {
+    if (!data.savedImageId || !data.savedImageUrl) throw new Error('Bildsicherung wurde nicht bestätigt. Bitte erneut versuchen.');
+    setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'done', remasteredBase64: data.imageBase64, savedImageId: data.savedImageId, savedImageUrl: data.savedImageUrl } }));
+    void queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    void queryClient.invalidateQueries({ queryKey: ['vehicle-images', galleryTargetsRef.current[slotKey]?.vehicleId] });
+    const target = galleryTargetsRef.current[slotKey];
+    if (target && data.savedImageUrl) void setVehicleCoverIfMissing(target.vehicleId, data.savedImageUrl);
+  };
+
   const startRemastering = async () => {
+    if (isProcessing) return;
     if (!remasterConfig.scene || !remasterConfig.licensePlate) {
       toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
       return;
@@ -785,6 +837,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const toProcess = remasterSlots.filter(s => captures[s.key] && captures[s.key].status !== 'done');
     if (toProcess.length === 0) {
       finishUp();
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Sequential preparation prevents duplicate original uploads across workers.
+      for (const slot of toProcess) await prepareDurableRemaster(slot);
+    } catch (e) {
+      setIsProcessing(false);
+      toast.error(e instanceof Error ? e.message : 'Bildsicherung konnte nicht vorbereitet werden.');
       return;
     }
 
@@ -875,6 +937,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
           const { data, error } = await invokeRemasterVehicleImage({
+            gallerySave: galleryTargetsRef.current[slot.key],
             classContext,
             imageBase64: captures[slot.key].base64,
             additionalImages: detailImages.length > 0 ? detailImages : undefined,
@@ -902,7 +965,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             }
             setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'error', error: errMsg } }));
           } else {
-            setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'done', remasteredBase64: data.imageBase64 } }));
+            acceptDurableResult(slot.key, data);
           }
           break; // success or non-retryable error
         } catch (e) {
@@ -923,8 +986,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const queue = [...toProcess];
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
       while (queue.length > 0) {
-        const slot = queue.shift()!;
-        await processSlot(slot);
+        const slot = queue.shift();
+        if (slot) await processSlot(slot);
       }
     });
     await Promise.all(workers);
@@ -948,6 +1011,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (!slot || !captures[slotKey]) return;
     setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
     try {
+      const gallerySave = await prepareDurableRemaster(slot);
       const overrides = await fetchPromptOverrides();
       let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
       if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
@@ -969,6 +1033,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
       }
       const { data, error } = await invokeRemasterVehicleImage({
+        gallerySave,
         classContext,
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,
@@ -989,7 +1054,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
         setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'error', error: errMsg } }));
       } else {
-        setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'done', remasteredBase64: data.imageBase64 } }));
+        acceptDurableResult(slotKey, data);
         toast.success('Bild erfolgreich neu generiert.');
       }
     } catch {
@@ -1019,8 +1084,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       toast.error('Keine Bilder erfolgreich verarbeitet.');
       return;
     }
-    const main = captures[doneSlots[0].key].remasteredBase64!;
-    const gallery = doneSlots.slice(1).map(s => captures[s.key].remasteredBase64!);
+    const main = captures[doneSlots[0].key].remasteredBase64;
+    if (!main) return;
+    const gallery = doneSlots.slice(1).flatMap(s => captures[s.key].remasteredBase64 ? [captures[s.key].remasteredBase64 as string] : []);
     // Include ALL raw sources as originals: main perspective shots + weitere
     // Detailaufnahmen (Datenblatt, Innenraum, Felgen, Motor, Schäden, …).
     // So jede Aufnahme, die der Nutzer draußen am Auto macht, landet später
@@ -1032,7 +1098,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       ...referenceSlots.map(s => ({ img: captures[s.key].base64, role: s.key })),
       ...detailImages.map(img => ({ img })),
       ...(wheelReference?.image ? [{ img: wheelReference.image }] : []),
-    ].filter(e => !prefilledOriginalsRef.current.has(e.img)); // Auto3-Originale liegen bereits im Speicher
+    ].filter(e => !prefilledOriginalsRef.current.has(e.img) && !archivedOriginalsRef.current.has(e.img));
     const originals = originalEntries.map(e => e.img);
     const originalRoles = originalEntries.map(e => e.role);
     // Immer dasselbe Fahrzeug verwenden wie ein evtl. bereits gestarteter
@@ -1043,7 +1109,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       catch (e) { console.warn('[capture] ensureVehicle failed:', e); }
     }
     toast.success(`${doneSlots.length} Bilder erfolgreich remastered.`);
-    onComplete(main, gallery, detectedVin || undefined, originals, targetVehicleId, originalRoles);
+    onComplete(main, gallery, detectedVin || undefined, originals, targetVehicleId, originalRoles, doneSlots.map(s => s.label), doneSlots.map(s => captures[s.key].savedImageId));
   };
 
   const allVehicleDone = capturedVehicleImages.length > 0 &&
@@ -1119,6 +1185,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       <PipelineRunner
         inputImages={allCapturedBase64}
         referenceRoles={allCapturedRoles}
+        savedInputIds={vehicleSlots.filter(s => captures[s.key]).map(s => captures[s.key].savedImageId)}
         originalImages={allOriginalBase64}
         additionalImages={detailImages.length > 0 ? detailImages : undefined}
         wheelReference={wheelReference}
@@ -1735,8 +1802,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               </Button>
             )}
             <div className="flex items-center justify-between gap-3 text-[10px] leading-snug text-muted-foreground">
-              <span>Geschätzter Verbrauch: 1 Credit</span>
-              <span>Der tatsächliche Verbrauch kann abweichen.</span>
+              <span>{remasterCost} Credits je Remasterbild</span>
+              <span>Referenzaufnahmen ohne zusätzliche Credits.</span>
             </div>
           </CaptureSummaryPanel>
         </div>
@@ -1753,7 +1820,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-[10px] text-muted-foreground">Qualität</p>
-            <p className="text-xs font-semibold text-foreground">{modelTier || 'Qualität'} · 1 Credit</p>
+            <p className="text-xs font-semibold text-foreground">{modelTier || 'Qualität'} · {remasterCost} Cr./Bild</p>
           </div>
           <div className="flex-1">{primaryAction}</div>
         </div>
@@ -1769,7 +1836,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           <AlertDialogHeader>
             <AlertDialogTitle>Zum Freisteller wechseln?</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchtest du wirklich zum Freisteller & Showroom wechseln? Bereits remasterte Bilder dieses Durchlaufs gehen dabei verloren. Deine Originalfotos werden direkt in die passenden Felder übernommen.
+              Möchtest du wirklich zum Freisteller & Showroom wechseln? Die bereits gesicherten Remasterbilder bleiben in deiner Galerie. Deine Originalfotos werden direkt in die passenden Felder übernommen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
