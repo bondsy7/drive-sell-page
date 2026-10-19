@@ -1695,8 +1695,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </Button>
             )}
-            {capturedVehicleImages.length > 0 && (
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setSwitchFreistellerOpen(true)} disabled={isProcessing}>
+            {hasRemasteredImage && !isProcessing && (
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setSwitchFreistellerOpen(true)}>
                 <Scissors className="w-4 h-4 mr-1" /> Wechsel zum Freisteller
               </Button>
             )}
