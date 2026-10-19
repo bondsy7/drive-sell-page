@@ -91,4 +91,19 @@ describe('Freisteller: unabhängige Original-Uploads', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Entfernen: Front' }));
     expect(screen.getByRole('button', { name: 'Hochladen: Front' }).hasAttribute('disabled')).toBe(false);
   });
+
+  it('hochgeladene Fotos erscheinen nicht zusätzlich als "Bereit" unter dem Raster', async () => {
+    invoke.mockResolvedValue({ data: { image: 'data:image/png;base64,result' }, error: null });
+    render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
+    await upload('Front', 'front.png');
+    expect(screen.queryByText('Bereit')).toBeNull();
+    expect(screen.queryByAltText('Bild 1')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ändern: Front' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Freistellen' }));
+    fireEvent.click(screen.getByRole('button', { name: /Hintergrund tauschen \(/ }));
+    const result = await screen.findByAltText('Bild 1');
+    expect(result.getAttribute('src')).toBe('data:image/png;base64,result');
+    expect(screen.queryByText('Bereit')).toBeNull();
+  });
 });
