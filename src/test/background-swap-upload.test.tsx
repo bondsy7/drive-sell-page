@@ -27,7 +27,7 @@ describe('Freisteller: unabhängige Original-Uploads', () => {
     invoke.mockResolvedValue({ data: { image: 'data:image/png;base64,result' }, error: null });
     render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
     await upload('Front', 'front.png');
-    fireEvent.click(screen.getByRole('button', { name: 'Freistellen', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Freistellen' }));
     const start = screen.getByRole('button', { name: /Hintergrund tauschen \(/ });
     expect(start.hasAttribute('disabled')).toBe(false);
     expect(invoke).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('Freisteller: unabhängige Original-Uploads', () => {
     render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
     await upload('Seite rechts', 'right.png');
     await upload('Heck', 'rear.png');
-    fireEvent.click(screen.getByRole('button', { name: 'Freistellen', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Freistellen' }));
     fireEvent.click(screen.getByRole('button', { name: /Hintergrund tauschen \(/ }));
     await waitFor(() => expect(invoke).toHaveBeenCalledTimes(2));
     expect(invoke.mock.calls.map(call => call[1].body.image)).toEqual([
@@ -62,7 +62,7 @@ describe('Freisteller: unabhängige Original-Uploads', () => {
       target: { files: [new File(['replacement'], 'new.png', { type: 'image/png' })] },
     });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Ändern: Front' }).hasAttribute('disabled')).toBe(false));
-    fireEvent.click(screen.getByRole('button', { name: 'Freistellen', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Freistellen' }));
     fireEvent.click(screen.getByRole('button', { name: /Hintergrund tauschen \(/ }));
     await screen.findByRole('button', { name: /In Galerie speichern/ });
     expect(invoke).toHaveBeenCalledTimes(1);
