@@ -157,3 +157,9 @@
 - [x] Hintergrund-Auswahl und Verarbeitung unverändert erhalten; Upload, Austausch und Entfernung geprüft (7 Tests, angemeldete Vorschau; keine kostenpflichtige Verarbeitung gestartet)
 
 - [x] Nano Banana 2.1 als getrennten Prompt-Pfad (nb21-v1) für Remastering und alle Pipeline-Ansichten ergänzen; 2.0 unverändert
+
+## Remastering: Beschriftung, Credits und Sicherung
+- [ ] Ergebnisbeschriftungen aus tatsächlichen Aufnahmeslots übernehmen, auch bei Nutzfahrzeugen
+- [ ] Credit-Anzeige an den tatsächlich berechneten Remasterpreis angleichen, ohne Preise zu ändern
+- [ ] Fertige Remasterbilder sofort sichern und doppelte Ablage beim Galerie-Klick verhindern
+- [ ] Regeln testen und den angemeldeten Ablauf prüfen
