@@ -23,6 +23,16 @@ async function upload(slot: string, name: string) {
 }
 
 describe('Freisteller: unabhängige Original-Uploads', () => {
+  it('ohne Fahrzeugfoto ist kein Start möglich, auch nach Auswahl eines Hintergrundmodus', () => {
+    render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
+    const start = screen.getByRole('button', { name: /Hintergrund tauschen \(/ });
+    expect(start.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Freistellen' }));
+    fireEvent.click(start);
+    expect(start.hasAttribute('disabled')).toBe(true);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it('ein einzelnes Foto genügt, auch im sonst empfohlenen Front-Slot; es wird als eigener Auftrag verarbeitet', async () => {
     invoke.mockResolvedValue({ data: { image: 'data:image/png;base64,result' }, error: null });
     render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
