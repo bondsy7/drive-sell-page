@@ -15,7 +15,35 @@ import BackgroundMusicIndicator from "@/components/BackgroundMusicIndicator";
 import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
 import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
-const Landing = lazy(() => import("./pages/Landing"));
+/**
+ * Lazy-Import mit Selbstheilung: Schlägt das Nachladen eines Moduls fehl
+ * (z. B. "Importing a module script failed" nach einem Server-Neustart,
+ * wenn der Tab noch alte Chunk-URLs kennt), wird die Seite genau einmal
+ * hart neu geladen. Danach greift die normale ErrorBoundary.
+ */
+const RELOAD_FLAG = "lazy-chunk-reloaded";
+function lazyWithRetry<T extends { default: React.ComponentType<unknown> }>(
+  factory: () => Promise<T>,
+) {
+  return lazy(() =>
+    factory().catch((err) => {
+      const alreadyReloaded = sessionStorage.getItem(RELOAD_FLAG) === "1";
+      if (!alreadyReloaded) {
+        sessionStorage.setItem(RELOAD_FLAG, "1");
+        window.location.reload();
+        // Nie auflösen – der Reload übernimmt.
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    }),
+  );
+}
+// Reload-Flag nach erfolgreichem App-Start zurücksetzen.
+if (typeof window !== "undefined") {
+  window.addEventListener("load", () => sessionStorage.removeItem(RELOAD_FLAG), { once: true });
+}
+
+const Landing = lazyWithRetry(() => import("./pages/Landing"));
 const Produkte = lazy(() => import("./pages/Produkte"));
 const Referenzen = lazy(() => import("./pages/Referenzen"));
 const Checkout = lazy(() => import("./pages/Checkout"));
