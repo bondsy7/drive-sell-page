@@ -65,6 +65,14 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
     () => images.filter((i) => i.status === 'done' && i.resultBase64).map((i) => i.resultBase64!),
     [images],
   );
+  // Hochgeladene, aber noch nicht bearbeitete Fotos werden nur im Upload-Raster gezeigt.
+  const processedImages = useMemo(() => images.filter((i) => i.status !== 'pending'), [images]);
+  const resultImages = useMemo(
+    () => images.filter((i) => i.resultBase64).map((i) => ({ id: i.id, src: i.resultBase64!, originalSrc: i.originalBase64 })),
+    [images],
+  );
+
+
 
   const handleFile = useCallback(async (slotKey: string, file: File) => {
     if (images.length >= MAX_IMAGES && !images.some(image => image.slotKey === slotKey)) {
