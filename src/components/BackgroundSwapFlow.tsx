@@ -205,10 +205,10 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
         onRemove={removeImage}
       />
 
-      {/* Thumbnails */}
-      {images.length > 0 && (
+      {/* Thumbnails – nur bereits bearbeitete Bilder */}
+      {processedImages.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {images.map((img, idx) => (
+          {processedImages.map((img, idx) => (
             <div key={img.id} className="relative rounded-lg overflow-hidden border border-border bg-card">
               <img
                 src={img.resultBase64 || img.originalBase64}
@@ -222,7 +222,10 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
                   <>
                     <button
                       className="p-1.5 rounded-full bg-black/60 text-white"
-                      onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                      onClick={() => {
+                        setLightboxIndex(Math.max(0, resultImages.findIndex((r) => r.id === img.id)));
+                        setLightboxOpen(true);
+                      }}
                       aria-label="Vorschau"
                     >
                       <ZoomIn className="w-3.5 h-3.5" />
@@ -250,12 +253,12 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
                 {img.status === 'processing' && <><Loader2 className="w-3 h-3 animate-spin" /> Wird bearbeitet…</>}
                 {img.status === 'done' && <><Check className="w-3 h-3 text-accent" /> Fertig</>}
                 {img.status === 'error' && <span className="text-destructive">{img.error}</span>}
-                {img.status === 'pending' && <span className="text-muted-foreground">Bereit</span>}
               </div>
             </div>
           ))}
         </div>
       )}
+
 
       {/* Background chooser */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
