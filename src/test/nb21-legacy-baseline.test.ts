@@ -36,4 +36,7 @@ describe('2.0-Prompts bleiben unverändert', () => {
   });
 });
 
-const LEGACY_FINGERPRINT = { jobs: 'TBD', master: 'TBD' };
+const LEGACY_FINGERPRINT = {
+  jobs: 'ec02fb7d5b7e333ccbd7a025b3fed0cd1d7a3ecfd60e168ef6e5a6f17e385d5f',
+  master: '63c7b51d9059279982b3050fc6d7d88fc838aee8d667c46d636d3485121178ef',
+};
