@@ -828,6 +828,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   };
 
   const startRemastering = async () => {
+    if (isProcessing) return;
     if (!remasterConfig.scene || !remasterConfig.licensePlate) {
       toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
       return;
@@ -839,10 +840,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       return;
     }
 
+    setIsProcessing(true);
     try {
       // Sequential preparation prevents duplicate original uploads across workers.
       for (const slot of toProcess) await prepareDurableRemaster(slot);
     } catch (e) {
+      setIsProcessing(false);
       toast.error(e instanceof Error ? e.message : 'Bildsicherung konnte nicht vorbereitet werden.');
       return;
     }
