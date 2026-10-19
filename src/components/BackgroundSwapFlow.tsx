@@ -250,7 +250,6 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
       )}
 
       {/* Background chooser */}
-      {images.length > 0 && <>
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex flex-wrap gap-2">
           {MODE_OPTIONS.map((opt) => (
@@ -395,7 +394,7 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
       <div className="flex flex-col sm:flex-row gap-3">
         <Button
           onClick={start}
-          disabled={isProcessing || uploadingSlot !== null || (mode === 'upload' && !customBg)}
+          disabled={images.length === 0 || isProcessing || uploadingSlot !== null || (mode === 'upload' && !customBg)}
           className="flex-1"
         >
           {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Scissors className="w-4 h-4 mr-2" />}
@@ -412,7 +411,6 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
           </>
         )}
       </div>
-      </>}
 
       <ImagePreviewLightbox
         images={images.filter((i) => i.resultBase64).map((i) => ({ id: i.id, src: i.resultBase64!, originalSrc: i.originalBase64 }))}
