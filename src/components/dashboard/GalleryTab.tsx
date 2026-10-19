@@ -23,7 +23,13 @@ export function getImageSortKey(perspective: string | null): number {
   if (!perspective) return 90000;
 
   // Remastered images come first (indices 0-99)
-  const remasterIdx = REMASTER_ORDER.indexOf(perspective);
+  const normalizedPerspective = ({
+    '3/4 Front links': '3/4 Front',
+    'Seite links': 'Seitenansicht links',
+    'Seite rechts': 'Seitenansicht rechts',
+    'Heck': 'Hinten',
+  } as Record<string, string>)[perspective] || perspective;
+  const remasterIdx = REMASTER_ORDER.indexOf(normalizedPerspective);
   if (remasterIdx >= 0) return remasterIdx;
 
   // Pipeline images come second (indices 100+)
