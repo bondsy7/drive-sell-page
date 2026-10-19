@@ -151,3 +151,7 @@
 
 ## Werbemittel-Seite /autohaus-werbemittel
 - [x] Plattform-Logos als hochgeladene Icons8-Motive (Instagram, Facebook, LinkedIn, X, Google, TikTok, YouTube, Website)
+
+## Freisteller & Showroom: Upload-Perspektiven
+- [x] Einzelnes Upload-Feld durch optionale Perspektiv-Kacheln ersetzen; jedes Foto eigenständig bearbeiten, Start ab einem Foto
+- [x] Hintergrund-Auswahl und Verarbeitung unverändert erhalten; Upload, Austausch und Entfernung geprüft (7 Tests, angemeldete Vorschau; keine kostenpflichtige Verarbeitung gestartet)

@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { fileToBase64, compressImageForAI } from '@/lib/image-compress';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+import BackgroundSwapUploadGrid from '@/components/BackgroundSwapUploadGrid';
 import {
   BACKGROUND_TEMPLATES, SUBJECT_TYPES, SOLID_COLORS, MAX_IMAGES, MAX_SIZE_MB,
   COST_PER_IMAGE, COST_PER_IMAGE_AI_BG, templateToDataUrl,
@@ -27,6 +28,7 @@ interface BackgroundSwapFlowProps {
 
 interface SwapImage {
   id: string;
+  slotKey: string;
   originalBase64: string;
   resultBase64: string | null;
   status: 'pending' | 'processing' | 'done' | 'error';
@@ -54,8 +56,8 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
 
   const costPerImage = mode === 'ai' ? COST_PER_IMAGE_AI_BG : COST_PER_IMAGE;
@@ -64,25 +66,31 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
     [images],
   );
 
-  const handleFiles = useCallback(async (files: FileList | File[]) => {
-    const remaining = MAX_IMAGES - images.length;
-    if (remaining <= 0) {
+  const handleFile = useCallback(async (slotKey: string, file: File) => {
+    if (images.length >= MAX_IMAGES && !images.some(image => image.slotKey === slotKey)) {
       toast.error(`Maximal ${MAX_IMAGES} Bilder.`);
       return;
     }
-    const toAdd: SwapImage[] = [];
-    for (const file of Array.from(files).slice(0, remaining)) {
-      if (!file.type.startsWith('image/')) continue;
-      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        toast.error(`${file.name} ist zu groß (max ${MAX_SIZE_MB} MB).`);
-        continue;
-      }
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`${file.name} ist zu groß (max ${MAX_SIZE_MB} MB).`);
+      return;
+    }
+    setUploadingSlot(slotKey);
+    try {
       const raw = await fileToBase64(file);
       const base64 = await compressImageForAI(raw).catch(() => raw);
-      toAdd.push({ id: crypto.randomUUID(), originalBase64: base64, resultBase64: null, status: 'pending' });
+      const next: SwapImage = { id: crypto.randomUUID(), slotKey, originalBase64: base64, resultBase64: null, status: 'pending' };
+      setImages(prev => {
+        const existing = prev.find(image => image.slotKey === slotKey);
+        return existing ? prev.map(image => image.id === existing.id ? next : image) : [...prev, next];
+      });
+    } catch {
+      toast.error('Foto konnte nicht geladen werden. Bitte erneut versuchen.');
+    } finally {
+      setUploadingSlot(null);
     }
-    if (toAdd.length) setImages((prev) => [...prev, ...toAdd]);
-  }, [images.length]);
+  }, [images]);
 
   const handleBgFile = useCallback(async (file?: File | null) => {
     if (!file) return;
@@ -181,25 +189,13 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
       </div>
 
       {/* Upload */}
-      <div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-accent/60 transition-colors flex flex-col items-center gap-2 text-muted-foreground"
-        >
-          <Upload className="w-6 h-6" />
-          <span className="text-sm font-medium text-foreground">Fahrzeugfotos hochladen</span>
-          <span className="text-xs">bis {MAX_IMAGES} Bilder, max. {MAX_SIZE_MB} MB pro Bild</span>
-        </button>
-      </div>
+      <BackgroundSwapUploadGrid
+        images={images}
+        disabled={isProcessing}
+        uploadingSlot={uploadingSlot}
+        onUpload={handleFile}
+        onRemove={removeImage}
+      />
 
       {/* Thumbnails */}
       {images.length > 0 && (
@@ -254,6 +250,7 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
       )}
 
       {/* Background chooser */}
+      {images.length > 0 && <>
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex flex-wrap gap-2">
           {MODE_OPTIONS.map((opt) => (
@@ -398,7 +395,7 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
       <div className="flex flex-col sm:flex-row gap-3">
         <Button
           onClick={start}
-          disabled={isProcessing || images.length === 0 || (mode === 'upload' && !customBg)}
+          disabled={isProcessing || uploadingSlot !== null || (mode === 'upload' && !customBg)}
           className="flex-1"
         >
           {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Scissors className="w-4 h-4 mr-2" />}
@@ -415,6 +412,7 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
           </>
         )}
       </div>
+      </>}
 
       <ImagePreviewLightbox
         images={images.filter((i) => i.resultBase64).map((i) => ({ id: i.id, src: i.resultBase64!, originalSrc: i.originalBase64 }))}
