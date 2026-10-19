@@ -424,7 +424,8 @@ const BackgroundSwapFlow: React.FC<BackgroundSwapFlowProps> = ({ onBack, onCompl
       </div>
 
       <ImagePreviewLightbox
-        images={images.filter((i) => i.resultBase64).map((i) => ({ id: i.id, src: i.resultBase64!, originalSrc: i.originalBase64 }))}
+        images={resultImages}
+
         initialIndex={lightboxIndex}
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
