@@ -23,6 +23,17 @@ async function upload(slot: string, name: string) {
 }
 
 describe('Freisteller: unabhängige Original-Uploads', () => {
+  it('3/4 Heck rechts kann als einziges Original unabhängig verarbeitet werden', async () => {
+    invoke.mockResolvedValue({ data: { image: 'data:image/png;base64,result' }, error: null });
+    render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
+    await upload('3/4 Heck rechts', 'rear-right.png');
+    fireEvent.click(screen.getByRole('button', { name: 'Freistellen' }));
+    fireEvent.click(screen.getByRole('button', { name: /Hintergrund tauschen \(/ }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+    expect(invoke.mock.calls[0][1].body.image).toBe('data:image/png;base64,rear-right.png');
+    await screen.findByRole('button', { name: /In Galerie speichern/ });
+  });
+
   it('ohne Fahrzeugfoto ist kein Start möglich, auch nach Auswahl eines Hintergrundmodus', () => {
     render(<BackgroundSwapFlow onBack={vi.fn()} onComplete={vi.fn()} />);
     const start = screen.getByRole('button', { name: /Hintergrund tauschen \(/ });
