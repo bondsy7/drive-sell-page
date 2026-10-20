@@ -19,4 +19,4 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Background-swap uses its own upload grid and slot-keyed originals, reusing only the car profile's visual perspectives; remastering requirements, reference-only roles and detection never apply to this independent processing flow.
 - Capture remasters save before delivery and skip saved IDs downstream; remaster prices share one resolver, preventing lost results, duplicates and price drift.
 - Detail intake uses Reference V2; manual roles win and file references are reused.
-- Shared branding scope separates plate and wall assets; V3 filters assets by explicit settings to prevent source-logo leakage.
+- Shared branding scope enforces separate wall/plate placement; V3 filters selected assets to prevent source-logo leakage.
