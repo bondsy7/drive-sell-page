@@ -5,6 +5,7 @@ import { useDetailPerspectiveAnalysis } from '@/hooks/useDetailPerspectiveAnalys
 import type { AnalyzerVisionResponse } from '@/features/reference-v2/phase1-5/analyzer-contract';
 import type { ReferenceV2AnalyzerPort } from '@/features/reference-v2/phase1-5/provider-adapter';
 import { getPerspectiveSpec } from '@/features/reference-v2/domain/perspectives/registry';
+import { useState } from 'react';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 function response(id: AnalyzerVisionResponse['canonicalPerspectiveId'] = 'DET_HEADLIGHT_LEFT'): AnalyzerVisionResponse {
@@ -44,10 +45,15 @@ describe('detail perspective role assignment', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: async () => new Blob(['pixels'], { type: 'image/jpeg' }) }));
     const file = { fileId: 'https://generativelanguage.googleapis.com/v1beta/files/detail', mimeType: 'image/jpeg', providerId: 'gemini-file-api' };
     const port: ReferenceV2AnalyzerPort = { uploadFile: vi.fn().mockResolvedValue(file), analyze: vi.fn().mockResolvedValue({ response: response() }) };
-    const { result, rerender } = renderHook(({ images }) => useDetailPerspectiveAnalysis(images, true, port), { initialProps: { images: ['image-a'] } });
-    await waitFor(() => expect(result.current.automaticRoles['image-a']).toBe('headlight'));
-    expect(result.current.results['image-a'].file).toEqual(file);
-    expect({ ...result.current.automaticRoles, 'image-a': '' }['image-a']).toBe('');
+    const { result, rerender } = renderHook(({ images }) => {
+      const analysis = useDetailPerspectiveAnalysis(images, true, port);
+      const [manual, setManual] = useState<Record<string, string>>({});
+      return { analysis, roles: { ...analysis.automaticRoles, ...manual }, setManual };
+    }, { initialProps: { images: ['image-a'] } });
+    act(() => result.current.setManual({ 'image-a': '' }));
+    await waitFor(() => expect(result.current.analysis.automaticRoles['image-a']).toBe('headlight'));
+    expect(result.current.analysis.results['image-a'].file).toEqual(file);
+    expect(result.current.roles['image-a']).toBe('');
     act(() => rerender({ images: ['image-a'] }));
     expect(port.analyze).toHaveBeenCalledTimes(1);
     expect(port.analyze).toHaveBeenCalledWith({ file, anchorFiles: [] });
