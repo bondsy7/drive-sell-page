@@ -189,3 +189,8 @@
 - [x] Verformte/verschmolzene Sitzrücken im gelieferten Ergebnis erkannt; vollständige getrennte Sitzgeometrie und Originalkamera in V2-Edit-Aufnahmen geschützt
 - [x] Einheitliche Serienbelichtung und Weißabgleich trotz unterschiedlicher Originalbelichtungen für alle NB21-V2-Ziele verankert; historische V1/2.0-Verträge unverändert
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
+
+## DEKRA-Report: vollständige Ergänzung
+- [x] Alle 21 benannten Fahrzeugzeilen und California-Zusatz der aktuellen Tabelle mit dem gesamten Originalexport abgeglichen; offene Namenszuordnungen ausdrücklich markiert
+- [x] Alle 152 Export-Originaldateien plus neun California-Originale, sämtliche Tabellenbefunde und vorhandene Ergebnisbelege in PDF-Version 2 aufgenommen; Nutzungslücken von Systemfehlern getrennt
+- [x] Alle 45 PDF-Seiten visuell geprüft, Dachzustand und Volvo-Bildbeschreibung korrigiert und Abdeckung geprüft; keine Neugenerierung
