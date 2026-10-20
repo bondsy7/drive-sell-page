@@ -8,10 +8,8 @@ export function validateV2Wire(manifest: V2Manifest, refs: V2WireReference[]) {
   const ids = new Set<string>();
   for (const [i, r] of refs.entries()) {
     const m = manifest.entries[i];
-    if (!m || JSON.stringify(m) !== JSON.stringify(({ transport, fileUri, openAIFile, imageBase64, ...entry }) => entry)(r)) {
-      // Explicit comparison ignores object insertion order, not role or source identity.
-      if (!m || ['sourceId','sourceRole','sourceType','role','authorityTier','authority','assetId'].some(k => (m as any)[k] !== (r as any)[k])) throw new Error('NB21 v2: Referenzidentität stimmt nicht.');
-    }
+    // Compare fields, not insertion order; no payload bytes belong to metadata.
+    if (!m || ['sourceId','sourceRole','sourceType','role','authorityTier','authority','assetId'].some(k => (m as any)[k] !== (r as any)[k])) throw new Error('NB21 v2: Referenzidentität stimmt nicht.');
     if (ids.has(r.sourceId) || !r.sourceId || !r.sourceRole) throw new Error('NB21 v2: Doppelte/fehlende Referenzidentität.');
     ids.add(r.sourceId);
     const tier = r.sourceType === 'original' ? 'A' : r.sourceType === 'immutable asset' ? 'B' : r.sourceType === 'generated context' ? 'C' : null;
