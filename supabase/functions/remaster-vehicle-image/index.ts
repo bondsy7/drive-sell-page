@@ -1,7 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { validateV3Wire, v3ResultMetadata, type V3Manifest } from '../_shared/nb21-v3-contract.ts';
 import { enforceV3ServerPrompt } from '../_shared/nb21-v3-prompt.ts';
-import { brandingAssetScope } from '../_shared/branding-asset-scope.ts';
+import { brandingAssetScope, brandingImageRoleNote, buildBrandingImageMap } from '../_shared/branding-asset-scope.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -116,6 +116,9 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
 
   const priorityTags = [
     "IMAGE_ORDER",
+    "BRANDING_MAP",
+    "FINAL_BRANDING_CHECK",
+    "BRANDING_ASSET_SCOPE",
     "REFERENCE_TRUTH_PROTOCOL",
     "CURRENT_PERSPECTIVE",
     "BINDING_SUBJECT_SCOPE_GUARD",
@@ -971,7 +974,7 @@ The vehicle images immediately above are the final and only geometry authority.
 
 
     if (customPlateImageBase64 || customPlateImageFileUri?.uri || oaFileId(customPlateOpenAIFile)) {
-      parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate insert you MUST use, even if it looks like a logo, dealer sign or brand graphic. Its ONLY allowed location is inside the vehicle's existing front and rear license-plate holders: replace every visible existing plate with it PIXEL-FOR-PIXEL in correct perspective; no original plate content may remain. It is NOT a wall logo: NEVER show this graphic on walls, glass panels, signage, floor or anywhere outside the plate holders. This is an IMMUTABLE ASSET:" });
+      parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The image tagged LICENSE PLATE is the EXACT license plate insert you MUST use, even if it looks like a logo, dealer sign or brand graphic. Its ONLY allowed location is inside the vehicle's existing front and rear license-plate holders: replace every visible existing plate with it PIXEL-FOR-PIXEL in correct perspective; no original plate content may remain. It is NOT a wall logo: NEVER show this graphic on walls, glass panels, signage, floor or anywhere outside the plate holders. This is an IMMUTABLE ASSET:" });
       if (oaFileId(customPlateOpenAIFile)) {
         { const _p = openaiPart(customPlateOpenAIFile); imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
       } else if (customPlateImageFileUri?.uri) {
@@ -1004,7 +1007,7 @@ The vehicle images immediately above are the final and only geometry authority.
       if (logoData) {
         parts.push({ text: `<LOGO_REFERENCE>
 MANUFACTURER LOGO – PIXEL-PERFECT REPRODUCTION (HIGHEST PRIORITY):
-The following image is the EXACT logo that MUST appear on the showroom wall.
+The image tagged MANUFACTURER LOGO is the EXACT logo that MUST appear on the showroom wall. It is NEVER a licence-plate insert.
 
 REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 1. EXACT COPY: Reproduce the logo image PIXEL-FOR-PIXEL. Every color, shape, detail, letter must be IDENTICAL.
@@ -1037,7 +1040,7 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
       if (logoData) {
         parts.push({ text: `<LOGO_REFERENCE>
 DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
-The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
+The image tagged DEALER LOGO is the EXACT dealer logo. It is NEVER a licence-plate insert. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
 - Position: On the rear wall behind the vehicle on a rectangular frosted-glass (milk-glass) panel with square corners; to the RIGHT of the manufacturer logo panel if one is selected, otherwise centered – IDENTICAL on EVERY image.
 - Clearly legible, about 60-80cm wide. This is the ONLY dealer branding allowed on the wall; never replace it with the license-plate graphic or source-photo signage.
 - IMMUTABLE ASSET: No redesign, no recoloring, no simplification.
@@ -1124,7 +1127,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
-          if (!isResponsesImageTier && !isEvidenceRequest) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          if (!isResponsesImageTier && !isEvidenceRequest) rebuilt.push({ text: `[IMAGE ${index}] ${label}\n${brandingImageRoleNote(label)}` });
           rebuilt.push(p);
         } else {
           rebuilt.push(p);
@@ -1134,6 +1137,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
         rebuilt.splice(1, 0, {
           text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
         });
+        // Number-based branding assignment as the very last instruction.
+        if (engineConfig.engine === 'gemini') {
+          const map = buildBrandingImageMap(imageManifest.map(m => m.label));
+          if (map) rebuilt.push({ text: map });
+        }
       }
       parts.length = 0;
       parts.push(...rebuilt);
@@ -1254,9 +1262,18 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
 
       const manifestText = usedLabels.map((l, i) => `IMAGE ${i + 1} = ${l}`).join('\n');
-      const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
+      const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Every image is preceded by its own tag. Use every image only for its tagged role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
+      // Interleave a role tag directly before each image so a plate graphic that
+      // looks like a logo can never be confused with the selected wall logo.
+      const interleaved: any[] = [];
+      contentImages.forEach((img, i) => {
+        interleaved.push({ type: 'input_text', text: `IMAGE ${i + 1} — ${usedLabels[i]}. ${brandingImageRoleNote(usedLabels[i])}` });
+        interleaved.push(img);
+      });
+      const brandingMap = buildBrandingImageMap(usedLabels);
+      if (brandingMap) interleaved.push({ type: 'input_text', text: brandingMap });
 
-      console.log(`[remaster][responses-image] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);
+      console.log(`[remaster][responses-image] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length} brandingMap=${brandingMap ? 'yes' : 'no'} labels=${usedLabels.map(l => l.split(' ')[0]).join(',')}`);
 
       const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.6-luna';
       const body = {
@@ -1264,7 +1281,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         input: [
           {
             role: 'user',
-            content: [{ type: 'input_text', text: finalPrompt }, ...contentImages],
+            content: [{ type: 'input_text', text: finalPrompt }, ...interleaved],
           },
         ],
         tools: [
@@ -1449,7 +1466,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         return `image #${i + 1} (${fileNameFor(im.label, i, ext)}) = ${im.label}`;
       }).join('\n');
-      promptText = compactOpenAIEditPrompt(`<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`);
+      promptText = compactOpenAIEditPrompt(`<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}${(() => { const m = buildBrandingImageMap(limited.map(im => im.label)); return m ? `\n\n${m}` : ''; })()}`);
       const wheelPos = limited.findIndex(im => im.label.startsWith('WHEEL REFERENCE'));
       console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, wheelRefPos=${wheelPos}, promptLen=${promptText.length}`);
 

@@ -385,27 +385,25 @@ ${REFERENCE_TRUTH_PROTOCOL}
   parts.push(buildVehicleGenerationLock(vehicleDescription));
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
-  const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
+  const hasManufacturerLogo = !!(config.showManufacturerLogo && (config.manufacturerLogoUrl || config.manufacturerLogoBase64));
+  const hasDealerLogo = !!(config.showDealerLogo && (config.dealerLogoUrl || config.dealerLogoBase64));
+  const hasAnyLogo = hasManufacturerLogo || hasDealerLogo;
   
   if (hasAnyLogo) {
     const logoLines: string[] = [];
-    if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
-      logoLines.push(`MANUFACTURER LOGO:
-- You are provided with a specific reference image of the manufacturer logo.
+    if (hasManufacturerLogo) {
+      logoLines.push(`MANUFACTURER LOGO (image tagged MANUFACTURER LOGO):
 - Reproduce this EXACT logo PIXEL-FOR-PIXEL: every color, shape, text element, and proportion.
-- Render as a FROSTED GLASS or TRANSPARENT GLASS element mounted on the showroom wall. The logo should appear as if etched or printed onto a premium glass panel – subtle, elegant, and high-end.
-- Do NOT add any glow, LED halo, backlight, neon, or illumination effect around or behind the logo. NO light emission of any kind.
+- Printed crisply on a rectangular frosted-glass (milk-glass) panel with square corners on the rear wall behind the vehicle. No glow, LED halo, backlight or neon.
 - KEEP ALL ORIGINAL COLORS – do NOT convert to silver/chrome/monochrome.
-- Position: centered on showroom back wall, at eye level, slightly above vehicle roofline.
-- Size: approximately 60-80cm diameter/width. IDENTICAL position, size, and appearance on EVERY image.
-- FORBIDDEN: Do NOT redesign, simplify, recolor, vectorize, or create an alternative version. Do NOT add glow or lighting effects. IMMUTABLE ASSET.`);
+- Position: slightly above the vehicle roofline; left panel if a dealer logo is also selected, otherwise centered. IDENTICAL position, size, and appearance on EVERY image.
+- NEVER place it on a licence plate. FORBIDDEN: redesign, simplify, recolor, vectorize. IMMUTABLE ASSET.`);
     }
-    if (config.showDealerLogo && config.dealerLogoUrl) {
-      logoLines.push(`DEALER LOGO:
-- You are provided with the dealer's company logo image.
+    if (hasDealerLogo) {
+      logoLines.push(`DEALER LOGO (image tagged DEALER LOGO):
 - Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
-- Position: to the right of the manufacturer logo on the back wall. Smaller than manufacturer logo.
-- FORBIDDEN: Do NOT redesign, recolor, or simplify. IMMUTABLE ASSET.`);
+- Same rectangular frosted-glass panel style on the rear wall; to the RIGHT of the manufacturer logo panel if one is selected, otherwise centered.
+- NEVER place it on a licence plate and never replace it with the licence-plate graphic. FORBIDDEN: redesign, recolor, simplify. IMMUTABLE ASSET.`);
     }
     parts.push(`<CRITICAL_ASSET_INTEGRATION>\n${logoLines.join('\n\n')}\n</CRITICAL_ASSET_INTEGRATION>`);
   } else {
