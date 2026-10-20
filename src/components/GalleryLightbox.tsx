@@ -237,7 +237,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       if (nb21Version === 'nb21-v2') {
         v2Sources = await Promise.all(originals.filter(o => originalSlotFromFilename(o.name) || ctx?.referenceSources?.some(s => s.assetId === o.assetId)).map(async o => {
           const saved = ctx?.referenceSources?.find(s => s.assetId === o.assetId);
-          return { sourceId: o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: 'original' as const, image: await fetchAsBase64(o.url) };
+          return { sourceId: o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: saved?.sourceType ?? 'original' as const, image: await fetchAsBase64(o.url) };
         }));
         // Selecting a generated gallery frame does NOT relabel it as an original.
         if (referenceUrl && !originals.some(o => o.url === referenceUrl)) v2Sources.push({ sourceId: `gallery:${images.find(i => i.src === referenceUrl)?.id ?? 'selected'}`, sourceRole: 'environment', sourceType: 'generated context', image: mainBase64 });

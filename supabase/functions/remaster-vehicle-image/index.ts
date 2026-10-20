@@ -613,7 +613,7 @@ serve(async (req) => {
       await persistV2Telemetry("success", image);
       if (!galleryTarget || !galleryAuth) return {};
       const saved = await persistRemasterGallery(galleryAuth.supabase, galleryAuth.user.id, galleryTarget, image);
-      if (isNb21Request) {
+      if (isNb21V2) {
         const { data: vehicle } = await galleryAuth.supabase.from('vehicles').select('vehicle_data').eq('id', galleryTarget.vehicleId).maybeSingle();
         const context = vehicle?.vehicle_data?.__regenerationContext ?? {};
         const { error } = await galleryAuth.supabase.from('project_images').update({ generation_context: { ...context, modelTier: 'nb21', promptVersion, sourceSlot: galleryTarget.slotKey } }).eq('id', galleryTarget.id);

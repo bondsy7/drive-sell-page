@@ -806,20 +806,21 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     };
     galleryTargetsRef.current[slot.key] = target;
     const sources = [
-      ...vehicleSlots.filter(s => captures[s.key]).map(s => ({ image: captures[s.key].base64, role: s.key })),
-      ...detailImages.map(image => ({ image, role: detailSourceRoles[image] || undefined })),
-      ...(wheelReference?.image ? [{ image: wheelReference.image, role: undefined }] : []),
+      ...vehicleSlots.filter(s => captures[s.key]).map(s => ({ image: captures[s.key].base64, role: s.key, sourceType: 'original' as const })),
+      ...detailImages.map(image => ({ image, role: detailSourceRoles[image] || undefined, sourceType: 'original' as const })),
+      ...(wheelReference?.image ? [{ image: wheelReference.image, role: isNb21Tier(modelTier) ? 'wheel' : undefined, sourceType: 'immutable asset' as const }] : []),
+      ...(isNb21Tier(modelTier) ? v2ConfigSources(remasterConfig, null, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ image: s.image, role: s.sourceRole, sourceType: s.sourceType })) : []),
     ].filter(source => !prefilledOriginalsRef.current.has(source.image) && !archivedOriginalsRef.current.has(source.image));
     // Archive sources before paid generation; never rely on the final button.
     for (const source of sources) {
-      const saved = isNb21Tier(modelTier) ? await archiveV2Original(user.id, targetVehicleId, { sourceId: `original:${source.role || 'unassigned'}`, sourceType: 'original', sourceRole: source.role || 'unassigned-detail', image: source.image }) : await uploadOriginalsToVehicle(user.id, targetVehicleId, [source.image], [source.role]);
+      const saved = isNb21Tier(modelTier) ? await archiveV2Original(user.id, targetVehicleId, { sourceId: `original:${source.role || 'unassigned'}`, sourceType: source.sourceType, sourceRole: source.role || 'unassigned-detail', image: source.image }) : await uploadOriginalsToVehicle(user.id, targetVehicleId, [source.image], [source.role]);
       if (typeof saved === 'string') originalAssetIdsRef.current[source.image] = saved;
       if (saved !== 1 && typeof saved !== 'string') throw new Error('Originalfoto konnte nicht gesichert werden. Bitte erneut versuchen.');
       archivedOriginalsRef.current.add(source.image);
     }
     await saveRegenerationContext(targetVehicleId, buildRegenerationContext({
       remasterConfig, classContext, vehicleDescription, modelTier,
-      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_CURRENT_VERSION, referenceSources: Object.entries(originalAssetIdsRef.current).map(([image, assetId]) => ({ sourceId: assetId, assetId, sourceType: 'original' as const, sourceRole: vehicleSlots.find(s => captures[s.key]?.base64 === image)?.key || detailSourceRoles[image] || 'unassigned-detail' })) } : {}),
+      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_CURRENT_VERSION, referenceSources: Object.entries(originalAssetIdsRef.current).map(([image, assetId]) => ({ sourceId: assetId, assetId, sourceType: sources.find(s => s.image === image)?.sourceType ?? (image === wheelReference?.image ? 'immutable asset' as const : v2ConfigSources(remasterConfig).find(s => s.image === image)?.sourceType ?? 'original' as const), sourceRole: vehicleSlots.find(s => captures[s.key]?.base64 === image)?.key || detailSourceRoles[image] || (image === wheelReference?.image ? 'wheel' : v2ConfigSources(remasterConfig).find(s => s.image === image)?.sourceRole ?? 'unassigned-detail') })) } : {}),
     }));
     return target;
   };
@@ -930,10 +931,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const useNb21 = isNb21Tier(modelTier);
       let dynamicPrompt: string;
       if (useNb21) {
-        dynamicPrompt = buildNb21RemasterPrompt({
-          config: slotConfig, slotKey: slot.key, vehicleDescription, classContext,
-          references: nb21RemasterRefs(slot.key, !!slotWheelRef),
-        });
+        dynamicPrompt = ''; // V2 prompt is built only after deterministic evidence selection.
       } else {
         dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
         if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
@@ -943,7 +941,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
           const { data, error } = useNb21 ? await invokeNb21V2({
-            sources: [{ sourceId: `capture:${slot.key}:original`, sourceRole: slot.key, sourceType: 'original', image: captures[slot.key].base64 }, ...v2ConfigSources(slotConfig, slotWheelRef?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current })],
+            sources: [{ sourceId: `capture:${slot.key}:original`, sourceRole: slot.key, sourceType: 'original', image: captures[slot.key].base64, assetId: originalAssetIdsRef.current[captures[slot.key].base64] }, ...v2ConfigSources(slotConfig, slotWheelRef?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current })],
             jobKey: slot.key, editSlot: slot.key, config: slotConfig, payload: { gallerySave: galleryTargetsRef.current[slot.key], classContext },
           }) : await invokeRemasterVehicleImage({
             gallerySave: galleryTargetsRef.current[slot.key],
@@ -1033,16 +1031,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const useNb21 = isNb21Tier(modelTier);
       let dynamicPrompt: string;
       if (useNb21) {
-        dynamicPrompt = buildNb21RemasterPrompt({
-          config: retryConfig, slotKey, vehicleDescription, classContext,
-          references: nb21RemasterRefs(slotKey, !!slotWheelRef),
-        });
+        dynamicPrompt = ''; // V2 prompt is built only after deterministic evidence selection.
       } else {
         dynamicPrompt = buildMasterPrompt(retryConfig, vehicleDescription, slotKey, overrides, classContext);
         if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
       }
       const { data, error } = useNb21 ? await invokeNb21V2({
-        sources: [{ sourceId: `capture:${slotKey}:original`, sourceRole: slotKey, sourceType: 'original', image: captures[slotKey].base64 }, ...v2ConfigSources(retryConfig, slotWheelRef?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current })],
+        sources: [{ sourceId: `capture:${slotKey}:original`, sourceRole: slotKey, sourceType: 'original', image: captures[slotKey].base64, assetId: originalAssetIdsRef.current[captures[slotKey].base64] }, ...v2ConfigSources(retryConfig, slotWheelRef?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current })],
         jobKey: slotKey, editSlot: slotKey, config: retryConfig, payload: { gallerySave, classContext },
       }) : await invokeRemasterVehicleImage({
         gallerySave,
