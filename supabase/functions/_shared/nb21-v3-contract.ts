@@ -99,7 +99,6 @@ function v3BasePolicy(key: string, category?: string, editSlot?: string): V3Poli
   if (target === 'wheel_detail') return { target, budget: 3, wheel: true, requirements: [req('wheel_original', ['wheel', 'wheel-detail', 'rim', ...FRONT, 'side', 'side-right'], 'wheel mounting and surrounding body')] };
   if (target === 'exterior_detail') {
     const back = /TAIL|REAR/.test(k);
-    const visibleOverview = /HEADLIGHT|TAILLIGHT|GRILLE|PANEL/.test(k);
     const local = /HEADLIGHT/.test(k) ? ['headlight', 'headlight-detail'] : /TAIL/.test(k) ? ['taillight', 'taillight-detail'] : /GRILLE|PANEL/.test(k) ? ['frontpanel', 'grille', 'front-panel'] : [k.replace(/^(?:MACH|WOMO|MOTO|VAN)_DET_/, '').toLowerCase().replace(/_/g, '-')];
     return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', local, 'local part outline, texture and adjacent photographed structure'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
   }
@@ -139,7 +138,7 @@ export function resolveV3Evidence(args: { jobKey: string; category?: string; edi
   if (args.retryReason && !V3_RETRY_REASONS.includes(args.retryReason)) throw new Error('NB21 v3: Unbekannter Retry-Grund.');
   const ids = new Set<string>();
   for (const s of args.sources) {
-    if (!s.sourceId || !s.sourceRole || ids.has(s.sourceId)) throw new Error('NB21 v3: Doppelte/fehlende Quellenidentität.');
+    if (typeof s.sourceId !== 'string' || !s.sourceId || typeof s.sourceRole !== 'string' || !s.sourceRole || ids.has(s.sourceId) || !['original','immutable asset','generated context'].includes(s.sourceType)) throw new Error('NB21 v3: Doppelte/fehlende Quellenidentität.');
     ids.add(s.sourceId);
   }
   const originals = args.sources.filter(s => s.sourceType === 'original' && s.image).sort((a,b) => a.sourceId.localeCompare(b.sourceId));
