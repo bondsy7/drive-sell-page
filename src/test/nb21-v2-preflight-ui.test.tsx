@@ -1,10 +1,14 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { useState } from 'react';
 import Nb21V2ReferenceCheck from '@/components/Nb21V2ReferenceCheck';
 import { assignV2DetailRoles, checkV2Preflight } from '@/lib/nb21-v2-preflight';
 import type { V2Reference } from '@/prompts/nb21/v2';
 afterEach(cleanup);
+beforeAll(() => {
+  // jsdom omits this browser method used by the real Radix Select.
+  Element.prototype.scrollIntoView = vi.fn();
+});
 const sources: V2Reference[] = [
   { sourceId: 'detail:1', sourceRole: 'unassigned-detail', sourceType: 'original', image: 'data:image/jpeg;base64,YQ==' },
   { sourceId: 'rear', sourceRole: 'rear', sourceType: 'original', image: 'data:image/jpeg;base64,YQ==' },
