@@ -40,10 +40,10 @@ export function buildNb21V2Prompt(args: { manifest: V2Manifest; config: Remaster
   if (!m.entries.length || !m.entries.some(e => e.authorityTier === 'A')) throw new Error('NB21 v2: Originalautorität fehlt.');
   const key = m.jobKey.toUpperCase();
   const side = /RIGHT/.test(key) || key === 'CI_VOLVO_SIDE' ? 'RIGHT' : /LEFT|SIDE|34_FRONT|34_REAR|MASTER_IMAGE/.test(key) ? 'LEFT' : null;
-  const local = m.mode === 'edit' ? ['Retain all photographed visible attributes of the exact source slot; no synthesized viewpoint or replacement body.'] : v2LocalContract(key, m.target);
+  const local = m.mode === 'edit' ? ['Retain photographed geometry, equipment, intrinsic colours and material identity of the exact source slot; no synthesized viewpoint or replacement body. Exposure, white balance, shading and scene-dependent reflections follow the series lighting contract, not the original capture brightness.'] : v2LocalContract(key, m.target);
   const interior = m.target.startsWith('interior') || (m.target === 'composite' && /INTERIOR/.test(key));
   const mode = m.mode === 'edit'
-    ? 'EDIT CONTRACT: retain the source camera, perspective, framing and photographed vehicle pixels/geometry. Do not rebuild the vehicle. Edit only explicitly allowed surfaces and environment.'
+    ? 'EDIT CONTRACT: retain the source camera, perspective, framing and photographed vehicle geometry, equipment and material identity. Do not rebuild the vehicle. Edit only explicitly allowed surfaces, environment and scene-dependent illumination; original exposure is not a pixel-preservation requirement.'
     : `VIEW SYNTHESIS CONTRACT: target ${m.jobKey}, semantic type ${m.target}. Construct the new camera view only from the assigned visual evidence; generated context cannot supply missing vehicle features.`;
   const ciPresentation: Record<string,string> = {
     VOLVO: 'Minimalist frosted glass showroom, dark reflective resin floor, soft cool-white lighting.',

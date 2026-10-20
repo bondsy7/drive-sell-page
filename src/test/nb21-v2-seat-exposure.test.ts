@@ -19,6 +19,8 @@ describe('NB21 v2 seat preservation and series exposure', () => {
     expect(text).toContain('preserve exactly the original camera and framing');
     expect(text).toContain('never becomes a broad slab joined to the armrest or centre console');
     expect(text).not.toContain('VIEW SYNTHESIS CONTRACT');
+    expect(text).toContain('original exposure is not a pixel-preservation requirement');
+    expect(text).not.toContain('photographed vehicle pixels/geometry');
   });
   it.each(['CI_VOLVO_INT_CENTER', 'CI_VOLVO_INT_PASSENGER', 'CI_VOLVO_INT_REAR', 'CI_VOLVO_INT_STEERING', 'GRID_INTERIOR_4'])('%s preserves seats in synthesized cabin views too', key => {
     expect(prompt(key)).toContain('SEAT GEOMETRY LOCK');
