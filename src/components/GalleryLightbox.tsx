@@ -1,4 +1,8 @@
-import { resolveNb21Version, originalSlotFromFilename, type V2Reference } from '@/prompts/nb21/v2';
+import { resolveStoredNb21Version } from '@/lib/nb21-version-dispatch';
+import { invokeNb21V3 } from '@/lib/nb21-v3-invoke';
+import { v3ResultMetadata, resolveV3Evidence, type V3RetryReason } from '@/prompts/nb21/v3';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { originalSlotFromFilename, type V2Reference } from '@/prompts/nb21/v2';
 import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
 import type { RegenerationContext } from '@/lib/regeneration-context';
 import { resolveRegenerationSeed, buildMandatoryCorrection } from '@/lib/regeneration-seed';
@@ -57,6 +61,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   const [extraPrompt, setExtraPrompt] = useState('');
   const [selectedRef, setSelectedRef] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [retryReason, setRetryReason] = useState<V3RetryReason | undefined>();
+  const [isV3Result, setIsV3Result] = useState(false);
 
   const deleteImage = useDeleteGalleryImage();
 
@@ -80,6 +86,17 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, images.length, onClose]);
+
+  useEffect(() => {
+    const id = images[index]?.id;
+    if (!open || !id) return;
+    let active = true;
+    setRetryReason(undefined);
+    supabase.from('project_images').select('generation_context').eq('id', id).maybeSingle().then(({data}) => {
+      if (active) setIsV3Result((data?.generation_context as unknown as RegenerationContext | null)?.promptVersion === 'nb21-v3');
+    });
+    return () => { active = false; };
+  }, [open, index, images]);
 
   // Load originals for this vehicle
   const prefix = user && vehicleId ? `${user.id}/${vehicleId}` : '';
@@ -185,12 +202,13 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       const resultContext = resultRow?.generation_context as unknown as RegenerationContext | null;
       const vehicleContext = readRegenerationContext((vRow as any)?.vehicle_data);
       // A later V2 run must never upgrade an older result with no per-result version.
-      if (!resultContext && vehicleContext?.promptVersion === 'nb21-v2') throw new Error('Für dieses ältere Bild fehlt die ursprüngliche Laufversion. Es wird nicht auf V2 umgestellt.');
+      if (!resultContext && (vehicleContext?.promptVersion === 'nb21-v2' || vehicleContext?.promptVersion === 'nb21-v3')) throw new Error('Für dieses ältere Bild fehlt die ursprüngliche Laufversion. Es wird nicht auf V2 umgestellt.');
       const ctx = resultContext ?? vehicleContext;
-      const nb21Version = resolveNb21Version(ctx);
-      if (nb21Version !== 'nb21-v2' && !seedUrl) throw new Error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
+      const nb21Version = resolveStoredNb21Version(ctx);
+      const evidenceVersion = nb21Version === 'nb21-v2' || nb21Version === 'nb21-v3';
+      if (!evidenceVersion && !seedUrl) throw new Error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
       // V2 never calls the positional legacy seed resolver's output a vehicle truth.
-      const mainBase64 = nb21Version === 'nb21-v2' ? (referenceUrl ? await fetchAsBase64(referenceUrl) : '') : await fetchAsBase64(seedUrl ?? '');
+      const mainBase64 = evidenceVersion ? (referenceUrl ? await fetchAsBase64(referenceUrl) : '') : await fetchAsBase64(seedUrl ?? '');
       const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
       // Profil-Showroom NUR, wenn er beim ursprünglichen Lauf ausgewählt war (scene=custom-showroom).
       // Ohne gespeicherte Einstellungen: Umgebung aus einem anderen Bild derselben Serie übernehmen.
@@ -203,7 +221,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         ? (/(rear seat|rücksitz|ruecksitz)/i.test(`${pipelineJob?.key} ${pipelineJob?.label} ${pipelineJob?.labelDe}`) ? 'interior-rear' : 'interior-front')
         : undefined;
       const vehicleDescription = ctx?.vehicleDescription || current.perspective || '';
-      const baseContext = nb21Version === 'nb21-v2' ? '' : buildMasterPrompt(
+      const baseContext = evidenceVersion ? '' : buildMasterPrompt(
         { ...config, customShowroomBase64 },
         vehicleDescription,
         interiorSlotKey,
@@ -237,7 +255,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       }
 
       let v2Sources: V2Reference[] = [];
-      if (nb21Version === 'nb21-v2') {
+      if (evidenceVersion) {
         v2Sources = await Promise.all(originals.filter(o => originalSlotFromFilename(o.name) || ctx?.referenceSources?.some(s => s.assetId === o.assetId)).map(async o => {
           const saved = ctx?.referenceSources?.find(s => s.assetId === o.assetId);
           return { sourceId: o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: saved?.sourceType ?? 'original' as const, image: await fetchAsBase64(o.url) };
@@ -246,7 +264,14 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         if (referenceUrl && !originals.some(o => o.url === referenceUrl)) v2Sources.push({ sourceId: `gallery:${images.find(i => i.src === referenceUrl)?.id ?? 'selected'}`, sourceRole: 'environment', sourceType: 'generated context', image: mainBase64 });
         v2Sources.push(...v2ConfigSources({ ...config, customShowroomBase64 }).filter(s => !v2Sources.some(existing => existing.sourceRole === s.sourceRole && existing.sourceType === s.sourceType)));
       }
-      const { data, error } = nb21Version === 'nb21-v2' ? await invokeNb21V2({
+      if (nb21Version === 'nb21-v3' && !ctx?.lightingProfile) throw new Error('V3: Ursprüngliches Serien-Lichtprofil fehlt; keine automatische Migration.');
+      const v3Args = nb21Version === 'nb21-v3' && ctx?.lightingProfile ? {
+        sources: v2Sources, jobKey: ctx.jobKey ?? pipelineJob?.key ?? ctx.sourceSlot ?? 'as-photographed', category: pipelineJob?.category,
+        editSlot: ctx.jobKey || pipelineJob ? undefined : ctx.sourceSlot,
+        config: { ...config, customShowroomBase64 }, correction: extraPrompt.trim(), lightingProfile: ctx.lightingProfile,
+        retryReason, payload: { classContext: ctx.classContext },
+      } : null;
+      const { data, error } = v3Args ? await invokeNb21V3(v3Args) : nb21Version === 'nb21-v2' ? await invokeNb21V2({
         sources: v2Sources, jobKey: ctx?.jobKey ?? pipelineJob?.key ?? ctx?.sourceSlot ?? 'as-photographed', category: pipelineJob?.category,
         editSlot: ctx?.jobKey || pipelineJob ? undefined : ctx?.sourceSlot ?? undefined,
         config: { ...config, customShowroomBase64 }, correction: extraPrompt.trim(), payload: { classContext: ctx?.classContext },
@@ -268,7 +293,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       } else {
         const { error: updateError } = await supabase
           .from('project_images')
-          .update({ image_url: data.imageBase64, image_base64: '' } as any)
+          .update({ image_url: data.imageBase64, image_base64: '', ...(v3Args ? { generation_context: { ...ctx, v3Metadata: v3ResultMetadata(resolveV3Evidence(v3Args).manifest), lightingProfile: v3Args.lightingProfile } } : {}) } as any)
           .eq('id', current.id);
 
         if (updateError) toast.error('Bild generiert, aber Speichern fehlgeschlagen');
@@ -405,6 +430,17 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             </p>
           </div>
 
+          {isV3Result && <Select value={retryReason ?? 'none'} onValueChange={v => setRetryReason(v === 'none' ? undefined : v as V3RetryReason)}>
+            <SelectTrigger aria-label="V3 Korrekturgrund"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Kein Korrekturgrund ausgewählt</SelectItem>
+              <SelectItem value="wrong_physical_side">Falsche Fahrzeugseite</SelectItem>
+              <SelectItem value="wrong_view_quadrant">Falsche 3/4-Perspektive</SelectItem>
+              <SelectItem value="unsupported_visible_surface">Nicht belegte Fläche</SelectItem>
+              <SelectItem value="lighting_inconsistent">Abweichende Belichtung</SelectItem>
+              <SelectItem value="identity_drift">Abweichende Fahrzeugdetails</SelectItem>
+            </SelectContent>
+          </Select>}
           <Tabs value={pickerTab} onValueChange={(v) => { setPickerTab(v as any); setSelectedRef(null); }}>
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="originals">Originale</TabsTrigger>
