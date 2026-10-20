@@ -9,7 +9,7 @@ const sources: V2Reference[] = [
   { sourceId: 'detail:1', sourceRole: 'unassigned-detail', sourceType: 'original', image: 'data:image/jpeg;base64,YQ==' },
   { sourceId: 'rear', sourceRole: 'rear', sourceType: 'original', image: 'data:image/jpeg;base64,YQ==' },
 ];
-it('manual assignment updates preflight and skipping removes the missing job', () => {
+it('manual assignment updates preflight and skipping removes the missing job', async () => {
   const launch = vi.fn();
   function Harness() {
     const [assignments, setAssignments] = useState<Record<string, string>>({});
@@ -20,8 +20,8 @@ it('manual assignment updates preflight and skipping removes the missing job', (
   }
   render(<Harness />);
   expect(screen.getByRole('button', { name: 'Start' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('combobox', { name: 'Detailbild 1 zuordnen' }));
-  fireEvent.click(screen.getByRole('option', { name: 'Kofferraum / Laderaum' }));
+  fireEvent.keyDown(screen.getByRole('combobox', { name: 'Detailbild 1 zuordnen' }), { key: 'ArrowDown' });
+  fireEvent.click(await screen.findByRole('option', { name: 'Kofferraum / Laderaum' }));
   expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Start' }));
   expect(launch.mock.calls[0]?.[1][0].sourceRole).toBe('cargo');

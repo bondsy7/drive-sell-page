@@ -43,6 +43,9 @@ Bei vorhandenen passenden Originals und ohne aktivierte Marken-/Kennzeichenasset
 - `AGENTS.md`, `src/prompts/AGENTS.md`, `roadmap.md`, dieses Dokument
 
 ## Verbleibende Grenzen
+- V2-Pipeline-Start prüft alle ausgewählten Jobs mit derselben Evidence-Policy. Fehlende Rollen blockieren den Start; echte Detailoriginale können explizit zugeordnet oder betroffene Jobs bewusst abgewählt werden. Auswahl und Bild-/Kostenanzahl bleiben synchron. Diese Prüfung beurteilt Rollen, nicht den tatsächlichen Bildinhalt.
+- Jede gestartete V2-Pipeline besitzt einen eigenen Asset-/Source-ID-Cache inklusive paralleler Jobs und Wiederholungen. Vorhandene Gemini File URIs werden bevorzugt, erfolgreiche Uploads wiederverwendet; abweichende Bilddaten unter derselben ID werden abgelehnt. Separate Runs und einzelne Galerie-Neugenerierungen besitzen getrennte Caches. Ein fehlgeschlagener Upload bleibt für den Run beim bestehenden Inline-Fallback.
+- Der gemeinsame kompakte V2-Subject-Class-Lock steht im Identitätsabschnitt. Der Server ersetzt Clientangaben durch den normalisierten Klassenkontext, einschließlich Wohnwagen, Reisemobil-Aufbau und Lkw-Scope. Originalbelege haben stets Vorrang vor Modell-/Markenwissen; keine alten Großblöcke werden für V2 angehängt.
 - Alte V1-/2.0-Pfade behalten bewusst historische Positions-/Index-Fallbacks (`PipelineContext`, `regeneration-seed`, Labels gespeicherter Inputs). V2 benutzt diese nicht als Fahrzeugautorität.
 - Die Auto3-Vorbelegung ohne gespeicherte Auswahl hat weiterhin eine historische Reihenfolgezuordnung zu Kacheln. V2 folgt danach den sichtbaren Slotrollen; eine automatische Prüfung des tatsächlichen Fotoinhalts ist nicht enthalten.
 - Alte Detailbilder ohne Rolle bleiben unzugeordnet; V2 rät keine Cargo-/Innenraum-/Spezialteilrolle. Neue NB21-Detailuploads können explizit zugeordnet werden.
