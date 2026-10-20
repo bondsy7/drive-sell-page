@@ -940,7 +940,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // Originale im Hintergrund sichern – blockiert den Generierungsstart nicht mehr.
-      if (resolvedVehicleId) void (async () => {
+      if (resolvedVehicleId && cfg.promptVersion !== 'nb21-v2') void (async () => {
         try {
           const normalOriginals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
           // Felgenreferenz NUR für die Persistenz anhängen – sie darf niemals
@@ -1273,6 +1273,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
               gallery_folder: folderName,
+              ...(isNb21Tier(config.modelTier) ? { generation_context: buildRegenerationContext({ remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } : {}),
             }]);
           }
         }
@@ -1312,6 +1313,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
               gallery_folder: folderName,
+              ...(isNb21Tier(config.modelTier) ? { generation_context: buildRegenerationContext({ remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } : {}),
             }]);
           }
         } catch (e) { console.error('Regen save error:', e); }
@@ -1434,6 +1436,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${task.job.labelDe} (Wiederholung)`,
           sort_order: 900 + task.promptIndex,
           gallery_folder: folderName,
+          ...(isNb21Tier(cfg.modelTier) ? { generation_context: buildRegenerationContext({ remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } : {}),
         }]);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
         if (cfg.vehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', cfg.vehicleId] });

@@ -134,7 +134,7 @@ export function wireV2Evidence(plan: V2EvidencePlan, prefer: 'gemini' | 'openai'
   return plan.references.map((s, i) => {
     const entry = plan.manifest.entries[i];
     if (!entry || entry.sourceId !== s.sourceId) throw new Error('NB21 v2: Manifest/Bildzuordnung ungleich.');
-    if (prefer === 'openai' && s.openAIFile?.fileId) return { ...entry, transport: 'openai_file', openAIFile: s.openAIFile };
+    if (prefer === 'openai' && s.openAIFile?.fileId) return { ...entry, transport: 'openai_file', openAIFile: s.openAIFile, imageBase64: s.image };
     if (prefer !== 'inline' && s.fileUri?.uri) return { ...entry, transport: 'file_uri', fileUri: s.fileUri };
     return { ...entry, transport: 'inline', imageBase64: s.image };
   });

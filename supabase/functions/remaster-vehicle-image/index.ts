@@ -660,7 +660,7 @@ serve(async (req) => {
     const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
     if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
-    if (!imageBase64 && !mainImageFileUri?.uri && !oaFileId(mainImageOpenAIFile)) throw new Error("No image provided");
+    if (!isNb21V2 && !imageBase64 && !mainImageFileUri?.uri && !oaFileId(mainImageOpenAIFile)) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
     // Fahrzeugklassen-Kontext prüfen (verbindliche Promptübergabe)
@@ -698,7 +698,7 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
     // override supplies the dynamic prompt. This prevents catalogue-memory
     // substitution of a newer photographed facelift with an older generation.
     const modelGenerationLock = buildModelGenerationLock(vehicleDescription);
-    const prompt = isNb21V2 ? basePrompt : isNb21Request
+    const prompt = isNb21V2 ? basePrompt.replace(/(### SECTION 2\/9: REFERENCE ROLES\n)[\s\S]*?(?=\n\n### SECTION 3\/9:)/, `$1${referenceManifest.entries.map((r: any, i: number) => `IMAGE ${i + 1}: ${r.role}; source=${r.sourceType}; slot=${r.sourceRole}; Tier ${r.authorityTier}; authority=${r.authority}.`).join('\n')}`) : isNb21Request
       ? buildNb21ServerPrompt(basePrompt, { modelGenerationLock, classGuard, vehicleClass: ctx.vehicleClass })
       : `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}${carSideDirectionGuard ? `\n\n${carSideDirectionGuard}` : ''}`;
     console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
@@ -1055,17 +1055,15 @@ REPRODUCTION RULES (ZERO DEVIATION):
         let part: any;
         if (r.transport === 'file_uri') part = { file_data: { mime_type: r.fileUri?.mimeType, file_uri: r.fileUri?.uri } };
         else if (r.transport === 'openai_file') {
-          // NB21 binds Gemini: materialize OpenAI evidence, never change engine.
-          const response = await fetch(`https://api.openai.com/v1/files/${r.openAIFile?.fileId}/content`, { headers: { Authorization: `Bearer ${await getSecret('OPENAI_API_KEY')}` } });
-          if (!response.ok) throw new Error('NB21 v2: OpenAI-Dateireferenz nicht lesbar.');
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte);
-          part = { inlineData: { mimeType: r.openAIFile?.mimeType ?? 'image/jpeg', data: btoa(binary) } };
+          // NB21 remains Gemini. Use bytes of the same selected asset; never read
+          // arbitrary workspace-wide OpenAI file IDs with a private server key.
+          if (!r.imageBase64) throw new Error('NB21 v2: OpenAI-Referenz benötigt dasselbe Original als Inline-Transport.');
+          part = toInlineData(r.imageBase64);
         } else part = toInlineData(r.imageBase64 ?? '');
         imageLabels.set(part, `${r.role} | Tier ${r.authorityTier} | ${r.sourceType} | ${r.authority}`);
         parts.push(part);
       }
-      const transports = await v2TransportManifest(refs);
+      const transports = await v2TransportManifest(refs.map(r => r.transport === 'openai_file' ? { ...r, transport: 'inline' as const } : r));
       v2Telemetry = { manifest: referenceManifest, transports };
       diag.promptVersion = 'nb21-v2'; diag.referenceManifest = referenceManifest; diag.transportManifest = transports;
     }
