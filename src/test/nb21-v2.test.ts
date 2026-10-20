@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
@@ -73,6 +73,7 @@ describe('NB21 v2 evidence contracts', () => {
       const suitable = v2Policy(j.key, j.category).requirements.flatMap(r => r.slots.slice(0,1)).filter(r => !enriched.some(s => s.sourceRole === r));
       const plan = resolveV2Evidence({ jobKey: j.key, category: j.category, sources: [...enriched, ...suitable.map(r => source(r))] });
       const prompt = buildNb21V2Prompt({ manifest: plan.manifest, config });
+      validateV2Wire(plan.manifest, wireV2Evidence(plan));
       const positions = NB21_SECTION_ORDER.map(name => { const h = nb21SectionHeader(name); expect(prompt.split(h).length - 1, j.key).toBe(1); return prompt.indexOf(h); });
       expect(positions).toEqual([...positions].sort((a,b) => a-b));
       expect(prompt).not.toContain('{{NB21_SERVER_');
@@ -117,6 +118,18 @@ describe('NB21 v2 evidence contracts', () => {
     expect(p.manifest.entries.map(e => e.sourceRole)).toContain('environment');
     expect(p.manifest.entries).toHaveLength(8);
     validateV2Wire(p.manifest, wireV2Evidence(p));
+  });
+  it('Volvo CI side keeps its existing physical RIGHT direction', () => {
+    const p = resolveV2Evidence({ jobKey: 'CI_VOLVO_SIDE', sources: pool });
+    expect(p.manifest.entries[0].sourceRole).toBe('side-right');
+    expect(buildNb21V2Prompt({ manifest: p.manifest, config })).toContain('Physical RIGHT side; never mirror.');
+  });
+  it('edit remasters never inject a synthesized detail or camera contract', () => {
+    const p = resolveV2Evidence({ jobKey: 'interior-front', editSlot: 'interior-front', sources: pool });
+    const prompt = buildNb21V2Prompt({ manifest: p.manifest, config });
+    expect(prompt).toContain('EDIT CONTRACT');
+    expect(prompt).toContain('Exactly the original camera');
+    expect(prompt).not.toContain('VIEW SYNTHESIS CONTRACT');
   });
   it('v1, v2, unversioned historic nb21 and non-NB21 remain separate', () => {
     expect(resolveNb21Version({ modelTier: 'nb21', promptVersion: 'nb21-v1' })).toBe('nb21-v1');
