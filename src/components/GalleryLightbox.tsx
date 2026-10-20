@@ -165,14 +165,10 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       jobKey: pipelineJob?.key,
       perspective: current.perspective || '',
     });
-    if (!seedUrl) {
-      toast.error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
-      return;
-    }
     setPickerOpen(false);
     setRegenerating(true);
     try {
-      const mainBase64 = await fetchAsBase64(seedUrl);
+
 
       // Serien-Look wiederherstellen: Showroom, Look, Logo-/Kennzeichenregeln und Fahrzeugklasse
       // exakt wie beim ursprünglichen Lauf (Fallback: Händler-Showroom aus dem Profil).
@@ -187,6 +183,10 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         supabase.from('project_images').select('generation_context').eq('id', current.id).maybeSingle(),
       ]);
       const ctx = (resultRow?.generation_context as unknown as RegenerationContext | null) ?? readRegenerationContext((vRow as any)?.vehicle_data);
+      const nb21Version = resolveNb21Version(ctx);
+      if (nb21Version !== 'nb21-v2' && !seedUrl) throw new Error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
+      // V2 never calls the positional legacy seed resolver's output a vehicle truth.
+      const mainBase64 = nb21Version === 'nb21-v2' ? (referenceUrl ? await fetchAsBase64(referenceUrl) : '') : await fetchAsBase64(seedUrl ?? '');
       const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
       // Profil-Showroom NUR, wenn er beim ursprünglichen Lauf ausgewählt war (scene=custom-showroom).
       // Ohne gespeicherte Einstellungen: Umgebung aus einem anderen Bild derselben Serie übernehmen.
@@ -199,7 +199,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         ? (/(rear seat|rücksitz|ruecksitz)/i.test(`${pipelineJob?.key} ${pipelineJob?.label} ${pipelineJob?.labelDe}`) ? 'interior-rear' : 'interior-front')
         : undefined;
       const vehicleDescription = ctx?.vehicleDescription || current.perspective || '';
-      const baseContext = buildMasterPrompt(
+      const baseContext = nb21Version === 'nb21-v2' ? '' : buildMasterPrompt(
         { ...config, customShowroomBase64 },
         vehicleDescription,
         interiorSlotKey,
@@ -218,7 +218,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
 
       // Nano Banana 2.1: Läufe mit gespeicherter Version nb21-v1 werden wieder über
       // den 2.1-Pfad gebaut. Alte Läufe ohne Version bleiben auf ihrem 2.0-Pfad.
-      const nb21Version = resolveNb21Version(ctx);
       let nb21Prompt: string | null = null;
       if (nb21Version === 'nb21-v1') {
         const nb21Refs = {
@@ -241,11 +240,11 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         }));
         // Selecting a generated gallery frame does NOT relabel it as an original.
         if (referenceUrl && !originals.some(o => o.url === referenceUrl)) v2Sources.push({ sourceId: `gallery:${images.find(i => i.src === referenceUrl)?.id ?? 'selected'}`, sourceRole: 'environment', sourceType: 'generated context', image: mainBase64 });
-        v2Sources.push(...v2ConfigSources({ ...config, customShowroomBase64 }));
+        v2Sources.push(...v2ConfigSources({ ...config, customShowroomBase64 }).filter(s => !v2Sources.some(existing => existing.sourceRole === s.sourceRole && existing.sourceType === s.sourceType)));
       }
       const { data, error } = nb21Version === 'nb21-v2' ? await invokeNb21V2({
-        sources: v2Sources, jobKey: pipelineJob?.key ?? (ctx as any)?.sourceSlot ?? 'as-photographed', category: pipelineJob?.category,
-        editSlot: pipelineJob ? undefined : (ctx as any)?.sourceSlot ?? undefined,
+        sources: v2Sources, jobKey: ctx?.jobKey ?? pipelineJob?.key ?? ctx?.sourceSlot ?? 'as-photographed', category: pipelineJob?.category,
+        editSlot: ctx?.jobKey || pipelineJob ? undefined : ctx?.sourceSlot ?? undefined,
         config: { ...config, customShowroomBase64 }, correction: extraPrompt.trim(), payload: { classContext: ctx?.classContext },
       }) : await invokeRemasterVehicleImage({
         classContext: ctx?.classContext ?? null,

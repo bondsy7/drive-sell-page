@@ -409,7 +409,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!cfg.evidenceSources?.length) throw new Error('NB21 v2: Explizite Originalzuordnung fehlt.');
       const sources = [...cfg.evidenceSources, ...v2ConfigSources(cfg.remasterConfig, cfg.wheelReference?.image, {
         manufacturer: cachedManufacturerLogoBase64Ref.current, dealer: cachedDealerLogoBase64Ref.current,
-      })];
+      }).filter(s => !cfg.evidenceSources?.some(existing => existing.sourceRole === s.sourceRole && existing.sourceType === s.sourceType))];
       const { data, error } = await invokeNb21V2({ sources, jobKey: job.key, category: job.category, config: cfg.remasterConfig, payload: { classContext: cfg.classContext } });
       const diagnostics = data?.diagnostics ?? {};
       return { base64: data?.imageBase64 ?? null, error: data?.error ?? error?.message, engine: diagnostics.engine ?? data?.engine, model: diagnostics.model ?? data?.model,
@@ -993,7 +993,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${r.label}`,
           sort_order: sortOrder,
           gallery_folder: folderName,
-          ...(isNb21Tier(cfg.modelTier) ? { generation_context: buildRegenerationContext({ remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, vehicleDescription: cfg.vehicleDescription, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } : {}),
+          ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: job.key, ...buildRegenerationContext({ remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, vehicleDescription: cfg.vehicleDescription, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         savedUrls.push(url);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });

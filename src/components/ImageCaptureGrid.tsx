@@ -1196,7 +1196,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           const records: V2Reference[] = [{ sourceId: `capture:${s.key}:original`, sourceRole: s.key, sourceType: 'original', image: capture.base64, assetId: originalAssetIdsRef.current[capture.base64] }];
           if (capture.remasteredBase64) records.push({ sourceId: `capture:${s.key}:remaster`, sourceRole: s.key, sourceType: 'generated context', image: capture.remasteredBase64, assetId: capture.savedImageId });
           return records;
-        }).concat(detailImages.map((image, i) => ({ sourceId: `detail:${i}`, image, sourceType: 'original' as const, sourceRole: detailSourceRoles[image] || 'unassigned-detail', assetId: originalAssetIdsRef.current[image] })))}
+        }).concat(detailImages.map((image, i) => ({ sourceId: `detail:${i}`, image, sourceType: 'original' as const, sourceRole: detailSourceRoles[image] || 'unassigned-detail', assetId: originalAssetIdsRef.current[image] })), v2ConfigSources(remasterConfig, wheelReference?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ ...s, assetId: originalAssetIdsRef.current[s.image] })))}
         promptVersion={isNb21Tier(modelTier) ? NB21_CURRENT_VERSION : undefined}
         inputImages={allCapturedBase64}
         referenceRoles={allCapturedRoles}
