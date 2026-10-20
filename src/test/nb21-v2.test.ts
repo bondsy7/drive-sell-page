@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
-import { buildNb21V2Prompt, classifyV2Target, resolveV2Evidence, resolveNb21Version, originalSlotFromFilename, wireV2Evidence, type V2Reference } from '@/prompts/nb21/v2';
+import { buildNb21V2Prompt, classifyV2Target, resolveV2Evidence, resolveNb21Version, originalSlotFromFilename, wireV2Evidence, v2Policy, type V2Reference } from '@/prompts/nb21/v2';
 import { validateV2Wire, v2TransportManifest } from '../../supabase/functions/_shared/nb21-v2-wire';
 import { NB21_SECTION_ORDER, nb21SectionHeader } from '@/prompts/nb21';
 import type { RemasterConfig } from '@/lib/remaster-prompt';
@@ -70,7 +70,8 @@ describe('NB21 v2 evidence contracts', () => {
   it('all jobs have a V2 policy and 9 sections, independent of legacy prompt bodies', () => {
     const enriched = [...pool, ...['living','kitchen','bath','bed','garage','controls','cabin','cockpit'].map(r => source(r))];
     for (const j of ALL_PIPELINE_JOBS) {
-      const plan = resolveV2Evidence({ jobKey: j.key, category: j.category, sources: enriched });
+      const suitable = v2Policy(j.key, j.category).requirements.flatMap(r => r.slots.slice(0,1)).filter(r => !enriched.some(s => s.sourceRole === r));
+      const plan = resolveV2Evidence({ jobKey: j.key, category: j.category, sources: [...enriched, ...suitable.map(r => source(r))] });
       const prompt = buildNb21V2Prompt({ manifest: plan.manifest, config });
       const positions = NB21_SECTION_ORDER.map(name => { const h = nb21SectionHeader(name); expect(prompt.split(h).length - 1, j.key).toBe(1); return prompt.indexOf(h); });
       expect(positions).toEqual([...positions].sort((a,b) => a-b));
@@ -96,6 +97,26 @@ describe('NB21 v2 evidence contracts', () => {
     expect(originalSlotFromFilename('123-9-original.jpg')).toBeNull();
     expect(originalSlotFromFilename('123-9-cargo-original.jpg')).toBe('cargo');
     expect(() => resolveV2Evidence({ jobKey: 'CI_VOLVO_INT_BOOT', sources: [source('unassigned-detail'), source('rear')] })).toThrow(/cargo_original/);
+  });
+  it('non-visible specialty details never silently substitute a front overview', () => {
+    expect(() => resolveV2Evidence({ jobKey: 'MACH_DET_UNDERCARRIAGE', sources: pool })).toThrow(/local_detail_original/);
+    expect(resolveV2Evidence({ jobKey: 'MACH_DET_UNDERCARRIAGE', sources: [...pool, source('undercarriage')] }).manifest.entries[0].sourceRole).toBe('undercarriage');
+  });
+  it('composites and motorhome edit interiors retain semantic scope', () => {
+    expect(classifyV2Target('GRID_INTERIOR_4')).toBe('composite');
+    expect(classifyV2Target('VAN_SOCIAL_COLLAGE')).toBe('composite');
+    for (const slot of ['living','kitchen','bath','bed']) {
+      const p = resolveV2Evidence({ jobKey: slot, editSlot: slot, sources: [source(slot), source('wheel','immutable asset')] });
+      expect(p.manifest.target).toBe('interior_cabin');
+      expect(p.manifest.entries.some(e => e.sourceRole === 'wheel')).toBe(false);
+    }
+  });
+  it('scene and enabled assets never displace mandatory originals', () => {
+    const p = resolveV2Evidence({ jobKey: 'EXT_ELEVATED_FRONT', sources: [...pool, ...['wheel','plate','manufacturer-logo','dealer-logo'].map(r => source(r,'immutable asset')), source('environment','generated context')] });
+    expect(p.manifest.entries.slice(0,3).map(e => e.sourceRole)).toEqual(['front','frontpanel','side']);
+    expect(p.manifest.entries.map(e => e.sourceRole)).toContain('environment');
+    expect(p.manifest.entries).toHaveLength(8);
+    validateV2Wire(p.manifest, wireV2Evidence(p));
   });
   it('v1, v2, unversioned historic nb21 and non-NB21 remain separate', () => {
     expect(resolveNb21Version({ modelTier: 'nb21', promptVersion: 'nb21-v1' })).toBe('nb21-v1');
