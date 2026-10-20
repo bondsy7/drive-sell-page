@@ -815,6 +815,13 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         </p>
       )}
 
+      {isV2 && !isContextActive && <Nb21V2ReferenceCheck
+        results={referenceCheck}
+        sources={assignedEvidence}
+        onAssign={(sourceId, role) => setDetailAssignments(previous => ({ ...previous, [sourceId]: role }))}
+        onSkip={key => setSelectedKeys(previous => { const next = new Set(previous); next.delete(key); return next; })}
+      />}
+
       {/* Actions */}
       <div className="flex items-center justify-between gap-2 px-1">
         <Button variant="outline" size="sm" onClick={onBack} disabled={running} className="text-xs sm:text-sm">
@@ -824,7 +831,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         {!finished ? (
           <Button
             onClick={handleStartClick}
-            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0}
+            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0 || (isV2 && referencesMissing)}
             className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
           >
             {running || starting ? (
@@ -853,13 +860,6 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           </div>
         )}
       </div>
-
-      {isV2 && !isContextActive && <Nb21V2ReferenceCheck
-        results={referenceCheck}
-        sources={assignedEvidence}
-        onAssign={(sourceId, role) => setDetailAssignments(previous => ({ ...previous, [sourceId]: role }))}
-        onSkip={key => setSelectedKeys(previous => { const next = new Set(previous); next.delete(key); return next; })}
-      />}
 
       {/* Credit Confirmation Dialog */}
       <CreditConfirmDialog
