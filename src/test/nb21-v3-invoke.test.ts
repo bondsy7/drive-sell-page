@@ -39,3 +39,16 @@ it('inactive custom mode strips a stale plate asset before upload',async()=>{
   const b=invoke.mock.calls[0][0] as {referenceManifest:{entries:{role:string}[]}};
   expect(b.referenceManifest.entries.some(e=>e.role==='plate')).toBe(false);
 });
+it('cabin dispatch uploads only the needed original, with enabled logos and custom plate excluded before fetching',async()=>{
+  upload.mockClear();invoke.mockClear();
+  await invokeNb21V3({
+    sources:[ref('interior-front'),ref('interior-rear'),ref('screen'),{...ref('environment'),sourceType:'generated context'}],
+    jobKey:'CI_VOLVO_INT_CENTER',
+    config:{...config,scene:'dealer-lot-dekra',showManufacturerLogo:true,showDealerLogo:true,manufacturerLogoUrl:'https://unused.invalid/manufacturer.png',dealerLogoUrl:'https://unused.invalid/dealer.png',licensePlate:'custom',customPlateImageBase64:'data:image/png;base64,YQ=='},
+    lightingProfile:await createV3LightingProfile('minimal-upload'),
+  });
+  expect(upload).toHaveBeenCalledTimes(1);
+  const b=invoke.mock.calls[0][0] as {v3References:{sourceId:string}[];referenceManifest:Parameters<typeof validateV3Wire>[0]};
+  expect(b.v3References.map(r=>r.sourceId)).toEqual(['interior-front']);
+  await validateV3Wire(b.referenceManifest,b.v3References as Parameters<typeof validateV3Wire>[1]);
+});
