@@ -18,4 +18,5 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Read nested `AGENTS.md` in `supabase/functions/` and `src/prompts/`. NB21 V3 is opt-in with independent side contracts and immutable run lighting; result provenance preserves frozen V1/V2 regeneration and blocks missing originals before dispatch.
 - Background-swap uses its own upload grid and slot-keyed originals, reusing only the car profile's visual perspectives; remastering requirements, reference-only roles and detection never apply to this independent processing flow.
 - Capture remasters save before delivery and skip saved IDs downstream; remaster prices share one resolver, preventing lost results, duplicates and price drift.
-- NB21 detail intake reuses the Reference V2 analyzer/registry: only confident visible perspectives assign roles; manual choices win and file references are reused to prevent guessing and duplicate uploads.
+- Detail intake uses Reference V2; manual roles win and file references are reused.
+- Shared branding scope separates plate and wall assets; V3 filters assets by explicit settings to prevent source-logo leakage.

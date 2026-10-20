@@ -651,7 +651,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       inlineSupportingImages = stillInline;
       additionalImageRoles = stillInlineRoles;
     }
-    const plateFileUri = isInteriorJob ? null : fileUriCache.plate;
+    const useCustomPlate = !isInteriorJob && cfg.remasterConfig.licensePlate === 'custom';
+    const plateFileUri = useCustomPlate ? fileUriCache.plate : null;
     const mfgLogoFileUri = cfg.remasterConfig.showManufacturerLogo ? fileUriCache.manufacturerLogo : null;
     const dealerLogoFileUri2 = cfg.remasterConfig.showDealerLogo ? fileUriCache.dealerLogo : null;
 
@@ -696,7 +697,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...(useNb21 ? { promptVersion: NB21_PROMPT_VERSION } : {}),
       customShowroomBase64: (hasFileUris || openAICache.showroom) ? null : showroomBase64ForRequest,
       customShowroomFileUri: fileCache.showroom || null,
-      customPlateImageBase64: (plateFileUri || (!isInteriorJob && openAICache.plate)) ? null : (isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null)),
+      customPlateImageBase64: !useCustomPlate || plateFileUri || openAICache.plate ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
       customPlateImageFileUri: plateFileUri,
       dealerLogoUrl: (dealerLogoFileUri2 || openAICache.dealerLogo || dealerLogoBase64) ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: (dealerLogoFileUri2 || (cfg.remasterConfig.showDealerLogo && openAICache.dealerLogo)) ? null : dealerLogoBase64,
@@ -710,7 +711,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       additionalOpenAIFileRoles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFileRoles : undefined,
       wheelReferenceOpenAIFile: needsWheel ? openAICache.wheel : null,
       customShowroomOpenAIFile: openAICache.showroom,
-      customPlateOpenAIFile: isInteriorJob ? null : openAICache.plate,
+      customPlateOpenAIFile: useCustomPlate ? openAICache.plate : null,
       manufacturerLogoOpenAIFile: cfg.remasterConfig.showManufacturerLogo ? openAICache.manufacturerLogo : null,
       dealerLogoOpenAIFile: cfg.remasterConfig.showDealerLogo ? openAICache.dealerLogo : null,
     });
@@ -869,7 +870,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (showroomB64) imagesToUpload.push(showroomB64);
 
         // Add plate if present
-        const plateB64 = cfg.remasterConfig.customPlateImageBase64;
+        const plateB64 = cfg.remasterConfig.licensePlate === 'custom' ? cfg.remasterConfig.customPlateImageBase64 : null;
         const plateIdx = plateB64 ? imagesToUpload.length : -1;
         if (plateB64) imagesToUpload.push(plateB64);
 

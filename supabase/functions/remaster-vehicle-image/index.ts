@@ -1,6 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { validateV3Wire, v3ResultMetadata, type V3Manifest } from '../_shared/nb21-v3-contract.ts';
 import { enforceV3ServerPrompt } from '../_shared/nb21-v3-prompt.ts';
+import { brandingAssetScope } from '../_shared/branding-asset-scope.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -816,6 +817,14 @@ Before returning the image, inspect hood, roof, doors, windows, chrome, rims and
 
     // Build Gemini content parts
     const parts: any[] = [{ text: prompt }];
+    // Frozen V1/V2 manifests remain unchanged; current non-NB21 requests
+    // receive the same asset placement policy used by V3.
+    if (!isNb21Request) parts.push({ text: brandingAssetScope([
+      ...(customPlateImageBase64 || customPlateImageFileUri?.uri || customPlateOpenAIFile?.fileId ? ['plate'] : []),
+      ...(manufacturerLogoBase64 || manufacturerLogoUrl || manufacturerLogoFileUri?.uri || manufacturerLogoOpenAIFile?.fileId ? ['manufacturer-logo'] : []),
+      ...(dealerLogoBase64 || dealerLogoUrl || dealerLogoFileUri?.uri || dealerLogoOpenAIFile?.fileId ? ['dealer-logo'] : []),
+      ...(prompt.includes('DEKRA LOGO PLACEMENT') ? ['scene-logo'] : []),
+    ]) });
     // Labels für Bildteile – nach dem Aufbau werden alle Bilder durchnummeriert
     // und im Prompt namentlich referenziert (["IMAGE 2] = WHEEL REFERENCE" …).
     const imageLabels = new WeakMap<object, string>();
