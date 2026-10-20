@@ -163,3 +163,7 @@
 - [x] Credit-Anzeige an den tatsächlich berechneten Remasterpreis angleichen, ohne Preise zu ändern
 - [x] Fertige Bilder im Aufnahme-Remastering serverseitig sofort sichern und doppelte Ablage beim Galerie-Klick verhindern
 - [x] 32 Tests sowie angemeldete Preis-/Speicher-/Galerieprüfung bestanden; ohne kostenpflichtige Neugenerierung
+
+## Volvo: NB 2 / NB 2.1 — Analyse und Plan
+- [x] Gespeicherte Volvo-Ausgaben und Originale vergleichen; Laufzeiten und tatsächliche Credits prüfen
+- [x] Vergleichsbild erstellen und konkrete NB-2.1-Verbesserungen planen; keine Implementierung oder kostenpflichtigen Läufe
