@@ -846,7 +846,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         {!finished ? (
           <Button
             onClick={handleStartClick}
-            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0 || (isV2 && referencesMissing)}
+            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || (!isV3 && inputImages.length === 0) || (isV2 && referencesMissing)}
             className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
           >
             {running || starting ? (
