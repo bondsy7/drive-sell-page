@@ -200,6 +200,12 @@
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
 
 ## Kennzeichen und Wandbranding
+## NB21 V3: minimale Referenzen und Kabinenübersicht
+- [ ] Referenzsets je Ansicht reduzieren; unnötige Innenraum-Assets und generierten Kontext vor Upload ausschließen
+- [ ] Kabinenübersicht als natürliche zentrierte Armaturenbrettaufnahme ohne erzwungene Vollsitz-/Rückbankdarstellung neu aufbauen
+- [ ] Resolver, finalen Prompt und Dispatch mit gezielten Tests prüfen; V1/V2/Qualität unverändert, keine kostenpflichtige Generierung
+
+## Kennzeichen und Wandbranding
 - [x] Kennzeichenassets strikt auf Kennzeichen begrenzen, Wandlogos nur bei expliziter Auswahl zulassen und Originalfoto-Branding ausschließen (V3 und aktuelle Standardverarbeitung; historische V1/V2 unverändert)
 - [x] 46 gezielte Tests und Scope-Lint erfolgreich; keine kostenpflichtige Generierung
 - [ ] Serverseitige Schutzregel bereitstellen und Bildwirkung prüfen — kein Deployment/Anbieteraufruf in diesem Auftrag
