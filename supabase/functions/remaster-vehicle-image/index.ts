@@ -1084,13 +1084,13 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
-          if (!isResponsesImageTier) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          if (!isResponsesImageTier && !isNb21V2) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
           rebuilt.push(p);
         } else {
           rebuilt.push(p);
         }
       }
-      if (!isResponsesImageTier && imageManifest.length > 0) {
+      if (!isResponsesImageTier && !isNb21V2 && imageManifest.length > 0) {
         rebuilt.splice(1, 0, {
           text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
         });
@@ -1545,7 +1545,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
     diag.inlineImageCount = parts.filter((p: any) => p.inlineData).length;
     diag.fileImageCount = parts.filter((p: any) => p.file_data).length;
     const maxRetries = 2;
-    const startedAt = Date.now();
+    const geminiStartedAt = Date.now();
     const HARD_BUDGET_MS = 140_000; // stay under 150s edge limit
 
     for (const currentModel of modelsToTry) {
@@ -1554,7 +1554,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          const elapsed = Date.now() - startedAt;
+          const elapsed = Date.now() - geminiStartedAt;
           const remaining = HARD_BUDGET_MS - elapsed;
           if (remaining < 15_000) {
             console.warn(`Time budget exhausted (${elapsed}ms), aborting further attempts`);

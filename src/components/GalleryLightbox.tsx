@@ -276,8 +276,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           onRegenerated?.();
         }
       }
-    } catch {
-      toast.error('Netzwerkfehler beim Regenerieren');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Netzwerkfehler beim Regenerieren');
     }
     setRegenerating(false);
   };
