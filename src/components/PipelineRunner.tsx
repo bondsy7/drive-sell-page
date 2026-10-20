@@ -1,3 +1,4 @@
+import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
 import { REFERENCE_ONLY_SLOT_KEYS } from '@/config/profiles/car-profile';
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,8 @@ import { checkPipelineStart } from '@/lib/pipeline-start-guard';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
+  evidenceSources?: V2Reference[];
+  promptVersion?: 'nb21-v1' | 'nb21-v2';
   inputImages: string[];
   referenceRoles?: string[];
   savedInputIds?: (string | undefined)[];
@@ -64,6 +67,8 @@ const CREDIT_COST_PER_IMAGE = PIPELINE_CREDIT_COST_PER_IMAGE;
 /* ─── Component ─── */
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
+  evidenceSources,
+  promptVersion,
   referenceRoles,
   savedInputIds,
   originalImages,
@@ -352,6 +357,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     const started = pipeline.startPipeline({
       workflowKey,
+      evidenceSources,
+      promptVersion: modelTier === 'nb21' ? (promptVersion ?? NB21_CURRENT_VERSION) : undefined,
       inputImages,
       referenceRoles,
       originalImages: originalImages || [],
@@ -375,7 +382,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       startingRef.current = false;
       setStarting(false);
     }
-  }, [user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
+  }, [evidenceSources, promptVersion, user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {

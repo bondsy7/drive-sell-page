@@ -7,6 +7,8 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { buildNb21PipelinePrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
+import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
+import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
 import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
@@ -82,6 +84,8 @@ export interface PipelineConfig {
   /** Stable identity of the vehicle/photo batch that owns this run. */
   workflowKey: string;
   inputImages: string[];
+  promptVersion?: 'nb21-v1' | 'nb21-v2';
+  evidenceSources?: V2Reference[];
   /** Perspective/source role aligned by index with inputImages. */
   referenceRoles?: string[];
   originalImages: string[];
@@ -399,6 +403,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     prompt: string, job: PipelineJob | undefined, cfg: PipelineConfig
   ): Promise<GenerationOutcome> => {
     const attemptStartedAt = Date.now();
+    if (isNb21Tier(cfg.modelTier) && cfg.promptVersion === 'nb21-v2') {
+      if (!job) throw new Error('NB21 v2: Job fehlt.');
+      // No positional fallback: callers must carry original/source provenance.
+      if (!cfg.evidenceSources?.length) throw new Error('NB21 v2: Explizite Originalzuordnung fehlt.');
+      const sources = [...cfg.evidenceSources, ...v2ConfigSources(cfg.remasterConfig, cfg.wheelReference?.image, {
+        manufacturer: cachedManufacturerLogoBase64Ref.current, dealer: cachedDealerLogoBase64Ref.current,
+      }).filter(s => !cfg.evidenceSources?.some(existing => existing.sourceRole === s.sourceRole && existing.sourceType === s.sourceType))];
+      const { data, error } = await invokeNb21V2({ sources, jobKey: job.key, category: job.category, config: cfg.remasterConfig, payload: { classContext: cfg.classContext } });
+      const diagnostics = data?.diagnostics ?? {};
+      return { base64: data?.imageBase64 ?? null, error: data?.error ?? error?.message, engine: diagnostics.engine ?? data?.engine, model: diagnostics.model ?? data?.model,
+        providerResponse: diagnostics, attempts: diagnostics.attempts ?? 1, durationMs: Date.now() - attemptStartedAt };
+    }
     // The successful remasters are the strongest generation-safe blueprints for
     // downstream perspectives. Raw originals remain supporting evidence only.
     const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
@@ -917,13 +933,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           classContext: cfg.classContext ?? null,
           vehicleDescription: cfg.vehicleDescription,
           modelTier: cfg.modelTier,
-          promptVersion: isNb21Tier(cfg.modelTier) ? NB21_PROMPT_VERSION : undefined,
+          promptVersion: isNb21Tier(cfg.modelTier) ? (cfg.promptVersion ?? NB21_PROMPT_VERSION) : undefined,
+          referenceSources: cfg.promptVersion === 'nb21-v2' ? cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) : undefined,
           resolvedManufacturerLogoUrl: cfg.resolvedManufacturerLogoUrl,
         })).catch(e => console.warn('[pipeline] save regeneration context skipped:', e));
       }
 
       // Originale im Hintergrund sichern – blockiert den Generierungsstart nicht mehr.
-      if (resolvedVehicleId) void (async () => {
+      if (resolvedVehicleId && cfg.promptVersion !== 'nb21-v2') void (async () => {
         try {
           const normalOriginals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
           // Felgenreferenz NUR für die Persistenz anhängen – sie darf niemals
@@ -976,6 +993,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${r.label}`,
           sort_order: sortOrder,
           gallery_folder: folderName,
+          ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: r.key, ...buildRegenerationContext({ remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, vehicleDescription: cfg.vehicleDescription, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         savedUrls.push(url);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
@@ -1255,6 +1273,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
               gallery_folder: folderName,
+              ...(isNb21Tier(config.modelTier) ? { generation_context: { jobKey: job.key, ...buildRegenerationContext({ remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
             }]);
           }
         }
@@ -1294,6 +1313,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
               gallery_folder: folderName,
+              ...(isNb21Tier(config.modelTier) ? { generation_context: { jobKey: job.key, ...buildRegenerationContext({ remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
             }]);
           }
         } catch (e) { console.error('Regen save error:', e); }
@@ -1416,6 +1436,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${task.job.labelDe} (Wiederholung)`,
           sort_order: 900 + task.promptIndex,
           gallery_folder: folderName,
+          ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: task.job.key, ...buildRegenerationContext({ remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
         if (cfg.vehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', cfg.vehicleId] });

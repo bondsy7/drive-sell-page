@@ -1,3 +1,6 @@
+import { resolveNb21Version, originalSlotFromFilename, type V2Reference } from '@/prompts/nb21/v2';
+import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
+import type { RegenerationContext } from '@/lib/regeneration-context';
 import { resolveRegenerationSeed, buildMandatoryCorrection } from '@/lib/regeneration-seed';
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon, Wand2 } from 'lucide-react';
@@ -21,7 +24,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
 import { ALL_PIPELINE_JOBS, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
-import { buildNb21PipelinePrompt, buildNb21RemasterPrompt, resolveRegenerationPromptVersion, NB21_TIER } from '@/prompts/nb21';
+import { buildNb21PipelinePrompt, buildNb21RemasterPrompt, NB21_TIER } from '@/prompts/nb21';
 import { ensureCachedBase64 } from '@/lib/image-base64-cache';
 import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene, pickSeriesEnvironmentImage } from '@/lib/regeneration-context';
 import { downloadMediaFile } from '@/lib/download-file';
@@ -95,7 +98,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             const { data: signed } = await supabase.storage
               .from('originals')
               .createSignedUrl(fullPath, 60 * 60);
-            return { name: f.name, url: signed?.signedUrl || '' };
+            return { name: f.name, url: signed?.signedUrl || '', assetId: fullPath };
           }),
       );
     },
@@ -162,18 +165,14 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       jobKey: pipelineJob?.key,
       perspective: current.perspective || '',
     });
-    if (!seedUrl) {
-      toast.error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
-      return;
-    }
     setPickerOpen(false);
     setRegenerating(true);
     try {
-      const mainBase64 = await fetchAsBase64(seedUrl);
+
 
       // Serien-Look wiederherstellen: Showroom, Look, Logo-/Kennzeichenregeln und Fahrzeugklasse
       // exakt wie beim ursprünglichen Lauf (Fallback: Händler-Showroom aus dem Profil).
-      const [{ data: vRow }, { data: pRow }, overrides] = await Promise.all([
+      const [{ data: vRow }, { data: pRow }, overrides, { data: resultRow }] = await Promise.all([
         vehicleId
           ? supabase.from('vehicles').select('vehicle_data').eq('id', vehicleId).maybeSingle()
           : Promise.resolve({ data: null } as any),
@@ -181,8 +180,17 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           ? supabase.from('profiles').select('custom_showroom_url').eq('id', user.id).maybeSingle()
           : Promise.resolve({ data: null } as any),
         fetchPromptOverrides().catch(() => ({} as Record<string, string>)),
+        supabase.from('project_images').select('generation_context').eq('id', current.id).maybeSingle(),
       ]);
-      const ctx = readRegenerationContext((vRow as any)?.vehicle_data);
+      const resultContext = resultRow?.generation_context as unknown as RegenerationContext | null;
+      const vehicleContext = readRegenerationContext((vRow as any)?.vehicle_data);
+      // A later V2 run must never upgrade an older result with no per-result version.
+      if (!resultContext && vehicleContext?.promptVersion === 'nb21-v2') throw new Error('Für dieses ältere Bild fehlt die ursprüngliche Laufversion. Es wird nicht auf V2 umgestellt.');
+      const ctx = resultContext ?? vehicleContext;
+      const nb21Version = resolveNb21Version(ctx);
+      if (nb21Version !== 'nb21-v2' && !seedUrl) throw new Error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
+      // V2 never calls the positional legacy seed resolver's output a vehicle truth.
+      const mainBase64 = nb21Version === 'nb21-v2' ? (referenceUrl ? await fetchAsBase64(referenceUrl) : '') : await fetchAsBase64(seedUrl ?? '');
       const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
       // Profil-Showroom NUR, wenn er beim ursprünglichen Lauf ausgewählt war (scene=custom-showroom).
       // Ohne gespeicherte Einstellungen: Umgebung aus einem anderen Bild derselben Serie übernehmen.
@@ -195,7 +203,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         ? (/(rear seat|rücksitz|ruecksitz)/i.test(`${pipelineJob?.key} ${pipelineJob?.label} ${pipelineJob?.labelDe}`) ? 'interior-rear' : 'interior-front')
         : undefined;
       const vehicleDescription = ctx?.vehicleDescription || current.perspective || '';
-      const baseContext = buildMasterPrompt(
+      const baseContext = nb21Version === 'nb21-v2' ? '' : buildMasterPrompt(
         { ...config, customShowroomBase64 },
         vehicleDescription,
         interiorSlotKey,
@@ -214,9 +222,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
 
       // Nano Banana 2.1: Läufe mit gespeicherter Version nb21-v1 werden wieder über
       // den 2.1-Pfad gebaut. Alte Läufe ohne Version bleiben auf ihrem 2.0-Pfad.
-      const nb21Version = resolveRegenerationPromptVersion(ctx);
       let nb21Prompt: string | null = null;
-      if (nb21Version) {
+      if (nb21Version === 'nb21-v1') {
         const nb21Refs = {
           primaryRole: current.perspective || pipelineJob?.labelDe || 'overall vehicle photo',
           hasEnvironmentReference: !!customShowroomBase64,
@@ -229,7 +236,21 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           : buildNb21RemasterPrompt({ config: { ...config, customShowroomBase64 }, slotKey: interiorSlotKey ?? 'as-photographed', vehicleDescription, classContext: ctx?.classContext ?? null, references: nb21Refs, correction: nb21Correction });
       }
 
-      const { data, error } = await invokeRemasterVehicleImage({
+      let v2Sources: V2Reference[] = [];
+      if (nb21Version === 'nb21-v2') {
+        v2Sources = await Promise.all(originals.filter(o => originalSlotFromFilename(o.name) || ctx?.referenceSources?.some(s => s.assetId === o.assetId)).map(async o => {
+          const saved = ctx?.referenceSources?.find(s => s.assetId === o.assetId);
+          return { sourceId: o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: saved?.sourceType ?? 'original' as const, image: await fetchAsBase64(o.url) };
+        }));
+        // Selecting a generated gallery frame does NOT relabel it as an original.
+        if (referenceUrl && !originals.some(o => o.url === referenceUrl)) v2Sources.push({ sourceId: `gallery:${images.find(i => i.src === referenceUrl)?.id ?? 'selected'}`, sourceRole: 'environment', sourceType: 'generated context', image: mainBase64 });
+        v2Sources.push(...v2ConfigSources({ ...config, customShowroomBase64 }).filter(s => !v2Sources.some(existing => existing.sourceRole === s.sourceRole && existing.sourceType === s.sourceType)));
+      }
+      const { data, error } = nb21Version === 'nb21-v2' ? await invokeNb21V2({
+        sources: v2Sources, jobKey: ctx?.jobKey ?? pipelineJob?.key ?? ctx?.sourceSlot ?? 'as-photographed', category: pipelineJob?.category,
+        editSlot: ctx?.jobKey || pipelineJob ? undefined : ctx?.sourceSlot ?? undefined,
+        config: { ...config, customShowroomBase64 }, correction: extraPrompt.trim(), payload: { classContext: ctx?.classContext },
+      }) : await invokeRemasterVehicleImage({
         classContext: ctx?.classContext ?? null,
         imageBase64: mainBase64,
         vehicleDescription,
@@ -258,8 +279,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           onRegenerated?.();
         }
       }
-    } catch {
-      toast.error('Netzwerkfehler beim Regenerieren');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Netzwerkfehler beim Regenerieren');
     }
     setRegenerating(false);
   };

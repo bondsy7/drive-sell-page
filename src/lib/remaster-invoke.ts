@@ -3,8 +3,11 @@ import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import type { WheelAnalysis } from '@/types/wheel-reference';
 import type { OpenAIFileRef } from '@/lib/openai-file-upload';
 import type { RemasterGalleryTarget } from '../../supabase/functions/_shared/remaster-gallery';
+import type { V2Manifest, V2WireReference } from '../../supabase/functions/_shared/nb21-v2-contract';
 
 export interface RemasterInvokePayload {
+  referenceManifest?: V2Manifest;
+  v2References?: V2WireReference[];
   /** Capture results are saved server-side before a successful response. */
   gallerySave?: RemasterGalleryTarget;
   /** Optional: omitted whenever an OpenAI file id carries the same asset. */

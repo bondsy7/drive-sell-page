@@ -99,6 +99,13 @@
       "when": 1791187155703,
       "tag": "0013_add_auto3_tenant_connection",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792482234807,
+      "tag": "0014_nb21_v2_result_version_and_reference_telemetry",
+      "breakpoints": true
     }
   ]
 }

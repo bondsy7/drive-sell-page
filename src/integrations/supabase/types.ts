@@ -1100,11 +1100,14 @@ export type Database = {
           model_tier: string | null
           project_id: string | null
           prompt_index: number
+          prompt_version: string | null
           provider_response: Json | null
           provider_status: number | null
+          reference_manifest: Json | null
           retryable: boolean | null
           stage: string
           status: string
+          transport_manifest: Json | null
           user_id: string
           vehicle_id: string | null
           workflow_key: string | null
@@ -1123,11 +1126,14 @@ export type Database = {
           model_tier?: string | null
           project_id?: string | null
           prompt_index?: number
+          prompt_version?: string | null
           provider_response?: Json | null
           provider_status?: number | null
+          reference_manifest?: Json | null
           retryable?: boolean | null
           stage?: string
           status?: string
+          transport_manifest?: Json | null
           user_id: string
           vehicle_id?: string | null
           workflow_key?: string | null
@@ -1146,11 +1152,14 @@ export type Database = {
           model_tier?: string | null
           project_id?: string | null
           prompt_index?: number
+          prompt_version?: string | null
           provider_response?: Json | null
           provider_status?: number | null
+          reference_manifest?: Json | null
           retryable?: boolean | null
           stage?: string
           status?: string
+          transport_manifest?: Json | null
           user_id?: string
           vehicle_id?: string | null
           workflow_key?: string | null
@@ -1736,6 +1745,7 @@ export type Database = {
         Row: {
           created_at: string
           gallery_folder: string | null
+          generation_context: Json | null
           id: string
           image_base64: string
           image_url: string | null
@@ -1748,6 +1758,7 @@ export type Database = {
         Insert: {
           created_at?: string
           gallery_folder?: string | null
+          generation_context?: Json | null
           id?: string
           image_base64: string
           image_url?: string | null
@@ -1760,6 +1771,7 @@ export type Database = {
         Update: {
           created_at?: string
           gallery_folder?: string | null
+          generation_context?: Json | null
           id?: string
           image_base64?: string
           image_url?: string | null
