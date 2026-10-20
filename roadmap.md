@@ -174,3 +174,9 @@
 - [x] Servervalidierung und tatsächliche Referenztelemetrie ergänzen
 - [x] V2-/Baseline-Tests ausführen; sechs kritische Referenzsets und verbleibende Index-Fallbacks berichten
 - [x] Keine kostenpflichtige Live-Generierung, Preis-/Auth-/Galerie-Verhaltensänderung oder Veröffentlichung; nur additive Versions-/Telemetriedaten
+
+## NB21 v2: Run-Cache, Klassenvertrag und Startprüfung
+- [x] Gemini-Referenzuploads pro Run deduplizieren, bestehende File URIs bevorzugen
+- [x] Kompakten gemeinsamen Subject-Class-Lock im Client und finalen Serverprompt absichern
+- [x] Geplante Originalrollen vor Start prüfen; Detailzuordnung und bewusstes Überspringen anbieten
+- [x] 61 V2-/Baseline-/Integrationstests, gezielten Lint, Server-Typprüfung und isolierte Browser-Bedienprüfung erfolgreich; keine bezahlte Generierung

@@ -9,6 +9,8 @@ import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/
 import { buildNb21PipelinePrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
 import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
+import { V2RunUploadCache } from '@/lib/nb21-v2-upload-cache';
+import { checkV2Preflight } from '@/lib/nb21-v2-preflight';
 import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
@@ -86,6 +88,7 @@ export interface PipelineConfig {
   inputImages: string[];
   promptVersion?: 'nb21-v1' | 'nb21-v2';
   evidenceSources?: V2Reference[];
+  v2UploadCache?: V2RunUploadCache;
   /** Perspective/source role aligned by index with inputImages. */
   referenceRoles?: string[];
   originalImages: string[];
@@ -410,7 +413,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sources = [...cfg.evidenceSources, ...v2ConfigSources(cfg.remasterConfig, cfg.wheelReference?.image, {
         manufacturer: cachedManufacturerLogoBase64Ref.current, dealer: cachedDealerLogoBase64Ref.current,
       }).filter(s => !cfg.evidenceSources?.some(existing => existing.sourceRole === s.sourceRole && existing.sourceType === s.sourceType))];
-      const { data, error } = await invokeNb21V2({ sources, jobKey: job.key, category: job.category, config: cfg.remasterConfig, payload: { classContext: cfg.classContext } });
+      const { data, error } = await invokeNb21V2({ sources, jobKey: job.key, category: job.category, config: cfg.remasterConfig, uploadCache: cfg.v2UploadCache, payload: { classContext: cfg.classContext } });
       const diagnostics = data?.diagnostics ?? {};
       return { base64: data?.imageBase64 ?? null, error: data?.error ?? error?.message, engine: diagnostics.engine ?? data?.engine, model: diagnostics.model ?? data?.model,
         providerResponse: diagnostics, attempts: diagnostics.attempts ?? 1, durationMs: Date.now() - attemptStartedAt };
@@ -719,6 +722,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [fetchUrlToBase64]);
 
   const startPipeline = useCallback((cfg: PipelineConfig): boolean => {
+    if (isNb21Tier(cfg.modelTier) && cfg.promptVersion === 'nb21-v2') {
+      if (checkV2Preflight(cfg.selectedJobs, cfg.evidenceSources ?? []).some(result => !result.ready)) {
+        toast.error('Bitte fehlende Originalreferenzen zuordnen oder betroffene Ansichten abwählen.');
+        return false;
+      }
+      // Each accepted run owns a new cache, including its later retries.
+      cfg = { ...cfg, v2UploadCache: new V2RunUploadCache() };
+    }
     /* ─── Doppelstart-Sperre ───
      * 1) Ref-Guard: fängt zwei Klicks im selben Tick ab (State ist async).
      * 2) Persistenter Guard: blockiert identische Läufe über Tabs/Reloads,

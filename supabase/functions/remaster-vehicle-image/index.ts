@@ -5,6 +5,7 @@ import { getSecret } from "../_shared/get-secret.ts";
 import { DEKRA_LOGO_BASE64, DEKRA_LOGO_MIME } from "../_shared/dekra-logo.ts";
 import { validateV2Wire, v2TransportManifest } from "../_shared/nb21-v2-wire.ts";
 import type { V2Manifest, V2WireReference } from "../_shared/nb21-v2-contract.ts";
+import { enforceV2SubjectClassLock } from "../_shared/nb21-v2-class.ts";
 import { resolveRemasterCost } from "../_shared/remaster-cost.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { validateGalleryTarget, verifyGalleryOwnership, persistRemasterGallery } from "../_shared/remaster-gallery.ts";
@@ -698,7 +699,7 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
     // override supplies the dynamic prompt. This prevents catalogue-memory
     // substitution of a newer photographed facelift with an older generation.
     const modelGenerationLock = buildModelGenerationLock(vehicleDescription);
-    const prompt = isNb21V2 ? basePrompt.replace(/(### SECTION 2\/9: REFERENCE ROLES\n)[\s\S]*?(?=\n\n### SECTION 3\/9:)/, `$1${referenceManifest.entries.map((r: any, i: number) => `IMAGE ${i + 1}: ${r.role}; source=${r.sourceType}; slot=${r.sourceRole}; Tier ${r.authorityTier}; authority=${r.authority}.`).join('\n')}`) : isNb21Request
+    const prompt = isNb21V2 ? enforceV2SubjectClassLock(basePrompt.replace(/(### SECTION 2\/9: REFERENCE ROLES\n)[\s\S]*?(?=\n\n### SECTION 3\/9:)/, `$1${referenceManifest.entries.map((r: any, i: number) => `IMAGE ${i + 1}: ${r.role}; source=${r.sourceType}; slot=${r.sourceRole}; Tier ${r.authorityTier}; authority=${r.authority}.`).join('\n')}`), ctx) : isNb21Request
       ? buildNb21ServerPrompt(basePrompt, { modelGenerationLock, classGuard, vehicleClass: ctx.vehicleClass })
       : `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}${carSideDirectionGuard ? `\n\n${carSideDirectionGuard}` : ''}`;
     console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);

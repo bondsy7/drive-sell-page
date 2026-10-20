@@ -36,6 +36,8 @@ import type { WheelReference } from '@/types/wheel-reference';
 import { useQueryClient } from '@tanstack/react-query';
 import { createPipelineWorkflowKey, pipelineRunMatchesWorkflow } from '@/lib/pipeline-workflow';
 import { checkPipelineStart } from '@/lib/pipeline-start-guard';
+import { assignV2DetailRoles, checkV2Preflight } from '@/lib/nb21-v2-preflight';
+import Nb21V2ReferenceCheck from '@/components/Nb21V2ReferenceCheck';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -129,6 +131,9 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const inputImagesSavedRef = useRef(false);
   /* Doppelstart-Sperre: blockt den Knopf ab dem ersten Klick. */
   const [starting, setStarting] = useState(false);
+  const [detailAssignments, setDetailAssignments] = useState<Record<string, string>>({});
+  const isV2 = modelTier === 'nb21' && (promptVersion ?? NB21_CURRENT_VERSION) === 'nb21-v2';
+  const assignedEvidence = useMemo(() => assignV2DetailRoles(evidenceSources ?? [], detailAssignments), [evidenceSources, detailAssignments]);
   const startingRef = useRef(false);
   useEffect(() => {
     if (running || finished) { startingRef.current = false; setStarting(false); }
@@ -333,9 +338,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   }, [pipeline]);
 
   /* ─── Start pipeline (delegates to context) ─── */
+  const referenceCheck = useMemo(() => isV2 ? checkV2Preflight(localSelectedJobs, assignedEvidence) : [], [isV2, localSelectedJobs, assignedEvidence]);
+  const referencesMissing = referenceCheck.some(result => !result.ready);
   const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     if (localSelectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
+    if (isV2 && referencesMissing) { toast.error('Bitte fehlende Referenzen zuordnen oder die betroffenen Ansichten überspringen.'); return; }
     // Doppelstart-Sperre: zweiter Klick wird ignoriert, solange der erste läuft.
     if (startingRef.current || pipeline.isRunning) return;
     const precheck = checkPipelineStart(workflowKey);
@@ -357,7 +365,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     const started = pipeline.startPipeline({
       workflowKey,
-      evidenceSources,
+      evidenceSources: isV2 ? assignedEvidence : evidenceSources,
       promptVersion: modelTier === 'nb21' ? (promptVersion ?? NB21_CURRENT_VERSION) : undefined,
       inputImages,
       referenceRoles,
@@ -382,10 +390,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       startingRef.current = false;
       setStarting(false);
     }
-  }, [evidenceSources, promptVersion, user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
+  }, [isV2, referencesMissing, assignedEvidence, evidenceSources, promptVersion, user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {
+    if (isV2 && referencesMissing) { toast.error('Bitte die Referenzprüfung abschließen.'); return; }
     if (estimatedCost > 0) {
       setShowCreditDialog(true);
     } else {
@@ -806,6 +815,13 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         </p>
       )}
 
+      {isV2 && !isContextActive && <Nb21V2ReferenceCheck
+        results={referenceCheck}
+        sources={assignedEvidence}
+        onAssign={(sourceId, role) => setDetailAssignments(previous => ({ ...previous, [sourceId]: role }))}
+        onSkip={key => setSelectedKeys(previous => { const next = new Set(previous); next.delete(key); return next; })}
+      />}
+
       {/* Actions */}
       <div className="flex items-center justify-between gap-2 px-1">
         <Button variant="outline" size="sm" onClick={onBack} disabled={running} className="text-xs sm:text-sm">
@@ -815,7 +831,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         {!finished ? (
           <Button
             onClick={handleStartClick}
-            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0}
+            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0 || (isV2 && referencesMissing)}
             className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
           >
             {running || starting ? (
