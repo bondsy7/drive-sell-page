@@ -199,10 +199,10 @@
 - [x] Einheitliche Serienbelichtung und Weißabgleich trotz unterschiedlicher Originalbelichtungen für alle NB21-V2-Ziele verankert; historische V1/2.0-Verträge unverändert
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
 
-## DEKRA-Report: vollständige Ergänzung
 ## Kennzeichen und Wandbranding
-- [ ] Kennzeichenassets strikt auf Kennzeichen begrenzen, Wandlogos nur bei expliziter Auswahl zulassen und Originalfoto-Branding ausschließen
-- [ ] Zuordnung und Promptregeln mit gezielten Tests prüfen; keine kostenpflichtige Generierung
+- [x] Kennzeichenassets strikt auf Kennzeichen begrenzen, Wandlogos nur bei expliziter Auswahl zulassen und Originalfoto-Branding ausschließen (V3 und aktuelle Standardverarbeitung; historische V1/V2 unverändert)
+- [x] 46 gezielte Tests und Scope-Lint erfolgreich; keine kostenpflichtige Generierung
+- [ ] Serverseitige Schutzregel bereitstellen und Bildwirkung prüfen — kein Deployment/Anbieteraufruf in diesem Auftrag
 
 ## DEKRA-Report: vollständige Ergänzung
 - [x] Version 3 auf 21 Tabellenfälle der drei DEKRA-Accounts begrenzt; California und unzugeordnete Zusatzfahrzeuge entfernt, sieben Fehlerbilder beim Fahrzeug aufgenommen; 113 Originale und alle 34 Seiten visuell sowie Tabellenabdeckung geprüft
