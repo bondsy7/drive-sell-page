@@ -971,7 +971,7 @@ The vehicle images immediately above are the final and only geometry authority.
 
 
     if (customPlateImageBase64 || customPlateImageFileUri?.uri || oaFileId(customPlateOpenAIFile)) {
-      parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate insert you MUST use, even if it looks like a logo, dealer sign or brand graphic. Its ONLY allowed location is inside the vehicle's existing front and rear license-plate holders: replace every visible existing plate with it PIXEL-FOR-PIXEL in correct perspective; no original plate content may remain. It is NOT a wall logo: NEVER show this graphic on walls, glass panels, signage, floor or anywhere outside the plate holders. This is an IMMUTABLE ASSET:" });
+      parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The image tagged LICENSE PLATE is the EXACT license plate insert you MUST use, even if it looks like a logo, dealer sign or brand graphic. Its ONLY allowed location is inside the vehicle's existing front and rear license-plate holders: replace every visible existing plate with it PIXEL-FOR-PIXEL in correct perspective; no original plate content may remain. It is NOT a wall logo: NEVER show this graphic on walls, glass panels, signage, floor or anywhere outside the plate holders. This is an IMMUTABLE ASSET:" });
       if (oaFileId(customPlateOpenAIFile)) {
         { const _p = openaiPart(customPlateOpenAIFile); imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
       } else if (customPlateImageFileUri?.uri) {
@@ -1004,7 +1004,7 @@ The vehicle images immediately above are the final and only geometry authority.
       if (logoData) {
         parts.push({ text: `<LOGO_REFERENCE>
 MANUFACTURER LOGO – PIXEL-PERFECT REPRODUCTION (HIGHEST PRIORITY):
-The following image is the EXACT logo that MUST appear on the showroom wall.
+The image tagged MANUFACTURER LOGO is the EXACT logo that MUST appear on the showroom wall. It is NEVER a licence-plate insert.
 
 REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 1. EXACT COPY: Reproduce the logo image PIXEL-FOR-PIXEL. Every color, shape, detail, letter must be IDENTICAL.
@@ -1037,7 +1037,7 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
       if (logoData) {
         parts.push({ text: `<LOGO_REFERENCE>
 DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
-The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
+The image tagged DEALER LOGO is the EXACT dealer logo. It is NEVER a licence-plate insert. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
 - Position: On the rear wall behind the vehicle on a rectangular frosted-glass (milk-glass) panel with square corners; to the RIGHT of the manufacturer logo panel if one is selected, otherwise centered – IDENTICAL on EVERY image.
 - Clearly legible, about 60-80cm wide. This is the ONLY dealer branding allowed on the wall; never replace it with the license-plate graphic or source-photo signage.
 - IMMUTABLE ASSET: No redesign, no recoloring, no simplification.
@@ -1463,7 +1463,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         return `image #${i + 1} (${fileNameFor(im.label, i, ext)}) = ${im.label}`;
       }).join('\n');
-      promptText = compactOpenAIEditPrompt(`<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`);
+      promptText = compactOpenAIEditPrompt(`<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}${(() => { const m = buildBrandingImageMap(limited.map(im => im.label)); return m ? `\n\n${m}` : ''; })()}`);
       const wheelPos = limited.findIndex(im => im.label.startsWith('WHEEL REFERENCE'));
       console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, wheelRefPos=${wheelPos}, promptLen=${promptText.length}`);
 
