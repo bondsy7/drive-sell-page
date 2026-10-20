@@ -116,6 +116,9 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
 
   const priorityTags = [
     "IMAGE_ORDER",
+    "BRANDING_MAP",
+    "FINAL_BRANDING_CHECK",
+    "BRANDING_ASSET_SCOPE",
     "REFERENCE_TRUTH_PROTOCOL",
     "CURRENT_PERSPECTIVE",
     "BINDING_SUBJECT_SCOPE_GUARD",
