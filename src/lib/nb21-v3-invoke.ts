@@ -12,9 +12,15 @@ export async function invokeNb21V3(args: {
   await validateV3LightingProfile(args.lightingProfile);
   // Missing evidence fails BEFORE asset fetch, upload, authentication or provider dispatch.
   resolveV3Evidence(args);
-  const sources = [...args.sources];
+  const sources = args.sources.filter(s => s.sourceType !== 'immutable asset' || (
+    s.sourceRole === 'manufacturer-logo' ? args.config.showManufacturerLogo :
+    s.sourceRole === 'dealer-logo' ? args.config.showDealerLogo :
+    s.sourceRole === 'plate' ? args.config.licensePlate === 'custom' :
+    s.sourceRole === 'scene-logo' ? args.config.scene === 'dealer-lot-dekra' : true
+  ));
   if (args.config.scene === 'dealer-lot-dekra' && !sources.some(s => s.sourceRole === 'scene-logo')) sources.push({sourceId:'asset:dekra-current-scene-logo',sourceRole:'scene-logo',sourceType:'immutable asset',image:`data:image/png;base64,${DEKRA_LOGO_BASE64}`});
-  for (const [role,enabled,url] of [['manufacturer-logo',args.config.showManufacturerLogo,args.config.manufacturerLogoUrl],['dealer-logo',args.config.showDealerLogo,args.config.dealerLogoUrl]] as const) {
+  if (args.config.licensePlate === 'custom' && args.config.customPlateImageBase64 && !sources.some(s => s.sourceRole === 'plate')) sources.push({sourceId:'asset:custom-plate',sourceRole:'plate',sourceType:'immutable asset',image:args.config.customPlateImageBase64});
+  for (const [role,enabled,url] of [['manufacturer-logo',args.config.showManufacturerLogo,args.config.manufacturerLogoBase64 || args.config.manufacturerLogoUrl],['dealer-logo',args.config.showDealerLogo,args.config.dealerLogoBase64 || args.config.dealerLogoUrl]] as const) {
     if (enabled && url && !sources.some(s => s.sourceRole === role)) sources.push({sourceId:`asset:${role}`,sourceRole:role,sourceType:'immutable asset',image:await ensureCachedBase64(url)});
   }
   const plan = resolveV3Evidence({...args,sources});

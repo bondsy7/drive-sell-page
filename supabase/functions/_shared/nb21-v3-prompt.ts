@@ -1,6 +1,7 @@
 import { v3RelightingContract } from './nb21-v3-lighting.ts';
 import { type V3Manifest } from './nb21-v3-contract.ts';
 import { buildV2SubjectClassLock, type V2SubjectClass } from './nb21-v2-class.ts';
+import { brandingAssetScope } from './branding-asset-scope.ts';
 export const V3_NO_INVENTION = 'Use ONLY the reference image. Do NOT invent colors, badges, wheels, interior trim, stitching, or UI elements. Every visible attribute MUST match the reference exactly. Do NOT fall back on generic model knowledge. No unsupported part, contour, trim, lamp signature, mirror, door line, glazing, cabin or cargo element. Tier A originals define geometry/identity; Tier B assets define ONLY their named domain. Brand/model knowledge is NEVER authority. Generated context/remasters define presentation/environment ONLY. Insufficient evidence blocks the job, never completes missing details generatively.';
 export function v3ViewPrompt(m: V3Manifest): string {
   const v = m.viewContract;
@@ -14,7 +15,7 @@ export function enforceV3ServerPrompt(prompt: string, manifest: V3Manifest, ctx?
     2: manifest.entries.map((e,i) => `IMAGE ${i+1}: ${e.role}; source=${e.sourceType}; slot=${e.sourceRole}; Tier ${e.authorityTier}; authority=${e.authority}.`).join('\n'),
     4: `${buildV2SubjectClassLock(ctx).replace(/NB21_V2/g,'NB21_V3')}\n${V3_NO_INVENTION}\nPreserve complete separate seats, backrests, headrests, pillars and roof. No seat deletion, merging or transparent occluders. Flat/open photographed consoles stay flat; no invented lever, pin or bulge.`,
     5: v3ViewPrompt(manifest), 7: v3RelightingContract(manifest.lightingProfile),
-    9: 'Original evidence and scoped asset evidence > allowed surface change > presentation. No aesthetic rule authorizes identity, physical-side, geometry, equipment or intrinsic paint changes. Missing evidence blocks output. No automatic QA or harmonization pass.',
+    9: `Original evidence and scoped asset evidence > allowed surface change > presentation. No aesthetic rule authorizes identity, physical-side, geometry, equipment or intrinsic paint changes. Missing evidence blocks output. No automatic QA or harmonization pass.\n${brandingAssetScope(manifest.entries.filter(e => e.sourceType === 'immutable asset').map(e => e.role))}`, 
   };
   let out = prompt;
   for (const [n,body] of Object.entries(sections)) out = out.replace(new RegExp(`(### SECTION ${n}/9: [^\\n]+\\n)[\\s\\S]*?(?=\\n\\n### SECTION |$)`), (_,header:string) => `${header}${body}`);
