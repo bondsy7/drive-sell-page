@@ -180,7 +180,7 @@ const App = () => (
           <ConsentManager />
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<ErrorBoundary moduleName="Startseite"><Landing /></ErrorBoundary>} />
               <Route path="/produkte" element={<Produkte />} />
               <Route path="/referenzen" element={<Referenzen />} />
               <Route path="/checkout" element={<Checkout />} />
