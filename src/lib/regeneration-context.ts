@@ -68,6 +68,15 @@ export function buildRegenerationContext(args: {
 export async function saveRegenerationContext(vehicleId: string, ctx: RegenerationContext): Promise<void> {
   const { data } = await supabase.from('vehicles').select('vehicle_data').eq('id', vehicleId).maybeSingle();
   const current = ((data as any)?.vehicle_data ?? {}) as Record<string, unknown>;
+  // Preserve the previous known NB21 context on older results before the vehicle
+  // default moves to V2. This is metadata only, not a result/price change.
+  const previous = readRegenerationContext(current);
+  if (ctx.promptVersion === 'nb21-v2' && previous?.modelTier === 'nb21' && previous.promptVersion !== 'nb21-v2') {
+    const { error } = await supabase.from('project_images')
+      .update({ generation_context: { ...previous, promptVersion: previous.promptVersion ?? 'nb21-v1' } } as never)
+      .eq('vehicle_id', vehicleId).is('generation_context', null);
+    if (error) throw new Error('Historische NB21-Laufversion konnte nicht gesichert werden.');
+  }
   await supabase
     .from('vehicles')
     .update({ vehicle_data: { ...current, [REGEN_CONTEXT_KEY]: ctx } } as never)

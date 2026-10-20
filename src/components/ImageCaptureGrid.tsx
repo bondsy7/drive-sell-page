@@ -811,7 +811,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       ...detailImages.map(image => ({ image, role: detailSourceRoles[image] || undefined, sourceType: 'original' as const })),
       ...(wheelReference?.image ? [{ image: wheelReference.image, role: isNb21Tier(modelTier) ? 'wheel' : undefined, sourceType: 'immutable asset' as const }] : []),
       ...(isNb21Tier(modelTier) ? v2ConfigSources(remasterConfig, null, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ image: s.image, role: s.sourceRole, sourceType: s.sourceType })) : []),
-    ].filter(source => !prefilledOriginalsRef.current.has(source.image) && !archivedOriginalsRef.current.has(source.image));
+    ].filter(source => (isNb21Tier(modelTier) || !prefilledOriginalsRef.current.has(source.image)) && !archivedOriginalsRef.current.has(source.image));
     // Archive sources before paid generation; never rely on the final button.
     for (const source of sources) {
       const saved = isNb21Tier(modelTier) ? await archiveV2Original(user.id, targetVehicleId, { sourceId: `original:${source.role || 'unassigned'}`, sourceType: source.sourceType, sourceRole: source.role || 'unassigned-detail', image: source.image }) : await uploadOriginalsToVehicle(user.id, targetVehicleId, [source.image], [source.role]);
