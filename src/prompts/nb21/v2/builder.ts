@@ -38,12 +38,21 @@ export function buildNb21V2Prompt(args: { manifest: V2Manifest; config: Remaster
   const m = args.manifest, c = args.config;
   if (!m.entries.length || !m.entries.some(e => e.authorityTier === 'A')) throw new Error('NB21 v2: Originalautorität fehlt.');
   const key = m.jobKey.toUpperCase();
-  const side = /RIGHT/.test(key) ? 'RIGHT' : /LEFT|SIDE/.test(key) ? 'LEFT' : null;
+  const side = /RIGHT/.test(key) || key === 'CI_VOLVO_SIDE' ? 'RIGHT' : /LEFT|SIDE|34_FRONT|34_REAR|MASTER_IMAGE/.test(key) ? 'LEFT' : null;
   const local = m.mode === 'edit' ? ['Retain all photographed visible attributes of the exact source slot; no synthesized viewpoint or replacement body.'] : v2LocalContract(key, m.target);
   const interior = m.target.startsWith('interior') || (m.target === 'composite' && /INTERIOR/.test(key));
   const mode = m.mode === 'edit'
     ? 'EDIT CONTRACT: retain the source camera, perspective, framing and photographed vehicle pixels/geometry. Do not rebuild the vehicle. Edit only explicitly allowed surfaces and environment.'
     : `VIEW SYNTHESIS CONTRACT: target ${m.jobKey}, semantic type ${m.target}. Construct the new camera view only from the assigned visual evidence; generated context cannot supply missing vehicle features.`;
+  const ciPresentation: Record<string,string> = {
+    VOLVO: 'Minimalist frosted glass showroom, dark reflective resin floor, soft cool-white lighting.',
+    BMW: 'Clean white/grey studio; key light front-left, soft right fill; polished floor.',
+    MERCEDES: 'Restrained premium showroom presentation with controlled soft highlights.',
+    AUDI: 'Clean contemporary architectural showroom presentation and crisp controlled lighting.',
+    VW: 'Bright straightforward dealership presentation with soft even light.',
+    PORSCHE: 'Minimal editorial studio presentation with controlled directional highlights.',
+  };
+  const ci = key.match(/^CI_([A-Z]+)_/)?.[1];
   return renderNb21Prompt({
     'MAIN TASK': ['PROMPT_VERSION: nb21-v2', mode],
     'REFERENCE ROLES': m.entries.map((e, i) => `IMAGE ${i + 1}: ${e.role}; source=${e.sourceType}; slot=${e.sourceRole}; Tier ${e.authorityTier}; authority=${e.authority}.`),
@@ -59,7 +68,7 @@ export function buildNb21V2Prompt(args: { manifest: V2Manifest; config: Remaster
       `Vehicle class scope=${args.vehicleClass ?? 'car'}; preserve only the photographed subject and its attached equipment. No rules imported from another class.`,
     ],
     'PERSPECTIVE LOCK': [m.mode === 'edit' ? 'Exactly the original camera and physical side.' : `Requested viewpoint=${m.jobKey.replace(/^CI_[A-Z]+_/, '').replace(/_/g, ' ')}; CI names describe presentation only, never equipment.`, side ? `Physical ${side} side; never mirror. ${/SIDE/.test(key) ? `Front points to IMAGE ${side}; rear to IMAGE ${side === 'LEFT' ? 'RIGHT' : 'LEFT'}.` : 'Three-quarter camera offset 30–40 degrees.'}` : 'No mirroring of vehicle or asymmetric parts.'],
-    'ENVIRONMENT': [`Scene=${c.scene}. ${SCENE_PROMPT_DEFAULTS[c.scene] ?? 'Use the explicitly supplied environment reference.'} Presentation context supplies environment only; logos and plate assets are authoritative only in their own domain. Environment never changes vehicle identity.`, c.showManufacturerLogo || c.showDealerLogo ? 'Use supplied current logo assets only; never invent missing logos.' : 'Do not invent wall branding.'],
+    'ENVIRONMENT': [`Scene=${c.scene}. ${SCENE_PROMPT_DEFAULTS[c.scene] ?? 'Use the explicitly supplied environment reference.'} ${ci ? ciPresentation[ci] ?? '' : ''} Presentation context supplies environment only; logos and plate assets are authoritative only in their own domain. Environment never changes vehicle identity.`, c.showManufacturerLogo || c.showDealerLogo ? 'Use supplied current logo assets only; never invent missing logos.' : 'Do not invent wall branding.'],
     'LIGHTING / PHYSICAL INTEGRATION': [c.scene === 'keep' || c.scene === 'none' ? 'Preserve photographed light/environment; improve clarity only.' : 'Lighting and environment reflections belong to the chosen scene; retain surface shape and materials. Plausible contact shadows and light direction.'],
     'CAMERA / OUTPUT': [m.target.includes('detail') ? 'Photographic local close-up; part remains attached with enough surrounding context. Landscape 4:3.' : 'Professional landscape 4:3 image. Full subject only when the requested view is a full view; do not extrapolate a cropped reference in edit mode.'],
     'FINAL PRIORITY CONSTRAINT': ['Original Evidence > target-specific local detail evidence (immutable assets only in their domain) > explicitly allowed change > environment > light/aesthetics. If aesthetic or environment requirements conflict with vehicle fidelity, vehicle fidelity wins. Generated context is NEVER vehicle identity authority.'],

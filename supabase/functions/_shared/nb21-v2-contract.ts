@@ -86,7 +86,7 @@ export function v2Policy(key: string, category?: string, editSlot?: string): V2P
   }
   if (target === 'composite' && /INTERIOR/.test(k)) return { target, budget: 3, wheel: false, requirements: [req('cabin_original', COCKPIT, 'cockpit and front cabin panels'), req('rear_cabin_original', ['interior-rear','rear-seats'], 'rear cabin panels')] };
   if (target === 'composite') return { target, budget: 6, wheel: true, requirements: [req('front_original', FRONT, 'front identity'), req('side_original', ['side', 'side-left'], 'left body identity'), req('rear_original', REAR, 'rear identity')] };
-  const right = /RIGHT/.test(k), rear = /REAR/.test(k), side = /SIDE/.test(k);
+  const right = /RIGHT/.test(k) || k === 'CI_VOLVO_SIDE', rear = /REAR/.test(k), side = /SIDE/.test(k);
   const flank = right ? ['side-right', 'side-right-full', 'truck-cab-side-right'] : ['side', 'side-left', 'truck-cab-side-left'];
   if (side) return { target, budget: 4, wheel: true, requirements: [req('physical_side_original', flank, `${right ? 'RIGHT' : 'LEFT'} physical flank and asymmetric equipment`), req('front_evidence', FRONT, 'front transition', false), req('rear_evidence', REAR, 'rear transition', false)] };
   if (rear) return { target, budget: 4, wheel: true, requirements: [req('rear_original', right ? ['34rear-right', ...REAR] : ['34rear', ...REAR], 'rear fascia and attached equipment'), req('physical_side_original', flank, `${right ? 'RIGHT' : 'LEFT'} flank`, /34/.test(k))] };
