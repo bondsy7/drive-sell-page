@@ -1,7 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { validateV3Wire, v3ResultMetadata, type V3Manifest } from '../_shared/nb21-v3-contract.ts';
 import { enforceV3ServerPrompt } from '../_shared/nb21-v3-prompt.ts';
-import { brandingAssetScope } from '../_shared/branding-asset-scope.ts';
+import { brandingAssetScope, brandingImageRoleNote, buildBrandingImageMap } from '../_shared/branding-asset-scope.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1124,7 +1124,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
-          if (!isResponsesImageTier && !isEvidenceRequest) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          if (!isResponsesImageTier && !isEvidenceRequest) rebuilt.push({ text: `[IMAGE ${index}] ${label}\n${brandingImageRoleNote(label)}` });
           rebuilt.push(p);
         } else {
           rebuilt.push(p);
@@ -1134,6 +1134,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
         rebuilt.splice(1, 0, {
           text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
         });
+        // Number-based branding assignment as the very last instruction.
+        if (engineConfig.engine === 'gemini') {
+          const map = buildBrandingImageMap(imageManifest.map(m => m.label));
+          if (map) rebuilt.push({ text: map });
+        }
       }
       parts.length = 0;
       parts.push(...rebuilt);
