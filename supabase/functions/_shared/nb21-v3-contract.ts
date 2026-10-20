@@ -1,5 +1,5 @@
 import type { V2Reference, V2ManifestEntry, V2Target, V2WireReference } from './nb21-v2-contract.ts';
-import { createV3LightingProfile, validateV3LightingProfile, type V3LightingProfile } from './nb21-v3-lighting.ts';
+import { validateV3LightingProfile, type V3LightingProfile } from './nb21-v3-lighting.ts';
 export type V3Reference = V2Reference;
 export type V3Target = V2Target;
 export type V3Entry = V2ManifestEntry;
@@ -33,7 +33,8 @@ export function normalizeV3Role(role: string): string { return role.toLowerCase(
 const VIEW_ALIASES: Record<string, V3ViewKey> = {
   MASTER_IMAGE: '34-front-left', VAN_MASTER_IMAGE: '34-front-left', MOTO_MASTER_IMAGE: '34-front-left', MACH_MASTER_IMAGE: '34-front-left', WOMO_MASTER_IMAGE: '34-front-left',
   EXT_LOW_ANGLE: '34-front-left', EXT_ELEVATED_FRONT: '34-front-left', MOTO_EXT_LOW_ANGLE: '34-front-left', WOMO_EXT_HIGH_ANGLE: '34-front-left', CI_PORSCHE_LOW: '34-front-left',
-  WOMO_EXT_REAR_34: '34-rear-left', CI_VOLVO_SIDE: 'side-right',
+  WOMO_EXT_REAR_34: '34-rear-right', VAN_EXT_REAR_34: '34-rear-right', MACH_EXT_REAR_34: '34-rear-right', MACH_EXT_LOW_ANGLE: '34-front-left', CI_VOLVO_SIDE: 'side-right',
+  '34FRONT': '34-front-left', '34FRONT_RIGHT': '34-front-right', '34REAR': '34-rear-left', '34REAR_RIGHT': '34-rear-right', SIDE: 'side-left',
 };
 for (const brand of ['BMW','MERCEDES','AUDI','VW','PORSCHE']) {
   VIEW_ALIASES[`CI_${brand}_SIDE`] = 'side-left';
@@ -113,6 +114,16 @@ export function v3Policy(key: string, category?: string, editSlot?: string): V3P
   const view = v3ViewForJob(editSlot ?? key);
   if (view) return { target: 'exterior', budget: 5, wheel: true, requirements: view.requiredOriginalRoles.map(r => req(`${r.surface}_original`, r.slots, `ONLY physical ${r.surface} surface geometry and identity`)) };
   const base = v3BasePolicy(key, category, editSlot);
+  if (base.target === 'composite') {
+    if (key === 'GRID_INTERIOR_4') return { target: 'composite', budget: 4, wheel: false, requirements: [
+      req('cabin_original', ['interior-front','cockpit','cabin','truck-cab-interior'], 'complete seat-bearing front cabin; dashboard and attached console cells'),
+      req('rear_cabin_original', ['interior-rear','rear-seats'], 'rear seat cell'),
+      req('interior_detail_original', ['steering','steering-wheel'], 'steering cell; controls never prove absence of a seat'),
+    ] };
+    if (key === 'GRID_EXTERIOR_4') return { target:'composite',budget:5,wheel:true,requirements:[req('front_original',FRONT_ROLES,'front geometry for front-left cell'),req('left_original',LEFT,'physical LEFT geometry for all left-facing cells'),req('rear_original',REAR_ROLES,'rear geometry for rear-left and head-on rear cells')] };
+    // A composite without per-cell contracts cannot bypass side authority.
+    throw new Error(`NB21 v3: Kein expliziter Zellenvertrag für ${key}; Job blockiert.`);
+  }
   // No generic exterior fallback can synthesize an unspecified or uncovered flank.
   if (!editSlot && base.target === 'exterior' && !/(?:^|_)(?:FRONT|REAR)$/.test(key.toUpperCase())) throw new Error(`NB21 v3: Kein expliziter View-Contract für ${key}.`);
   if (!editSlot && base.target === 'exterior') return { ...base, requirements: [req(/REAR$/.test(key) ? 'rear_original' : 'front_original', /REAR$/.test(key) ? REAR_ROLES : FRONT_ROLES, 'head-on evidenced surface only')] };
@@ -138,7 +149,7 @@ export function resolveV3Evidence(args: { jobKey: string; category?: string; edi
     const hit = r.slots.flatMap(slot => originals.filter(s => normalizeV3Role(s.sourceRole) === slot))[0];
     if (!hit && r.required) throw new Error(`NB21 v3: Originalbeleg fehlt (${r.role}); Job blockiert.`);
     if (hit) {
-      const surface = view?.requiredOriginalRoles.find(s => `${s.surface}_original` === r.role)?.surface ?? r.role;
+      const surface = view?.requiredOriginalRoles.find(s => `${s.surface}_original` === r.role)?.surface ?? ({front_original:'front',rear_original:'rear',left_original:'left',right_original:'right'}[r.role] ?? r.role);
       surfaceAuthority[surface] = [hit.sourceId];
       if (!entries.some(e => e.sourceId === hit.sourceId)) add(hit, r.role, r.authority);
     }
@@ -157,14 +168,18 @@ export function wireV3Evidence(plan: V3EvidencePlan): V3WireReference[] {
 export async function validateV3Wire(manifest: V3Manifest, refs: V3WireReference[]) {
   if (!manifest || manifest.version !== 'nb21-v3' || !Array.isArray(refs) || !refs.length || refs.length > 8 || !Array.isArray(manifest.entries) || manifest.entries.length !== refs.length || !['edit','view_synthesis'].includes(manifest.mode)) throw new Error('NB21 v3: Ungültiges Manifest.');
   await validateV3LightingProfile(manifest.lightingProfile);
+  if (manifest.mode === 'edit' && !manifest.editSlot) throw new Error('NB21 v3: Edit-Slot fehlt.');
   for (const [i,r] of refs.entries()) {
-    if (JSON.stringify(manifest.entries[i]) !== JSON.stringify(Object.fromEntries(Object.entries(r).filter(([k]) => !['transport','fileUri','imageBase64','openAIFile'].includes(k))))) {
-      if (['sourceId','sourceRole','sourceType','assetId','role','authorityTier','authority'].some(k => (manifest.entries[i] as unknown as Record<string,unknown>)[k] !== (r as unknown as Record<string,unknown>)[k])) throw new Error('NB21 v3: Manifest/Bildidentität ungleich.');
-    }
+    if (['sourceId','sourceRole','sourceType','assetId','role','authorityTier','authority'].some(k => (manifest.entries[i] as unknown as Record<string,unknown>)[k] !== (r as unknown as Record<string,unknown>)[k])) throw new Error('NB21 v3: Manifest/Bildidentität ungleich.');
     if (r.transport === 'file_uri' ? !r.fileUri?.uri || !r.fileUri.mimeType : r.transport === 'inline' ? !r.imageBase64 : true) throw new Error('NB21 v3: Bildtransport fehlt oder ist unzulässig.');
   }
   const canonical = resolveV3Evidence({jobKey:manifest.jobKey, editSlot:manifest.mode === 'edit' ? manifest.editSlot : undefined, lightingProfile:manifest.lightingProfile, retryReason:manifest.retryReason, sources:refs.map(r => ({...r,image:'available'}))}).manifest;
-  if (JSON.stringify(canonical) !== JSON.stringify(manifest)) throw new Error('NB21 v3: Manifest widerspricht dem autoritativen View-/Evidenzvertrag.');
+  if (stableV3Json(canonical) !== stableV3Json(manifest)) throw new Error('NB21 v3: Manifest widerspricht dem autoritativen View-/Evidenzvertrag.');
+}
+function stableV3Json(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableV3Json).join(',')}]`;
+  if (value && typeof value === 'object') return `{${Object.entries(value).filter(([,v]) => v !== undefined).sort(([a],[b]) => a.localeCompare(b)).map(([k,v]) => `${JSON.stringify(k)}:${stableV3Json(v)}`).join(',')}}`;
+  return JSON.stringify(value);
 }
 export function v3ResultMetadata(manifest: V3Manifest) {
   return { viewContract:manifest.viewContract ?? null, requestedPhysicalSide:manifest.requestedPhysicalSide ?? null, visibleSurfaces:manifest.visibleSurfaces, authoritativeOriginalSourceIds:manifest.surfaceAuthority, lightingProfile:manifest.lightingProfile, renderProfileVersion:manifest.lightingProfile.version, lightingProfileHash:manifest.lightingProfile.hash, retryReason:manifest.retryReason ?? null };

@@ -13,13 +13,13 @@ export function buildNb21V3Prompt(args: { manifest: V3Manifest; config: Remaster
   const task = m.jobKey === 'GRID_INTERIOR_4' ? 'Exactly four separate photographs, 2×2 grid. Top-left full driver dashboard WITH physical front seats; top-right connected console; bottom-left rear seats; bottom-right steering detail. Each cell uses its named original authority; never erase seats to reveal controls.' : `Target ${m.jobKey}; semantic type ${m.target}. ${m.mode === 'edit' ? 'Retain original camera, geometry and framing; no view synthesis.' : 'Evidence-driven requested view synthesis.'}`;
   return enforceV3ServerPrompt(renderNb21Prompt({
     'MAIN TASK': ['PROMPT_VERSION: nb21-v3',task],
-    'REFERENCE ROLES': [],
+    'REFERENCE ROLES': ['Server-enforced evidence roles.'],
     'ALLOWED CHANGES': [`Environment=${c.scene}; cleanup=${(c.cleanupItems ?? []).join(', ') || 'none'}; plate=${interior ? 'unchanged/not visible' : c.licensePlate}${c.customPlateText ? `; plate text=${JSON.stringify(c.customPlateText)}` : ''}.`, c.changeColor ? `Explicit paint change=${c.colorHex ?? 'requested colour'}; preserve scheme boundaries.` : 'Intrinsic photographed paint colour/finish unchanged.', args.correction ? `Manual correction=${args.correction}; subject to validated evidence and view contract.` : 'No additional changes.', m.retryReason ? `MANUAL_RETRY_REASON=${m.retryReason}; correct only within the evidence contract.` : 'No image QA or second pass requested.'],
-    'VEHICLE IDENTITY LOCK': [], 'PERSPECTIVE LOCK': [],
+    'VEHICLE IDENTITY LOCK': ['Server-enforced original identity.'], 'PERSPECTIVE LOCK': ['Server-enforced view contract.'],
     'ENVIRONMENT': [`${SCENE_PROMPT_DEFAULTS[c.scene] ?? 'Use supplied environment only.'} CI styling affects environment, never vehicle colour or lighting profile. Supplied current logo/plate/wheel assets are authoritative only in their named domain. No invented signage. Use supplied scene-logo once for DEKRA if present.`],
-    'LIGHTING / PHYSICAL INTEGRATION': [],
+    'LIGHTING / PHYSICAL INTEGRATION': ['Server-enforced run lighting profile.'],
     'CAMERA / OUTPUT': ['Professional landscape 4:3 photograph; full subject for full views, attached context for details. No crop-driven completion of unsupported geometry.'],
-    'FINAL PRIORITY CONSTRAINT': [],
+    'FINAL PRIORITY CONSTRAINT': ['Server-enforced evidence priority.'],
   }),m,args.classContext);
 }
 /** Prepared only: no dispatcher/UI automatically invokes this or adds a paid pass. */
