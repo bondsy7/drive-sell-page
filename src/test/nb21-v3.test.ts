@@ -119,6 +119,8 @@ describe('historical reproducibility and explicit opt-in', () => {
       'supabase/functions/_shared/nb21-v2-wire.ts':'bf4d661ce7ec3b873316f74b0153c4a4da0ad598e3456ffe4545af4317015997',
       'supabase/functions/_shared/nb21-v2-class.ts':'dcee47c4da24a55108a0d10d364159f6dae4ca0293953aa1aae550ed90abde4b',
       'src/prompts/nb21/version.ts':'2377d35efcd4dc4ced67c87fa759bf67b43bfb37470aa2d929532f8c5af31d1c',
+      'src/prompts/nb21/builder.ts':'a44480f125ce74e897618dd27c9a7d83ec2678a2b051dfd00a8b68c2ca8b422b',
+      'src/prompts/nb21/perspectives.ts':'0795ef02c20e8d6ba7ea6e455e1d68bbd42ec7fd4d39cd35bd820d81f73a2ce6',
     };
     for (const [file,hash] of Object.entries(baseline)) expect(createHash('sha256').update(readFileSync(file)).digest('hex')).toBe(hash);
   });

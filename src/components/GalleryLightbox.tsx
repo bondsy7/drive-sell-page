@@ -256,9 +256,10 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
 
       let v2Sources: V2Reference[] = [];
       if (evidenceVersion) {
-        v2Sources = await Promise.all(originals.filter(o => originalSlotFromFilename(o.name) || ctx?.referenceSources?.some(s => s.assetId === o.assetId)).map(async o => {
+        if (nb21Version === 'nb21-v3' && (!ctx?.referenceSources?.length || ctx.referenceSources.filter(s => s.sourceType === 'original').some(s => !originals.some(o => o.assetId === s.assetId)))) throw new Error('V3: Gespeicherte Originalbelege des ursprünglichen Laufs fehlen.');
+        v2Sources = await Promise.all(originals.filter(o => nb21Version === 'nb21-v3' ? ctx?.referenceSources?.some(s => s.assetId === o.assetId) : originalSlotFromFilename(o.name) || ctx?.referenceSources?.some(s => s.assetId === o.assetId)).map(async o => {
           const saved = ctx?.referenceSources?.find(s => s.assetId === o.assetId);
-          return { sourceId: o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: saved?.sourceType ?? 'original' as const, image: await fetchAsBase64(o.url) };
+          return { sourceId: nb21Version === 'nb21-v3' ? saved?.sourceId ?? o.assetId : o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: saved?.sourceType ?? 'original' as const, image: await fetchAsBase64(o.url) };
         }));
         // Selecting a generated gallery frame does NOT relabel it as an original.
         if (referenceUrl && !originals.some(o => o.url === referenceUrl)) v2Sources.push({ sourceId: `gallery:${images.find(i => i.src === referenceUrl)?.id ?? 'selected'}`, sourceRole: 'environment', sourceType: 'generated context', image: mainBase64 });

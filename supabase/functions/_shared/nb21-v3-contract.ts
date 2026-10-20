@@ -82,14 +82,14 @@ const req = (role: string, slots: string[], authority: string, required = true):
 const FRONT = ['front', '34front', '34front-right', 'front-left', 'front-right'];
 const REAR = ['rear', '34rear', '34rear-right', 'rear-left', 'rear-right'];
 const COCKPIT = ['cockpit', 'interior-front', 'cabin', 'truck-cab-interior', 'controls'];
-export function v3BasePolicy(key: string, category?: string, editSlot?: string): V3Policy {
+function v3BasePolicy(key: string, category?: string, editSlot?: string): V3Policy {
   const k = key.toUpperCase();
   const target = editSlot ? classifyV3Target(editSlot.toUpperCase().replace(/-/g, '_')) : classifyV3Target(key, category);
   if (editSlot) return { target, budget: 6, wheel: !target.startsWith('interior') && target !== 'cargo_area', requirements: [req('same_view_original', [normalizeV3Role(editSlot)], 'same-view geometry, camera and visible identity')] };
   if (target === 'cargo_area') return { target, budget: 3, wheel: false, requirements: [req('cargo_original', ['cargo', 'boot', 'open-boot', 'cargo-area', 'garage'], 'cargo floor, cover, backrests, hooks and side trim'), req('rear_evidence', REAR, 'hatch, rear lights and surrounding body')] };
   if (target === 'interior_detail') {
     const local = /STEERING/.test(k) ? ['steering', 'steering-wheel'] : /CLUSTER/.test(k) ? ['cluster', 'instrument-cluster', 'steering', 'steering-wheel'] : /SCREEN|MBUX/.test(k) ? ['screen', 'center-screen', 'dashboard'] : ['controls', 'dashboard'];
-    return { target, budget: 3, wheel: false, requirements: [req('interior_detail_original', [...local, ...COCKPIT], 'photographed controls, selector, contours, materials and display layout'), req('cabin_evidence', COCKPIT, 'surrounding cabin geometry', false)] };
+    return { target, budget: 3, wheel: false, requirements: [req('interior_detail_original', local, 'photographed controls, selector, contours, materials and display layout'), req('cabin_evidence', COCKPIT, 'surrounding cabin geometry', false)] };
   }
   if (target === 'interior_cabin') {
     const rear = /REAR|SEAT|FOND/.test(k) && !/FRONT_SEAT/.test(k);
@@ -101,21 +101,20 @@ export function v3BasePolicy(key: string, category?: string, editSlot?: string):
     const back = /TAIL|REAR/.test(k);
     const visibleOverview = /HEADLIGHT|TAILLIGHT|GRILLE|PANEL/.test(k);
     const local = /HEADLIGHT/.test(k) ? ['headlight', 'headlight-detail'] : /TAIL/.test(k) ? ['taillight', 'taillight-detail'] : /GRILLE|PANEL/.test(k) ? ['frontpanel', 'grille', 'front-panel'] : [k.replace(/^(?:MACH|WOMO|MOTO|VAN)_DET_/, '').toLowerCase().replace(/_/g, '-')];
-    return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', [...local, ...(visibleOverview ? back ? REAR : FRONT : [])], 'local part outline, texture and adjacent photographed structure'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
+    return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', local, 'local part outline, texture and adjacent photographed structure'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
   }
   if (target === 'composite' && /INTERIOR/.test(k)) return { target, budget: 4, wheel: false, requirements: [req('cabin_original', COCKPIT, 'full front cabin, driver and passenger seats; dashboard and console cells'), req('rear_cabin_original', ['interior-rear','rear-seats'], 'rear seat cell'), req('interior_detail_original', ['steering', 'steering-wheel', 'dashboard'], 'steering detail cell only; never replaces the seat-bearing cabin original', false)] };
   if (target === 'composite') return { target, budget: 6, wheel: true, requirements: [req('front_original', FRONT, 'front identity'), req('side_original', ['side', 'side-left'], 'left body identity'), req('rear_original', REAR, 'rear identity')] };
-  const right = /RIGHT/.test(k) || k === 'CI_VOLVO_SIDE', rear = /REAR/.test(k), side = /SIDE/.test(k);
-  const flank = right ? ['side-right', 'side-right-full', 'truck-cab-side-right'] : ['side', 'side-left', 'truck-cab-side-left'];
-  if (side) return { target, budget: 4, wheel: true, requirements: [req('physical_side_original', flank, `${right ? 'RIGHT' : 'LEFT'} physical flank and asymmetric equipment`), req('front_evidence', FRONT, 'front transition', false), req('rear_evidence', REAR, 'rear transition', false)] };
-  if (rear) return { target, budget: 5, wheel: true, requirements: [req('rear_original', right ? ['34rear-right', ...REAR] : ['34rear', ...REAR], 'rear fascia and attached equipment'), req('physical_side_original', flank, `${right ? 'RIGHT' : 'LEFT'} flank`, /34/.test(k)), req('paint_evidence', FRONT, 'series paint hue and finish only; never front geometry in a rear view', false)] };
-  return { target, budget: 5, wheel: true, requirements: [req('front_original', right ? ['34front-right', ...FRONT] : FRONT, 'complete connected front fascia and body generation'), req('front_detail_evidence', ['frontpanel', 'grille', 'headlight', ...FRONT], 'panel, headlamp signature, sensors and bumper transitions', false), req('geometry_evidence', flank, 'silhouette and physical side geometry', false)] };
+  return { target, budget: 5, wheel: true, requirements: [] };
 }
 
 
 export function v3Policy(key: string, category?: string, editSlot?: string): V3Policy {
   const view = v3ViewForJob(editSlot ?? key);
-  if (view) return { target: 'exterior', budget: 5, wheel: true, requirements: view.requiredOriginalRoles.map(r => req(`${r.surface}_original`, r.slots, `ONLY physical ${r.surface} surface geometry and identity`)) };
+  if (view) return { target: 'exterior', budget: 5, wheel: true, requirements: [
+    ...(editSlot ? [req('same_view_original', [normalizeV3Role(editSlot)], 'exact original camera, framing and same-view geometry')] : []),
+    ...view.requiredOriginalRoles.map(r => req(`${r.surface}_original`, r.slots, `ONLY physical ${r.surface} surface geometry and identity`)),
+  ] };
   const base = v3BasePolicy(key, category, editSlot);
   if (base.target === 'composite') {
     if (key === 'GRID_INTERIOR_4') return { target: 'composite', budget: 4, wheel: false, requirements: [
