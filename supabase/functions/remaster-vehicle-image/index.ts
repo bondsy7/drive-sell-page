@@ -971,7 +971,7 @@ The vehicle images immediately above are the final and only geometry authority.
 
 
     if (customPlateImageBase64 || customPlateImageFileUri?.uri || oaFileId(customPlateOpenAIFile)) {
-      parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
+      parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate insert you MUST use, even if it looks like a logo, dealer sign or brand graphic. Its ONLY allowed location is inside the vehicle's existing front and rear license-plate holders: replace every visible existing plate with it PIXEL-FOR-PIXEL in correct perspective; no original plate content may remain. It is NOT a wall logo: NEVER show this graphic on walls, glass panels, signage, floor or anywhere outside the plate holders. This is an IMMUTABLE ASSET:" });
       if (oaFileId(customPlateOpenAIFile)) {
         { const _p = openaiPart(customPlateOpenAIFile); imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
       } else if (customPlateImageFileUri?.uri) {
@@ -1010,9 +1010,9 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 1. EXACT COPY: Reproduce the logo image PIXEL-FOR-PIXEL. Every color, shape, detail, letter must be IDENTICAL.
 2. NO INTERPRETATION: Do NOT redesign, simplify, stylize, or convert to different material.
 3. IMMUTABLE ASSET: No re-tracing, no redesign, no new outline, no different aspect ratio.
-4. POSITION: Always centered on back wall, at eye level, slightly above vehicle roofline. EXACT same position on EVERY image.
-5. SIZE: Approximately 60-80cm diameter/width – IDENTICAL on EVERY image.
-6. RENDERING: As backlit wall element with subtle LED halo effect. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
+4. POSITION: On the rear wall behind the vehicle, slightly above the roofline (left panel if a dealer logo is also selected, otherwise centered). EXACT same position on EVERY image.
+5. SIZE: Approximately 60-80cm width – IDENTICAL on EVERY image.
+6. RENDERING: Printed crisply on a rectangular frosted-glass (milk-glass) panel with square corners and discreet brushed-metal mounts. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
 7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification. No re-lettering, no mirroring, no rotation.
 8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation in color, shape, proportions, size, or position.
 9. SOURCE OF TRUTH: This logo asset OVERRIDES any logo, banner, slogan, or text visible in the reference vehicle photo. Ignore old dealer abbinder bars/slogans from the reference – use ONLY this logo.
@@ -1038,8 +1038,8 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
         parts.push({ text: `<LOGO_REFERENCE>
 DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
 The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
-- Position: Always to the RIGHT of the manufacturer logo on the back wall – IDENTICAL on EVERY image.
-- Size: Smaller than manufacturer logo.
+- Position: On the rear wall behind the vehicle on a rectangular frosted-glass (milk-glass) panel with square corners; to the RIGHT of the manufacturer logo panel if one is selected, otherwise centered – IDENTICAL on EVERY image.
+- Clearly legible, about 60-80cm wide. This is the ONLY dealer branding allowed on the wall; never replace it with the license-plate graphic or source-photo signage.
 - IMMUTABLE ASSET: No redesign, no recoloring, no simplification.
 </LOGO_REFERENCE>` });
         imageLabels.set(logoData, 'DEALER LOGO – immutable brand asset');
@@ -1057,6 +1057,12 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
 </NO_LOGO_INSTRUCTION>` });
       console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
     }
+    if (customPlateImageBase64 || customPlateImageFileUri?.uri || oaFileId(customPlateOpenAIFile)) {
+      parts.push({ text: `<FINAL_BRANDING_CHECK>
+Before returning: (1) every visible license plate on the vehicle shows the LICENSE PLATE asset; (2) the LICENSE PLATE graphic appears NOWHERE else — not on the wall, glass panels or signage; (3) the wall shows ${hasAnyLogo ? 'ONLY the selected manufacturer/dealer logo assets on frosted-glass panels' : 'NO logo at all'}; (4) logos or signs from the original photos are not reproduced as wall branding. Fix any violation before returning.
+</FINAL_BRANDING_CHECK>` });
+    }
+
 
 
     // ── DEKRA scene asset: inject official logo as immutable reference ──
