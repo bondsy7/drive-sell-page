@@ -53,6 +53,9 @@ export function v3ViewForJob(jobKey: string): V3ViewContract | undefined {
   if (quarter) return V3_VIEW_CONTRACTS[`34-${(quarter[1] ?? quarter[2]).toLowerCase()}-${quarter[3].toLowerCase()}` as V3ViewKey];
   return undefined;
 }
+function copyV3View(view?: V3ViewContract): V3ViewContract | undefined {
+  return view ? { ...view, visibleSurfaces:[...view.visibleSurfaces], requiredOriginalRoles:view.requiredOriginalRoles.map(r => ({...r,slots:[...r.slots]})), optionalSupportingRoles:[...view.optionalSupportingRoles], forbiddenAuthorityRoles:[...view.forbiddenAuthorityRoles], forbiddenSubstitutions:[...view.forbiddenSubstitutions] } : undefined;
+}
 export interface V3Manifest {
   version: 'nb21-v3'; jobKey: string; mode: 'edit' | 'view_synthesis'; editSlot?: string;
   target: V3Target; budget: number; entries: V3Entry[];
@@ -133,7 +136,7 @@ export function v3Policy(key: string, category?: string, editSlot?: string): V3P
   return base;
 }
 export function resolveV3Evidence(args: { jobKey: string; category?: string; editSlot?: string; sources: V3Reference[]; lightingProfile: V3LightingProfile; retryReason?: V3RetryReason }): V3EvidencePlan {
-  const p = v3Policy(args.jobKey, args.category, args.editSlot), view = v3ViewForJob(args.editSlot ?? args.jobKey);
+  const p = v3Policy(args.jobKey, args.category, args.editSlot), view = copyV3View(v3ViewForJob(args.editSlot ?? args.jobKey));
   if (args.retryReason && !V3_RETRY_REASONS.includes(args.retryReason)) throw new Error('NB21 v3: Unbekannter Retry-Grund.');
   const ids = new Set<string>();
   for (const s of args.sources) {
@@ -160,7 +163,7 @@ export function resolveV3Evidence(args: { jobKey: string; category?: string; edi
   for (const s of assets) { if (entries.length >= budget - 1) throw new Error('NB21 v3: Assetbudget überschritten.'); add(s,normalizeV3Role(s.sourceRole),`immutable ${normalizeV3Role(s.sourceRole)} pixels ONLY in this domain`); }
   const context = args.sources.filter(s => s.sourceType === 'generated context' && normalizeV3Role(s.sourceRole) === 'environment' && s.image).sort((a,b) => a.sourceId.localeCompare(b.sourceId))[0];
   if (context && entries.length < budget) add(context,'presentation_context','environment and presentation only; NO geometry, identity or lighting authority');
-  return { manifest: { version:'nb21-v3', jobKey:args.jobKey, mode:args.editSlot ? 'edit' : 'view_synthesis', ...(args.editSlot ? { editSlot: args.editSlot } : {}), target:p.target, budget, entries, ...(view ? { viewContract:view, requestedPhysicalSide:view.physicalSide } : {}), visibleSurfaces:view?.visibleSurfaces ?? Object.keys(surfaceAuthority), surfaceAuthority, lightingProfile:args.lightingProfile, ...(args.retryReason ? { retryReason:args.retryReason } : {}) }, references };
+  return { manifest: { version:'nb21-v3', jobKey:args.jobKey, mode:args.editSlot ? 'edit' : 'view_synthesis', ...(args.editSlot ? { editSlot: args.editSlot } : {}), target:p.target, budget, entries, ...(view ? { viewContract:view, requestedPhysicalSide:view.physicalSide } : {}), visibleSurfaces:view ? [...view.visibleSurfaces] : Object.keys(surfaceAuthority), surfaceAuthority, lightingProfile:args.lightingProfile, ...(args.retryReason ? { retryReason:args.retryReason } : {}) }, references };
 }
 export function wireV3Evidence(plan: V3EvidencePlan): V3WireReference[] {
   return plan.references.map((s,i) => { const entry = plan.manifest.entries[i]; if (!entry || entry.sourceId !== s.sourceId) throw new Error('NB21 v3: Bildreihenfolge widerspricht Manifest.'); return s.fileUri?.uri ? { ...entry,transport:'file_uri',fileUri:s.fileUri } : { ...entry,transport:'inline',imageBase64:s.image }; });

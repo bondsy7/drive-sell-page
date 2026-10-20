@@ -80,7 +80,7 @@ describe('V3 shared relighting and metadata', () => {
   });
   it('server rejects changed brightness profile or hash', async () => {
     await expect(validateV3LightingProfile({...lightingProfile,hash:'forged'})).rejects.toThrow(/Lichtprofil/);
-    await expect(validateV3LightingProfile({...lightingProfile,spec:{...lightingProfile.spec,whiteBalanceKelvin:4000}})).rejects.toThrow(/Lichtprofil/);
+    await expect(validateV3LightingProfile({...lightingProfile,spec:{...lightingProfile.spec,whiteBalanceKelvin:4000} as never})).rejects.toThrow(/Lichtprofil/);
   });
   it('metadata contains original IDs per surface without image data', () => {
     const p=plan('34-front-right',[original('front'),original('side-right')]);

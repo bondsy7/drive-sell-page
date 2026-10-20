@@ -22,5 +22,5 @@ it('one profile/cache survives concurrent jobs and retry; provider mocked',async
   await Promise.all(['EXT_SIDE_RIGHT','EXT_34_FRONT_RIGHT'].map(jobKey=>invokeNb21V3({...args,jobKey})));
   await invokeNb21V3({...args,jobKey:'EXT_SIDE_RIGHT',retryReason:'wrong_physical_side'});
   expect(upload).toHaveBeenCalledTimes(2); expect(invoke).toHaveBeenCalledTimes(3);
-  for(const call of invoke.mock.calls){const b=call[0] as Parameters<typeof validateV3Wire>[0] extends never ? never : {promptVersion:string;referenceManifest:Parameters<typeof validateV3Wire>[0];v3References:Parameters<typeof validateV3Wire>[1]};expect(b.promptVersion).toBe('nb21-v3');expect(b.referenceManifest.lightingProfile.hash).toBe(lightingProfile.hash);await validateV3Wire(b.referenceManifest,b.v3References);}
+  for(const call of invoke.mock.calls){const b=call[0] as {promptVersion:string;referenceManifest:Parameters<typeof validateV3Wire>[0];v3References:Parameters<typeof validateV3Wire>[1]};expect(b.promptVersion).toBe('nb21-v3');expect(b.referenceManifest.lightingProfile.hash).toBe(lightingProfile.hash);await validateV3Wire(b.referenceManifest,b.v3References);}
 });
