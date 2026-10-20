@@ -3,9 +3,13 @@ import App from "./App.tsx";
 import "./index.css";
 import { initImageCache, prewarmShowrooms } from "./lib/image-base64-cache";
 import { initConsentDefaults } from "./lib/consent";
+import { installGlobalErrorGuard } from "./lib/global-error-guard";
 
 // Consent-Default (alles verweigert) setzen, bevor irgendein Tag geladen werden darf
 initConsentDefaults();
+
+// Unbehandelte Credit-Fehler (HTTP 402) auffangen, bevor sie die Ansicht leeren
+installGlobalErrorGuard();
 
 // Load cached base64 images from localStorage into memory
 initImageCache();
