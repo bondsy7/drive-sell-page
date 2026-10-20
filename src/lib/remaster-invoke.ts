@@ -94,10 +94,36 @@ export async function invokeRemasterVehicleImage(rawBody: RemasterInvokePayload)
     throw new Error('Nicht eingeloggt');
   }
 
-  return supabase.functions.invoke('remaster-vehicle-image', {
+  const result = await supabase.functions.invoke('remaster-vehicle-image', {
     body,
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
   });
+  return withReadableError(result);
+}
+
+/** Server error bodies (e.g. 402 insufficient_credits) are hidden behind a generic
+ * "non-2xx" message by the SDK; surface a readable German message instead. */
+export function creditErrorMessage(body: { error?: unknown; balance?: unknown; cost?: unknown } | null | undefined): string | null {
+  if (body?.error !== 'insufficient_credits') return null;
+  const balance = typeof body.balance === 'number' ? body.balance : null;
+  const cost = typeof body.cost === 'number' ? body.cost : null;
+  const detail = balance !== null && cost !== null ? ` (Guthaben ${balance}, benötigt ${cost})` : '';
+  return `Nicht genug Credits${detail}. Bitte Credits aufladen und danach erneut starten.`;
+}
+
+async function withReadableError<T extends { data: any; error: any }>(result: T): Promise<T> {
+  const ctx = result.error?.context;
+  if (!result.error || !(ctx instanceof Response)) return result;
+  try {
+    const parsed = await ctx.clone().json();
+    const message = creditErrorMessage(parsed) ?? (typeof parsed?.error === 'string' ? parsed.error : null);
+    if (!message) return result;
+    try { result.error.message = message; } catch { /* readonly */ }
+    const data = result.data ?? { ...parsed, error: message, ...(parsed?.error === 'insufficient_credits' ? { errorCode: 'insufficient_credits', retryable: false } : {}) };
+    return { ...result, data };
+  } catch {
+    return result;
+  }
 }
