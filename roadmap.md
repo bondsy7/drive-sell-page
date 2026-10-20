@@ -186,6 +186,7 @@
 - [x] 65 Tests, gezielter Lint und Bedienprüfung mit simulierten Analyseantworten erfolgreich; echte Anbieteranalyse nicht ausgeführt, keine Bildgenerierung oder Veröffentlichung
 
 ## Fahrersitz und Serienbelichtung
+- [ ] Letzten Volvo-Lauf anhand gespeicherter Bilder/Originale prüfen; V2-Farbautorität, Innenraum-Referenzpriorität, echtes Vierer-Grid und gemeinsame Lichtbasis korrigieren; ohne kostenpflichtige Generierung
 - [x] Verformte/verschmolzene Sitzrücken im gelieferten Ergebnis erkannt; vollständige getrennte Sitzgeometrie und Originalkamera in V2-Edit-Aufnahmen geschützt
 - [x] Einheitliche Serienbelichtung und Weißabgleich trotz unterschiedlicher Originalbelichtungen für alle NB21-V2-Ziele verankert; historische V1/2.0-Verträge unverändert
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
