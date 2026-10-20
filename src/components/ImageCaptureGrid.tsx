@@ -1158,7 +1158,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (isNb21Tier(modelTier)) {
       const slot = vehicleSlots.find(s => !s.isVin && captures[s.key]);
       if (!slot) { toast.error('NB21 v2: Originalaufnahme fehlt.'); return; }
-      await prepareDurableTarget(slot);
+      await prepareDurableRemaster(slot);
     }
     const workflowKey = createPipelineWorkflowKey({
       projectId,
