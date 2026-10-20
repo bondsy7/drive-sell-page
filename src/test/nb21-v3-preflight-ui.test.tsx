@@ -37,6 +37,7 @@ it('actual PipelineRunner explicitly selects V3 and passes one run lighting prof
  const buttons=screen.getAllByRole('button');const launch=buttons.find(b=>/Bilder generieren/.test(b.textContent??''));
  expect(launch).toBeDefined(); if(!launch) return;
  fireEvent.click(launch);
+ fireEvent.click(await screen.findByRole('button',{name:/Bilder generieren/}));
  await waitFor(()=>expect(start).toHaveBeenCalled());
  const cfg=start.mock.calls[0]?.[0] as PipelineConfig;expect(cfg.promptVersion).toBe('nb21-v3');expect(cfg.lightingProfile?.version).toBe('nb21-v3-lighting-1');expect(cfg.lightingProfile?.hash).toHaveLength(64);
 });
