@@ -2,6 +2,7 @@ import { renderNb21Prompt } from '../sections';
 import type { RemasterConfig } from '@/lib/remaster-prompt';
 import type { V2Manifest } from '../../../../supabase/functions/_shared/nb21-v2-contract';
 import { SCENE_PROMPT_DEFAULTS } from '@/lib/remaster-prompt-defaults';
+import { buildV2SubjectClassLock, type V2SubjectClass } from '../../../../supabase/functions/_shared/nb21-v2-class';
 
 export const NB21_V2_VERSION = 'nb21-v2' as const;
 export const NB21_CURRENT_VERSION = NB21_V2_VERSION;
@@ -34,7 +35,7 @@ export function v2LocalContract(key: string, target: V2Manifest['target']): stri
   return ['Reconstruct the requested camera view from assigned originals only; maintain photographed body proportions, paint scheme, badges, windows, mirrors and asymmetric attached equipment.'];
 }
 
-export function buildNb21V2Prompt(args: { manifest: V2Manifest; config: RemasterConfig; correction?: string; vehicleClass?: string }): string {
+export function buildNb21V2Prompt(args: { manifest: V2Manifest; config: RemasterConfig; correction?: string; vehicleClass?: string; classContext?: V2SubjectClass | null }): string {
   const m = args.manifest, c = args.config;
   if (!m.entries.length || !m.entries.some(e => e.authorityTier === 'A')) throw new Error('NB21 v2: Originalautorität fehlt.');
   const key = m.jobKey.toUpperCase();
@@ -62,10 +63,10 @@ export function buildNb21V2Prompt(args: { manifest: V2Manifest; config: Remaster
       args.correction ? `Requested correction, subject to original evidence: ${args.correction}` : 'No additional vehicle transformations.',
     ],
     'VEHICLE IDENTITY LOCK': [
+      buildV2SubjectClassLock(args.classContext ?? { vehicleClass: args.vehicleClass }),
       'Use ONLY the reference image. Do NOT invent colors, badges, wheels, interior trim, stitching, or UI elements. Every visible attribute MUST match the reference exactly. Do NOT fall back on generic model knowledge.',
       ...local,
       ...(interior ? ['If the original console is flat/open and no selector protrudes, it stays entirely flat: no new lever, pin, bulge or control. Keep genuine photographed controls. Empty cabin, no persons/trash; do not cut pillars or roof in cabin views.'] : []),
-      `Vehicle class scope=${args.vehicleClass ?? 'car'}; preserve only the photographed subject and its attached equipment. No rules imported from another class.`,
     ],
     'PERSPECTIVE LOCK': [m.mode === 'edit' ? 'Exactly the original camera and physical side.' : `Requested viewpoint=${m.jobKey.replace(/^CI_[A-Z]+_/, '').replace(/_/g, ' ')}; CI names describe presentation only, never equipment.`, side ? `Physical ${side} side; never mirror. ${/SIDE/.test(key) ? `Front points to IMAGE ${side}; rear to IMAGE ${side === 'LEFT' ? 'RIGHT' : 'LEFT'}.` : 'Three-quarter camera offset 30–40 degrees.'}` : 'No mirroring of vehicle or asymmetric parts.'],
     'ENVIRONMENT': [`Scene=${c.scene}. ${SCENE_PROMPT_DEFAULTS[c.scene] ?? 'Use the explicitly supplied environment reference.'} ${ci ? ciPresentation[ci] ?? '' : ''} Presentation context supplies environment only; logos and plate assets are authoritative only in their own domain. Environment never changes vehicle identity.`, c.scene === 'dealer-lot-dekra' ? 'Use supplied scene-logo pixels once on the hall; no invented or repeated signage.' : '', c.showManufacturerLogo || c.showDealerLogo ? 'Use supplied current logo assets only; never invent missing logos.' : 'Do not invent wall branding.'],

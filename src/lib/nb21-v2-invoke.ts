@@ -1,15 +1,16 @@
-import { uploadToGeminiFiles } from './gemini-file-upload';
 import { invokeRemasterVehicleImage, type RemasterInvokePayload } from './remaster-invoke';
 import { buildNb21V2Prompt, resolveV2Evidence, wireV2Evidence, type V2Reference } from '@/prompts/nb21/v2';
 import type { RemasterConfig } from './remaster-prompt';
 import { ensureCachedBase64 } from './image-base64-cache';
 import { DEKRA_LOGO_BASE64 } from '../../supabase/functions/_shared/dekra-logo';
+import { V2RunUploadCache } from './nb21-v2-upload-cache';
 
 /** One canonical selection before upload, prompt generation and provider dispatch. */
 export async function invokeNb21V2(args: {
   sources: V2Reference[]; jobKey: string; category?: string; editSlot?: string;
   config: RemasterConfig; correction?: string;
   payload?: Pick<RemasterInvokePayload, 'gallerySave' | 'classContext'>;
+  uploadCache?: V2RunUploadCache;
 }) {
   const effectiveConfig = { ...args.config };
   const sources = [...args.sources];
@@ -26,12 +27,9 @@ export async function invokeNb21V2(args: {
   }
   const plan = resolveV2Evidence({ ...args, sources });
   if (sources.some(s => s.sourceType === 'immutable asset' && ['scene-logo','manufacturer-logo','dealer-logo'].includes(s.sourceRole) && !plan.manifest.entries.some(e => e.sourceId === s.sourceId))) throw new Error('NB21 v2: Gewähltes Markenasset passt nicht in das Referenzbudget. Keine stille Auslassung.');
-  await Promise.all(plan.references.map(async s => {
-    if (s.fileUri || s.openAIFile) return;
-    const refs = await uploadToGeminiFiles([{ id: s.sourceId, imageBase64: s.image }]);
-    s.fileUri = refs?.[0] ?? null;
-  }));
-  const dynamicPrompt = buildNb21V2Prompt({ manifest: plan.manifest, config: effectiveConfig, correction: args.correction, vehicleClass: args.payload?.classContext?.vehicleClass });
+  const uploadCache = args.uploadCache ?? new V2RunUploadCache();
+  plan.references = await Promise.all(plan.references.map(async s => ({ ...s, fileUri: await uploadCache.resolve(s) })));
+  const dynamicPrompt = buildNb21V2Prompt({ manifest: plan.manifest, config: effectiveConfig, correction: args.correction, vehicleClass: args.payload?.classContext?.vehicleClass, classContext: args.payload?.classContext });
   return invokeRemasterVehicleImage({
     ...args.payload, modelTier: 'nb21', promptVersion: 'nb21-v2', dynamicPrompt,
     referenceManifest: plan.manifest, v2References: wireV2Evidence(plan),
