@@ -13,6 +13,10 @@ export async function invokeNb21V2(args: {
 }) {
   const effectiveConfig = { ...args.config };
   const sources = [...args.sources];
+  for (const s of sources) {
+    if (!s.sourceId || !s.sourceRole) throw new Error('NB21 v2: Explizite Quellenidentität fehlt.');
+    if (s.sourceType === 'original' && s.assetId?.endsWith('-asset.jpg')) throw new Error('NB21 v2: Unveränderliches Asset darf kein Händleroriginal sein.');
+  }
   if (args.config.scene === 'dealer-lot-dekra' && !sources.some(s => s.sourceRole === 'scene-logo')) sources.push({ sourceId: 'asset:dekra-current-scene-logo', sourceRole: 'scene-logo', sourceType: 'immutable asset', image: `data:image/png;base64,${DEKRA_LOGO_BASE64}` });
   for (const [role, enabled, url] of [
     ['manufacturer-logo', args.config.showManufacturerLogo, args.config.manufacturerLogoUrl],

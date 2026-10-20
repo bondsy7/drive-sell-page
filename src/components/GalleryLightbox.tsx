@@ -24,7 +24,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
 import { ALL_PIPELINE_JOBS, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
-import { buildNb21PipelinePrompt, buildNb21RemasterPrompt, resolveRegenerationPromptVersion, NB21_TIER } from '@/prompts/nb21';
+import { buildNb21PipelinePrompt, buildNb21RemasterPrompt, NB21_TIER } from '@/prompts/nb21';
 import { ensureCachedBase64 } from '@/lib/image-base64-cache';
 import { readRegenerationContext, restoreRemasterConfig, showroomUrlForScene, pickSeriesEnvironmentImage } from '@/lib/regeneration-context';
 import { downloadMediaFile } from '@/lib/download-file';

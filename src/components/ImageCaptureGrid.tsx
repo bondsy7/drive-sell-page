@@ -16,7 +16,7 @@ import { Dialog as BrandDialog, DialogContent as BrandDialogContent, DialogHeade
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
-import { buildNb21RemasterPrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
+import { isNb21Tier } from '@/prompts/nb21';
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
 import { archiveV2Original } from '@/lib/nb21-v2-originals';
 import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
