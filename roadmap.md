@@ -182,5 +182,5 @@
 - [x] 61 V2-/Baseline-/Integrationstests, gezielten Lint, Server-Typprüfung und isolierte Browser-Bedienprüfung erfolgreich; keine bezahlte Generierung
 
 ## Weitere Detailaufnahmen: Perspektivanalyse
-- [ ] Vorhandene Perspektivanalyse für zusätzliche NB21-Detailoriginale anbinden; sichere Zuordnung mit manueller Korrektur
-- [ ] Zuordnungsregeln und Bedienung prüfen; keine Bildgenerierung oder Veröffentlichung
+- [x] Vorhandene Perspektivanalyse für zusätzliche NB21-Detailoriginale angebunden; sichere Zuordnung mit manueller Korrektur und Wiederverwendung der Dateireferenz
+- [x] 65 Tests, gezielter Lint und Bedienprüfung mit simulierten Analyseantworten erfolgreich; echte Anbieteranalyse nicht ausgeführt, keine Bildgenerierung oder Veröffentlichung
