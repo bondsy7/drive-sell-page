@@ -1,3 +1,6 @@
+import { resolveNb21Version, originalSlotFromFilename, type V2Reference } from '@/prompts/nb21/v2';
+import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
+import type { RegenerationContext } from '@/lib/regeneration-context';
 import { resolveRegenerationSeed, buildMandatoryCorrection } from '@/lib/regeneration-seed';
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon, Wand2 } from 'lucide-react';
@@ -95,7 +98,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             const { data: signed } = await supabase.storage
               .from('originals')
               .createSignedUrl(fullPath, 60 * 60);
-            return { name: f.name, url: signed?.signedUrl || '' };
+            return { name: f.name, url: signed?.signedUrl || '', assetId: fullPath };
           }),
       );
     },
@@ -173,7 +176,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
 
       // Serien-Look wiederherstellen: Showroom, Look, Logo-/Kennzeichenregeln und Fahrzeugklasse
       // exakt wie beim ursprünglichen Lauf (Fallback: Händler-Showroom aus dem Profil).
-      const [{ data: vRow }, { data: pRow }, overrides] = await Promise.all([
+      const [{ data: vRow }, { data: pRow }, overrides, { data: resultRow }] = await Promise.all([
         vehicleId
           ? supabase.from('vehicles').select('vehicle_data').eq('id', vehicleId).maybeSingle()
           : Promise.resolve({ data: null } as any),
@@ -181,8 +184,9 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           ? supabase.from('profiles').select('custom_showroom_url').eq('id', user.id).maybeSingle()
           : Promise.resolve({ data: null } as any),
         fetchPromptOverrides().catch(() => ({} as Record<string, string>)),
+        supabase.from('project_images').select('generation_context').eq('id', current.id).maybeSingle(),
       ]);
-      const ctx = readRegenerationContext((vRow as any)?.vehicle_data);
+      const ctx = (resultRow?.generation_context as unknown as RegenerationContext | null) ?? readRegenerationContext((vRow as any)?.vehicle_data);
       const profileShowroomUrl: string | null = (pRow as any)?.custom_showroom_url || null;
       // Profil-Showroom NUR, wenn er beim ursprünglichen Lauf ausgewählt war (scene=custom-showroom).
       // Ohne gespeicherte Einstellungen: Umgebung aus einem anderen Bild derselben Serie übernehmen.
@@ -214,9 +218,9 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
 
       // Nano Banana 2.1: Läufe mit gespeicherter Version nb21-v1 werden wieder über
       // den 2.1-Pfad gebaut. Alte Läufe ohne Version bleiben auf ihrem 2.0-Pfad.
-      const nb21Version = resolveRegenerationPromptVersion(ctx);
+      const nb21Version = resolveNb21Version(ctx);
       let nb21Prompt: string | null = null;
-      if (nb21Version) {
+      if (nb21Version === 'nb21-v1') {
         const nb21Refs = {
           primaryRole: current.perspective || pipelineJob?.labelDe || 'overall vehicle photo',
           hasEnvironmentReference: !!customShowroomBase64,
@@ -229,7 +233,21 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           : buildNb21RemasterPrompt({ config: { ...config, customShowroomBase64 }, slotKey: interiorSlotKey ?? 'as-photographed', vehicleDescription, classContext: ctx?.classContext ?? null, references: nb21Refs, correction: nb21Correction });
       }
 
-      const { data, error } = await invokeRemasterVehicleImage({
+      let v2Sources: V2Reference[] = [];
+      if (nb21Version === 'nb21-v2') {
+        v2Sources = await Promise.all(originals.filter(o => originalSlotFromFilename(o.name) || ctx?.referenceSources?.some(s => s.assetId === o.assetId)).map(async o => {
+          const saved = ctx?.referenceSources?.find(s => s.assetId === o.assetId);
+          return { sourceId: o.assetId, assetId: o.assetId, sourceRole: saved?.sourceRole ?? originalSlotFromFilename(o.name) ?? 'unassigned-detail', sourceType: 'original' as const, image: await fetchAsBase64(o.url) };
+        }));
+        // Selecting a generated gallery frame does NOT relabel it as an original.
+        if (referenceUrl && !originals.some(o => o.url === referenceUrl)) v2Sources.push({ sourceId: `gallery:${images.find(i => i.src === referenceUrl)?.id ?? 'selected'}`, sourceRole: 'environment', sourceType: 'generated context', image: mainBase64 });
+        v2Sources.push(...v2ConfigSources({ ...config, customShowroomBase64 }));
+      }
+      const { data, error } = nb21Version === 'nb21-v2' ? await invokeNb21V2({
+        sources: v2Sources, jobKey: pipelineJob?.key ?? (ctx as any)?.sourceSlot ?? 'as-photographed', category: pipelineJob?.category,
+        editSlot: pipelineJob ? undefined : (ctx as any)?.sourceSlot ?? undefined,
+        config: { ...config, customShowroomBase64 }, correction: extraPrompt.trim(), payload: { classContext: ctx?.classContext },
+      }) : await invokeRemasterVehicleImage({
         classContext: ctx?.classContext ?? null,
         imageBase64: mainBase64,
         vehicleDescription,

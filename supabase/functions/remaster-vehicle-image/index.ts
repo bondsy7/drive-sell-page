@@ -546,7 +546,8 @@ serve(async (req) => {
       user_id: chargedUserId, job_key: v2Telemetry.manifest.jobKey, model_tier: "nb21",
       stage: "generate", status, attempt: diag.attempts || 1, engine: diag.engine, model: diag.model,
       duration_ms: Date.now() - startedAt, error_message: message?.slice(0, 1000) ?? null,
-      provider_response: { promptVersion: "nb21-v2", referenceManifest: v2Telemetry.manifest, transportManifest: v2Telemetry.transports, outputDelivered: !!output },
+      prompt_version: "nb21-v2", reference_manifest: v2Telemetry.manifest, transport_manifest: v2Telemetry.transports,
+      provider_response: { outputDelivered: !!output },
     });
     if (error) throw new Error("NB21 v2: Referenzprotokoll konnte nicht gesichert werden.");
     telemetryLogged = true;
@@ -612,6 +613,12 @@ serve(async (req) => {
       await persistV2Telemetry("success", image);
       if (!galleryTarget || !galleryAuth) return {};
       const saved = await persistRemasterGallery(galleryAuth.supabase, galleryAuth.user.id, galleryTarget, image);
+      if (isNb21Request) {
+        const { data: vehicle } = await galleryAuth.supabase.from('vehicles').select('vehicle_data').eq('id', galleryTarget.vehicleId).maybeSingle();
+        const context = vehicle?.vehicle_data?.__regenerationContext ?? {};
+        const { error } = await galleryAuth.supabase.from('project_images').update({ generation_context: { ...context, modelTier: 'nb21', promptVersion, sourceSlot: galleryTarget.slotKey } }).eq('id', galleryTarget.id);
+        if (error) throw new Error('Promptversion konnte nicht am Ergebnis gesichert werden.');
+      }
       return { savedImageId: saved.id, savedImageUrl: saved.imageUrl };
     };
 

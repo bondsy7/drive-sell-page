@@ -993,6 +993,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${r.label}`,
           sort_order: sortOrder,
           gallery_folder: folderName,
+          ...(isNb21Tier(cfg.modelTier) ? { generation_context: buildRegenerationContext({ remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, vehicleDescription: cfg.vehicleDescription, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } : {}),
         }]);
         savedUrls.push(url);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
