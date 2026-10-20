@@ -180,3 +180,7 @@
 - [x] Kompakten gemeinsamen Subject-Class-Lock im Client und finalen Serverprompt absichern
 - [x] Geplante Originalrollen vor Start prüfen; Detailzuordnung und bewusstes Überspringen anbieten
 - [x] 61 V2-/Baseline-/Integrationstests, gezielten Lint, Server-Typprüfung und isolierte Browser-Bedienprüfung erfolgreich; keine bezahlte Generierung
+
+## Weitere Detailaufnahmen: Perspektivanalyse
+- [ ] Vorhandene Perspektivanalyse für zusätzliche NB21-Detailoriginale anbinden; sichere Zuordnung mit manueller Korrektur
+- [ ] Zuordnungsregeln und Bedienung prüfen; keine Bildgenerierung oder Veröffentlichung
