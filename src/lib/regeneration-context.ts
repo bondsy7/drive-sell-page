@@ -28,6 +28,8 @@ export interface RegenerationContext {
   modelTier?: string;
   /** Prompt-Version des Laufs ('nb21-v1' für Nano Banana 2.1; fehlt = 2.0). */
   promptVersion?: string;
+  sourceSlot?: string;
+  jobKey?: string;
   referenceSources?: Omit<V2Reference, 'image' | 'fileUri' | 'openAIFile'>[];
   savedAt: string;
 }

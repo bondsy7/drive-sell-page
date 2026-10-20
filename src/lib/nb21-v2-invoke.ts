@@ -3,6 +3,7 @@ import { invokeRemasterVehicleImage, type RemasterInvokePayload } from './remast
 import { buildNb21V2Prompt, resolveV2Evidence, wireV2Evidence, type V2Reference } from '@/prompts/nb21/v2';
 import type { RemasterConfig } from './remaster-prompt';
 import { ensureCachedBase64 } from './image-base64-cache';
+import { DEKRA_LOGO_BASE64 } from '../../supabase/functions/_shared/dekra-logo';
 
 /** One canonical selection before upload, prompt generation and provider dispatch. */
 export async function invokeNb21V2(args: {
@@ -12,6 +13,7 @@ export async function invokeNb21V2(args: {
 }) {
   const effectiveConfig = { ...args.config };
   const sources = [...args.sources];
+  if (args.config.scene === 'dealer-lot-dekra' && !sources.some(s => s.sourceRole === 'scene-logo')) sources.push({ sourceId: 'asset:dekra-current-scene-logo', sourceRole: 'scene-logo', sourceType: 'immutable asset', image: `data:image/png;base64,${DEKRA_LOGO_BASE64}` });
   for (const [role, enabled, url] of [
     ['manufacturer-logo', args.config.showManufacturerLogo, args.config.manufacturerLogoUrl],
     ['dealer-logo', args.config.showDealerLogo, args.config.dealerLogoUrl],

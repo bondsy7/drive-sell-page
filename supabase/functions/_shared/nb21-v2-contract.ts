@@ -111,7 +111,7 @@ export function resolveV2Evidence(args: { jobKey: string; category?: string; sou
   }
   const auxiliary = args.sources.filter(s => s.sourceType !== 'original' && s.image).sort((a, b) => a.sourceId.localeCompare(b.sourceId));
   const interiorOutput = p.target.startsWith('interior') || (p.target === 'composite' && /INTERIOR/.test(args.jobKey));
-  const scopedAssets = auxiliary.filter(s => s.sourceType === 'immutable asset' && ['wheel', 'plate', 'manufacturer-logo', 'dealer-logo'].includes(normalizeV2Role(s.sourceRole)) && !(normalizeV2Role(s.sourceRole) === 'wheel' && !p.wheel) && !(normalizeV2Role(s.sourceRole) === 'plate' && (interiorOutput || p.target === 'cargo_area')));
+  const scopedAssets = auxiliary.filter(s => s.sourceType === 'immutable asset' && ['wheel', 'plate', 'manufacturer-logo', 'dealer-logo', 'scene-logo'].includes(normalizeV2Role(s.sourceRole)) && !(normalizeV2Role(s.sourceRole) === 'wheel' && !p.wheel) && !(normalizeV2Role(s.sourceRole) === 'plate' && (interiorOutput || p.target === 'cargo_area')));
   // Geometry budget and scoped asset allowance are distinct: logos never displace
   // original evidence or the selected environment. Total remains at most 8 images.
   const budget = Math.min(8, p.budget + scopedAssets.length);
@@ -120,7 +120,7 @@ export function resolveV2Evidence(args: { jobKey: string; category?: string; sou
     const role = normalizeV2Role(s.sourceRole);
     if (role === 'wheel' && !p.wheel) continue;
     if (role === 'plate' && (p.target.startsWith('interior') || p.target === 'cargo_area')) continue;
-    if (!['wheel', 'plate', 'manufacturer-logo', 'dealer-logo'].includes(role)) continue;
+    if (!['wheel', 'plate', 'manufacturer-logo', 'dealer-logo', 'scene-logo'].includes(role)) continue;
     if (entries.length < budget - 1) add(s, role, `immutable ${role} pixels only; no other vehicle authority`);
   }
   // At most one generated/scene context; it can never fill a missing original role.
