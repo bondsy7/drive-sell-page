@@ -1,4 +1,4 @@
-import { normalizeV2Role, type V2Manifest, type V2WireReference } from './nb21-v2-contract.ts';
+import { normalizeV2Role, resolveV2Evidence, type V2Manifest, type V2WireReference } from './nb21-v2-contract.ts';
 
 /** Validate exactly the objects used to construct outgoing provider parts. */
 export function validateV2Wire(manifest: V2Manifest, refs: V2WireReference[]) {
@@ -20,12 +20,17 @@ export function validateV2Wire(manifest: V2Manifest, refs: V2WireReference[]) {
   }
   if (!refs.some(r => r.authorityTier === 'A')) throw new Error('NB21 v2: Originalbeleg fehlt.');
   if (manifest.mode === 'view_synthesis' && manifest.target === 'cargo_area' && !['cargo_original','rear_evidence'].every(role => refs.some(r => r.role === role && r.authorityTier === 'A'))) throw new Error('NB21 v2: Cargo und Heckbeleg erforderlich.');
+  const editSlot = manifest.mode === 'edit' ? refs.find(r => r.role === 'same_view_original')?.sourceRole : undefined;
+  if (manifest.mode === 'edit' && !editSlot) throw new Error('NB21 v2: Edit-Original fehlt.');
+  const canonical = resolveV2Evidence({ jobKey: manifest.jobKey, editSlot, sources: refs.map(r => ({ ...r, image: 'available' })) }).manifest;
+  if (canonical.target !== manifest.target || canonical.budget !== manifest.budget || canonical.entries.length !== manifest.entries.length || canonical.entries.some((e,i) => e.sourceId !== refs[i]?.sourceId || e.role !== refs[i]?.role || e.authority !== refs[i]?.authority)) throw new Error('NB21 v2: Manifest widerspricht der Job-Policy.');
 }
 
 export async function v2TransportManifest(refs: V2WireReference[]) {
   return Promise.all(refs.map(async ({ imageBase64, fileUri, openAIFile, ...safe }, index) => {
     const raw = imageBase64?.split(',').pop() ?? '';
-    const hash = raw ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw)))).map(b => b.toString(16).padStart(2, '0')).join('') : undefined;
-    return { ...safe, providerImageIndex: index + 1, fileIdentifier: fileUri?.uri?.split('?')[0] ?? openAIFile?.fileId, inlineSha256: hash, inlineEncodedBytes: raw.length || undefined };
+    const bytes = raw ? Uint8Array.from(atob(raw), c => c.charCodeAt(0)) : null;
+    const hash = bytes ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map(b => b.toString(16).padStart(2, '0')).join('') : undefined;
+    return { ...safe, providerImageIndex: index + 1, fileIdentifier: fileUri?.uri?.split('?')[0] ?? openAIFile?.fileId, inlineSha256: hash, inlineBytes: bytes?.length };
   }));
 }
