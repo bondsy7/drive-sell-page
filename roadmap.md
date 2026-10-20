@@ -184,3 +184,8 @@
 ## Weitere Detailaufnahmen: Perspektivanalyse
 - [x] Vorhandene Perspektivanalyse für zusätzliche NB21-Detailoriginale angebunden; sichere Zuordnung mit manueller Korrektur und Wiederverwendung der Dateireferenz
 - [x] 65 Tests, gezielter Lint und Bedienprüfung mit simulierten Analyseantworten erfolgreich; echte Anbieteranalyse nicht ausgeführt, keine Bildgenerierung oder Veröffentlichung
+
+## Fahrersitz und Serienbelichtung
+- [ ] Fahrersitz-Remastering anhand der aktuellen Perspektivregeln prüfen und Sitzgeometrie schützen
+- [ ] Einheitliche Belichtung trotz unterschiedlicher Originalbelichtungen im aktuellen NB21-V2-Pfad absichern; historische V1/2.0-Verträge erhalten
+- [ ] Gezielte Regressionstests ausführen; keine bezahlte Generierung oder Bereitstellung
