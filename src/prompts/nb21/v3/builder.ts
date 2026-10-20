@@ -15,10 +15,21 @@ export const NB21_V3_VERSION = 'nb21-v3' as const;
  * Without it the model improvises camera and crop (observed: wrong interior viewpoints,
  * cluster instead of centre screen, cut roof/seats).
  */
+const V3_CABIN_CAMERA: Array<[RegExp, string]> = [
+  [/SCREEN|MBUX/, 'CAMERA: centred on the central display; the display is the main subject and fully visible, with the surrounding dashboard/console attached. Not the instrument cluster or steering wheel as main subject.'],
+  [/CLUSTER/, 'CAMERA: behind the steering wheel at driver eye level; instrument display and wheel fully visible.'],
+  [/STEERING/, 'CAMERA: from the driver seat position; complete steering wheel and both stalks fully in frame.'],
+  [/REAR_SEAT|INT_REAR/, 'CAMERA: from the front of the cabin between the front seats, looking straight rearward at the complete rear bench (all seat positions, headrests, belts and side door panels visible), roof lining in frame.'],
+  [/PASSENGER/, 'CAMERA: at the open front passenger door at seat height, looking across the passenger seat to the dashboard and driver side; complete passenger seat in frame.'],
+  [/INT_CENTER|DASHBOARD|COCKPIT/, 'CAMERA: centred between/behind the front seats at shoulder height looking forward; complete dashboard, centre console and both front seat assemblies in frame, roof lining visible.'],
+  [/DRIVER/, 'CAMERA: at the open driver door at seat height; complete driver seat, steering wheel and dashboard in frame.'],
+  [/BOOT|TRUNK|CARGO/, 'CAMERA: behind the vehicle centred on the open tailgate; complete cargo opening, floor and surrounding rear body in frame.'],
+];
 export function v3ShotContract(jobKey: string, target: V3Manifest['target']): string[] {
   const k = jobKey.toUpperCase();
   const viewpoint = k.replace(/^CI_[A-Z]+_/, '').replace(/_/g, ' ');
-  return [`Requested viewpoint=${viewpoint}; CI names describe presentation only, never equipment.`, ...v2LocalContract(k, target as never)];
+  const camera = V3_CABIN_CAMERA.find(([re]) => re.test(k))?.[1];
+  return [`Requested viewpoint=${viewpoint}; CI names describe presentation only, never equipment.`, ...(camera ? [camera] : []), ...v2LocalContract(k, target as never)];
 }
 
 export function v3Framing(m: V3Manifest): string {
