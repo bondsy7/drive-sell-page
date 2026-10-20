@@ -191,6 +191,6 @@
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
 
 ## DEKRA-Report: vollständige Ergänzung
-- [ ] Alle Fahrzeugzeilen der aktuellen Tabelle mit dem gesamten Originalexport abgleichen
-- [ ] Alle verfügbaren Originalbilder und dokumentierten Fahrzeuganalysen in einer neuen PDF-Version aufnehmen; Nutzungslücken von Systemfehlern trennen
-- [ ] Jede PDF-Seite visuell prüfen und vollständigen Report bereitstellen
+- [x] Alle 21 benannten Fahrzeugzeilen und California-Zusatz der aktuellen Tabelle mit dem gesamten Originalexport abgeglichen; offene Namenszuordnungen ausdrücklich markiert
+- [x] Alle 152 Export-Originaldateien plus neun California-Originale, sämtliche Tabellenbefunde und vorhandene Ergebnisbelege in PDF-Version 2 aufgenommen; Nutzungslücken von Systemfehlern getrennt
+- [x] Alle 45 PDF-Seiten visuell geprüft, Dachzustand und Volvo-Bildbeschreibung korrigiert und Abdeckung geprüft; keine Neugenerierung
