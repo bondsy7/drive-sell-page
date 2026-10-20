@@ -2,7 +2,6 @@
 // Uses structured English XML-tags optimized for Gemini image models
 // Prompt blocks are admin-editable via Admin > Prompt-Verwaltung
 
-import { brandingAssetScope } from '../../supabase/functions/_shared/branding-asset-scope';
 import { supabase } from '@/integrations/supabase/client';
 import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES } from './remaster-prompt-defaults';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
@@ -386,11 +385,11 @@ ${REFERENCE_TRUTH_PROTOCOL}
   parts.push(buildVehicleGenerationLock(vehicleDescription));
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
-  const hasAnyLogo = (config.showManufacturerLogo && (config.manufacturerLogoUrl || config.manufacturerLogoBase64)) || (config.showDealerLogo && (config.dealerLogoUrl || config.dealerLogoBase64));
+  const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
   
   if (hasAnyLogo) {
     const logoLines: string[] = [];
-    if (config.showManufacturerLogo && (config.manufacturerLogoUrl || config.manufacturerLogoBase64)) {
+    if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
       logoLines.push(`MANUFACTURER LOGO:
 - You are provided with a specific reference image of the manufacturer logo.
 - Reproduce this EXACT logo PIXEL-FOR-PIXEL: every color, shape, text element, and proportion.
@@ -401,7 +400,7 @@ ${REFERENCE_TRUTH_PROTOCOL}
 - Size: approximately 60-80cm diameter/width. IDENTICAL position, size, and appearance on EVERY image.
 - FORBIDDEN: Do NOT redesign, simplify, recolor, vectorize, or create an alternative version. Do NOT add glow or lighting effects. IMMUTABLE ASSET.`);
     }
-    if (config.showDealerLogo && (config.dealerLogoUrl || config.dealerLogoBase64)) {
+    if (config.showDealerLogo && config.dealerLogoUrl) {
       logoLines.push(`DEALER LOGO:
 - You are provided with the dealer's company logo image.
 - Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
@@ -813,12 +812,6 @@ ${neutralVehicleDescription}
 
   parts.push('You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.');
 
-  parts.push(brandingAssetScope([
-    ...(config.licensePlate === 'custom' ? ['plate'] : []),
-    ...(config.showManufacturerLogo && (config.manufacturerLogoUrl || config.manufacturerLogoBase64) ? ['manufacturer-logo'] : []),
-    ...(config.showDealerLogo && (config.dealerLogoUrl || config.dealerLogoBase64) ? ['dealer-logo'] : []),
-    ...(config.scene === 'dealer-lot-dekra' ? ['scene-logo'] : []),
-  ]));
   return parts.join('\n\n');
 }
 
