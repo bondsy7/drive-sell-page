@@ -15,6 +15,10 @@ const ROLES: Record<string, string> = {
   DET_INFOTAINMENT: 'screen', DET_CENTER_CONSOLE: 'controls',
   DET_WHEEL_FRONT_LEFT: 'wheel', DET_WHEEL_FRONT_RIGHT: 'wheel',
   DET_WHEEL_REAR_LEFT: 'wheel', DET_WHEEL_REAR_RIGHT: 'wheel',
+  INT_CARGO: 'cargo', INT_CARGO_34: 'cargo', INT_CENTER_CONSOLE: 'controls',
+  INT_DASH_CENTER: 'dashboard', INT_DRIVER_POV: 'dashboard', INT_WIDE_CABIN: 'dashboard',
+  INT_PASSENGER_DASH: 'dashboard', INT_REAR_FROM_FRONT: 'rear-seats',
+  INT_REAR_LEFT_DOOR: 'rear-seats', INT_REAR_RIGHT_DOOR: 'rear-seats',
 };
 
 /** Only an actual, confidently visible canonical detail may supply an automatic role. */

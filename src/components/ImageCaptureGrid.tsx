@@ -20,6 +20,8 @@ import { isNb21Tier } from '@/prompts/nb21';
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
 import { archiveV2Original } from '@/lib/nb21-v2-originals';
 import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
+import { useDetailPerspectiveAnalysis } from '@/hooks/useDetailPerspectiveAnalysis';
+import DetailPerspectiveAssignment from '@/components/DetailPerspectiveAssignment';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
@@ -322,6 +324,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [brandEditOpen, setBrandEditOpen] = useState(false);
   const [detailImages, setDetailImages] = useState<string[]>([]);
   const [detailSourceRoles, setDetailSourceRoles] = useState<Record<string, string>>({});
+  const detailAnalysis = useDetailPerspectiveAnalysis(detailImages, isNb21Tier(modelTier));
+  const effectiveDetailRoles = { ...detailAnalysis.automaticRoles, ...detailSourceRoles };
   const originalAssetIdsRef = useRef<Record<string, string>>({});
   const originalSourceMetadataRef = useRef<Record<string, { sourceType: V2Reference['sourceType']; sourceRole: string }>>({});
   const detailFileRef = useRef<HTMLInputElement | null>(null);
@@ -808,7 +812,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     galleryTargetsRef.current[slot.key] = target;
     const sources = [
       ...vehicleSlots.filter(s => captures[s.key]).map(s => ({ image: captures[s.key].base64, role: s.key, sourceType: 'original' as const })),
-      ...detailImages.map(image => ({ image, role: detailSourceRoles[image] || undefined, sourceType: 'original' as const })),
+      ...detailImages.map(image => ({ image, role: effectiveDetailRoles[image] || undefined, sourceType: 'original' as const })),
       ...(wheelReference?.image ? [{ image: wheelReference.image, role: isNb21Tier(modelTier) ? 'wheel' : undefined, sourceType: 'immutable asset' as const }] : []),
       ...(isNb21Tier(modelTier) ? v2ConfigSources(remasterConfig, null, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ image: s.image, role: s.sourceRole, sourceType: s.sourceType })) : []),
     ].filter(source => (isNb21Tier(modelTier) || !prefilledOriginalsRef.current.has(source.image)) && !archivedOriginalsRef.current.has(source.image));
@@ -1202,7 +1206,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           const records: V2Reference[] = [{ sourceId: `capture:${s.key}:original`, sourceRole: s.key, sourceType: 'original', image: capture.base64, assetId: originalAssetIdsRef.current[capture.base64] }];
           if (capture.remasteredBase64) records.push({ sourceId: `capture:${s.key}:remaster`, sourceRole: s.key, sourceType: 'generated context', image: capture.remasteredBase64, assetId: capture.savedImageId });
           return records;
-        }).concat(detailImages.map((image, i) => ({ sourceId: `detail:${i}`, image, sourceType: 'original' as const, sourceRole: detailSourceRoles[image] || 'unassigned-detail', assetId: originalAssetIdsRef.current[image] })), v2ConfigSources(remasterConfig, wheelReference?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ ...s, assetId: originalAssetIdsRef.current[s.image] })))}
+        }).concat(detailImages.map((image, i) => {
+          const file = detailAnalysis.results[image]?.file;
+          return { sourceId: `detail:${i}`, image, sourceType: 'original' as const, sourceRole: effectiveDetailRoles[image] || 'unassigned-detail', assetId: originalAssetIdsRef.current[image], fileUri: file ? { uri: file.fileId, mimeType: file.mimeType } : undefined };
+        }), v2ConfigSources(remasterConfig, wheelReference?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ ...s, assetId: originalAssetIdsRef.current[s.image] })))}
         promptVersion={isNb21Tier(modelTier) ? NB21_CURRENT_VERSION : undefined}
         inputImages={allCapturedBase64}
         referenceRoles={allCapturedRoles}
@@ -1651,13 +1658,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               >
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
-                    <div key={idx} className={`group relative ${isNb21Tier(modelTier) ? 'h-28 w-36' : 'h-14 w-14'} shrink-0 overflow-hidden rounded-md border border-border bg-card`}>
+                    <div key={img} className={`group relative ${isNb21Tier(modelTier) ? 'h-36 w-44' : 'h-14 w-14'} shrink-0 overflow-hidden rounded-md border border-border bg-card`}>
                       <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
                       {isNb21Tier(modelTier) && (
-                        <select aria-label={`Referenzrolle Detail ${idx + 1}`} className="absolute bottom-0 w-full bg-background text-foreground text-xs" value={detailSourceRoles[img] || ''} onChange={e => setDetailSourceRoles(prev => ({ ...prev, [img]: e.target.value }))}>
-                          <option value="">Nicht zugeordnet</option>
-                          {['frontpanel','headlight','taillight','steering','cluster','screen','dashboard','rear-seats','cargo','wheel'].map(role => <option key={role} value={role}>{({ frontpanel: 'Frontpanel', headlight: 'Scheinwerfer', taillight: 'Rücklicht', steering: 'Lenkrad', cluster: 'Instrumente', screen: 'Zentraldisplay', dashboard: 'Cockpit', 'rear-seats': 'Rücksitze', cargo: 'Kofferraum', wheel: 'Felge' } as Record<string,string>)[role]}</option>)}
-                        </select>
+                        <DetailPerspectiveAssignment index={idx} role={effectiveDetailRoles[img] || ''} analysis={detailAnalysis.results[img]} onChange={role => setDetailSourceRoles(prev => ({ ...prev, [img]: role }))} />
                       )}
                       {!isProcessing && (
                         <button
