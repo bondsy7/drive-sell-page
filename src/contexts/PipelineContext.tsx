@@ -1047,11 +1047,25 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       let taskPointer = 0;
+      // Once the server reports an empty credit balance, every further request would
+      // fail the same way: stop dispatching and mark the remaining jobs instead.
+      let creditStopMessage: string | null = null;
 
       const runTask = async () => {
         while (taskPointer < taskQueue.length) {
           const idx = taskPointer++;
           const task = taskQueue[idx];
+
+          if (creditStopMessage) {
+            const message = creditStopMessage;
+            setJobs(prev => {
+              const state = prev[task.job.key];
+              if (!state || state.results.length > 0) return prev;
+              return { ...prev, [task.job.key]: { ...state, status: 'error', error: message, errorCode: 'insufficient_credits',
+                failedPromptIndexes: [...(state.failedPromptIndexes || []), task.promptIndex], endTime: Date.now() } };
+            });
+            continue;
+          }
 
           if (task.promptIndex === 0) {
             jobTimings[task.job.key] = { start: Date.now() };
@@ -1060,6 +1074,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           try {
             const result = await generateOneImage(task.prompt, task.job, cfg);
+            if (!result.base64 && (result.errorCode ?? classifyGenerationError(result.error)) === 'insufficient_credits') {
+              result.errorCode = 'insufficient_credits';
+              creditStopMessage = result.error || 'Nicht genug Credits. Bitte Credits aufladen und danach erneut starten.';
+            }
             void logGenerationAttempt({
               userId: cfg.userId,
               workflowKey: cfg.workflowKey,
