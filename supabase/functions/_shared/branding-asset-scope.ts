@@ -20,3 +20,48 @@ ${roles.includes('scene-logo') ? 'The separately supplied configured scene-logo 
 Selected settings and these mandatory asset-placement restrictions override scene styling, reference-logo preservation and generic logo instructions. A plate and a wall logo are independent assignments, even when their artwork resembles each other. Never replace a selected logo with source-photo branding.
 </BRANDING_ASSET_SCOPE>`;
 }
+
+export type BrandingImageRole = 'plate' | 'wall-logo' | 'scene-logo' | 'reference';
+
+/** Classifies an attached image by its server-assigned label (never by pixels). */
+export function brandingRoleOfLabel(label: string): BrandingImageRole {
+  if (label.startsWith('LICENSE PLATE')) return 'plate';
+  if (label.startsWith('MANUFACTURER LOGO') || label.startsWith('DEALER LOGO')) return 'wall-logo';
+  if (label.startsWith('DEKRA LOGO')) return 'scene-logo';
+  return 'reference';
+}
+
+/** Short usage line placed directly in front of each attached image. */
+export function brandingImageRoleNote(label: string): string {
+  switch (brandingRoleOfLabel(label)) {
+    case 'plate':
+      return 'USE: number-plate insert ONLY. Put it inside the vehicle\'s front/rear licence-plate holders, replacing the old plate. It may look like a logo or dealer sign — it is still ONLY a plate. NEVER on the wall, glass panels or signage.';
+    case 'wall-logo':
+      return 'USE: wall branding ONLY. Put it on the rectangular frosted-glass panel on the rear wall. NEVER on a licence plate, never on the vehicle body.';
+    case 'scene-logo':
+      return 'USE: scene facade logo ONLY at its specified position. Never on a plate.';
+    default:
+      return 'USE: content reference only. Any wall sign, logo, dealer sign, banner or licence plate visible INSIDE this photo is NOT a branding asset — never copy it to the wall or the plates.';
+  }
+}
+
+/**
+ * Final, number-based branding assignment. `labels[i]` is the label of IMAGE i+1
+ * in the exact order the provider receives. Returns null when no branding asset
+ * is attached, so unbranded requests stay unchanged.
+ */
+export function buildBrandingImageMap(labels: readonly string[]): string | null {
+  const nums = (role: BrandingImageRole) => labels.map((l, i) => (brandingRoleOfLabel(l) === role ? i + 1 : 0)).filter(Boolean);
+  const plate = nums('plate');
+  const wall = nums('wall-logo');
+  if (!plate.length && !wall.length) return null;
+  const refs = nums('reference');
+  const list = (n: number[]) => n.map(i => `IMAGE ${i}`).join(' and ');
+  return `<BRANDING_MAP>
+This assignment is binding and overrides every other logo, sign or plate instruction:
+- REAR WALL PANEL: ${wall.length ? `shows ONLY ${list(wall)}. No other logo, sign or text on the wall.` : 'NO logo at all. Keep the wall empty.'}
+- LICENCE PLATES: ${plate.length ? `show ONLY ${list(plate)} on every visible plate holder.` : 'follow the selected plate setting; never put a wall logo on a plate.'}
+- FORBIDDEN SWAPS: ${plate.length ? `${list(plate)} never appears on the wall.` : ''} ${wall.length ? `${list(wall)} never appears on a plate.` : ''}
+- ${refs.length ? `Signs, logos, dealer names or plates visible inside ${list(refs)} (including earlier generated images) are NEVER branding: do not copy them anywhere.` : 'Do not reproduce signage from any reference photo.'}
+</BRANDING_MAP>`;
+}
