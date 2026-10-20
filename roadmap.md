@@ -200,9 +200,10 @@
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
 
 ## NB21 V3: minimale Referenzen und Kabinenübersicht
-- [ ] Referenzsets je Ansicht reduzieren; unnötige Innenraum-Assets und generierten Kontext vor Upload ausschließen
-- [ ] Kabinenübersicht als natürliche zentrierte Armaturenbrettaufnahme ohne erzwungene Vollsitz-/Rückbankdarstellung neu aufbauen
-- [ ] Resolver, finalen Prompt und Dispatch mit gezielten Tests prüfen; V1/V2/Qualität unverändert, keine kostenpflichtige Generierung
+- [x] Referenzsets je Ansicht reduziert; unnötige Innenraum-Assets und generierten Kontext vor Upload ausgeschlossen, Pflichtbelege für Seiten/Cargo/Grid erhalten
+- [x] Kabinenübersicht als natürliche zentrierte Armaturenbrettaufnahme ohne erzwungene Vollsitz-/Rückbankdarstellung neu aufgebaut
+- [x] Resolver, finalen Serverprompt, Upload/Dispatch und Startprüfung getestet: 88 Tests grün, Scope-Lint und Deno-Check erfolgreich, Vorschau build OK; V1/V2/Qualität unverändert, keine kostenpflichtige Generierung
+- [ ] Gemeinsame V3-Serverpolicy bereitstellen und tatsächlichen Bildaufbau nach ausdrücklicher Freigabe prüfen — keine Bereitstellung oder kostenpflichtige Generierung erlaubt
 
 ## Kennzeichen und Wandbranding
 - [x] Kennzeichenassets strikt auf Kennzeichen begrenzen, Wandlogos nur bei expliziter Auswahl zulassen und Originalfoto-Branding ausschließen (V3 und aktuelle Standardverarbeitung; historische V1/V2 unverändert)
