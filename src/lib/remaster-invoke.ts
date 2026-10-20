@@ -4,9 +4,11 @@ import type { WheelAnalysis } from '@/types/wheel-reference';
 import type { OpenAIFileRef } from '@/lib/openai-file-upload';
 import type { RemasterGalleryTarget } from '../../supabase/functions/_shared/remaster-gallery';
 import type { V2Manifest, V2WireReference } from '../../supabase/functions/_shared/nb21-v2-contract';
+import type { V3Manifest, V3WireReference } from '../../supabase/functions/_shared/nb21-v3-contract';
 
 export interface RemasterInvokePayload {
-  referenceManifest?: V2Manifest;
+  referenceManifest?: V2Manifest | V3Manifest;
+  v3References?: V3WireReference[];
   v2References?: V2WireReference[];
   /** Capture results are saved server-side before a successful response. */
   gallerySave?: RemasterGalleryTarget;

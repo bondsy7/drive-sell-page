@@ -1,3 +1,6 @@
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { validateV3Wire, v3ResultMetadata, type V3Manifest } from '../_shared/nb21-v3-contract.ts';
+import { enforceV3ServerPrompt } from '../_shared/nb21-v3-prompt.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -10,10 +13,7 @@ import { resolveRemasterCost } from "../_shared/remaster-cost.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { validateGalleryTarget, verifyGalleryOwnership, persistRemasterGallery } from "../_shared/remaster-gallery.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -540,8 +540,19 @@ serve(async (req) => {
   let chargedUserId: string | null = null;
   let chargedCost = 0;
   let v2Telemetry: { manifest: V2Manifest; transports: unknown } | null = null;
+  let v3Telemetry: { manifest: V3Manifest; transports: unknown } | null = null;
   let telemetryLogged = false;
   const persistV2Telemetry = async (status: string, output?: string, message?: string) => {
+    if (v3Telemetry && chargedUserId && !telemetryLogged) {
+      const { error } = await createServiceClient().from('generation_attempt_logs').insert({
+        user_id: chargedUserId, job_key: v3Telemetry.manifest.jobKey, model_tier: 'nb21', stage: 'generate', status,
+        attempt: diag.attempts || 1, engine: diag.engine, model: diag.model, duration_ms: Date.now() - startedAt,
+        error_message: message?.slice(0,1000) ?? null, prompt_version: 'nb21-v3', reference_manifest: v3Telemetry.manifest,
+        transport_manifest: v3Telemetry.transports, provider_response: { outputDelivered: !!output, ...v3ResultMetadata(v3Telemetry.manifest) },
+      });
+      if (error) throw new Error('NB21 v3: Referenzprotokoll konnte nicht gesichert werden.');
+      telemetryLogged = true; return;
+    }
     if (!v2Telemetry || !chargedUserId || telemetryLogged) return;
     const { error } = await createServiceClient().from("generation_attempt_logs").insert({
       user_id: chargedUserId, job_key: v2Telemetry.manifest.jobKey, model_tier: "nb21",
@@ -565,7 +576,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { referenceManifest, v2References, imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, promptVersion, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
+    const { referenceManifest, v3References, v2References, imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, promptVersion, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -583,12 +594,14 @@ serve(async (req) => {
     // Keine stillen Fallbacks: 2.1 nie mit 2.0-Prompt, 2.0-Tiers nie mit 2.1-Prompt.
     const isNb21Request = tier === NB21_TIER;
     const isNb21V2 = isNb21Request && promptVersion === 'nb21-v2';
-    const knownVersion = promptVersion === NB21_PROMPT_VERSION || promptVersion === 'nb21-v2';
+    const isNb21V3 = isNb21Request && promptVersion === 'nb21-v3';
+    const isEvidenceRequest = isNb21V2 || isNb21V3;
+    const knownVersion = promptVersion === NB21_PROMPT_VERSION || promptVersion === 'nb21-v2' || promptVersion === 'nb21-v3';
     const markers = typeof dynamicPrompt === 'string' ? [...dynamicPrompt.matchAll(/^PROMPT_VERSION: (.+)$/gm)].map(m => m[1]) : [];
-    if (isNb21Request ? !knownVersion || markers.length !== 1 || markers[0] !== promptVersion : markers.length > 0 || !!promptVersion || !!referenceManifest || !!v2References) {
+    if (isNb21Request ? !knownVersion || markers.length !== 1 || markers[0] !== promptVersion : markers.length > 0 || !!promptVersion || !!referenceManifest || !!v2References || !!v3References) {
       return new Response(JSON.stringify({ error: 'Prompt-Version passt nicht zur Modellstufe.' }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (isNb21Request && !isNb21V2) {
+    if (isNb21Request && !isEvidenceRequest) {
       const missing = Object.values(NB21_SERVER_SLOTS).filter(slot => (dynamicPrompt as string).split(slot).length !== 2);
       if (missing.length) return new Response(JSON.stringify({ error: 'Nano-Banana-2.1-Prompt unvollständig.' }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -604,6 +617,16 @@ serve(async (req) => {
       }
     }
 
+    if (isNb21V3) {
+      try {
+        if (v2References) throw new Error('NB21 v3: V2-Transport unzulässig.');
+        await validateV3Wire(referenceManifest, v3References);
+        const headers = [...(dynamicPrompt as string).matchAll(/^### SECTION (\d)\/9: (.+)$/gm)];
+        const expected = ['MAIN TASK','REFERENCE ROLES','ALLOWED CHANGES','VEHICLE IDENTITY LOCK','PERSPECTIVE LOCK','ENVIRONMENT','LIGHTING / PHYSICAL INTEGRATION','CAMERA / OUTPUT','FINAL PRIORITY CONSTRAINT'];
+        if (headers.length !== 9 || headers.some((h,i) => Number(h[1]) !== i+1 || h[2] !== expected[i]) || (dynamicPrompt as string).includes('{{NB21_SERVER_')) throw new Error('NB21 v3: Abschnittsstruktur ungültig.');
+      } catch (e) { return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'NB21 v3: Manifest ungültig.' }), { status:400, headers:{...corsHeaders,'Content-Type':'application/json'} }); }
+    }
+
     // Validate ownership BEFORE charging. Opt-in keeps pipeline/regeneration
     // persistence unchanged. Save before response, even if the browser closes.
     const rawGallerySave = JSON.parse(bodyText).gallerySave;
@@ -614,10 +637,10 @@ serve(async (req) => {
       await persistV2Telemetry("success", image);
       if (!galleryTarget || !galleryAuth) return {};
       const saved = await persistRemasterGallery(galleryAuth.supabase, galleryAuth.user.id, galleryTarget, image);
-      if (isNb21V2) {
+      if (isEvidenceRequest) {
         const { data: vehicle } = await galleryAuth.supabase.from('vehicles').select('vehicle_data').eq('id', galleryTarget.vehicleId).maybeSingle();
         const context = vehicle?.vehicle_data?.__regenerationContext ?? {};
-        const { error } = await galleryAuth.supabase.from('project_images').update({ generation_context: { ...context, modelTier: 'nb21', promptVersion, sourceSlot: galleryTarget.slotKey } }).eq('id', galleryTarget.id);
+        const { error } = await galleryAuth.supabase.from('project_images').update({ generation_context: { ...context, modelTier: 'nb21', promptVersion, sourceSlot: galleryTarget.slotKey, ...(isNb21V3 ? { ...v3ResultMetadata(referenceManifest), v3Metadata: v3ResultMetadata(referenceManifest) } : {}) } }).eq('id', galleryTarget.id);
         if (error) throw new Error('Promptversion konnte nicht am Ergebnis gesichert werden.');
       }
       return { savedImageId: saved.id, savedImageUrl: saved.imageUrl };
@@ -661,7 +684,7 @@ serve(async (req) => {
     const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
     if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
-    if (!isNb21V2 && !imageBase64 && !mainImageFileUri?.uri && !oaFileId(mainImageOpenAIFile)) throw new Error("No image provided");
+    if (!isEvidenceRequest && !imageBase64 && !mainImageFileUri?.uri && !oaFileId(mainImageOpenAIFile)) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
     // Fahrzeugklassen-Kontext prüfen (verbindliche Promptübergabe)
@@ -699,7 +722,7 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
     // override supplies the dynamic prompt. This prevents catalogue-memory
     // substitution of a newer photographed facelift with an older generation.
     const modelGenerationLock = buildModelGenerationLock(vehicleDescription);
-    const prompt = isNb21V2 ? enforceV2SubjectClassLock(basePrompt.replace(/(### SECTION 2\/9: REFERENCE ROLES\n)[\s\S]*?(?=\n\n### SECTION 3\/9:)/, `$1${referenceManifest.entries.map((r: any, i: number) => `IMAGE ${i + 1}: ${r.role}; source=${r.sourceType}; slot=${r.sourceRole}; Tier ${r.authorityTier}; authority=${r.authority}.`).join('\n')}`), ctx) : isNb21Request
+    const prompt = isNb21V3 ? enforceV3ServerPrompt(basePrompt, referenceManifest, ctx) : isNb21V2 ? enforceV2SubjectClassLock(basePrompt.replace(/(### SECTION 2\/9: REFERENCE ROLES\n)[\s\S]*?(?=\n\n### SECTION 3\/9:)/, `$1${referenceManifest.entries.map((r: any, i: number) => `IMAGE ${i + 1}: ${r.role}; source=${r.sourceType}; slot=${r.sourceRole}; Tier ${r.authorityTier}; authority=${r.authority}.`).join('\n')}`), ctx) : isNb21Request
       ? buildNb21ServerPrompt(basePrompt, { modelGenerationLock, classGuard, vehicleClass: ctx.vehicleClass })
       : `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}${carSideDirectionGuard ? `\n\n${carSideDirectionGuard}` : ''}`;
     console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
@@ -800,8 +823,8 @@ Before returning the image, inspect hood, roof, doors, windows, chrome, rims and
 
     // For custom showroom generations, present the showroom BEFORE the vehicle.
     // This makes the room the target scene and reduces source-photo reflection carryover.
-    const hasWheelReference = isNb21V2 ? v2References.some((r: V2WireReference) => r.sourceRole === "wheel") : !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri || oaFileId(wheelReferenceOpenAIFile));
-    if (!isNb21V2) {
+    const hasWheelReference = isNb21V3 ? v3References.some((r: V2WireReference) => r.sourceRole === "wheel") : isNb21V2 ? v2References.some((r: V2WireReference) => r.sourceRole === "wheel") : !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri || oaFileId(wheelReferenceOpenAIFile));
+    if (!isEvidenceRequest) {
     if (hasCustomShowroom) {
       parts.push({ text: customShowroomInstructionText });
       if (oaFileId(customShowroomOpenAIFile)) {
@@ -1051,7 +1074,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
     } else {
       // Exact provider order is the same order used by resolver and prompt.
-      const refs = v2References as V2WireReference[];
+      const refs = (isNb21V3 ? v3References : v2References) as V2WireReference[];
       for (const r of refs) {
         let part: any;
         if (r.transport === 'file_uri') part = { file_data: { mime_type: r.fileUri?.mimeType, file_uri: r.fileUri?.uri } };
@@ -1065,8 +1088,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
         parts.push(part);
       }
       const transports = await v2TransportManifest(refs.map(r => r.transport === 'openai_file' ? { ...r, transport: 'inline' as const } : r));
-      v2Telemetry = { manifest: referenceManifest, transports };
-      diag.promptVersion = 'nb21-v2'; diag.referenceManifest = referenceManifest; diag.transportManifest = transports;
+      if (isNb21V3) v3Telemetry = { manifest: referenceManifest, transports };
+      else v2Telemetry = { manifest: referenceManifest, transports };
+      diag.promptVersion = promptVersion; diag.referenceManifest = referenceManifest; diag.transportManifest = transports;
     }
 
     // ── BILD-MANIFEST: jedes Bild bekommt eine feste Nummer + Label ──
@@ -1085,13 +1109,13 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
-          if (!isResponsesImageTier && !isNb21V2) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          if (!isResponsesImageTier && !isEvidenceRequest) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
           rebuilt.push(p);
         } else {
           rebuilt.push(p);
         }
       }
-      if (!isResponsesImageTier && !isNb21V2 && imageManifest.length > 0) {
+      if (!isResponsesImageTier && !isEvidenceRequest && imageManifest.length > 0) {
         rebuilt.splice(1, 0, {
           text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
         });

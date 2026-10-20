@@ -38,11 +38,15 @@ import { createPipelineWorkflowKey, pipelineRunMatchesWorkflow } from '@/lib/pip
 import { checkPipelineStart } from '@/lib/pipeline-start-guard';
 import { assignV2DetailRoles, checkV2Preflight } from '@/lib/nb21-v2-preflight';
 import Nb21V2ReferenceCheck from '@/components/Nb21V2ReferenceCheck';
+import { checkV3Preflight } from '@/lib/nb21-v3-preflight';
+import { createV3LightingProfile, type V3LightingProfile } from '@/prompts/nb21/v3';
+import type { Nb21PromptVersion } from '@/lib/nb21-version-dispatch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
   evidenceSources?: V2Reference[];
-  promptVersion?: 'nb21-v1' | 'nb21-v2';
+  promptVersion?: Nb21PromptVersion;
   inputImages: string[];
   referenceRoles?: string[];
   savedInputIds?: (string | undefined)[];
@@ -132,7 +136,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   /* Doppelstart-Sperre: blockt den Knopf ab dem ersten Klick. */
   const [starting, setStarting] = useState(false);
   const [detailAssignments, setDetailAssignments] = useState<Record<string, string>>({});
-  const isV2 = modelTier === 'nb21' && (promptVersion ?? NB21_CURRENT_VERSION) === 'nb21-v2';
+  const [testVersion, setTestVersion] = useState<Nb21PromptVersion | null>(null);
+  const selectedVersion = testVersion ?? promptVersion ?? NB21_CURRENT_VERSION;
+  const isV3 = modelTier === 'nb21' && selectedVersion === 'nb21-v3';
+  const isV2 = modelTier === 'nb21' && (selectedVersion === 'nb21-v2' || isV3);
+  const lightingProfileRef = useRef<V3LightingProfile>();
   const assignedEvidence = useMemo(() => assignV2DetailRoles(evidenceSources ?? [], detailAssignments), [evidenceSources, detailAssignments]);
   const startingRef = useRef(false);
   useEffect(() => {
@@ -338,7 +346,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   }, [pipeline]);
 
   /* ─── Start pipeline (delegates to context) ─── */
-  const referenceCheck = useMemo(() => isV2 ? checkV2Preflight(localSelectedJobs, assignedEvidence) : [], [isV2, localSelectedJobs, assignedEvidence]);
+  const referenceCheck = useMemo(() => isV3 ? checkV3Preflight(localSelectedJobs, assignedEvidence) : isV2 ? checkV2Preflight(localSelectedJobs, assignedEvidence) : [], [isV3, isV2, localSelectedJobs, assignedEvidence]);
   const referencesMissing = referenceCheck.some(result => !result.ready);
   const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
@@ -355,6 +363,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     setStarting(true);
 
     try {
+      if (isV3) lightingProfileRef.current = await createV3LightingProfile(crypto.randomUUID());
       await persistRemasteredInputs();
     } catch {
       toast.error('Remaster-Bilder konnten nicht in der Galerie gespeichert werden.');
@@ -366,7 +375,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const started = pipeline.startPipeline({
       workflowKey,
       evidenceSources: isV2 ? assignedEvidence : evidenceSources,
-      promptVersion: modelTier === 'nb21' ? (promptVersion ?? NB21_CURRENT_VERSION) : undefined,
+      promptVersion: modelTier === 'nb21' ? selectedVersion : undefined,
+      ...(isV3 ? { lightingProfile: lightingProfileRef.current } : {}),
       inputImages,
       referenceRoles,
       originalImages: originalImages || [],
@@ -390,7 +400,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       startingRef.current = false;
       setStarting(false);
     }
-  }, [isV2, referencesMissing, assignedEvidence, evidenceSources, promptVersion, user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
+  }, [isV3, selectedVersion, isV2, referencesMissing, assignedEvidence, evidenceSources, promptVersion, user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {
@@ -583,6 +593,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       </div>
 
       {/* Job Selection */}
+      {modelTier === 'nb21' && !isContextActive && <Select value={selectedVersion} onValueChange={value => setTestVersion(value as Nb21PromptVersion)}>
+        <SelectTrigger aria-label="Nano Banana 2.1 Promptversion"><SelectValue /></SelectTrigger>
+        <SelectContent><SelectItem value="nb21-v1">NB 2.1 · V1 (historisch)</SelectItem><SelectItem value="nb21-v2">NB 2.1 · V2</SelectItem><SelectItem value="nb21-v3">NB 2.1 · V3 (Test)</SelectItem></SelectContent>
+      </Select>}
       <div className="bg-card rounded-xl sm:rounded-2xl border border-border divide-y divide-border overflow-hidden">
         {categoriesWithJobs.map(cat => {
           const catJobs = availableJobs.filter(j => j.category === cat.key);
@@ -816,6 +830,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       )}
 
       {isV2 && !isContextActive && <Nb21V2ReferenceCheck
+        version={isV3 ? 'nb21-v3' : 'nb21-v2'}
         results={referenceCheck}
         sources={assignedEvidence}
         onAssign={(sourceId, role) => setDetailAssignments(previous => ({ ...previous, [sourceId]: role }))}
@@ -831,7 +846,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         {!finished ? (
           <Button
             onClick={handleStartClick}
-            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0 || (isV2 && referencesMissing)}
+            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || (!isV3 && inputImages.length === 0) || (isV2 && referencesMissing)}
             className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
           >
             {running || starting ? (

@@ -168,6 +168,13 @@
 - [x] Gespeicherte Volvo-Ausgaben und Originale vergleichen; Laufzeiten und tatsächliche Credits prüfen
 - [x] Vergleichsbild erstellen und konkrete NB-2.1-Verbesserungen planen; keine Implementierung oder kostenpflichtigen Läufe
 
+## NB21 v3: strikte Ansichten und Serienlicht
+- [x] Eigenständige V3-Policies, sechs View-Contracts und harte serverseitige Evidenzprüfung ergänzt; historische V1/V2-Quelldateien byte-identisch
+- [x] Explizite Testversionswahl, Startprüfung, run-spezifisches Lichtprofil und versionsgenaue Regeneration angebunden
+- [x] Ergebnisprovenienz, strukturierte manuelle Retry-Gründe und deaktivierten Harmonisierungspfad vorbereitet
+- [x] 120 relevante Tests grün, neue V3-Dateien lintsauber, Deno-Check und automatische Typ-/Vorschauprüfung erfolgreich; isolierte Desktop-/Mobil-Bedienprüfung ohne Funktionsaufruf; Gesamt-Lint hat unveränderte Bestandsbefunde
+- [ ] V3 bereitstellen und kostenlosen Guard-Smoke-Test vor ausdrücklich freigegebenem Bildtest durchführen — Auftrag untersagt Deployment und echte Generierung
+
 ## NB21 v2: Evidence-driven Umsetzung
 - [x] V1/2.0 erhalten; explizite V2-Contracts, semantische Ziele und Reference Manifest implementieren
 - [x] Original-/Kontext-Metadaten rückwärtskompatibel durch Capture, Pipeline und Regeneration führen
