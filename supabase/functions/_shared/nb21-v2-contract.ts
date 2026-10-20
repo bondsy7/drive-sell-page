@@ -46,11 +46,11 @@ export function originalSlotFromFilename(name: string): string | null {
 /** Closed target classification, including all existing CI interior suffixes. */
 export function classifyV2Target(key: string, category?: string): V2Target {
   const k = key.toUpperCase();
+  if (/GRID|COMPOSITE|COLLAGE/.test(k) || category === 'composite') return 'composite';
   if (/BOOT|CARGO|GARAGE/.test(k)) return 'cargo_area';
   if (/WHEEL/.test(k)) return 'wheel_detail';
   if (/STEERING|CLUSTER|SCREEN|MBUX|CONTROLS/.test(k)) return 'interior_detail';
   if (/INT_|INTERIOR|COCKPIT|CABIN/.test(k) || category === 'interior') return 'interior_cabin';
-  if (/GRID|COMPOSITE/.test(k) || category === 'composite') return 'composite';
   if (/HEADLIGHT|TAILLIGHT|GRILLE|PANEL|DET_/.test(k) || category === 'detail') return 'exterior_detail';
   return 'exterior';
 }
@@ -81,7 +81,8 @@ export function v2Policy(key: string, category?: string, editSlot?: string): V2P
     const local = /HEADLIGHT/.test(k) ? ['headlight', 'headlight-detail'] : /TAIL/.test(k) ? ['taillight', 'taillight-detail'] : /GRILLE|PANEL/.test(k) ? ['frontpanel', 'grille', 'front-panel'] : [k.toLowerCase().replace(/_/g, '-')];
     return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', [...local, ...(back ? REAR : FRONT)], 'local part outline, light signature, texture, badge and adjacent body'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
   }
-  if (target === 'composite') return { target, budget: 6, wheel: true, requirements: [req('front_original', FRONT, 'front identity'), req('side_original', ['side', 'side-left'], 'left body identity'), req('rear_original', REAR, 'rear identity'), req('cabin_original', COCKPIT, 'interior panels only', /INTERIOR/.test(k))] };
+  if (target === 'composite' && /INTERIOR/.test(k)) return { target, budget: 3, wheel: false, requirements: [req('cabin_original', COCKPIT, 'cockpit and front cabin panels'), req('rear_cabin_original', ['interior-rear','rear-seats'], 'rear cabin panels')] };
+  if (target === 'composite') return { target, budget: 6, wheel: true, requirements: [req('front_original', FRONT, 'front identity'), req('side_original', ['side', 'side-left'], 'left body identity'), req('rear_original', REAR, 'rear identity')] };
   const right = /RIGHT/.test(k), rear = /REAR/.test(k), side = /SIDE/.test(k);
   const flank = right ? ['side-right', 'side-right-full', 'truck-cab-side-right'] : ['side', 'side-left', 'truck-cab-side-left'];
   if (side) return { target, budget: 4, wheel: true, requirements: [req('physical_side_original', flank, `${right ? 'RIGHT' : 'LEFT'} physical flank and asymmetric equipment`), req('front_evidence', FRONT, 'front transition', false), req('rear_evidence', REAR, 'rear transition', false)] };
@@ -106,18 +107,23 @@ export function resolveV2Evidence(args: { jobKey: string; category?: string; sou
     else if (requirement.required && !candidates.some(s => used.has(s.sourceId))) throw new Error(`NB21 v2: Originalbeleg fehlt (${requirement.role}); keine Rekonstruktion aus generiertem Kontext.`);
   }
   const auxiliary = args.sources.filter(s => s.sourceType !== 'original' && s.image).sort((a, b) => a.sourceId.localeCompare(b.sourceId));
+  const interiorOutput = p.target.startsWith('interior') || (p.target === 'composite' && /INTERIOR/.test(args.jobKey));
+  const scopedAssets = auxiliary.filter(s => s.sourceType === 'immutable asset' && ['wheel', 'plate', 'manufacturer-logo', 'dealer-logo'].includes(normalizeV2Role(s.sourceRole)) && !(normalizeV2Role(s.sourceRole) === 'wheel' && !p.wheel) && !(normalizeV2Role(s.sourceRole) === 'plate' && (interiorOutput || p.target === 'cargo_area')));
+  // Geometry budget and scoped asset allowance are distinct: logos never displace
+  // original evidence or the selected environment. Total remains at most 8 images.
+  const budget = Math.min(8, p.budget + scopedAssets.length);
   // Scope-specific immutable evidence before low-priority scene context.
-  for (const s of auxiliary.filter(s => s.sourceType === 'immutable asset')) {
+  for (const s of scopedAssets) {
     const role = normalizeV2Role(s.sourceRole);
     if (role === 'wheel' && !p.wheel) continue;
     if (role === 'plate' && (p.target.startsWith('interior') || p.target === 'cargo_area')) continue;
     if (!['wheel', 'plate', 'manufacturer-logo', 'dealer-logo'].includes(role)) continue;
-    if (entries.length < p.budget) add(s, role, `immutable ${role} pixels only; no other vehicle authority`);
+    if (entries.length < budget - 1) add(s, role, `immutable ${role} pixels only; no other vehicle authority`);
   }
   // At most one generated/scene context; it can never fill a missing original role.
   const context = auxiliary.find(s => s.sourceType === 'generated context' && normalizeV2Role(s.sourceRole) === 'environment') ?? auxiliary.find(s => s.sourceType === 'generated context');
-  if (context && entries.length < p.budget) add(context, 'presentation_context', 'environment, lighting, look and coarse composition ONLY; never identity');
-  return { manifest: { version: 'nb21-v2', jobKey: args.jobKey, mode: args.editSlot ? 'edit' : 'view_synthesis', target: p.target, budget: p.budget, entries }, references };
+  if (context && entries.length < budget) add(context, 'presentation_context', 'environment, lighting, look and coarse composition ONLY; never identity');
+  return { manifest: { version: 'nb21-v2', jobKey: args.jobKey, mode: args.editSlot ? 'edit' : 'view_synthesis', target: p.target, budget, entries }, references };
 }
 
 /** Ordered wire entries are never split into independent positional pools. */

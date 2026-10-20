@@ -2,7 +2,7 @@ import { normalizeV2Role, type V2Manifest, type V2WireReference } from './nb21-v
 
 /** Validate exactly the objects used to construct outgoing provider parts. */
 export function validateV2Wire(manifest: V2Manifest, refs: V2WireReference[]) {
-  if (!manifest || manifest.version !== 'nb21-v2' || !Array.isArray(refs) || !refs.length || refs.length > manifest.budget || manifest.budget > 6) throw new Error('NB21 v2: Ungültiges Referenzbudget.');
+  if (!manifest || manifest.version !== 'nb21-v2' || !Array.isArray(refs) || !refs.length || refs.length > manifest.budget || manifest.budget > 8) throw new Error('NB21 v2: Ungültiges Referenzbudget.');
   if (!Array.isArray(manifest.entries) || manifest.entries.length !== refs.length) throw new Error('NB21 v2: Manifest/Bilder ungleich.');
   if (!['edit', 'view_synthesis'].includes(manifest.mode)) throw new Error('NB21 v2: Modus fehlt.');
   const ids = new Set<string>();
