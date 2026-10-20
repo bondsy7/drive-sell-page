@@ -4,6 +4,7 @@
  * the same showroom, look, logo and plate rules as the rest of the series.
  * Stored under vehicles.vehicle_data.__regenerationContext (merge-write).
  */
+import type { V2Reference } from '../../supabase/functions/_shared/nb21-v2-contract';
 import { supabase } from '@/integrations/supabase/client';
 import { SCENE_OPTIONS, type RemasterConfig } from '@/lib/remaster-prompt';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
@@ -27,6 +28,7 @@ export interface RegenerationContext {
   modelTier?: string;
   /** Prompt-Version des Laufs ('nb21-v1' für Nano Banana 2.1; fehlt = 2.0). */
   promptVersion?: string;
+  referenceSources?: Omit<V2Reference, 'image' | 'fileUri' | 'openAIFile'>[];
   savedAt: string;
 }
 
@@ -36,6 +38,7 @@ export function buildRegenerationContext(args: {
   vehicleDescription?: string;
   modelTier?: string;
   promptVersion?: string;
+  referenceSources?: Omit<V2Reference, 'image' | 'fileUri' | 'openAIFile'>[];
   resolvedManufacturerLogoUrl?: string | null;
 }): RegenerationContext {
   const c = args.remasterConfig;
@@ -55,6 +58,7 @@ export function buildRegenerationContext(args: {
     vehicleDescription: args.vehicleDescription,
     modelTier: args.modelTier,
     ...(args.promptVersion ? { promptVersion: args.promptVersion } : {}),
+    ...(args.referenceSources ? { referenceSources: args.referenceSources } : {}),
     savedAt: new Date().toISOString(),
   };
 }

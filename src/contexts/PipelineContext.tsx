@@ -7,6 +7,8 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { buildNb21PipelinePrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
+import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
+import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
 import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
@@ -82,6 +84,8 @@ export interface PipelineConfig {
   /** Stable identity of the vehicle/photo batch that owns this run. */
   workflowKey: string;
   inputImages: string[];
+  promptVersion?: 'nb21-v1' | 'nb21-v2';
+  evidenceSources?: V2Reference[];
   /** Perspective/source role aligned by index with inputImages. */
   referenceRoles?: string[];
   originalImages: string[];
@@ -399,6 +403,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     prompt: string, job: PipelineJob | undefined, cfg: PipelineConfig
   ): Promise<GenerationOutcome> => {
     const attemptStartedAt = Date.now();
+    if (isNb21Tier(cfg.modelTier) && cfg.promptVersion === 'nb21-v2') {
+      if (!job) throw new Error('NB21 v2: Job fehlt.');
+      // No positional fallback: callers must carry original/source provenance.
+      if (!cfg.evidenceSources?.length) throw new Error('NB21 v2: Explizite Originalzuordnung fehlt.');
+      const sources = [...cfg.evidenceSources, ...v2ConfigSources(cfg.remasterConfig, cfg.wheelReference?.image, {
+        manufacturer: cachedManufacturerLogoBase64Ref.current, dealer: cachedDealerLogoBase64Ref.current,
+      })];
+      const { data, error } = await invokeNb21V2({ sources, jobKey: job.key, category: job.category, config: cfg.remasterConfig, payload: { classContext: cfg.classContext } });
+      const diagnostics = data?.diagnostics ?? {};
+      return { base64: data?.imageBase64 ?? null, error: data?.error ?? error?.message, engine: diagnostics.engine ?? data?.engine, model: diagnostics.model ?? data?.model,
+        providerResponse: diagnostics, attempts: diagnostics.attempts ?? 1, durationMs: Date.now() - attemptStartedAt };
+    }
     // The successful remasters are the strongest generation-safe blueprints for
     // downstream perspectives. Raw originals remain supporting evidence only.
     const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
@@ -917,7 +933,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           classContext: cfg.classContext ?? null,
           vehicleDescription: cfg.vehicleDescription,
           modelTier: cfg.modelTier,
-          promptVersion: isNb21Tier(cfg.modelTier) ? NB21_PROMPT_VERSION : undefined,
+          promptVersion: isNb21Tier(cfg.modelTier) ? (cfg.promptVersion ?? NB21_PROMPT_VERSION) : undefined,
+          referenceSources: cfg.promptVersion === 'nb21-v2' ? cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) : undefined,
           resolvedManufacturerLogoUrl: cfg.resolvedManufacturerLogoUrl,
         })).catch(e => console.warn('[pipeline] save regeneration context skipped:', e));
       }

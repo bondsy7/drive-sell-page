@@ -17,6 +17,8 @@ import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import { buildNb21RemasterPrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
+import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
+import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
@@ -813,7 +815,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
     await saveRegenerationContext(targetVehicleId, buildRegenerationContext({
       remasterConfig, classContext, vehicleDescription, modelTier,
-      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_PROMPT_VERSION } : {}),
+      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_CURRENT_VERSION } : {}),
     }));
     return target;
   };
@@ -936,7 +938,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const { data, error } = await invokeRemasterVehicleImage({
+          const { data, error } = useNb21 ? await invokeNb21V2({
+            sources: [{ sourceId: `capture:${slot.key}:original`, sourceRole: slot.key, sourceType: 'original', image: captures[slot.key].base64 }, ...v2ConfigSources(slotConfig, slotWheelRef?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current })],
+            jobKey: slot.key, editSlot: slot.key, config: slotConfig, payload: { gallerySave: galleryTargetsRef.current[slot.key], classContext },
+          }) : await invokeRemasterVehicleImage({
             gallerySave: galleryTargetsRef.current[slot.key],
             classContext,
             imageBase64: captures[slot.key].base64,
@@ -946,7 +951,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             vehicleDescription,
             modelTier: modelTier || 'standard',
             dynamicPrompt,
-            ...(useNb21 ? { promptVersion: NB21_PROMPT_VERSION } : {}),
+            ...(useNb21 ? { promptVersion: NB21_CURRENT_VERSION } : {}),
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
             customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
             dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
@@ -1032,7 +1037,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         dynamicPrompt = buildMasterPrompt(retryConfig, vehicleDescription, slotKey, overrides, classContext);
         if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
       }
-      const { data, error } = await invokeRemasterVehicleImage({
+      const { data, error } = useNb21 ? await invokeNb21V2({
+        sources: [{ sourceId: `capture:${slotKey}:original`, sourceRole: slotKey, sourceType: 'original', image: captures[slotKey].base64 }, ...v2ConfigSources(retryConfig, slotWheelRef?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current })],
+        jobKey: slotKey, editSlot: slotKey, config: retryConfig, payload: { gallerySave, classContext },
+      }) : await invokeRemasterVehicleImage({
         gallerySave,
         classContext,
         imageBase64: captures[slotKey].base64,
@@ -1042,7 +1050,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         vehicleDescription,
         modelTier: modelTier || 'standard',
         dynamicPrompt,
-        ...(useNb21 ? { promptVersion: NB21_PROMPT_VERSION } : {}),
+        ...(useNb21 ? { promptVersion: NB21_CURRENT_VERSION } : {}),
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
         dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
@@ -1183,6 +1191,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   if (showPipeline) {
     return (
       <PipelineRunner
+        evidenceSources={vehicleSlots.flatMap(s => {
+          const capture = captures[s.key];
+          if (!capture) return [];
+          const records: V2Reference[] = [{ sourceId: `capture:${s.key}:original`, sourceRole: s.key, sourceType: 'original', image: capture.base64 }];
+          if (capture.remasteredBase64) records.push({ sourceId: `capture:${s.key}:remaster`, sourceRole: s.key, sourceType: 'generated context', image: capture.remasteredBase64, assetId: capture.savedImageId });
+          return records;
+        })}
+        promptVersion={isNb21Tier(modelTier) ? NB21_CURRENT_VERSION : undefined}
         inputImages={allCapturedBase64}
         referenceRoles={allCapturedRoles}
         savedInputIds={vehicleSlots.filter(s => captures[s.key]).map(s => captures[s.key].savedImageId)}
