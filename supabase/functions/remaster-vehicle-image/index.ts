@@ -3,6 +3,8 @@ import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { DEKRA_LOGO_BASE64, DEKRA_LOGO_MIME } from "../_shared/dekra-logo.ts";
+import { validateV2Wire, v2TransportManifest } from "../_shared/nb21-v2-wire.ts";
+import type { V2Manifest, V2WireReference } from "../_shared/nb21-v2-contract.ts";
 import { resolveRemasterCost } from "../_shared/remaster-cost.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { validateGalleryTarget, verifyGalleryOwnership, persistRemasterGallery } from "../_shared/remaster-gallery.ts";
@@ -529,10 +531,26 @@ serve(async (req) => {
     inlineImageCount?: number;
     fileImageCount?: number;
     requestBytes?: number;
+    promptVersion?: string;
+    referenceManifest?: unknown;
+    transportManifest?: unknown;
   } = { attempts: 0 };
   /** Für Rückbuchung, wenn kein Bild geliefert wird. */
   let chargedUserId: string | null = null;
   let chargedCost = 0;
+  let v2Telemetry: { manifest: V2Manifest; transports: unknown } | null = null;
+  let telemetryLogged = false;
+  const persistV2Telemetry = async (status: string, output?: string, message?: string) => {
+    if (!v2Telemetry || !chargedUserId || telemetryLogged) return;
+    const { error } = await createServiceClient().from("generation_attempt_logs").insert({
+      user_id: chargedUserId, job_key: v2Telemetry.manifest.jobKey, model_tier: "nb21",
+      stage: "generate", status, attempt: diag.attempts || 1, engine: diag.engine, model: diag.model,
+      duration_ms: Date.now() - startedAt, error_message: message?.slice(0, 1000) ?? null,
+      provider_response: { promptVersion: "nb21-v2", referenceManifest: v2Telemetry.manifest, transportManifest: v2Telemetry.transports, outputDelivered: !!output },
+    });
+    if (error) throw new Error("NB21 v2: Referenzprotokoll konnte nicht gesichert werden.");
+    telemetryLogged = true;
+  };
 
   try {
     // 1. Auth & credits
@@ -545,7 +563,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, promptVersion, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
+    const { referenceManifest, v2References, imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, promptVersion, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -562,20 +580,25 @@ serve(async (req) => {
     // ── Nano Banana 2.1: getrennter Pfad (nur Tier nb21 + Version nb21-v1) ──
     // Keine stillen Fallbacks: 2.1 nie mit 2.0-Prompt, 2.0-Tiers nie mit 2.1-Prompt.
     const isNb21Request = tier === NB21_TIER;
-    const hasNb21Marker = typeof dynamicPrompt === 'string' && dynamicPrompt.includes(NB21_VERSION_MARKER);
-    if (isNb21Request !== (promptVersion === NB21_PROMPT_VERSION) || isNb21Request !== hasNb21Marker) {
-      return new Response(
-        JSON.stringify({ error: 'Prompt-Version passt nicht zur gewählten Modellstufe (Nano Banana 2.1 benötigt nb21-v1).' }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const isNb21V2 = isNb21Request && promptVersion === 'nb21-v2';
+    const knownVersion = promptVersion === NB21_PROMPT_VERSION || promptVersion === 'nb21-v2';
+    const markers = typeof dynamicPrompt === 'string' ? [...dynamicPrompt.matchAll(/^PROMPT_VERSION: (.+)$/gm)].map(m => m[1]) : [];
+    if (isNb21Request ? !knownVersion || markers.length !== 1 || markers[0] !== promptVersion : markers.length > 0 || !!promptVersion || !!referenceManifest || !!v2References) {
+      return new Response(JSON.stringify({ error: 'Prompt-Version passt nicht zur Modellstufe.' }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (isNb21Request) {
-      const missing = Object.values(NB21_SERVER_SLOTS).filter((slot) => (dynamicPrompt as string).split(slot).length !== 2);
-      if (missing.length > 0) {
-        return new Response(
-          JSON.stringify({ error: 'Nano-Banana-2.1-Prompt unvollständig.' }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+    if (isNb21Request && !isNb21V2) {
+      const missing = Object.values(NB21_SERVER_SLOTS).filter(slot => (dynamicPrompt as string).split(slot).length !== 2);
+      if (missing.length) return new Response(JSON.stringify({ error: 'Nano-Banana-2.1-Prompt unvollständig.' }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (isNb21V2) {
+      try {
+        validateV2Wire(referenceManifest, v2References);
+        if ((dynamicPrompt as string).includes('{{NB21_SERVER_')) throw new Error('NB21 v2: V1-Servermarker unzulässig.');
+        const headers = [...(dynamicPrompt as string).matchAll(/^### SECTION (\d)\/9: (.+)$/gm)];
+        const expected = ['MAIN TASK','REFERENCE ROLES','ALLOWED CHANGES','VEHICLE IDENTITY LOCK','PERSPECTIVE LOCK','ENVIRONMENT','LIGHTING / PHYSICAL INTEGRATION','CAMERA / OUTPUT','FINAL PRIORITY CONSTRAINT'];
+        if (headers.length !== 9 || headers.some((h, i) => Number(h[1]) !== i + 1 || h[2] !== expected[i])) throw new Error('NB21 v2: Abschnittsstruktur ungültig.');
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'NB21 v2: Manifest ungültig.' }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
@@ -586,6 +609,7 @@ serve(async (req) => {
     const galleryAuth = galleryTarget ? await authenticateRequest(req) : null;
     if (galleryTarget && galleryAuth) await verifyGalleryOwnership(galleryAuth.supabase, galleryAuth.user.id, galleryTarget);
     const savedDelivery = async (image: string) => {
+      await persistV2Telemetry("success", image);
       if (!galleryTarget || !galleryAuth) return {};
       const saved = await persistRemasterGallery(galleryAuth.supabase, galleryAuth.user.id, galleryTarget, image);
       return { savedImageId: saved.id, savedImageUrl: saved.imageUrl };
@@ -667,7 +691,7 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
     // override supplies the dynamic prompt. This prevents catalogue-memory
     // substitution of a newer photographed facelift with an older generation.
     const modelGenerationLock = buildModelGenerationLock(vehicleDescription);
-    const prompt = isNb21Request
+    const prompt = isNb21V2 ? basePrompt : isNb21Request
       ? buildNb21ServerPrompt(basePrompt, { modelGenerationLock, classGuard, vehicleClass: ctx.vehicleClass })
       : `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}${carSideDirectionGuard ? `\n\n${carSideDirectionGuard}` : ''}`;
     console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
@@ -768,6 +792,8 @@ Before returning the image, inspect hood, roof, doors, windows, chrome, rims and
 
     // For custom showroom generations, present the showroom BEFORE the vehicle.
     // This makes the room the target scene and reduces source-photo reflection carryover.
+    const hasWheelReference = isNb21V2 ? v2References.some((r: V2WireReference) => r.sourceRole === "wheel") : !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri || oaFileId(wheelReferenceOpenAIFile));
+    if (!isNb21V2) {
     if (hasCustomShowroom) {
       parts.push({ text: customShowroomInstructionText });
       if (oaFileId(customShowroomOpenAIFile)) {
@@ -808,7 +834,7 @@ The immediately preceding VEHICLE BLUEPRINT is the single highest-priority sourc
 
     // ── DEDIZIERTE FELGENREFERENZ ── direkt nach dem Fahrzeugbild und VOR allen
     // allgemeinen Detailreferenzen, damit sie im Kontext maximal stark gewichtet ist.
-    const hasWheelReference = !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri || oaFileId(wheelReferenceOpenAIFile));
+
     if (hasWheelReference) {
       const analysisLines: string[] = [];
       if (wheelReferenceAnalysis && typeof wheelReferenceAnalysis === 'object') {
@@ -1013,6 +1039,28 @@ REPRODUCTION RULES (ZERO DEVIATION):
 </SCENE_ASSET_DEKRA_LOGO>` });
       { const _p: any = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 }, serverStatic: true }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
       console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
+    }
+
+    } else {
+      // Exact provider order is the same order used by resolver and prompt.
+      const refs = v2References as V2WireReference[];
+      for (const r of refs) {
+        let part: any;
+        if (r.transport === 'file_uri') part = { file_data: { mime_type: r.fileUri?.mimeType, file_uri: r.fileUri?.uri } };
+        else if (r.transport === 'openai_file') {
+          // NB21 binds Gemini: materialize OpenAI evidence, never change engine.
+          const response = await fetch(`https://api.openai.com/v1/files/${r.openAIFile?.fileId}/content`, { headers: { Authorization: `Bearer ${await getSecret('OPENAI_API_KEY')}` } });
+          if (!response.ok) throw new Error('NB21 v2: OpenAI-Dateireferenz nicht lesbar.');
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte);
+          part = { inlineData: { mimeType: r.openAIFile?.mimeType ?? 'image/jpeg', data: btoa(binary) } };
+        } else part = toInlineData(r.imageBase64 ?? '');
+        imageLabels.set(part, `${r.role} | Tier ${r.authorityTier} | ${r.sourceType} | ${r.authority}`);
+        parts.push(part);
+      }
+      const transports = await v2TransportManifest(refs);
+      v2Telemetry = { manifest: referenceManifest, transports };
+      diag.promptVersion = 'nb21-v2'; diag.referenceManifest = referenceManifest; diag.transportManifest = transports;
     }
 
     // ── BILD-MANIFEST: jedes Bild bekommt eine feste Nummer + Label ──
@@ -1669,6 +1717,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
                 : providerStatus && providerStatus >= 400
                   ? 'provider_rejected'
                   : 'unknown';
+    try { await persistV2Telemetry('error', undefined, msg); } catch { console.error('[NB21 v2] telemetry persistence failed'); }
     return new Response(
       JSON.stringify({
         error: overloaded
