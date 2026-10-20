@@ -182,7 +182,11 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         fetchPromptOverrides().catch(() => ({} as Record<string, string>)),
         supabase.from('project_images').select('generation_context').eq('id', current.id).maybeSingle(),
       ]);
-      const ctx = (resultRow?.generation_context as unknown as RegenerationContext | null) ?? readRegenerationContext((vRow as any)?.vehicle_data);
+      const resultContext = resultRow?.generation_context as unknown as RegenerationContext | null;
+      const vehicleContext = readRegenerationContext((vRow as any)?.vehicle_data);
+      // A later V2 run must never upgrade an older result with no per-result version.
+      if (!resultContext && vehicleContext?.promptVersion === 'nb21-v2') throw new Error('Für dieses ältere Bild fehlt die ursprüngliche Laufversion. Es wird nicht auf V2 umgestellt.');
+      const ctx = resultContext ?? vehicleContext;
       const nb21Version = resolveNb21Version(ctx);
       if (nb21Version !== 'nb21-v2' && !seedUrl) throw new Error('Für dieses Fahrzeug ist kein Originalfoto vorhanden. Bitte ein Referenzbild auswählen.');
       // V2 never calls the positional legacy seed resolver's output a vehicle truth.
