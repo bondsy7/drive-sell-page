@@ -154,13 +154,20 @@ export function resolveV3Evidence(args: { jobKey: string; category?: string; edi
       if (!entries.some(e => e.sourceId === hit.sourceId)) add(hit, r.role, r.authority);
     }
   }
-  const interior = p.target.startsWith('interior') || (p.target === 'composite' && /INTERIOR/.test(args.jobKey));
-  const assets = args.sources.filter(s => s.sourceType === 'immutable asset' && s.image && ['wheel','plate','manufacturer-logo','dealer-logo','scene-logo'].includes(normalizeV3Role(s.sourceRole)) && !(normalizeV3Role(s.sourceRole) === 'wheel' && !p.wheel) && !(normalizeV3Role(s.sourceRole) === 'plate' && (interior || p.target === 'cargo_area'))).sort((a,b) => a.sourceId.localeCompare(b.sourceId));
+  const assets = args.sources.filter(s => s.sourceType === 'immutable asset' && s.image && v3UsesAsset(p, s.sourceRole)).sort((a,b) => a.sourceId.localeCompare(b.sourceId));
   const budget = Math.min(8, p.budget + assets.length);
-  for (const s of assets) { if (entries.length >= budget - 1) throw new Error('NB21 v3: Assetbudget überschritten.'); add(s,normalizeV3Role(s.sourceRole),`immutable ${normalizeV3Role(s.sourceRole)} pixels ONLY in this domain`); }
-  const context = args.sources.filter(s => s.sourceType === 'generated context' && normalizeV3Role(s.sourceRole) === 'environment' && s.image).sort((a,b) => a.sourceId.localeCompare(b.sourceId))[0];
+  for (const s of assets) { if (entries.length >= budget) throw new Error('NB21 v3: Assetbudget überschritten.'); add(s,normalizeV3Role(s.sourceRole),`immutable ${normalizeV3Role(s.sourceRole)} pixels ONLY in this domain`); }
+  const context = (p.target === 'exterior' || p.target === 'cargo_area' || (p.target === 'composite' && p.wheel)) ? args.sources.filter(s => s.sourceType === 'generated context' && normalizeV3Role(s.sourceRole) === 'environment' && s.image).sort((a,b) => a.sourceId.localeCompare(b.sourceId))[0] : undefined;
   if (context && entries.length < budget) add(context,'presentation_context','environment and presentation only; NO geometry, identity or lighting authority');
   return { manifest: { version:'nb21-v3', jobKey:args.jobKey, mode:args.editSlot ? 'edit' : 'view_synthesis', ...(args.editSlot ? { editSlot: args.editSlot } : {}), target:p.target, budget, entries, ...(view ? { viewContract:view, requestedPhysicalSide:view.physicalSide } : {}), visibleSurfaces:view ? [...view.visibleSurfaces] : Object.keys(surfaceAuthority), surfaceAuthority, lightingProfile:args.lightingProfile, ...(args.retryReason ? { retryReason:args.retryReason } : {}) }, references };
+}
+/** Assets must be visible/relevant to the job, not just enabled globally. */
+export function v3UsesAsset(policy: V3Policy, role: string): boolean {
+  const normalized = normalizeV3Role(role);
+  if (normalized === 'wheel') return policy.wheel;
+  if (normalized === 'plate') return policy.target === 'exterior' || (policy.target === 'composite' && policy.wheel);
+  if (['manufacturer-logo','dealer-logo','scene-logo'].includes(normalized)) return policy.target === 'exterior' || policy.target === 'cargo_area' || (policy.target === 'composite' && policy.wheel);
+  return false;
 }
 export function wireV3Evidence(plan: V3EvidencePlan): V3WireReference[] {
   return plan.references.map((s,i) => { const entry = plan.manifest.entries[i]; if (!entry || entry.sourceId !== s.sourceId) throw new Error('NB21 v3: Bildreihenfolge widerspricht Manifest.'); return s.fileUri?.uri ? { ...entry,transport:'file_uri',fileUri:s.fileUri } : { ...entry,transport:'inline',imageBase64:s.image }; });
