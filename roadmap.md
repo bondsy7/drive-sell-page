@@ -167,3 +167,10 @@
 ## Volvo: NB 2 / NB 2.1 — Analyse und Plan
 - [x] Gespeicherte Volvo-Ausgaben und Originale vergleichen; Laufzeiten und tatsächliche Credits prüfen
 - [x] Vergleichsbild erstellen und konkrete NB-2.1-Verbesserungen planen; keine Implementierung oder kostenpflichtigen Läufe
+
+## NB21 v2: Evidence-driven Umsetzung
+- [ ] V1/2.0 erhalten; explizite V2-Contracts, semantische Ziele und Reference Manifest implementieren
+- [ ] Original-/Kontext-Metadaten rückwärtskompatibel durch Capture, Pipeline und Regeneration führen
+- [ ] Servervalidierung und tatsächliche Referenztelemetrie ergänzen
+- [ ] V2-/Baseline-Tests ausführen; sechs kritische Referenzsets und verbleibende Index-Fallbacks berichten
+- [ ] Keine kostenpflichtige Live-Generierung, Preis-/Auth-/Galerieänderung oder Veröffentlichung
