@@ -169,8 +169,8 @@
 - [x] Vergleichsbild erstellen und konkrete NB-2.1-Verbesserungen planen; keine Implementierung oder kostenpflichtigen Läufe
 
 ## NB21 v2: Evidence-driven Umsetzung
-- [ ] V1/2.0 erhalten; explizite V2-Contracts, semantische Ziele und Reference Manifest implementieren
-- [ ] Original-/Kontext-Metadaten rückwärtskompatibel durch Capture, Pipeline und Regeneration führen
-- [ ] Servervalidierung und tatsächliche Referenztelemetrie ergänzen
-- [ ] V2-/Baseline-Tests ausführen; sechs kritische Referenzsets und verbleibende Index-Fallbacks berichten
-- [ ] Keine kostenpflichtige Live-Generierung, Preis-/Auth-/Galerieänderung oder Veröffentlichung
+- [x] V1/2.0 erhalten; explizite V2-Contracts, semantische Ziele und Reference Manifest implementieren
+- [x] Original-/Kontext-Metadaten rückwärtskompatibel durch Capture, Pipeline und Regeneration führen
+- [x] Servervalidierung und tatsächliche Referenztelemetrie ergänzen
+- [x] V2-/Baseline-Tests ausführen; sechs kritische Referenzsets und verbleibende Index-Fallbacks berichten
+- [x] Keine kostenpflichtige Live-Generierung, Preis-/Auth-/Galerie-Verhaltensänderung oder Veröffentlichung; nur additive Versions-/Telemetriedaten

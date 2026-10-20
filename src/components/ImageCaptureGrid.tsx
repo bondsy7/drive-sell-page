@@ -1155,6 +1155,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       return;
     }
     const currentVehicleId = await ensureVehicleForPipeline();
+    if (isNb21Tier(modelTier)) {
+      const slot = vehicleSlots.find(s => !s.isVin && captures[s.key]);
+      if (!slot) { toast.error('NB21 v2: Originalaufnahme fehlt.'); return; }
+      await prepareDurableTarget(slot);
+    }
     const workflowKey = createPipelineWorkflowKey({
       projectId,
       vehicleId: currentVehicleId || vehicleId,
@@ -1169,7 +1174,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       pipeline.clearPipeline();
     }
     setShowPipeline(true);
-  }, [allCapturedBase64, detectedVin, ensureVehicleForPipeline, pipeline, projectId, vehicleId]);
+  }, [allCapturedBase64, detectedVin, ensureVehicleForPipeline, pipeline, projectId, vehicleId, modelTier, captures, detailImages, detailSourceRoles, remasterConfig]);
 
   // Fahrzeugart bleibt auf der Seite wählbar (kein eigener Schritt mehr).
   const chooseVehicleClass = (cls: ActiveVehicleClassKey) => {

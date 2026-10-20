@@ -21,6 +21,7 @@ export async function invokeNb21V2(args: {
     if (enabled && url && !sources.some(s => s.sourceRole === role)) sources.push({ sourceId: `asset:${role}`, sourceRole: role, sourceType: 'immutable asset', image: await ensureCachedBase64(url) });
   }
   const plan = resolveV2Evidence({ ...args, sources });
+  if (sources.some(s => s.sourceType === 'immutable asset' && ['scene-logo','manufacturer-logo','dealer-logo'].includes(s.sourceRole) && !plan.manifest.entries.some(e => e.sourceId === s.sourceId))) throw new Error('NB21 v2: Gewähltes Markenasset passt nicht in das Referenzbudget. Keine stille Auslassung.');
   await Promise.all(plan.references.map(async s => {
     if (s.fileUri || s.openAIFile) return;
     const refs = await uploadToGeminiFiles([{ id: s.sourceId, imageBase64: s.image }]);
