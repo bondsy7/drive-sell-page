@@ -18,6 +18,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import { buildNb21RemasterPrompt, isNb21Tier, NB21_PROMPT_VERSION } from '@/prompts/nb21';
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
+import { archiveV2Original } from '@/lib/nb21-v2-originals';
 import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
@@ -320,6 +321,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
   const [brandEditOpen, setBrandEditOpen] = useState(false);
   const [detailImages, setDetailImages] = useState<string[]>([]);
+  const [detailSourceRoles, setDetailSourceRoles] = useState<Record<string, string>>({});
+  const originalAssetIdsRef = useRef<Record<string, string>>({});
   const detailFileRef = useRef<HTMLInputElement | null>(null);
   /** Dedizierte Felgenreferenz – bewusst eigener State, NICHT detailImages. */
   const [wheelReference, setWheelReference] = useState<WheelReference | null>(null);
@@ -804,18 +807,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     galleryTargetsRef.current[slot.key] = target;
     const sources = [
       ...vehicleSlots.filter(s => captures[s.key]).map(s => ({ image: captures[s.key].base64, role: s.key })),
-      ...detailImages.map(image => ({ image, role: undefined })),
+      ...detailImages.map(image => ({ image, role: detailSourceRoles[image] || undefined })),
       ...(wheelReference?.image ? [{ image: wheelReference.image, role: undefined }] : []),
     ].filter(source => !prefilledOriginalsRef.current.has(source.image) && !archivedOriginalsRef.current.has(source.image));
     // Archive sources before paid generation; never rely on the final button.
     for (const source of sources) {
-      const saved = await uploadOriginalsToVehicle(user.id, targetVehicleId, [source.image], [source.role]);
-      if (saved !== 1) throw new Error('Originalfoto konnte nicht gesichert werden. Bitte erneut versuchen.');
+      const saved = isNb21Tier(modelTier) ? await archiveV2Original(user.id, targetVehicleId, { sourceId: `original:${source.role || 'unassigned'}`, sourceType: 'original', sourceRole: source.role || 'unassigned-detail', image: source.image }) : await uploadOriginalsToVehicle(user.id, targetVehicleId, [source.image], [source.role]);
+      if (typeof saved === 'string') originalAssetIdsRef.current[source.image] = saved;
+      if (saved !== 1 && typeof saved !== 'string') throw new Error('Originalfoto konnte nicht gesichert werden. Bitte erneut versuchen.');
       archivedOriginalsRef.current.add(source.image);
     }
     await saveRegenerationContext(targetVehicleId, buildRegenerationContext({
       remasterConfig, classContext, vehicleDescription, modelTier,
-      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_CURRENT_VERSION } : {}),
+      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_CURRENT_VERSION, referenceSources: Object.entries(originalAssetIdsRef.current).map(([image, assetId]) => ({ sourceId: assetId, assetId, sourceType: 'original' as const, sourceRole: vehicleSlots.find(s => captures[s.key]?.base64 === image)?.key || detailSourceRoles[image] || 'unassigned-detail' })) } : {}),
     }));
     return target;
   };
@@ -1194,10 +1198,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         evidenceSources={vehicleSlots.flatMap(s => {
           const capture = captures[s.key];
           if (!capture) return [];
-          const records: V2Reference[] = [{ sourceId: `capture:${s.key}:original`, sourceRole: s.key, sourceType: 'original', image: capture.base64 }];
+          const records: V2Reference[] = [{ sourceId: `capture:${s.key}:original`, sourceRole: s.key, sourceType: 'original', image: capture.base64, assetId: originalAssetIdsRef.current[capture.base64] }];
           if (capture.remasteredBase64) records.push({ sourceId: `capture:${s.key}:remaster`, sourceRole: s.key, sourceType: 'generated context', image: capture.remasteredBase64, assetId: capture.savedImageId });
           return records;
-        })}
+        }).concat(detailImages.map((image, i) => ({ sourceId: `detail:${i}`, image, sourceType: 'original' as const, sourceRole: detailSourceRoles[image] || 'unassigned-detail', assetId: originalAssetIdsRef.current[image] })))}
         promptVersion={isNb21Tier(modelTier) ? NB21_CURRENT_VERSION : undefined}
         inputImages={allCapturedBase64}
         referenceRoles={allCapturedRoles}
@@ -1646,8 +1650,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               >
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
-                    <div key={idx} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-card">
+                    <div key={idx} className={`group relative ${isNb21Tier(modelTier) ? 'h-28 w-36' : 'h-14 w-14'} shrink-0 overflow-hidden rounded-md border border-border bg-card`}>
                       <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
+                      {isNb21Tier(modelTier) && (
+                        <select aria-label={`Referenzrolle Detail ${idx + 1}`} className="absolute bottom-0 w-full bg-background text-foreground text-xs" value={detailSourceRoles[img] || ''} onChange={e => setDetailSourceRoles(prev => ({ ...prev, [img]: e.target.value }))}>
+                          <option value="">Nicht zugeordnet</option>
+                          {['frontpanel','headlight','taillight','steering','cluster','screen','dashboard','rear-seats','cargo','wheel'].map(role => <option key={role} value={role}>{({ frontpanel: 'Frontpanel', headlight: 'Scheinwerfer', taillight: 'Rücklicht', steering: 'Lenkrad', cluster: 'Instrumente', screen: 'Zentraldisplay', dashboard: 'Cockpit', 'rear-seats': 'Rücksitze', cargo: 'Kofferraum', wheel: 'Felge' } as Record<string,string>)[role]}</option>)}
+                        </select>
+                      )}
                       {!isProcessing && (
                         <button
                           type="button"
