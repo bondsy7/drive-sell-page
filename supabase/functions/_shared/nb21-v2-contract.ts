@@ -50,6 +50,8 @@ export function classifyV2Target(key: string, category?: string): V2Target {
   if (/BOOT|CARGO|GARAGE/.test(k)) return 'cargo_area';
   if (/WHEEL/.test(k)) return 'wheel_detail';
   if (/STEERING|CLUSTER|SCREEN|MBUX|CONTROLS/.test(k)) return 'interior_detail';
+  if (/DET_COCKPIT/.test(k)) return 'interior_detail';
+  if (/^(LIVING|KITCHEN|BATH|BED|SLEEPER)$/.test(k)) return 'interior_cabin';
   if (/INT_|INTERIOR|COCKPIT|CABIN/.test(k) || category === 'interior') return 'interior_cabin';
   if (/HEADLIGHT|TAILLIGHT|GRILLE|PANEL|DET_/.test(k) || category === 'detail') return 'exterior_detail';
   return 'exterior';
@@ -78,8 +80,9 @@ export function v2Policy(key: string, category?: string, editSlot?: string): V2P
   if (target === 'wheel_detail') return { target, budget: 3, wheel: true, requirements: [req('wheel_original', ['wheel', 'wheel-detail', 'rim', ...FRONT, 'side', 'side-right'], 'wheel mounting and surrounding body')] };
   if (target === 'exterior_detail') {
     const back = /TAIL|REAR/.test(k);
-    const local = /HEADLIGHT/.test(k) ? ['headlight', 'headlight-detail'] : /TAIL/.test(k) ? ['taillight', 'taillight-detail'] : /GRILLE|PANEL/.test(k) ? ['frontpanel', 'grille', 'front-panel'] : [k.toLowerCase().replace(/_/g, '-')];
-    return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', [...local, ...(back ? REAR : FRONT)], 'local part outline, light signature, texture, badge and adjacent body'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
+    const visibleOverview = /HEADLIGHT|TAILLIGHT|GRILLE|PANEL/.test(k);
+    const local = /HEADLIGHT/.test(k) ? ['headlight', 'headlight-detail'] : /TAIL/.test(k) ? ['taillight', 'taillight-detail'] : /GRILLE|PANEL/.test(k) ? ['frontpanel', 'grille', 'front-panel'] : [k.replace(/^(?:MACH|WOMO|MOTO|VAN)_DET_/, '').toLowerCase().replace(/_/g, '-')];
+    return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', [...local, ...(visibleOverview ? back ? REAR : FRONT : [])], 'local part outline, texture and adjacent photographed structure'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
   }
   if (target === 'composite' && /INTERIOR/.test(k)) return { target, budget: 3, wheel: false, requirements: [req('cabin_original', COCKPIT, 'cockpit and front cabin panels'), req('rear_cabin_original', ['interior-rear','rear-seats'], 'rear cabin panels')] };
   if (target === 'composite') return { target, budget: 6, wheel: true, requirements: [req('front_original', FRONT, 'front identity'), req('side_original', ['side', 'side-left'], 'left body identity'), req('rear_original', REAR, 'rear identity')] };

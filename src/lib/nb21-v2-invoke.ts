@@ -2,6 +2,7 @@ import { uploadToGeminiFiles } from './gemini-file-upload';
 import { invokeRemasterVehicleImage, type RemasterInvokePayload } from './remaster-invoke';
 import { buildNb21V2Prompt, resolveV2Evidence, wireV2Evidence, type V2Reference } from '@/prompts/nb21/v2';
 import type { RemasterConfig } from './remaster-prompt';
+import { ensureCachedBase64 } from './image-base64-cache';
 
 /** One canonical selection before upload, prompt generation and provider dispatch. */
 export async function invokeNb21V2(args: {
@@ -9,13 +10,21 @@ export async function invokeNb21V2(args: {
   config: RemasterConfig; correction?: string;
   payload?: Pick<RemasterInvokePayload, 'gallerySave' | 'classContext'>;
 }) {
-  const plan = resolveV2Evidence(args);
+  const effectiveConfig = { ...args.config };
+  const sources = [...args.sources];
+  for (const [role, enabled, url] of [
+    ['manufacturer-logo', args.config.showManufacturerLogo, args.config.manufacturerLogoUrl],
+    ['dealer-logo', args.config.showDealerLogo, args.config.dealerLogoUrl],
+  ] as const) {
+    if (enabled && url && !sources.some(s => s.sourceRole === role)) sources.push({ sourceId: `asset:${role}`, sourceRole: role, sourceType: 'immutable asset', image: await ensureCachedBase64(url) });
+  }
+  const plan = resolveV2Evidence({ ...args, sources });
   await Promise.all(plan.references.map(async s => {
     if (s.fileUri || s.openAIFile) return;
     const refs = await uploadToGeminiFiles([{ id: s.sourceId, imageBase64: s.image }]);
     s.fileUri = refs?.[0] ?? null;
   }));
-  const dynamicPrompt = buildNb21V2Prompt({ manifest: plan.manifest, config: args.config, correction: args.correction, vehicleClass: args.payload?.classContext?.vehicleClass });
+  const dynamicPrompt = buildNb21V2Prompt({ manifest: plan.manifest, config: effectiveConfig, correction: args.correction, vehicleClass: args.payload?.classContext?.vehicleClass });
   return invokeRemasterVehicleImage({
     ...args.payload, modelTier: 'nb21', promptVersion: 'nb21-v2', dynamicPrompt,
     referenceManifest: plan.manifest, v2References: wireV2Evidence(plan),
