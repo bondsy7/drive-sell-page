@@ -69,6 +69,13 @@ Vorbereitet sind `wrong_physical_side`, `wrong_view_quadrant`, `unsupported_visi
 
 ## Echte Blocker vor dem Volvo-Test
 
+### Kabinenübersicht und minimale Referenzen (20.10.2026)
+
+- Die V3-Kabinenübersicht ist eine einzelne natürliche, zentrierte Armaturenbrettaufnahme von der Rücksitzmitte nach vorne. Sichtbare Türanschlüsse, A-Säulen, Windschutzscheibenrahmen und Dachhimmel bleiben zusammenhängend. Vollständige Vordersitze und Rückbank werden nicht mehr gleichzeitig in den Bildausschnitt gezwungen; physische Sitze bleiben vorhanden und dürfen nicht entfernt oder transparent gemacht werden.
+- Kabinen- und Detailjobs wählen genau ein geeignetes Original nach ihrer Rollenpolicy, ohne automatische zusätzliche Kabinen-/Heck-/Frontbelege oder generierten Umgebungskontext. Pflichtbelege für Seiten, 3/4-Ansichten, Kofferraum und einzelne Grid-Zellen bleiben erhalten.
+- Kennzeichen-, Felgen- und Wandlogoassets werden nach dem sichtbaren Zielbereich vor Fetch/Upload ausgeschlossen. Die Übersicht transportiert nur das ausgewählte Frontkabinenoriginal; Beispielbilder dienen nur als Kompositionsvorgabe, nicht als Fahrzeugreferenz.
+- Serverseitige kanonische Manifestprüfung erzwingt die reduzierten Sets. Deshalb muss diese geänderte gemeinsame V3-Policy vor realen Läufen bereitgestellt werden; nur die App zu aktualisieren reicht nicht. Keine Bereitstellung oder kostenpflichtige Bildgenerierung in diesem Auftrag. Tatsächliche Bildwirkung bleibt unbestätigt.
+
 1. Der additive V3-Servercode ist noch nicht bereitgestellt. Vor V3-Generierung muss er bereitgestellt und durch einen kostenlosen ungültigen V3-Guard-Request live nachgewiesen werden.
 2. Die konkret ausgewählten Testjobs brauchen die aufgeführten Originalrollen; fehlende rechte/linke Originale oder Detailbelege müssen ergänzt oder Jobs bewusst abgewählt werden.
 

@@ -89,18 +89,17 @@ function v3BasePolicy(key: string, category?: string, editSlot?: string): V3Poli
   if (target === 'cargo_area') return { target, budget: 3, wheel: false, requirements: [req('cargo_original', ['cargo', 'boot', 'open-boot', 'cargo-area', 'garage'], 'cargo floor, cover, backrests, hooks and side trim'), req('rear_evidence', REAR, 'hatch, rear lights and surrounding body')] };
   if (target === 'interior_detail') {
     const local = /STEERING/.test(k) ? ['steering', 'steering-wheel'] : /CLUSTER/.test(k) ? ['cluster', 'instrument-cluster', 'steering', 'steering-wheel'] : /SCREEN|MBUX/.test(k) ? ['screen', 'center-screen', 'dashboard'] : ['controls', 'dashboard'];
-    return { target, budget: 3, wheel: false, requirements: [req('interior_detail_original', local, 'photographed controls, selector, contours, materials and display layout'), req('cabin_evidence', COCKPIT, 'surrounding cabin geometry', false)] };
+    return { target, budget: 1, wheel: false, requirements: [req('interior_detail_original', local, 'photographed controls, selector, contours, materials and display layout')] };
   }
   if (target === 'interior_cabin') {
     const rear = /REAR|SEAT|FOND/.test(k) && !/FRONT_SEAT/.test(k);
     const specific = /LIVING|KITCHEN|BATH|BED|SLEEPER/.exec(k)?.[0]?.toLowerCase();
-    return { target, budget: 3, wheel: false, requirements: [req('cabin_original', specific ? [specific] : rear ? ['interior-rear', 'rear-seats', 'passenger-seat'] : [...COCKPIT, 'dashboard'], rear ? 'rear seats, seat orientation, front seat presence, doors and console' : 'complete cabin architecture and both front seat assemblies; dashboard close-ups cannot replace a supplied cabin overview'), req('cabin_evidence', rear ? COCKPIT : ['interior-rear'], 'other visible cabin surfaces only', false)] };
+    return { target, budget: 1, wheel: false, requirements: [req('cabin_original', specific ? [specific] : rear ? ['interior-rear', 'rear-seats', 'passenger-seat'] : [...COCKPIT, 'dashboard'], rear ? 'rear seats, seat orientation, physically visible seats, doors and console' : 'connected cabin architecture, dashboard, doors, pillars and naturally visible seat portions; do not force all seats into one photograph')] };
   }
   if (target === 'wheel_detail') return { target, budget: 3, wheel: true, requirements: [req('wheel_original', ['wheel', 'wheel-detail', 'rim', ...FRONT, 'side', 'side-right'], 'wheel mounting and surrounding body')] };
   if (target === 'exterior_detail') {
-    const back = /TAIL|REAR/.test(k);
     const local = /HEADLIGHT/.test(k) ? ['headlight', 'headlight-detail'] : /TAIL/.test(k) ? ['taillight', 'taillight-detail'] : /GRILLE|PANEL/.test(k) ? ['frontpanel', 'grille', 'front-panel'] : [k.replace(/^(?:MACH|WOMO|MOTO|VAN)_DET_/, '').toLowerCase().replace(/_/g, '-')];
-    return { target, budget: 3, wheel: false, requirements: [req('local_detail_original', local, 'local part outline, texture and adjacent photographed structure'), req('geometry_evidence', back ? REAR : FRONT, 'part position on photographed body', false)] };
+    return { target, budget: 1, wheel: false, requirements: [req('local_detail_original', local, 'local part outline, texture and adjacent photographed structure')] };
   }
   if (target === 'composite' && /INTERIOR/.test(k)) return { target, budget: 4, wheel: false, requirements: [req('cabin_original', COCKPIT, 'full front cabin, driver and passenger seats; dashboard and console cells'), req('rear_cabin_original', ['interior-rear','rear-seats'], 'rear seat cell'), req('interior_detail_original', ['steering', 'steering-wheel', 'dashboard'], 'steering detail cell only; never replaces the seat-bearing cabin original', false)] };
   if (target === 'composite') return { target, budget: 6, wheel: true, requirements: [req('front_original', FRONT, 'front identity'), req('side_original', ['side', 'side-left'], 'left body identity'), req('rear_original', REAR, 'rear identity')] };
@@ -155,13 +154,20 @@ export function resolveV3Evidence(args: { jobKey: string; category?: string; edi
       if (!entries.some(e => e.sourceId === hit.sourceId)) add(hit, r.role, r.authority);
     }
   }
-  const interior = p.target.startsWith('interior') || (p.target === 'composite' && /INTERIOR/.test(args.jobKey));
-  const assets = args.sources.filter(s => s.sourceType === 'immutable asset' && s.image && ['wheel','plate','manufacturer-logo','dealer-logo','scene-logo'].includes(normalizeV3Role(s.sourceRole)) && !(normalizeV3Role(s.sourceRole) === 'wheel' && !p.wheel) && !(normalizeV3Role(s.sourceRole) === 'plate' && (interior || p.target === 'cargo_area'))).sort((a,b) => a.sourceId.localeCompare(b.sourceId));
+  const assets = args.sources.filter(s => s.sourceType === 'immutable asset' && s.image && v3UsesAsset(p, s.sourceRole)).sort((a,b) => a.sourceId.localeCompare(b.sourceId));
   const budget = Math.min(8, p.budget + assets.length);
-  for (const s of assets) { if (entries.length >= budget - 1) throw new Error('NB21 v3: Assetbudget überschritten.'); add(s,normalizeV3Role(s.sourceRole),`immutable ${normalizeV3Role(s.sourceRole)} pixels ONLY in this domain`); }
-  const context = args.sources.filter(s => s.sourceType === 'generated context' && normalizeV3Role(s.sourceRole) === 'environment' && s.image).sort((a,b) => a.sourceId.localeCompare(b.sourceId))[0];
+  for (const s of assets) { if (entries.length >= budget) throw new Error('NB21 v3: Assetbudget überschritten.'); add(s,normalizeV3Role(s.sourceRole),`immutable ${normalizeV3Role(s.sourceRole)} pixels ONLY in this domain`); }
+  const context = (p.target === 'exterior' || p.target === 'cargo_area' || (p.target === 'composite' && p.wheel)) ? args.sources.filter(s => s.sourceType === 'generated context' && normalizeV3Role(s.sourceRole) === 'environment' && s.image).sort((a,b) => a.sourceId.localeCompare(b.sourceId))[0] : undefined;
   if (context && entries.length < budget) add(context,'presentation_context','environment and presentation only; NO geometry, identity or lighting authority');
   return { manifest: { version:'nb21-v3', jobKey:args.jobKey, mode:args.editSlot ? 'edit' : 'view_synthesis', ...(args.editSlot ? { editSlot: args.editSlot } : {}), target:p.target, budget, entries, ...(view ? { viewContract:view, requestedPhysicalSide:view.physicalSide } : {}), visibleSurfaces:view ? [...view.visibleSurfaces] : Object.keys(surfaceAuthority), surfaceAuthority, lightingProfile:args.lightingProfile, ...(args.retryReason ? { retryReason:args.retryReason } : {}) }, references };
+}
+/** Assets must be visible/relevant to the job, not just enabled globally. */
+export function v3UsesAsset(policy: V3Policy, role: string): boolean {
+  const normalized = normalizeV3Role(role);
+  if (normalized === 'wheel') return policy.wheel;
+  if (normalized === 'plate') return policy.target === 'exterior' || (policy.target === 'composite' && policy.wheel);
+  if (['manufacturer-logo','dealer-logo','scene-logo'].includes(normalized)) return policy.target === 'exterior' || policy.target === 'cargo_area' || (policy.target === 'composite' && policy.wheel);
+  return false;
 }
 export function wireV3Evidence(plan: V3EvidencePlan): V3WireReference[] {
   return plan.references.map((s,i) => { const entry = plan.manifest.entries[i]; if (!entry || entry.sourceId !== s.sourceId) throw new Error('NB21 v3: Bildreihenfolge widerspricht Manifest.'); return s.fileUri?.uri ? { ...entry,transport:'file_uri',fileUri:s.fileUri } : { ...entry,transport:'inline',imageBase64:s.image }; });

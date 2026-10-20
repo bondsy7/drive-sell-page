@@ -13,7 +13,7 @@ export function enforceV3ServerPrompt(prompt: string, manifest: V3Manifest, ctx?
   // Rebuild authority, class, view, lighting and priority from validated data, not client prose.
   const sections: Record<number,string> = {
     2: manifest.entries.map((e,i) => `IMAGE ${i+1}: ${e.role}; source=${e.sourceType}; slot=${e.sourceRole}; Tier ${e.authorityTier}; authority=${e.authority}.`).join('\n'),
-    4: `${buildV2SubjectClassLock(ctx).replace(/NB21_V2/g,'NB21_V3')}\n${V3_NO_INVENTION}\nPreserve complete separate seats, backrests, headrests, pillars and roof. No seat deletion, merging or transparent occluders. Flat/open photographed consoles stay flat; no invented lever, pin or bulge.`,
+    4: `${buildV2SubjectClassLock(ctx).replace(/NB21_V2/g,'NB21_V3')}\n${V3_NO_INVENTION}\nPreserve physically complete separate seats, backrests, headrests, doors, pillars and roof with their natural occlusion. Physical completeness does NOT require every assembly to be visible in one photograph. Seats outside the camera field remain present; never remove, merge or make them transparent to reveal controls. Never cut away doors, pillars or roof to pack more information into frame. Flat/open photographed consoles stay flat; no invented lever, pin or bulge.`,
     5: v3ViewPrompt(manifest), 7: v3RelightingContract(manifest.lightingProfile),
     9: `Original evidence and scoped asset evidence > allowed surface change > presentation. No aesthetic rule authorizes identity, physical-side, geometry, equipment or intrinsic paint changes. Missing evidence blocks output. No automatic QA or harmonization pass.\n${brandingAssetScope(manifest.entries.filter(e => e.sourceType === 'immutable asset').map(e => e.role))}`, 
   };
