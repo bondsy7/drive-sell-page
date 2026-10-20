@@ -21,8 +21,8 @@ export default function Nb21V2ReferenceCheck({ results, sources, onAssign, onSki
   const details = sources.filter(s => s.sourceType === 'original' && (s.sourceId.startsWith('detail:') || s.sourceRole.startsWith('unassigned')));
   const options = [...new Set([...Object.keys(LABELS), ...results.flatMap(r => r.missing.flatMap(m => m.slots))])];
   return <section aria-label="Referenzprüfung" className="space-y-3 border-y border-border py-4">
-    <h3 className="text-sm font-semibold text-foreground">Referenzprüfung</h3>
-    <div className="divide-y divide-border">
+    <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold text-foreground">Referenzprüfung</h3><span className="text-xs text-muted-foreground">{results.filter(r => r.ready).length} vorhanden · {results.filter(r => !r.ready).length} fehlend</span></div>
+    <div className="max-h-64 overflow-y-auto divide-y divide-border">
       {results.map(({ job, ready, missing }) => <div key={job.key} className="flex flex-wrap items-center gap-2 py-2 text-xs">
         {ready ? <Check className="h-4 w-4 text-primary" /> : <AlertCircle className="h-4 w-4 text-destructive" />}
         <span className="min-w-0 flex-1 text-foreground">{job.labelDe ?? job.key}</span>

@@ -42,6 +42,17 @@ Bei vorhandenen passenden Originals und ohne aktivierte Marken-/Kennzeichenasset
 - `drizzle/migrations/0014_nb21_v2_result_version_and_reference_telemetry.sql`, automatisch aktualisierte Typen
 - `AGENTS.md`, `src/prompts/AGENTS.md`, `roadmap.md`, dieses Dokument
 
+## Ergänzungen vom 20.10.2026: Änderungen und Teststand
+- Neu: `src/lib/nb21-v2-upload-cache.ts`, `src/lib/nb21-v2-preflight.ts`, `src/components/Nb21V2ReferenceCheck.tsx`, `supabase/functions/_shared/nb21-v2-class.ts`.
+- Angepasst: `src/lib/nb21-v2-invoke.ts`, `src/prompts/nb21/v2/builder.ts`, `src/components/PipelineRunner.tsx`, `src/contexts/PipelineContext.tsx`, `supabase/functions/remaster-vehicle-image/index.ts`.
+- Tests: `src/test/nb21-v2-invoke.test.ts` erweitert; `src/test/nb21-v2-improvements.test.ts` und `src/test/nb21-v2-preflight-ui.test.tsx` neu.
+- Dokumentation: `src/prompts/AGENTS.md`, `roadmap.md`, dieses Dokument.
+- 61 Tests in sieben Dateien erfolgreich: V2 Evidence (21), V2 Invocation/Cache (5), Class/Preflight (18), Referenzprüfung-Bedienung (2), NB21-Prompts (11), 2.0-Baseline (1), Regenerationskontext (3). V1-SHA-256-Baselines unverändert.
+- `deno check supabase/functions/remaster-vehicle-image/index.ts` erfolgreich; automatische Vorschau-Builds fehlerfrei. Kein manueller App-Build/Typecheck (durch Projektumgebung verwaltet).
+- Gezielter ESLint auf den neuen Modulen und V2-Builder/Invoker erfolgreich. Die großen bestehenden Runner/Context/Server-Dateien enthalten weiterhin vorbestehende Lint-Befunde (vorwiegend `any`); sie wurden nicht außerhalb des V2-Scope refaktoriert.
+- Browser: angemeldete Aufnahmeansicht geöffnet; echte Referenzprüfungs-Komponente separat mit synthetischen Originalquellen bedient, Cargo zugeordnet und Instrumente übersprungen; Desktop/Mobil ohne Laufzeitfehler oder horizontalen Überlauf. Kein kompletter bezahlter Pipeline-Start getestet.
+- Vor realem Volvo-Test muss die geänderte Serverfunktion bereitgestellt werden; in diesem Auftrag wurde nichts deployed. Reale File-API-Reuse, persistierte Anbietertelemetrie und Detailtreue bleiben bis zum freigegebenen Lauf unbestätigt. „Vorhanden“ bestätigt eine explizite Originalrolle, nicht, dass das fotografierte Bauteil tatsächlich ausreichend sichtbar ist.
+
 ## Verbleibende Grenzen
 - V2-Pipeline-Start prüft alle ausgewählten Jobs mit derselben Evidence-Policy. Fehlende Rollen blockieren den Start; echte Detailoriginale können explizit zugeordnet oder betroffene Jobs bewusst abgewählt werden. Auswahl und Bild-/Kostenanzahl bleiben synchron. Diese Prüfung beurteilt Rollen, nicht den tatsächlichen Bildinhalt.
 - Jede gestartete V2-Pipeline besitzt einen eigenen Asset-/Source-ID-Cache inklusive paralleler Jobs und Wiederholungen. Vorhandene Gemini File URIs werden bevorzugt, erfolgreiche Uploads wiederverwendet; abweichende Bilddaten unter derselben ID werden abgelehnt. Separate Runs und einzelne Galerie-Neugenerierungen besitzen getrennte Caches. Ein fehlgeschlagener Upload bleibt für den Run beim bestehenden Inline-Fallback.
