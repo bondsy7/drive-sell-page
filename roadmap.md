@@ -199,7 +199,6 @@
 - [x] Einheitliche Serienbelichtung und Weißabgleich trotz unterschiedlicher Originalbelichtungen für alle NB21-V2-Ziele verankert; historische V1/2.0-Verträge unverändert
 - [x] 56 Regressionstests und gezielter Lint erfolgreich, Vorschau fehlerfrei; tatsächliche Bildwirkung nicht live getestet, keine bezahlte Generierung oder Bereitstellung
 
-## Kennzeichen und Wandbranding
 ## NB21 V3: minimale Referenzen und Kabinenübersicht
 - [ ] Referenzsets je Ansicht reduzieren; unnötige Innenraum-Assets und generierten Kontext vor Upload ausschließen
 - [ ] Kabinenübersicht als natürliche zentrierte Armaturenbrettaufnahme ohne erzwungene Vollsitz-/Rückbankdarstellung neu aufbauen

@@ -19,8 +19,11 @@ describe('nb21-v3 shot/framing contract', () => {
   it('full exterior views require the whole vehicle inside the frame with margin', () => {
     expect(v3Framing(base('CI_VOLVO_SIDE', 'exterior'))).toMatch(/never touch or cut the frame edge/);
   });
-  it('cabin views forbid cutting roof or seats', () => {
-    expect(v3Framing(base('CI_VOLVO_INT_CENTER', 'interior'))).toMatch(/Never cut seats or roof/);
+  it('overview preserves connected door and pillar structure without forcing whole seats in frame', () => {
+    const framing = v3Framing(base('CI_VOLVO_INT_CENTER', 'interior'));
+    expect(framing).toContain('Preserve visible door and pillar structure');
+    expect(framing).toContain('seats behind the camera remain physically present');
+    expect(framing).toContain('no cutaway or transparent surfaces');
   });
   it('edit mode keeps original framing and gets no synthesized camera', () => {
     expect(v3Framing(base('X', 'exterior', 'edit'))).toMatch(/exact original camera position/);
