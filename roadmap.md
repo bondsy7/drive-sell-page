@@ -206,6 +206,7 @@
 - [ ] Gemeinsame V3-Serverpolicy bereitstellen und tatsächlichen Bildaufbau nach ausdrücklicher Freigabe prüfen — keine Bereitstellung oder kostenpflichtige Generierung erlaubt
 
 ## Kennzeichen und Wandbranding
+- [ ] Ausgewählte Wandlogos auf rechteckigem Milchglas mit geraden Ecken und zwingenden Kennzeichenersatz im gemeinsamen Gestaltungsvertrag absichern und testen
 - [x] Kennzeichenassets strikt auf Kennzeichen begrenzen, Wandlogos nur bei expliziter Auswahl zulassen und Originalfoto-Branding ausschließen (V3 und aktuelle Standardverarbeitung; historische V1/V2 unverändert)
 - [x] 46 gezielte Tests und Scope-Lint erfolgreich; keine kostenpflichtige Generierung
 - [ ] Serverseitige Schutzregel bereitstellen und Bildwirkung prüfen — kein Deployment/Anbieteraufruf in diesem Auftrag
