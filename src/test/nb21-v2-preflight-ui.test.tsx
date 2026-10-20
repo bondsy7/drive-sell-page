@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, cleanup } from '@testing-library/react';
+import { fireEvent, render, screen, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { useState } from 'react';
 import Nb21V2ReferenceCheck from '@/components/Nb21V2ReferenceCheck';
@@ -25,8 +25,8 @@ it('manual assignment updates preflight and skipping removes the missing job', a
   render(<Harness />);
   expect(screen.getByRole('button', { name: 'Start' })).toBeDisabled();
   fireEvent.keyDown(screen.getByRole('combobox', { name: 'Detailbild 1 zuordnen' }), { key: 'ArrowDown' });
-  fireEvent.click(await screen.findByRole('option', { name: 'Kofferraum / Laderaum' }));
-  expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled();
+  fireEvent.keyDown(await screen.findByRole('option', { name: 'Kofferraum / Laderaum' }), { key: 'Enter' });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Start' }));
   expect(launch.mock.calls[0]?.[1][0].sourceRole).toBe('cargo');
 });
