@@ -169,6 +169,13 @@
 - [x] Vergleichsbild erstellen und konkrete NB-2.1-Verbesserungen planen; keine Implementierung oder kostenpflichtigen Läufe
 
 ## NB21 v2: Evidence-driven Umsetzung
+## NB21 v3: strikte Ansichten und Serienlicht
+- [ ] Eigenständige V3-Policies, sechs View-Contracts und harte serverseitige Evidenzprüfung ergänzen; V1/V2/2.0 unverändert
+- [ ] Explizite Testversionswahl, Startprüfung, run-spezifisches Lichtprofil und historische Regeneration anbinden
+- [ ] Ergebnisprovenienz, strukturierte manuelle Retry-Gründe und deaktivierten Harmonisierungspfad vorbereiten
+- [ ] Gezielte Tests, Lint, Deno-Check und kostenlose Bedienprüfung durchführen; keine Veröffentlichung oder Bildgenerierung
+
+## NB21 v2: Evidence-driven Umsetzung
 - [x] V1/2.0 erhalten; explizite V2-Contracts, semantische Ziele und Reference Manifest implementieren
 - [x] Original-/Kontext-Metadaten rückwärtskompatibel durch Capture, Pipeline und Regeneration führen
 - [x] Servervalidierung und tatsächliche Referenztelemetrie ergänzen
