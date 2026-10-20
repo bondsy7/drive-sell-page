@@ -1057,6 +1057,12 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
 </NO_LOGO_INSTRUCTION>` });
       console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
     }
+    if (customPlateImageBase64 || customPlateImageFileUri?.uri || oaFileId(customPlateOpenAIFile)) {
+      parts.push({ text: `<FINAL_BRANDING_CHECK>
+Before returning: (1) every visible license plate on the vehicle shows the LICENSE PLATE asset; (2) the LICENSE PLATE graphic appears NOWHERE else — not on the wall, glass panels or signage; (3) the wall shows ${hasAnyLogo ? 'ONLY the selected manufacturer/dealer logo assets on frosted-glass panels' : 'NO logo at all'}; (4) logos or signs from the original photos are not reproduced as wall branding. Fix any violation before returning.
+</FINAL_BRANDING_CHECK>` });
+    }
+
 
 
     // ── DEKRA scene asset: inject official logo as immutable reference ──
