@@ -5,6 +5,7 @@
  * Stored under vehicles.vehicle_data.__regenerationContext (merge-write).
  */
 import type { V2Reference } from '../../supabase/functions/_shared/nb21-v2-contract';
+import type { V3LightingProfile } from '../../supabase/functions/_shared/nb21-v3-lighting';
 import { supabase } from '@/integrations/supabase/client';
 import { SCENE_OPTIONS, type RemasterConfig } from '@/lib/remaster-prompt';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
@@ -28,6 +29,8 @@ export interface RegenerationContext {
   modelTier?: string;
   /** Prompt-Version des Laufs ('nb21-v1' für Nano Banana 2.1; fehlt = 2.0). */
   promptVersion?: string;
+  lightingProfile?: V3LightingProfile;
+  v3Metadata?: Record<string, unknown>;
   sourceSlot?: string;
   jobKey?: string;
   referenceSources?: Omit<V2Reference, 'image' | 'fileUri' | 'openAIFile'>[];
@@ -40,6 +43,8 @@ export function buildRegenerationContext(args: {
   vehicleDescription?: string;
   modelTier?: string;
   promptVersion?: string;
+  lightingProfile?: V3LightingProfile;
+  v3Metadata?: Record<string, unknown>;
   referenceSources?: Omit<V2Reference, 'image' | 'fileUri' | 'openAIFile'>[];
   resolvedManufacturerLogoUrl?: string | null;
 }): RegenerationContext {
@@ -60,6 +65,7 @@ export function buildRegenerationContext(args: {
     vehicleDescription: args.vehicleDescription,
     modelTier: args.modelTier,
     ...(args.promptVersion ? { promptVersion: args.promptVersion } : {}),
+    ...(args.promptVersion === 'nb21-v3' ? { lightingProfile: args.lightingProfile, v3Metadata: args.v3Metadata } : {}),
     ...(args.referenceSources ? { referenceSources: args.referenceSources } : {}),
     savedAt: new Date().toISOString(),
   };
@@ -71,6 +77,12 @@ export async function saveRegenerationContext(vehicleId: string, ctx: Regenerati
   // Preserve the previous known NB21 context on older results before the vehicle
   // default moves to V2. This is metadata only, not a result/price change.
   const previous = readRegenerationContext(current);
+  if (ctx.promptVersion === 'nb21-v3' && previous?.modelTier === 'nb21' && previous.promptVersion !== 'nb21-v3') {
+    const { error } = await supabase.from('project_images')
+      .update({ generation_context: { ...previous, promptVersion: previous.promptVersion ?? 'nb21-v1' } } as never)
+      .eq('vehicle_id', vehicleId).is('generation_context', null);
+    if (error) throw new Error('Historische NB21-Laufversion konnte nicht gesichert werden.');
+  }
   if (ctx.promptVersion === 'nb21-v2' && previous?.modelTier === 'nb21' && previous.promptVersion !== 'nb21-v2') {
     const { error } = await supabase.from('project_images')
       .update({ generation_context: { ...previous, promptVersion: previous.promptVersion ?? 'nb21-v1' } } as never)
