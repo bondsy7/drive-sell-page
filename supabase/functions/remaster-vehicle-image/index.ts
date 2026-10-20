@@ -1259,9 +1259,18 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
 
       const manifestText = usedLabels.map((l, i) => `IMAGE ${i + 1} = ${l}`).join('\n');
-      const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
+      const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Every image is preceded by its own tag. Use every image only for its tagged role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
+      // Interleave a role tag directly before each image so a plate graphic that
+      // looks like a logo can never be confused with the selected wall logo.
+      const interleaved: any[] = [];
+      contentImages.forEach((img, i) => {
+        interleaved.push({ type: 'input_text', text: `IMAGE ${i + 1} — ${usedLabels[i]}. ${brandingImageRoleNote(usedLabels[i])}` });
+        interleaved.push(img);
+      });
+      const brandingMap = buildBrandingImageMap(usedLabels);
+      if (brandingMap) interleaved.push({ type: 'input_text', text: brandingMap });
 
-      console.log(`[remaster][responses-image] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);
+      console.log(`[remaster][responses-image] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length} brandingMap=${brandingMap ? 'yes' : 'no'} labels=${usedLabels.map(l => l.split(' ')[0]).join(',')}`);
 
       const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.6-luna';
       const body = {
@@ -1269,7 +1278,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         input: [
           {
             role: 'user',
-            content: [{ type: 'input_text', text: finalPrompt }, ...contentImages],
+            content: [{ type: 'input_text', text: finalPrompt }, ...interleaved],
           },
         ],
         tools: [
