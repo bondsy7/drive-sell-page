@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame, FolderCheck, Sun } from 'lucide-react';
+import { Wand2, Upload, Camera, Zap, FolderCheck } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
 import type { ModelTier } from '@/components/ModelSelector';
-import { ADMIN_ONLY_TIERS } from '@/components/ModelSelector';
+import ModelSelector from '@/components/ModelSelector';
 
 interface ImageSourceChoiceProps {
   onChooseGenerate: (modelTier: ModelTier) => void;
@@ -13,22 +12,11 @@ interface ImageSourceChoiceProps {
   onChooseExisting?: () => void;
 }
 
-const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.ReactNode; group: string }[] = [
-  { id: 'schnell', label: 'Schnell', sublabel: 'schnell & günstig', icon: <Zap className="w-3 h-3" />, group: 'A' },
-  { id: 'qualitaet', label: 'Qualität', sublabel: 'ausgewogen', icon: <Sparkles className="w-3 h-3" />, group: 'A' },
-  { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" />, group: 'A' },
-  { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" />, group: 'B' },
-  { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
-  { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
-  { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" />, group: 'B' },
-  { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" />, group: 'B' },
-];
+
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture, existingGalleryCount = 0, onChooseExisting }) => {
   const { getCost, balance } = useCredits();
-  const isAdmin = useIsAdmin();
-  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
-  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
+  const [modelTier, setModelTier] = useState<ModelTier>('premium');
 
   const generateCost = getCost('image_generate', modelTier) * 7;
   const remasterCost = getCost('image_remaster', modelTier);
@@ -52,32 +40,9 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <span>Dein Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
         </div>
 
-        {/* Modell-Auswahl: aktuell nur für Admins sichtbar */}
-        {isAdmin && (
-        <div className="flex items-center justify-center gap-1 mt-3 p-1 rounded-lg bg-muted flex-wrap max-w-xl mx-auto">
-          {visibleTiers.map((tier, i) => {
-            const isActive = modelTier === tier.id;
-            const showDivider = i > 0 && visibleTiers[i - 1].group !== tier.group;
-            return (
-              <React.Fragment key={tier.id}>
-                {showDivider && <div className="w-px h-5 bg-border mx-0.5" />}
-                <button
-                  type="button"
-                  onClick={() => setModelTier(tier.id)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    isActive
-                      ? 'bg-accent text-accent-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {tier.icon}
-                  {tier.label}
-                </button>
-              </React.Fragment>
-            );
-          })}
+        <div className="mt-3 max-w-xl mx-auto">
+          <ModelSelector actionType="image_remaster" value={modelTier} onChange={setModelTier} />
         </div>
-        )}
       </div>
       {existingGalleryCount > 0 && onChooseExisting && (
         <div className="mb-4">

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, lazy, Suspense } from 'react';
-import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn, Sparkles, Zap, Crown, Rocket, Diamond, ArrowLeft, BadgePlus, Flame, Sun } from 'lucide-react';
+import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn, Sparkles, Zap, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -15,8 +15,7 @@ import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-uploa
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import type { PresetData } from './PresetSelectionModal';
 import type { ModelTier } from '@/components/ModelSelector';
-import { ADMIN_ONLY_TIERS } from '@/components/ModelSelector';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
+import ModelSelector from '@/components/ModelSelector';
 
 const PresetSelectionModal = lazy(() => import('./PresetSelectionModal'));
 const PlaceholderRenderer = lazy(() => import('./PlaceholderRenderer'));
@@ -39,16 +38,7 @@ const MAX_IMAGES = 20;
 const MAX_SIZE_MB = 10;
 const CONCURRENCY = 4;
 
-const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.ReactNode }[] = [
-  { id: 'schnell', label: 'Schnell', sublabel: 'schnell & günstig', icon: <Zap className="w-3 h-3" /> },
-  { id: 'qualitaet', label: 'Qualität', sublabel: 'ausgewogen', icon: <Sparkles className="w-3 h-3" /> },
-  { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" /> },
-  { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" /> },
-  { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" /> },
-  { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" /> },
-  { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" /> },
-  { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" /> },
-];
+
 
 // fileToBase64 and compressImageForAI imported from '@/lib/image-compress'
 
@@ -62,12 +52,10 @@ const DEFAULT_CONFIG: RemasterConfig = {
 
 const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack }) => {
   const { getCost, balance } = useCredits();
-  const isAdmin = useIsAdmin();
-  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
   const [step, setStep] = useState<'preset' | 'config' | 'upload' | 'processing' | 'done'>('preset');
   const [selectedPreset, setSelectedPreset] = useState<PresetData | null>(null);
   const [presetModalOpen, setPresetModalOpen] = useState(false);
-  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
+  const [modelTier, setModelTier] = useState<ModelTier>('premium');
   const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -251,37 +239,14 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
           </div>
         </div>
 
-        {/* Modell-Auswahl (Standard: Qualität = Nano Banana 2; Alternativen wie Flare vergleichbar) */}
+        {/* Modell-Auswahl */}
         <Card className="p-4 space-y-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Zap className="w-3 h-3 text-accent" />
             <span>Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
             <span className="ml-2">• {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild</span>
           </div>
-          {isAdmin && (
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
-            {visibleTiers.map((tier) => {
-              const isActive = modelTier === tier.id;
-              const tierCost = getCost('image_remaster', tier.id) || 1;
-              return (
-                <button
-                  key={tier.id}
-                  type="button"
-                  onClick={() => setModelTier(tier.id)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    isActive
-                      ? 'bg-accent text-accent-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {tier.icon}
-                  {tier.label}
-                  <span className="text-[10px] opacity-70">({tierCost} Cr.)</span>
-                </button>
-              );
-            })}
-          </div>
-          )}
+          <ModelSelector actionType="image_remaster" value={modelTier} onChange={setModelTier} />
         </Card>
 
         {/* Preset Selector */}
@@ -353,7 +318,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
           <div>
             <h2 className="font-display text-xl font-bold text-foreground">Bilder hochladen</h2>
             <p className="text-sm text-muted-foreground">
-              Preset: <strong>{selectedPreset?.name}</strong> • {modelTier} • {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild
+              Preset: <strong>{selectedPreset?.name}</strong> • {modelTier === 'flare' ? 'Advanced' : 'Premium'} • {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild
             </p>
           </div>
         </div>
