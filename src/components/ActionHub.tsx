@@ -13,6 +13,7 @@ import photoAsset from '@/assets/showroom-glanz.webp.asset.json';
 import marketingAsset from '@/assets/marketing-formate.webp.asset.json';
 import backgroundSwapAsset from '@/assets/hintergrund-1.jpg.asset.json';
 import { useAuto3Config } from '@/hooks/useAuto3Config';
+import GeneratorMaintenanceNotice from '@/components/GeneratorMaintenanceNotice';
 
 export type HubAction =
   | 'studio'
@@ -72,7 +73,7 @@ interface ActionHubProps {
 
 const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
   const { balance } = useCredits();
-  const { disabledModules } = useModuleAccess();
+  const { disabledModules, loading } = useModuleAccess();
   const { isConfigured: auto3Connected } = useAuto3Config();
 
   const availableTiles = TILES.filter((tile) => {
@@ -131,6 +132,9 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
   const remainingPhotoTiles = availableTiles.filter((tile) => tile.group === 'fahrzeugbilder' && tile.id !== 'photos' && tile.id !== 'studio' && tile.id !== 'background-swap');
   const remainingTiles = availableTiles.filter((tile) => tile.group !== 'fahrzeugbilder');
 
+  if (loading) return <p className="text-muted-foreground" role="status">Zugriff wird geprüft …</p>;
+  if (availableTiles.length === 0 && !auto3Connected) return <GeneratorMaintenanceNotice />;
+
   return (
     <div className="space-y-8 pb-8">
       <header className="flex flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
@@ -148,7 +152,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         </div>
       </header>
 
-      <section aria-labelledby="generator-photo-tools" className="space-y-4">
+      {(hero || studio || backgroundSwap || remainingPhotoTiles.length > 0) && <section aria-labelledby="generator-photo-tools" className="space-y-4">
         <div>
           <h2 id="generator-photo-tools" className="font-display text-xl font-bold text-foreground">Fahrzeugbilder</h2>
           <p className="text-xs text-muted-foreground">Aufnahmen optimieren und neue Perspektiven erstellen</p>
@@ -159,7 +163,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           {studio && <div className="lg:col-span-12">{renderTool(studio, true)}</div>}
           {remainingPhotoTiles.map((tile) => <div key={tile.id} className="lg:col-span-6">{renderTool(tile)}</div>)}
         </div>
-      </section>
+      </section>}
 
       {auto3Connected && (
         <section aria-labelledby="generator-auto3" className="space-y-4">
@@ -171,7 +175,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         </section>
       )}
 
-      <section aria-labelledby="generator-more-tools" className="space-y-4">
+      {remainingTiles.length > 0 && <section aria-labelledby="generator-more-tools" className="space-y-4">
         <div>
           <h2 id="generator-more-tools" className="font-display text-xl font-bold text-foreground">Weitere Werkzeuge</h2>
           <p className="text-xs text-muted-foreground">Werbung, Verkaufsseiten, Analyse und Beratung</p>
@@ -179,7 +183,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {remainingTiles.map((tile) => renderTool(tile))}
         </div>
-      </section>
+      </section>}
 
       <div className="flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>Ergebnisse stehen automatisch für passende Folgeaktionen bereit.</span>

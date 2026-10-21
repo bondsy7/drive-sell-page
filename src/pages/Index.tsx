@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button';
 import Auto3Center from '@/components/auto3/Auto3Center';
 import { MODULE_KEYS, useModuleAccess } from '@/hooks/useModuleAccess';
 import { allGeneratorModulesDisabled } from '@/lib/generator-access';
+import GeneratorMaintenanceNotice from '@/components/GeneratorMaintenanceNotice';
 
 type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis' | 'background-swap' | 'auto3';
 
@@ -838,12 +839,7 @@ const Index = () => {
           {moduleAccessLoading ? (
             <p className="text-muted-foreground">Zugriff wird geprüft …</p>
           ) : (
-            <section className="border-y border-border py-10 sm:py-16">
-              <h1 className="font-display text-2xl font-bold text-foreground">Technische Überarbeitung</h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-                Die Funktionen werden aktuell technisch überarbeitet und stehen Ihnen in Kürze wieder zur Verfügung.
-              </p>
-            </section>
+            <GeneratorMaintenanceNotice />
           )}
         </main>
       </div>

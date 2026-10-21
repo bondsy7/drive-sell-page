@@ -1,4 +1,5 @@
 ## DEKRA-Funktionspause (21.10.2026)
+- [ ] Leere Funktionsüberschriften entfernen, gemeinsamen Hinweis prüfen; veröffentlichte Seite benötigt anschließend Veröffentlichung.
 - [x] Alle 18 Module der drei DEKRA-Accounts gesperrt (je 0 Freigaben); Überarbeitungshinweis im angemeldeten DEKRA-Generator und direkten Foto-/Bannerzugängen geprüft; 6 Tests erfolgreich, Vorschau fehlerfrei.
 
 ## Bildpreise Premium und Advanced (21.10.2026)
