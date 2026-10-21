@@ -1717,6 +1717,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       {/* ─── STEP 3: Generierung ─── */}
       {step === 'generierung' && (
         <div className="space-y-5">
+          <ModelSelector actionType="image_remaster" value={modelTier} onChange={setModelTier} />
+
           {/* Cost summary */}
           <div className="rounded-xl border border-accent/30 bg-accent/5 p-4">
             <div className="flex items-start gap-3">
