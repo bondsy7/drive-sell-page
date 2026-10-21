@@ -6,16 +6,16 @@ describe('Fahrzeugart bleibt beim Neuaufbau der Fahrzeugdaten erhalten', () => {
   it('Lkw-Auswahl inkl. Konfiguration, Aufbau, Ladebereich und Bildinhalt bleibt erhalten', () => {
     const vd = {
       vehicleClass: 'truck',
-      truckConfiguration: 'rigid_truck_and_trailer_complete',
-      truckBodyType: 'box',
-      cargoState: 'loaded',
+      truckConfiguration: 'rigid_truck_with_trailer',
+      truckBodyType: 'box_closed',
+      cargoState: 'loaded_accessible',
       subjectScope: 'rigid_truck_and_trailer_complete',
     } as Partial<VehicleData>;
     const kept = preserveVehicleClassFields(vd);
     expect(kept.vehicleClass).toBe('truck');
-    expect(kept.truckConfiguration).toBe('rigid_truck_and_trailer_complete');
-    expect(kept.truckBodyType).toBe('box');
-    expect(kept.cargoState).toBe('loaded');
+    expect(kept.truckConfiguration).toBe('rigid_truck_with_trailer');
+    expect(kept.truckBodyType).toBe('box_closed');
+    expect(kept.cargoState).toBe('loaded_accessible');
     expect(kept.subjectScope).toBe('rigid_truck_and_trailer_complete');
   });
 
