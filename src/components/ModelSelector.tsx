@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useCredits } from '@/hooks/useCredits';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun, Banana } from 'lucide-react';
+import { Crown, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { resolveSelectableModelTier } from '@/lib/model-choice';
 
 export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst' | 'nb21';
 
@@ -13,35 +13,22 @@ interface ModelSelectorProps {
 }
 
 const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.ReactNode; group: string }[] = [
-  { id: 'schnell', label: 'Schnell', sublabel: 'schnell & günstig', icon: <Zap className="w-3 h-3" />, group: 'A' },
-  { id: 'qualitaet', label: 'Qualität', sublabel: 'ausgewogen', icon: <Sparkles className="w-3 h-3" />, group: 'A' },
-  { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" />, group: 'A' },
-  { id: 'nb21', label: 'NB 2.1 (Test)', sublabel: 'Nano Banana 2.1', icon: <Banana className="w-3 h-3" />, group: 'A' },
-  { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" />, group: 'B' },
-  { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
-  { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
-  { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" />, group: 'B' },
-  { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" />, group: 'B' },
+  { id: 'premium', label: 'Premium', sublabel: 'Standard', icon: <Crown className="w-3 h-3" />, group: 'A' },
+  { id: 'flare', label: 'Advanced', sublabel: 'Upgrade', icon: <Flame className="w-3 h-3" />, group: 'A' },
 ];
 
-// OpenAI-Testmodelle: aktuell nur für Admins sichtbar/änderbar
-export const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst', 'nb21'];
+export const ADMIN_ONLY_TIERS: ModelTier[] = [];
 
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();
-  const isAdmin = useIsAdmin();
 
   const visibleTiers = TIERS;
 
-  // Nicht-Admins nutzen immer das Standardmodell
+  // Hidden legacy choices are not selectable for new work; saved wire IDs stay valid.
   useEffect(() => {
-    if (!isAdmin && value !== 'qualitaet') {
-      onChange('qualitaet');
-    }
-  }, [isAdmin, value, onChange]);
-
-  // Die Modellauswahl ist aktuell nur für Admins sichtbar
-  if (!isAdmin) return null;
+    const selected = resolveSelectableModelTier(value);
+    if (value !== selected) onChange(selected);
+  }, [value, onChange]);
 
 
 
@@ -62,7 +49,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
                 onClick={() => onChange(tier.id)}
                 className={`h-auto flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                   isActive
-                    ? tier.id === 'premium' || tier.id === 'ultra' || tier.id === 'neu' || tier.id === 'flare' || tier.id === 'sunburst'
+                    ? tier.id === 'flare'
                       ? 'bg-accent text-accent-foreground shadow-sm'
                       : 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
