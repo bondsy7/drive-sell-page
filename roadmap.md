@@ -1,5 +1,5 @@
 ## DEKRA-Funktionspause (21.10.2026)
-- [ ] Alle Module der drei DEKRA-Accounts sperren und Generator inklusive Direktzugängen mit Überarbeitungshinweis prüfen.
+- [x] Alle 18 Module der drei DEKRA-Accounts gesperrt (je 0 Freigaben); Überarbeitungshinweis im angemeldeten DEKRA-Generator und direkten Foto-/Bannerzugängen geprüft; 6 Tests erfolgreich, Vorschau fehlerfrei.
 
 ## Bildpreise Premium und Advanced (21.10.2026)
 - [x] Premium/Advanced für Bildgenerierung und Remastering auf 1 Credit gesetzt; gespeicherte Preise, Auswahl und 18 Tests geprüft, ohne Bildgenerierung.
