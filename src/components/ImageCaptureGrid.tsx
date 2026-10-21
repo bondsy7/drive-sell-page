@@ -46,6 +46,7 @@ import type {
   VehicleClassContext,
 } from '@/config/vehicle-class-types';
 import { getVehicleClassProfile, resolveVehicleClass } from '@/config/vehicle-classes';
+import { preserveVehicleClassFields } from '@/lib/vehicle-class-persistence';
 import { resolveCaptureSlots } from '@/config/resolve-slots';
 import { isTruckSelectionComplete } from '@/config/truck-workflow';
 import { checkSourceCoverage } from '@/lib/source-coverage';
