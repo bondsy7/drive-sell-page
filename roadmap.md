@@ -1,3 +1,7 @@
+## Bildpreise Premium und Advanced (21.10.2026)
+- [x] Premium/Advanced für Bildgenerierung und Remastering auf 1 Credit gesetzt; gespeicherte Preise, Auswahl und 18 Tests geprüft, ohne Bildgenerierung.
+- [ ] Separate Referenz-V2-Funktion: neue tierbezogene Preisuntergrenze bereitstellen (wartet auf Deployment-Freigabe; normale Fahrzeuggenerierung/Remastering übernehmen bereits die gespeicherten Preise).
+
 - [x] Fahrzeugaufnahme exakt als kompaktes 736-px Single-Column-/Hybrid-Layout ohne Sidebar umsetzen
 - [x] Smartphone-Ansicht nach Referenz mit echten mobilen Sektionen und sticky Bottom Bar umsetzen
 - [x] Nur PKW, LKW und Motorrad zeigen; bestehende Logik vollständig erhalten

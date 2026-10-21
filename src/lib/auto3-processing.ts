@@ -7,6 +7,7 @@ import { buildTaskOutputLock } from '@/contexts/PipelineContext';
 import { composeOneShotHeroPrompt, buildBannerPrompt } from '@/lib/oneshot-prompts';
 import { DEFAULT_FORM, ONESHOT_BANNER_FORMATS, type BannerFormatId, type MarketingForm } from '@/components/oneshot/oneshot-types';
 import { selectInteriorReference, type MasterCandidate } from '../../supabase/functions/_shared/auto3-master';
+import { resolveRemasterCost } from '../../supabase/functions/_shared/remaster-cost';
 
 export type AutomationMode = 'off' | 'prepare' | 'full';
 export type ModelTierOption = 'schnell' | 'qualitaet' | 'premium';
@@ -69,7 +70,6 @@ export const MODEL_TIER_OPTIONS: { value: ModelTierOption; label: string }[] = [
 ];
 
 /** Same defaults the generators charge when admin_settings has no override. */
-const REMASTER_DEFAULT_COST: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5 };
 const BANNER_COST: Record<string, number> = { schnell: 3, qualitaet: 5, premium: 8 };
 export const VIDEO_COST = 17;
 
@@ -99,7 +99,8 @@ function outputCount(job: PipelineJob) { return 1 + (job.extraPrompts?.length ||
 export interface CostBreakdown { images: number; imageCost: number; banners: number; bannerCost: number; video: number; total: number; perImage: number }
 
 export function estimateJobCost(s: ProcessingSettings, getCost?: (action: string, tier: string) => number): CostBreakdown {
-  const perImage = Math.max(getCost?.('image_remaster', s.modelTier) || 0, REMASTER_DEFAULT_COST[s.modelTier] ?? 3);
+  const configured = getCost?.('image_remaster', s.modelTier);
+  const perImage = resolveRemasterCost(configured === undefined ? {} : { image_remaster: { [s.modelTier]: configured } }, s.modelTier);
   const jobs = ONESHOT_PERSPECTIVE_JOBS.filter((j) => s.perspectiveKeys.includes(j.key));
   const images = 1 + jobs.reduce((n, j) => n + outputCount(j), 0);
   const banners = effectiveBannerFormats(s).length;
