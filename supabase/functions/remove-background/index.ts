@@ -202,7 +202,17 @@ serve(async (req) => {
       if (res.status === 401 || res.status === 403) {
         return json({ error: "remove.bg API-Key ungültig oder ohne Berechtigung." }, 502);
       }
-      return json({ error: title || `remove.bg Fehler (${res.status})` }, res.status === 400 ? 400 : 502);
+      let code = "";
+      try { code = JSON.parse(detail)?.errors?.[0]?.code || ""; } catch { /* non-json */ }
+      if (res.status === 400) {
+        // Expected per-image outcome (e.g. no detectable vehicle): report as a
+        // handled result so the client marks only this photo as failed.
+        const msg = code === "unknown_foreground"
+          ? "Auf diesem Foto wurde kein Fahrzeug erkannt. Bitte ein Foto verwenden, auf dem das Fahrzeug deutlich und vollständig zu sehen ist."
+          : (title || "Dieses Foto konnte nicht verarbeitet werden.");
+        return json({ error: msg, code: code || "invalid_image" }, 200);
+      }
+      return json({ error: title || `remove.bg Fehler (${res.status})` }, 502);
     }
 
     const buf = new Uint8Array(await res.arrayBuffer());
