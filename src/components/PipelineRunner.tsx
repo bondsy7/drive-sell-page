@@ -84,7 +84,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   vehicleBrand,
   remasterConfig,
   classContext,
-  modelTier = 'standard',
+  modelTier = 'premium',
   projectId,
   vehicleId,
   vin,

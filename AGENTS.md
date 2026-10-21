@@ -18,5 +18,6 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Read nested `AGENTS.md` in `supabase/functions/` and `src/prompts/`. V3 is opt-in with side contracts, run lighting and job-minimal references; cabin overview preserves natural occlusion. Provenance keeps V1/V2 frozen and missing originals block dispatch.
 - Background-swap uses its own upload grid and slot-keyed originals, reusing only the car profile's visual perspectives; remastering requirements, reference-only roles and detection never apply to this independent processing flow.
 - Capture remasters save before delivery and skip saved IDs downstream; remaster prices share one resolver, preventing lost results, duplicates and price drift.
-- Detail intake uses Reference V2; manual roles win and file references are reused.
-- Shared branding scope enforces separate wall/plate placement; V3 filters selected assets to prevent source-logo leakage.
+- Detail intake uses Reference V2; manual roles win; reuse file references.
+- Shared branding scope separates wall/plate assets; V3 excludes source logos.
+- Reuse ModelSelector; retain saved tier IDs for reproducibility.

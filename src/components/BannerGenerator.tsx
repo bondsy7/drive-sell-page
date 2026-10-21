@@ -280,7 +280,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [dataSheetData, setDataSheetData] = useState<any>(null);
 
   // Generation
-  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
+  const [modelTier, setModelTier] = useState<ModelTier>('premium');
   const [variantCount, setVariantCount] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
@@ -1392,7 +1392,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           </p>
         </div>
 
-        {/* Model tier fixed to 'qualitaet' (Nano Banana 2). Fallback-Modelle laufen im Hintergrund. */}
+        <ModelSelector actionType="image_generate" value={modelTier} onChange={setModelTier} />
 
         {/* Variant Count */}
         <div className="space-y-1.5">

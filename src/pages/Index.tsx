@@ -197,7 +197,7 @@ const Index = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
-  const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('qualitaet');
+  const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('premium');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
@@ -398,12 +398,12 @@ const Index = () => {
   }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate, user, savedVehicleId, deepLinkVehicleId]);
 
   // ─── Image Generation (within PDF flow) ───
-  const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
+  const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'premium') => {
     if (!vehicleData) return;
     setSelectedModelTier(modelTier);
     const costPerImage = getCost('image_generate', modelTier) || 2;
     const totalCost = costPerImage * PERSPECTIVES.length;
-    const tierLabels: Record<ModelTier, string> = { schnell: 'Schnell', qualitaet: 'Qualität', premium: 'Premium', turbo: 'Turbo', ultra: 'Ultra', neu: 'Neu', flare: 'Flare', sunburst: 'Sunburst (Test)', nb21: 'NB 2.1 (Test)' };
+    const tierLabels: Record<ModelTier, string> = { schnell: 'Schnell', qualitaet: 'Qualität', premium: 'Premium', turbo: 'Turbo', ultra: 'Ultra', neu: 'Neu', flare: 'Advanced', sunburst: 'Sunburst (Test)', nb21: 'NB 2.1 (Test)' };
     setCreditDialog({
       open: true, cost: totalCost,
       label: `${PERSPECTIVES.length} Bilder generieren (${tierLabels[modelTier]})`,
@@ -411,7 +411,7 @@ const Index = () => {
     });
   }, [vehicleData, getCost]);
 
-  const doGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
+  const doGenerate = useCallback(async (modelTier: ModelTier = 'premium') => {
     if (!vehicleData) return;
     setAppState('generating-image');
     const total = PERSPECTIVES.length;
@@ -443,12 +443,12 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate, savedVehicleId, deepLinkVehicleId]);
 
-  const handleChooseUpload = useCallback((modelTier: ModelTier = 'schnell') => {
+  const handleChooseUpload = useCallback((modelTier: ModelTier = 'premium') => {
     setSelectedModelTier(modelTier);
     setAppState('uploading-images');
   }, []);
 
-  const handleChooseCapture = useCallback((modelTier: ModelTier = 'schnell') => {
+  const handleChooseCapture = useCallback((modelTier: ModelTier = 'premium') => {
     setSelectedModelTier(modelTier);
     setAppState('capturing-images' as any);
   }, []);

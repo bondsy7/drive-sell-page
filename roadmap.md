@@ -216,3 +216,7 @@
 - [x] Alle 21 benannten Fahrzeugzeilen und California-Zusatz der aktuellen Tabelle mit dem gesamten Originalexport abgeglichen; offene Namenszuordnungen ausdrücklich markiert
 - [x] Alle 152 Export-Originaldateien plus neun California-Originale, sämtliche Tabellenbefunde und vorhandene Ergebnisbelege in PDF-Version 2 aufgenommen; Nutzungslücken von Systemfehlern getrennt
 - [x] Alle 45 PDF-Seiten visuell geprüft, Dachzustand und Volvo-Bildbeschreibung korrigiert und Abdeckung geprüft; keine Neugenerierung
+
+## Öffentliche Modellauswahl
+- [x] Nur Premium und Advanced (bisher Flare) für alle anzeigen; Premium vorauswählen
+- [x] Angemeldete Auswahl Premium/Advanced und Umschalten im Aufnahmebereich geprüft; 14 Tests grün, Vorschau fehlerfrei; keine Bildgenerierung

@@ -284,7 +284,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const galleryFolderRef = useRef<string | null>(null);
   const galleryTargetsRef = useRef<Record<string, RemasterGalleryTarget>>({});
   const archivedOriginalsRef = useRef(new Set<string>());
-  const remasterCost = getCost('image_remaster', modelTier || 'standard');
+  const remasterCost = getCost('image_remaster', modelTier || 'premium');
   const pipeline = usePipeline();
   const [showPipeline, setShowPipeline] = useState(false);
 
@@ -956,7 +956,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             wheelReferenceBase64: slotWheelRef?.image || null,
             wheelReferenceAnalysis: slotWheelRef?.analysis || null,
             vehicleDescription,
-            modelTier: modelTier || 'standard',
+            modelTier: modelTier || 'premium',
             dynamicPrompt,
             ...(useNb21 ? { promptVersion: NB21_CURRENT_VERSION } : {}),
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
@@ -1052,7 +1052,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         wheelReferenceBase64: slotWheelRef?.image || null,
         wheelReferenceAnalysis: slotWheelRef?.analysis || null,
         vehicleDescription,
-        modelTier: modelTier || 'standard',
+        modelTier: modelTier || 'premium',
         dynamicPrompt,
         ...(useNb21 ? { promptVersion: NB21_CURRENT_VERSION } : {}),
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,

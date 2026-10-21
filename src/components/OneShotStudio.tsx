@@ -360,7 +360,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [wantVideo, setWantVideo] = useState(false);
   const [videoPrompt, setVideoPrompt] = useState('');
   // Model tier
-  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
+  const [modelTier, setModelTier] = useState<ModelTier>('premium');
 
   /* ─── Step 3: Generation runtime ─── */
   const [heroBase64, setHeroBase64] = useState<string | null>(null);
@@ -1717,6 +1717,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       {/* ─── STEP 3: Generierung ─── */}
       {step === 'generierung' && (
         <div className="space-y-5">
+          <ModelSelector actionType="image_remaster" value={modelTier} onChange={setModelTier} />
+
           {/* Cost summary */}
           <div className="rounded-xl border border-accent/30 bg-accent/5 p-4">
             <div className="flex items-start gap-3">
