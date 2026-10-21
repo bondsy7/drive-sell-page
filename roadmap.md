@@ -1,5 +1,6 @@
 ## DEKRA-Funktionspause (21.10.2026)
-- [ ] Leere Funktionsüberschriften entfernen, gemeinsamen Hinweis prüfen; veröffentlichte Seite benötigt anschließend Veröffentlichung.
+- [x] Leere Funktionsüberschriften entfernt; gemeinsamen Hinweis im angemeldeten DEKRA-Generator und Foto-Direktzugang geprüft; 3 Tests erfolgreich.
+- [ ] Hinweis auf app.autohaus.ai verfügbar machen — wartet auf Veröffentlichung der Seitenänderungen.
 - [x] Alle 18 Module der drei DEKRA-Accounts gesperrt (je 0 Freigaben); Überarbeitungshinweis im angemeldeten DEKRA-Generator und direkten Foto-/Bannerzugängen geprüft; 6 Tests erfolgreich, Vorschau fehlerfrei.
 
 ## Bildpreise Premium und Advanced (21.10.2026)
