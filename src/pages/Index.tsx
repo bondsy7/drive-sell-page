@@ -39,6 +39,8 @@ import ModelSelector from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Auto3Center from '@/components/auto3/Auto3Center';
+import { MODULE_KEYS, useModuleAccess } from '@/hooks/useModuleAccess';
+import { allGeneratorModulesDisabled } from '@/lib/generator-access';
 
 type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis' | 'background-swap' | 'auto3';
 
@@ -91,6 +93,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
 
 const Index = () => {
   const { user } = useAuth();
+  const { disabledModules, loading: moduleAccessLoading } = useModuleAccess();
   const { balance, getCost } = useCredits();
   const navigate = useNavigate();
   const { tool } = useParams<{ tool?: string }>();
@@ -826,6 +829,26 @@ const Index = () => {
     return () => clearTimeout(t);
   }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, selectedTemplate, appState]);
 
+
+  if (moduleAccessLoading || allGeneratorModulesDisabled(MODULE_KEYS, disabledModules)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="max-w-6xl mx-auto px-4 py-7 sm:py-10" aria-live="polite">
+          {moduleAccessLoading ? (
+            <p className="text-muted-foreground">Zugriff wird geprüft …</p>
+          ) : (
+            <section className="border-y border-border py-10 sm:py-16">
+              <h1 className="font-display text-2xl font-bold text-foreground">Technische Überarbeitung</h1>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
+                Die Funktionen werden aktuell technisch überarbeitet und stehen Ihnen in Kürze wieder zur Verfügung.
+              </p>
+            </section>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
