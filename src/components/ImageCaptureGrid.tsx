@@ -411,12 +411,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       // Fahrzeugart und Klassen-Konfiguration müssen erhalten bleiben –
       // sonst speichert das Fahrzeug still als Pkw und Lkw/Wohnmobil/Motorrad
       // laufen mit Pkw-Perspektiven und -Prompts.
-      vehicleClass: vd?.vehicleClass,
-      motorhomeBodyType: vd?.motorhomeBodyType ?? null,
-      truckConfiguration: vd?.truckConfiguration ?? null,
-      truckBodyType: vd?.truckBodyType ?? null,
-      cargoState: vd?.cargoState ?? null,
-      subjectScope: vd?.subjectScope ?? null,
+      ...preserveVehicleClassFields(vd),
       vehicle: {
         brand: vd?.vehicle?.brand || '',
         model: vd?.vehicle?.model || '',
