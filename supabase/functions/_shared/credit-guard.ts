@@ -2,6 +2,7 @@
 // Regel: Keine KI-Generierung ohne vorherigen Credit-Abzug.
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getPlanSlug, planAllowsAction } from "./plan-scope.ts";
+import { creditCostFloor } from "./image-credit-floor.ts";
 
 /**
  * Mindestpreise je Aktionsart (in Credits, 1 Credit = 0,50 € Verkaufserlös).
@@ -67,7 +68,7 @@ async function resolveCost(
   } catch (_e) {
     configured = undefined;
   }
-  const floor = MIN_CREDIT_COST[actionType] ?? FALLBACK_COST;
+  const floor = creditCostFloor(actionType, tier, MIN_CREDIT_COST[actionType] ?? FALLBACK_COST);
   return Math.max(floor, configured ?? 0);
 }
 
