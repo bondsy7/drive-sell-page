@@ -1,3 +1,6 @@
+## DEKRA-Funktionspause (21.10.2026)
+- [ ] Alle Module der drei DEKRA-Accounts sperren und Generator inklusive Direktzugängen mit Überarbeitungshinweis prüfen.
+
 ## Bildpreise Premium und Advanced (21.10.2026)
 - [x] Premium/Advanced für Bildgenerierung und Remastering auf 1 Credit gesetzt; gespeicherte Preise, Auswahl und 18 Tests geprüft, ohne Bildgenerierung.
 - [ ] Separate Referenz-V2-Funktion: neue tierbezogene Preisuntergrenze bereitstellen (wartet auf Deployment-Freigabe; normale Fahrzeuggenerierung/Remastering übernehmen bereits die gespeicherten Preise).
