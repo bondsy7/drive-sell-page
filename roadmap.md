@@ -1,3 +1,6 @@
+## Bildpreise Premium und Advanced (21.10.2026)
+- [ ] Bildgenerierung und Remastering auf jeweils 1 Credit setzen und Anzeige/Abrechnung prüfen.
+
 - [x] Fahrzeugaufnahme exakt als kompaktes 736-px Single-Column-/Hybrid-Layout ohne Sidebar umsetzen
 - [x] Smartphone-Ansicht nach Referenz mit echten mobilen Sektionen und sticky Bottom Bar umsetzen
 - [x] Nur PKW, LKW und Motorrad zeigen; bestehende Logik vollständig erhalten
