@@ -46,6 +46,7 @@ import type {
   VehicleClassContext,
 } from '@/config/vehicle-class-types';
 import { getVehicleClassProfile, resolveVehicleClass } from '@/config/vehicle-classes';
+import { preserveVehicleClassFields } from '@/lib/vehicle-class-persistence';
 import { resolveCaptureSlots } from '@/config/resolve-slots';
 import { isTruckSelectionComplete } from '@/config/truck-workflow';
 import { checkSourceCoverage } from '@/lib/source-coverage';
@@ -408,6 +409,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const vd = latestVehicleDataRef.current;
     return {
       category: vd?.category || 'Kauf',
+      // Fahrzeugart und Klassen-Konfiguration müssen erhalten bleiben –
+      // sonst speichert das Fahrzeug still als Pkw und Lkw/Wohnmobil/Motorrad
+      // laufen mit Pkw-Perspektiven und -Prompts.
+      ...preserveVehicleClassFields(vd),
       vehicle: {
         brand: vd?.vehicle?.brand || '',
         model: vd?.vehicle?.model || '',

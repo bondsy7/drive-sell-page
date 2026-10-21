@@ -224,3 +224,8 @@
 ## Öffentliche Modellauswahl
 - [x] Nur Premium und Advanced (bisher Flare) für alle anzeigen; Premium vorauswählen
 - [x] Angemeldete Auswahl Premium/Advanced und Umschalten im Aufnahmebereich geprüft; 14 Tests grün, Vorschau fehlerfrei; keine Bildgenerierung
+
+## Fahrzeugart bleibt gespeichert (Lkw mit Advanced)
+- [x] Fehler gefunden: Beim Neuaufbau der Fahrzeugdaten gingen Fahrzeugart und Lkw-Konfiguration verloren, das Fahrzeug speicherte still als Pkw
+- [x] Gemeinsame Erhaltungsregel für Fahrzeugart, Aufbautyp und Lkw-Konfiguration eingeführt und im Aufnahmebereich angewendet; 4 neue Tests plus 16 Bestandstests grün
+- [ ] Echten Lkw-Lauf mit Advanced nach Bereitstellung der Bildfunktion prüfen — keine kostenpflichtige Generierung ohne Freigabe
