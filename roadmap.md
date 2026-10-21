@@ -219,4 +219,4 @@
 
 ## Öffentliche Modellauswahl
 - [x] Nur Premium und Advanced (bisher Flare) für alle anzeigen; Premium vorauswählen
-- [ ] Auswahl und Modellweitergabe ohne Bildgenerierung prüfen
+- [x] Angemeldete Auswahl Premium/Advanced und Umschalten im Aufnahmebereich geprüft; 14 Tests grün, Vorschau fehlerfrei; keine Bildgenerierung

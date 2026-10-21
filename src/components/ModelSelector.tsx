@@ -17,8 +17,6 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
   { id: 'flare', label: 'Advanced', sublabel: 'Upgrade', icon: <Flame className="w-3 h-3" />, group: 'A' },
 ];
 
-export const ADMIN_ONLY_TIERS: ModelTier[] = [];
-
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();
 
