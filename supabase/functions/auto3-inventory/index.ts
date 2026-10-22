@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
       .eq("id", userId).maybeSingle();
     const tenantUrl = normalizeTenantUrl(profile?.auto3_tenant_url)
       || (profile?.auto3_account_email ? LEGACY_AUTO3_X_BASEURL : null);
-    if (!tenantUrl) return json({ error: "Bitte zuerst im Profil die Auto3-Händler-URL verbinden." }, 409);
+    if (!tenantUrl) return json({ error: "Bitte zuerst im Profil die Auto3-Händler-URL verbinden.", code: "no_tenant" }, action === "live_list" ? 200 : 409);
 
     // Lightweight live inventory for landing-page blocks: listing only, no VIN, no detail calls.
     if (action === "live_list") {
