@@ -272,6 +272,30 @@ Deno.serve(async (req) => {
       || (profile?.auto3_account_email ? LEGACY_AUTO3_X_BASEURL : null);
     if (!tenantUrl) return json({ error: "Bitte zuerst im Profil die Auto3-Händler-URL verbinden." }, 409);
 
+    // Lightweight live inventory for landing-page blocks: listing only, no VIN, no detail calls.
+    if (action === "live_list") {
+      const raws: Raw[] = [];
+      for (let page = 0; page < 20; page++) {
+        const r = await auto3Get(`/v1/vehicle/vehicle/buy?page=${page}&pageSize=100&includeImages=true`, tenantUrl);
+        raws.push(...((r?.content || []) as Raw[]));
+        if (page + 1 >= (r?.totalPages ?? 1)) break;
+      }
+      const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null; };
+      const items = raws.map((r) => ({
+        ...summary(r),
+        priceEur: n(r.price) ? Math.round(Number(r.price) / 100) : null,
+        monthlyRate: n(r.financing?.monthlyRate),
+        mileage: n(r.mileage),
+        firstRegistration: r.firstRegistration ?? null,
+        fuelType: r.vehicleModel?.fuelType ?? null,
+        powerKw: n(r.vehicleModel?.kwpower),
+        powerPs: n(r.vehicleModel?.horsePower),
+        emissionText: typeof r.emissionText === "string" ? r.emissionText : null,
+      }));
+      console.log(`[auto3-inventory] live_list user=${userId} total=${items.length}`);
+      return json({ items, total: items.length, tenantUrl });
+    }
+
     if (action === "list") {
       const raws: Raw[] = [];
       for (let page = 0; page < 20; page++) {

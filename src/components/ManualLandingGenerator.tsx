@@ -15,6 +15,7 @@ import { useSearchParams } from 'react-router-dom';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
+import LiveVehiclesBlock, { DEFAULT_LIVE_INVENTORY, type LiveInventoryConfig } from '@/components/landing/LiveVehiclesBlock';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -76,6 +77,9 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const [tone, setTone] = useState('professionell');
   const [imageStyle, setImageStyle] = useState('studio');
   const [highlights, setHighlights] = useState('');
+
+  // Step 3: Live-Fahrzeuge (rule only, resolved live at render time)
+  const [liveInventory, setLiveInventory] = useState<LiveInventoryConfig>(DEFAULT_LIVE_INVENTORY);
   
   // Image uploads (max 5) – preview can be a blob URL (file) or remote URL (vehicle asset)
   const [uploadedImages, setUploadedImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
@@ -279,6 +283,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             dealer,
             brandLogoUrl: data.brandLogoUrl || '',
             vehicleId: effectiveVehicleId,
+            liveInventory: liveInventory.enabled ? liveInventory : null,
           } as any,
           template_id: 'landing-page',
           html_content: data.html,
@@ -553,6 +558,9 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           <p className="text-[10px] text-muted-foreground">Eigene Bilder werden priorisiert, fehlende werden KI-generiert. Tipp: Motor, Innenraum, Heck etc. hochladen für passende Section-Bilder.</p>
         </div>
       </div>
+
+      {/* Step 3: Live-Fahrzeuge */}
+      <LiveVehiclesBlock value={liveInventory} onChange={setLiveInventory} disabled={loading} suggestedBrand={brand} />
 
       {/* Generate Button */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
