@@ -233,12 +233,17 @@ Deno.serve(async (req) => {
     const userId = claims?.claims?.sub as string | undefined;
     if (authErr || !userId) return json({ error: "Nicht angemeldet" }, 401);
 
-    const { data: access } = await sb.from("user_module_access").select("enabled")
-      .eq("user_id", userId).eq("module_key", MODULE).maybeSingle();
-    if (!access?.enabled) return json({ error: "Auto3-Bestand ist für dieses Konto nicht freigeschaltet." }, 403);
-
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
+    // Read-only live listing for landing pages is also allowed for the landing-page module.
+    const allowedModules = action === "live_list" ? [MODULE, "manual-landing"] : [MODULE];
+    const { data: accessRows } = await sb.from("user_module_access").select("enabled")
+      .eq("user_id", userId).in("module_key", allowedModules);
+    if (!(accessRows || []).some((r) => r.enabled)) {
+      const msg = "Auto3-Bestand ist für dieses Konto nicht freigeschaltet.";
+      // live_list answers 200 so the editor shows a hint instead of a runtime error.
+      return action === "live_list" ? json({ error: msg, code: "forbidden" }) : json({ error: msg }, 403);
+    }
 
     const normalizeTenantUrl = (value: unknown): string | null => {
       try {
@@ -270,7 +275,7 @@ Deno.serve(async (req) => {
       .eq("id", userId).maybeSingle();
     const tenantUrl = normalizeTenantUrl(profile?.auto3_tenant_url)
       || (profile?.auto3_account_email ? LEGACY_AUTO3_X_BASEURL : null);
-    if (!tenantUrl) return json({ error: "Bitte zuerst im Profil die Auto3-Händler-URL verbinden." }, 409);
+    if (!tenantUrl) return json({ error: "Bitte zuerst im Profil die Auto3-Händler-URL verbinden.", code: "no_tenant" }, action === "live_list" ? 200 : 409);
 
     // Lightweight live inventory for landing-page blocks: listing only, no VIN, no detail calls.
     if (action === "live_list") {
