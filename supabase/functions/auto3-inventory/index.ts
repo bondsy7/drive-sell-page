@@ -334,20 +334,26 @@ Deno.serve(async (req) => {
         try {
           const d = await detail(extId, tenantUrl);
           if (!d || String(d.id) !== extId) { results.push({ externalVehicleId: extId, ok: false, error: "Fahrzeug nicht im Auto3-Bestand gefunden" }); continue; }
-          const { vin } = extractVin(d);
-          if (!vin) { results.push({ externalVehicleId: extId, ok: false, error: "Keine gültige 17-stellige VIN – nicht importiert" }); continue; }
+          const { vin: realVin } = extractVin(d);
           const s = summary(d);
           const media = mediaList(d);
-          const rec = mapAuto3Record(d, vin);
-          const { data: ext } = await sb.from("vehicles").select("id, vehicle_data").eq("user_id", userId)
+          const { data: ext } = await sb.from("vehicles").select("id, vin, vehicle_data").eq("user_id", userId)
             .eq("source_system", SOURCE).eq("external_vehicle_id", extId).maybeSingle();
-          const { data: byVin } = await sb.from("vehicles").select("id, vehicle_data, source_system, external_vehicle_id")
-            .eq("user_id", userId).eq("vin", vin).maybeSingle();
-          if (byVin && byVin.external_vehicle_id && byVin.external_vehicle_id !== extId) {
-            results.push({ externalVehicleId: extId, ok: false, error: `Konflikt: Diese VIN ist bereits Auto3-ID ${byVin.external_vehicle_id} zugeordnet` }); continue;
-          }
-          if (ext && byVin && ext.id !== byVin.id) {
-            results.push({ externalVehicleId: extId, ok: false, error: "Konflikt: Auto3-ID und VIN gehören zu verschiedenen Fahrzeugakten" }); continue;
+          // Missing VIN is only a hint: keep an existing VIN, else a stable per-Auto3-ID placeholder (column is NOT NULL + unique).
+          const vin = realVin || (ext?.vin as string | undefined) || `NOVIN-AUTO3-${extId}`;
+          const vinMissing = !realVin;
+          const rec = mapAuto3Record(d, realVin || "");
+          let byVin: Raw | null = null;
+          if (realVin) {
+            const { data } = await sb.from("vehicles").select("id, vehicle_data, source_system, external_vehicle_id")
+              .eq("user_id", userId).eq("vin", realVin).maybeSingle();
+            byVin = data;
+            if (byVin && byVin.external_vehicle_id && byVin.external_vehicle_id !== extId) {
+              results.push({ externalVehicleId: extId, ok: false, error: `Konflikt: Diese VIN ist bereits Auto3-ID ${byVin.external_vehicle_id} zugeordnet` }); continue;
+            }
+            if (ext && byVin && ext.id !== byVin.id) {
+              results.push({ externalVehicleId: extId, ok: false, error: "Konflikt: Auto3-ID und VIN gehören zu verschiedenen Fahrzeugakten" }); continue;
+            }
           }
           const existing = (ext || byVin) as Raw | null;
           const prev = (existing?.vehicle_data || {}) as Raw;
