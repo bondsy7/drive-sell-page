@@ -21,7 +21,7 @@ interface Item {
 }
 
 const STATUS_LABEL: Record<Status, string> = {
-  no_vin: 'Keine VIN (nicht importierbar)', not_imported: 'Nicht importiert', imported: 'Importiert',
+  no_vin: 'Nicht importiert', not_imported: 'Nicht importiert', imported: 'Importiert',
   assets: 'Pipeline/Assets vorhanden', website_draft: 'Website Entwurf', website_live: 'Website Live',
 };
 
@@ -107,13 +107,14 @@ export default function Auto3InventoryPanel() {
 
   const visible = useMemo(() => (items || []).filter((i) => {
     if (filter === 'open' && i.status !== 'not_imported') return false;
-    if (filter === 'no_vin' && i.status !== 'no_vin') return false;
+    if (filter === 'no_vin' && i.vinValid) return false;
     if (filter === 'imported' && ['no_vin', 'not_imported'].includes(i.status)) return false;
     const s = `${i.brand} ${i.model} ${i.variant} ${i.internalNumber} ${i.externalVehicleId}`.toLowerCase();
     return s.includes(q.toLowerCase());
   }), [items, q, filter]);
 
-  const importable = (i: Item) => i.vinValid && !i.conflict && ['not_imported', 'imported'].includes(i.status);
+  // Missing VIN is only a hint, never an import blocker.
+  const importable = (i: Item) => !i.conflict && ['not_imported', 'imported', 'no_vin'].includes(i.status);
   const toggle = (id: string) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   return (
@@ -159,11 +160,13 @@ export default function Auto3InventoryPanel() {
                     Auto3-ID {i.externalVehicleId}{i.internalNumber ? ` · Nr. ${i.internalNumber}` : ''}{i.year ? ` · ${i.year}` : ''}{i.used != null ? ` · ${i.used ? 'Gebraucht' : 'Neu'}` : ''}
                     {i.vinMasked ? ` · VIN ${i.vinMasked}` : ''}
                   </div>
+                  {!i.vinValid && <div className="text-xs text-muted-foreground">Hinweis: Auto3 liefert für dieses Fahrzeug keine VIN – Import ist trotzdem möglich.</div>}
                   {i.conflict && <div className="text-xs text-destructive">{i.conflict}</div>}
                   {i.vehicleId && jobs[i.vehicleId] && <div className={`text-xs ${['paused', 'failed'].includes(jobs[i.vehicleId].status) ? 'text-destructive' : 'text-primary'}`}>{jobStatusLabel(jobs[i.vehicleId], jobs[i.vehicleId].originals)}</div>}
                 </div>
-                <Badge variant={i.status === 'website_live' ? 'default' : i.status === 'no_vin' ? 'outline' : 'secondary'} className="shrink-0">{STATUS_LABEL[i.status]}</Badge>
-                {i.vehicleId && i.status !== 'no_vin' && (
+                {!i.vinValid && <Badge variant="outline" className="shrink-0">Keine VIN</Badge>}
+                <Badge variant={i.status === 'website_live' ? 'default' : 'secondary'} className="shrink-0">{STATUS_LABEL[i.status]}</Badge>
+                {i.vehicleId && (
                   <Button asChild size="sm" variant={jobs[i.vehicleId] ? 'default' : 'outline'}>
                     <Link to={`/vehicle/${i.vehicleId}`}>{!jobs[i.vehicleId] ? 'Masterbild bestimmen' : jobs[i.vehicleId].status === 'master_selected' ? 'Jetzt automatisch aufbereiten' : ['paused', 'failed'].includes(jobs[i.vehicleId].status) ? 'Erneut versuchen' : 'Job ansehen'}</Link>
                   </Button>
