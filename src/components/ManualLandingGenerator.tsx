@@ -29,6 +29,7 @@ const PAGE_TYPES = [
 ];
 
 const TARGET_AUDIENCES = [
+  { value: 'alle', label: 'Alle' },
   { value: 'privat', label: 'Privatkunden' },
   { value: 'gewerbe', label: 'Gewerbekunden' },
   { value: 'jung', label: 'Junge Fahrer' },
@@ -241,7 +242,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       const { data, error } = await supabase.functions.invoke('generate-landing-page', {
         body: {
           brand, model, pageType,
-          variant, color, price, targetAudience, tone, imageStyle,
+          variant, color, price, targetAudience: targetAudience === 'alle' ? '' : targetAudience, tone, imageStyle,
           additionalInfo: highlights,
           dealer,
           uploadedImages: uploadedBase64,
@@ -278,7 +279,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           vehicle_data: {
             type: 'landing-page',
             brand, model, variant,
-            pageType, targetAudience, tone, imageStyle, color, price,
+            pageType, targetAudience: targetAudience === 'alle' ? '' : targetAudience, tone, imageStyle, color, price,
             pageContent: data.pageContent,
             imageMap: data.imageMap || {},
             dealer,
