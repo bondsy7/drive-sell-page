@@ -275,6 +275,10 @@ const PAGE_TYPES: Record<string, PageTypeConfig> = {
     label: "Fahrzeug-Release / Premiere", sectionCount: 10, imageCount: 8,
     systemInstruction: "Erstelle eine spektakuläre Release-Seite. Strukturiere: Hero → Design-Philosophie (content, Bild!) → Exterieur-Details (content, Bild!) → Motor & Performance (content, Bild!) → Interieur & Technologie (content, Bild!) → Konnektivität & Assistenzsysteme (content, Bild!) → Technische Daten (specs, Bild!) → Vergleich zum Vorgänger (comparison) → Vorbestellung (benefits) → CTA.",
   },
+  seo_modell: {
+    label: "SEO-Modellseite", sectionCount: 11, imageCount: 7,
+    systemInstruction: "Erstelle eine umfassende, suchmaschinenoptimierte Modellseite (Ratgeber-Charakter, Helpful Content) zum genannten Fahrzeugmodell – kein einzelnes Angebot, sondern das Modell als Ganzes. Nutze Marke + Modell natürlich in Überschriften (H1/H2) und Fließtext, inklusive typischer Suchbegriffe (z. B. '[Modell] kaufen', '[Modell] Leasing', '[Modell] Reichweite/Verbrauch', '[Modell] Ausstattung', '[Modell] Preis'), ohne Keyword-Stuffing. Strukturiere: Hero (Modellname + Kernnutzen) → Modellüberblick: Was ist der [Modell]? (content, Bild!) → Design & Exterieur (content, Bild!) → Interieur, Platz & Alltagstauglichkeit (content, Bild!) → Motorisierungen & Antriebe (content, Bild!) → Ausstattungslinien & Varianten (benefits) → Technologie, Konnektivität & Assistenzsysteme (content, Bild!) → Technische Daten (specs, Bild!) → Vergleich mit Wettbewerbern im Segment (comparison) → Häufige Fragen zum [Modell] mit ausführlichen Antworten (faq, mind. 6 Fragen) → CTA (Probefahrt / Beratung / Bestand ansehen). Erfinde keine konkreten Preise, Verbrauchs-, CO₂- oder Leistungswerte; nenne nur allgemein bekannte Modellfakten und formuliere unsichere Angaben vorsichtig ('je nach Ausstattung', 'laut Hersteller').",
+  },
 };
 
 serve(async (req) => {

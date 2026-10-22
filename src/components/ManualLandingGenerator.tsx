@@ -25,6 +25,7 @@ const PAGE_TYPES = [
   { value: 'autoabo', label: 'Auto-Abo', desc: 'All-inclusive, flexibel', icon: '🔄' },
   { value: 'event', label: 'Event im Autohaus', desc: 'Einladung zu Veranstaltung', icon: '🎉' },
   { value: 'release', label: 'Fahrzeug-Release', desc: 'Premiere & Vorbestellung', icon: '✨' },
+  { value: 'seo_modell', label: 'SEO-Modellseite', desc: 'Ratgeber & SEO-Texte zum Modell', icon: '🔎' },
 ];
 
 const TARGET_AUDIENCES = [
