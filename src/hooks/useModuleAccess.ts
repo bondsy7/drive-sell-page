@@ -59,6 +59,7 @@ export const MODULE_CHILDREN: Partial<Record<ModuleKey, ModuleKey[]>> = {
 export const MODULE_DEFAULT_DISABLED: Set<ModuleKey> = new Set<ModuleKey>([
   'remaster-cleanup',
   'website-publishing',
+  'manual-landing',
 ]);
 
 
