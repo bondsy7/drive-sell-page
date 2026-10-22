@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
           }
         }
         const linked = !!v && v.source_system === SOURCE && v.external_vehicle_id === s.externalVehicleId;
-        const status = !vin ? "no_vin" : !linked ? "not_imported"
+        const status = !linked ? "not_imported"
           : pubMap.get(v!.id) === "live" ? "website_live"
           : pubMap.get(v!.id) === "draft" ? "website_draft"
           : assetSet.has(v!.id) ? "assets" : "imported";
@@ -334,20 +334,26 @@ Deno.serve(async (req) => {
         try {
           const d = await detail(extId, tenantUrl);
           if (!d || String(d.id) !== extId) { results.push({ externalVehicleId: extId, ok: false, error: "Fahrzeug nicht im Auto3-Bestand gefunden" }); continue; }
-          const { vin } = extractVin(d);
-          if (!vin) { results.push({ externalVehicleId: extId, ok: false, error: "Keine gültige 17-stellige VIN – nicht importiert" }); continue; }
+          const { vin: realVin } = extractVin(d);
           const s = summary(d);
           const media = mediaList(d);
-          const rec = mapAuto3Record(d, vin);
-          const { data: ext } = await sb.from("vehicles").select("id, vehicle_data").eq("user_id", userId)
+          const { data: ext } = await sb.from("vehicles").select("id, vin, vehicle_data").eq("user_id", userId)
             .eq("source_system", SOURCE).eq("external_vehicle_id", extId).maybeSingle();
-          const { data: byVin } = await sb.from("vehicles").select("id, vehicle_data, source_system, external_vehicle_id")
-            .eq("user_id", userId).eq("vin", vin).maybeSingle();
-          if (byVin && byVin.external_vehicle_id && byVin.external_vehicle_id !== extId) {
-            results.push({ externalVehicleId: extId, ok: false, error: `Konflikt: Diese VIN ist bereits Auto3-ID ${byVin.external_vehicle_id} zugeordnet` }); continue;
-          }
-          if (ext && byVin && ext.id !== byVin.id) {
-            results.push({ externalVehicleId: extId, ok: false, error: "Konflikt: Auto3-ID und VIN gehören zu verschiedenen Fahrzeugakten" }); continue;
+          // Missing VIN is only a hint: keep an existing VIN, else a stable per-Auto3-ID placeholder (column is NOT NULL + unique).
+          const vin = realVin || (ext?.vin as string | undefined) || `NOVIN-AUTO3-${extId}`;
+          const vinMissing = !realVin;
+          const rec = mapAuto3Record(d, realVin || "");
+          let byVin: Raw | null = null;
+          if (realVin) {
+            const { data } = await sb.from("vehicles").select("id, vehicle_data, source_system, external_vehicle_id")
+              .eq("user_id", userId).eq("vin", realVin).maybeSingle();
+            byVin = data;
+            if (byVin && byVin.external_vehicle_id && byVin.external_vehicle_id !== extId) {
+              results.push({ externalVehicleId: extId, ok: false, error: `Konflikt: Diese VIN ist bereits Auto3-ID ${byVin.external_vehicle_id} zugeordnet` }); continue;
+            }
+            if (ext && byVin && ext.id !== byVin.id) {
+              results.push({ externalVehicleId: extId, ok: false, error: "Konflikt: Auto3-ID und VIN gehören zu verschiedenen Fahrzeugakten" }); continue;
+            }
           }
           const existing = (ext || byVin) as Raw | null;
           const prev = (existing?.vehicle_data || {}) as Raw;
@@ -358,7 +364,8 @@ Deno.serve(async (req) => {
             vehicle: { ...(prev.vehicle || {}), ...nested.vehicle },
             consumption: { ...(prev.consumption || {}), ...nested.consumption },
             finance: { ...(prev.finance || {}), ...nested.finance },
-            auto3Import: { ...(prev.auto3Import || {}), status: "importing_images", mediaTotal: media.length, dataImportedAt: new Date().toISOString() },
+            vin: realVin || (vin.startsWith("NOVIN-") ? "" : vin),
+            auto3Import: { ...(prev.auto3Import || {}), status: "importing_images", vinMissing, mediaTotal: media.length, dataImportedAt: new Date().toISOString() },
           };
           const columns = {
             vin, brand: rec.brand || null, model: rec.model || null, year: Number(rec.year) || null,
@@ -375,10 +382,12 @@ Deno.serve(async (req) => {
             const { data, error } = await sb.from("vehicles").insert({ user_id: userId, ...columns }).select("id").single();
             if (error) throw error; vehicleId = data.id; created = true;
           }
-          const { error: cacheErr } = await sb.from("vehicle_data_cache").upsert([{ user_id: userId, vin, data: rec }], { onConflict: "user_id,vin" });
-          if (cacheErr) console.warn(`[auto3-inventory] cache ext=${extId}`, cacheErr.message);
-          console.log(`[auto3-inventory] import-data user=${userId} ext=${extId} vehicle=${vehicleId} fields=${Object.keys(rec).length} media=${media.length} created=${created}`);
-          results.push({ externalVehicleId: extId, ok: true, vehicleId, created, fieldCount: Object.keys(rec).length, mediaTotal: media.length });
+          if (realVin) {
+            const { error: cacheErr } = await sb.from("vehicle_data_cache").upsert([{ user_id: userId, vin: realVin, data: rec }], { onConflict: "user_id,vin" });
+            if (cacheErr) console.warn(`[auto3-inventory] cache ext=${extId}`, cacheErr.message);
+          }
+          console.log(`[auto3-inventory] import-data user=${userId} ext=${extId} vehicle=${vehicleId} fields=${Object.keys(rec).length} media=${media.length} created=${created} vinMissing=${vinMissing}`);
+          results.push({ externalVehicleId: extId, ok: true, vehicleId, created, vinMissing, fieldCount: Object.keys(rec).length, mediaTotal: media.length });
         } catch (e) {
           console.error(`[auto3-inventory] import ext=${extId}`, e);
           results.push({ externalVehicleId: extId, ok: false, error: "Import fehlgeschlagen" });
