@@ -192,12 +192,17 @@ const SectionShell: React.FC<{
         >
           <button
             onClick={onAddAfter}
-            title="Section einfügen"
+            title="Abschnitt einfügen"
+            aria-label="Abschnitt einfügen"
             style={{
               position: 'absolute',
-              top: -14,
-              width: 28,
-              height: 28,
+              top: -15,
+              height: 30,
+              padding: '0 12px 0 8px',
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
               borderRadius: 999,
               border: '1px solid rgba(15,23,42,0.15)',
               background: '#fff',
@@ -207,12 +212,12 @@ const SectionShell: React.FC<{
               justifyContent: 'center',
               cursor: 'pointer',
               boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
-              opacity: 0,
+              opacity: 0.85,
               transition: 'opacity 140ms ease',
             }}
             className="lp-insert-btn"
           >
-            <Plus size={14} />
+            <Plus size={14} /> Abschnitt einfügen
           </button>
         </div>
       )}
@@ -308,6 +313,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
         .lp-image-frame:hover .lp-image-overlay{opacity:1;background:rgba(15,23,42,0.55)}
         .lp-section:hover .lp-section-toolbar{opacity:1}
         .lp-section:hover .lp-insert-btn{opacity:1}
+        .lp-section:hover,.lp-section:focus-within{z-index:5}
+        .lp-section-insert{z-index:25 !important}
         .lp-insert-btn:hover{background:var(--lp-primary);color:var(--lp-primary-on) !important}
         .lp-spin{animation:lp-spin 0.9s linear infinite}
         @keyframes lp-spin{to{transform:rotate(360deg)}}
