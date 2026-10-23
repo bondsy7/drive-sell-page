@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -95,6 +95,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const contactFormConfig = editorState.contactFormConfig;
   const setContactFormConfig = useCallback((value: LandingContactFormConfig) => updateEditor('contactFormConfig', value), [updateEditor]);
   const [contactConfigOpen, setContactConfigOpen] = useState(false);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const { content, images, contactFormEnabled } = editorState;
   const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
   const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
@@ -392,13 +393,13 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <Button
             size="sm"
             variant="outline"
-            onClick={handleGenerateAllScenes}
+            onClick={() => setBulkConfirmOpen(true)}
             disabled={imageLoading === '__bulk__'}
             className="gap-2"
-            title="Für jede Section ein passendes AI-Bild generieren"
+            title="Für jeden Abschnitt ein neues KI-Bild generieren (Texte bleiben unverändert)"
           >
             {imageLoading === '__bulk__' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Alle Szenen generieren
+            Alle Bilder generieren
           </Button>
           <Button size="sm" variant="outline" onClick={() => setLiveDialogOpen(true)} className="gap-2" title="Fahrzeuge aus dem Live-Bestand in die Seite einblenden">
             <Car className="w-4 h-4" /> Live-Fahrzeuge
@@ -417,6 +418,20 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       )}
 
       <ContactFormConfigDialog open={contactConfigOpen} onOpenChange={setContactConfigOpen} value={contactFormConfig} onConfirm={setContactFormConfig} />
+      <Dialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alle Bilder neu generieren?</DialogTitle>
+            <DialogDescription>
+              Für den Header und jeden Abschnitt wird ein neues KI-Bild erstellt. Bereits vorhandene Bilder – auch eigene Uploads – werden dabei ersetzt. Texte und übrige Inhalte bleiben unverändert.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkConfirmOpen(false)}>Abbrechen</Button>
+            <Button onClick={() => { setBulkConfirmOpen(false); handleGenerateAllScenes(); }}>Ja, Bilder generieren</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {contactFormEnabled && viewMode === 'edit' && <ContactFormWidgetPreview config={contactFormConfig} />}
 
       {/* Canvas */}
