@@ -4,6 +4,9 @@ import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib
 import { parsePrice } from "@/lib/finance-utils";
 import { escapeHtml, DEFAULT_CONTACT_HEADING } from "@/lib/landing-contact-config";
 import { readableOn, rgba } from "@/lib/landing-theme";
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import LandingInquiryFields, { LANDING_INQUIRY_CSS } from '@/components/landing/LandingInquiryFields';
 
 /**
  * Liefert den anzuzeigenden Fahrzeugtitel.
@@ -421,11 +424,14 @@ export interface ContactFormOptions {
   intro?: string;
   /** Landing pages: colour of the page's own buttons, used by the enquiry widget. */
   accent?: string;
+  /** Only generated landingpages use the inventory enquiry layout. */
+  inventoryStyle?: boolean;
+  phone?: string;
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
   const { dealerUserId, projectId, vehicleId, supabaseUrl, vehicleTitle, currentCategory } = options;
-  const formHeading = escapeHtml(options.heading || DEFAULT_CONTACT_HEADING);
+  const formHeading = escapeHtml(options.inventoryStyle && (!options.heading || options.heading === DEFAULT_CONTACT_HEADING) ? 'Fahrzeuganfrage' : options.heading || DEFAULT_CONTACT_HEADING);
   const formIntro = escapeHtml(options.intro ?? vehicleTitle);
 
   // Landing pages pass the colour of their own buttons so the enquiry widget matches
@@ -473,14 +479,14 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
 
   <!-- Lead Modal -->
   <div id="leadModal" style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)" onclick="if(event.target===this)this.style.display='none'">
-    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
+    <div ${options.inventoryStyle ? `class="lp-inquiry"` : ''} style="${options.inventoryStyle ? `--inquiry-accent:${brandColor};--inquiry-on-accent:${brandButtonText};border:1px solid hsl(220 25% 85%);` : ''}background:#fff;border-radius:${options.inventoryStyle ? '6' : '20'}px;padding:${options.inventoryStyle ? '20' : '32'}px;max-width:460px;width:90%;max-height:94vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
       <button onclick="document.getElementById('leadModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px">✕</button>
       <div style="margin-bottom:20px">
         <h3 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:20px;font-weight:700;color:#1a2332;margin-bottom:4px">${formHeading}</h3>
-        ${formIntro ? `<p style="font-size:13px;color:#6b7a8d;white-space:pre-line">${formIntro}</p>` : ''}
+        ${formIntro && !options.inventoryStyle ? `<p style="font-size:13px;color:#6b7a8d;white-space:pre-line">${formIntro}</p>` : ''}
       </div>
       <form id="leadForm" onsubmit="return submitLead(event)">
-        <div style="display:flex;flex-direction:column;gap:12px">
+        ${options.inventoryStyle ? renderToStaticMarkup(createElement(LandingInquiryFields, { phone: options.phone })) : `<div style="display:flex;flex-direction:column;gap:12px">
           <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
@@ -493,18 +499,19 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
           " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
             Anfrage senden
           </button>
-        </div>
+        </div>`}
       </form>
       <div id="leadSuccess" style="display:none;text-align:center;padding:20px 0">
         <div style="font-size:48px;margin-bottom:12px">✓</div>
         <h4 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:18px;font-weight:700;color:#1a2332;margin-bottom:8px">Anfrage gesendet!</h4>
         <p style="font-size:13px;color:#6b7a8d">Vielen Dank für Ihr Interesse. Wir melden uns in Kürze bei Ihnen.</p>
       </div>
-      <p style="font-size:10px;color:#9ca3af;margin-top:12px;text-align:center">Ihre Daten werden vertraulich behandelt und nicht an Dritte weitergegeben.</p>
+      ${!options.inventoryStyle ? '<p style="font-size:10px;color:#9ca3af;margin-top:12px;text-align:center">Ihre Daten werden vertraulich behandelt und nicht an Dritte weitergegeben.</p>' : ''}
     </div>
   </div>
 
   <style>
+    ${options.inventoryStyle ? LANDING_INQUIRY_CSS : ''}
     @keyframes leadSlideIn { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
   </style>
 
@@ -524,10 +531,10 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
             dealerUserId: '${dealerUserId}',
             projectId: ${projectId ? `'${projectId}'` : 'null'},
             vehicleId: ${vehicleId ? `'${vehicleId}'` : 'null'},
-            name: fd.get('name'),
+            name: ${options.inventoryStyle ? "[fd.get('firstName'), fd.get('lastName')].map(function(v){return String(v || '').trim()}).join(' ')" : "fd.get('name')"},
             email: fd.get('email'),
             phone: fd.get('phone') || null,
-            message: fd.get('message') || null,
+            message: ${options.inventoryStyle ? "String(fd.get('message') || '').slice(0,3000) + '\\n\\nDatenschutz: bestätigt.\\nMarketing-Einwilligung: ' + (fd.get('marketingConsent') ? 'erteilt.' : 'nicht erteilt.')" : "fd.get('message') || null"},
             vehicleTitle: '${vehicleTitle.replace(/'/g, "\\'")}',
             interestedTestDrive: !!form.querySelector('[name=interested_test_drive]')?.checked,
             interestedTradeIn: !!form.querySelector('[name=interested_trade_in]')?.checked,

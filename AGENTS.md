@@ -27,6 +27,7 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Generated landingpages share content geometry through landing-layout.ts in React and HTML, with equal editorial columns, so section edges remain aligned at every preview width.
 - Landingpage logo sizes live per placement in pageContent.logoSizes and use the shared LandingLogo renderer in React and HTML; sliders commit once per interaction so saved output and undo remain consistent.
 - Landing-page contact recipient/subject live in projects.vehicle_data.contactFormConfig and submit-lead resolves them server-side for the owning dealer only, because a recipient in public HTML would let anyone relay mail to arbitrary addresses.
+- Landingpage inquiry fields and scoped form styles are shared by editor and HTML export through LandingInquiryFields; the inventory layout is opt-in in the shared template so PDF offer forms and the existing lead endpoint remain unchanged.
 - Landingpage section images stack via pageContent.imageStacks ('@main' = original image, extras keyed '<sectionId>::img-*' in imageMap/imageFrames/imageSources) with a fixed flex gap, shared by React and HTML export, so inserted blocks never overlap and deletions reflow.
 
 - Landingpage section background overrides live in pageContent.sectionColors keyed by stable section IDs; React and HTML use landing-section-colors to preserve saved colors and readable text through undo and export.
