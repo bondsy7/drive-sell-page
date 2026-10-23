@@ -10,7 +10,7 @@ import {
   type LandingImageFrame,
 } from '@/lib/landing-image-frame';
 
-type Edge = 'left' | 'right' | 'bottom' | 'corner-left' | 'corner-right';
+type Edge = 'top' | 'left' | 'right' | 'bottom' | 'corner-left' | 'corner-right';
 
 interface Props {
   src?: string;
@@ -64,6 +64,26 @@ export default function LandingImageFrame({
     return () => document.removeEventListener('pointerdown', off);
   }, [mode]);
 
+  const draftRef = useRef(draft); draftRef.current = draft;
+  const commitRef = useRef(onFrameChange); commitRef.current = onFrameChange;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !tools || !src) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const onWheel = (e: WheelEvent) => {
+      if (!el.classList.contains('lp-frame-pan')) return;
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const z = Math.min(FRAME_ZOOM_MAX, Math.max(FRAME_ZOOM_MIN, draftRef.current.zoom * Math.exp(-dy * 0.0015)));
+      const next = { ...draftRef.current, zoom: z };
+      setDraft(next);
+      if (t) clearTimeout(t);
+      t = setTimeout(() => commitRef.current?.(next), 250);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => { el.removeEventListener('wheel', onWheel); if (t) clearTimeout(t); };
+  }, [tools, src]);
+
   const active = tools ? draft : base;
   const framed = !!frame;
 
@@ -79,7 +99,7 @@ export default function LandingImageFrame({
     let latest = draft;
     const move = (ev: PointerEvent) => {
       const dx = ev.clientX - e.clientX; const dy = ev.clientY - e.clientY;
-      let left = start.left; let right = start.right; let bottom = start.bottom;
+      let left = start.left; let right = start.right; let bottom = start.bottom; let top = start.top;
       let gx: number | null = null; let gy: number | null = null;
       if (edge === 'right' || edge === 'corner-right') {
         const s = snapEdge(Math.min(col.right, Math.max(start.left + col.width * FRAME_MIN_WIDTH_PCT / 100, start.right + dx)), xs);
@@ -93,7 +113,11 @@ export default function LandingImageFrame({
         const s = snapEdge(Math.max(start.top + FRAME_MIN_HEIGHT_PX, start.bottom + dy), ys);
         bottom = s.value; gy = s.guide;
       }
-      const width = right - left; const height = bottom - start.top;
+      if (edge === 'top') {
+        const s = snapEdge(Math.min(start.bottom - FRAME_MIN_HEIGHT_PX, start.top + dy), ys);
+        top = s.value; gy = s.guide;
+      }
+      const width = right - left; const height = bottom - top;
       const widthPct = Math.min(100, Math.max(FRAME_MIN_WIDTH_PCT, (width / col.width) * 100));
       const offsetPct = Math.min(100 - widthPct, Math.max(0, ((left - col.left) / col.width) * 100));
       latest = { ...latest, widthPct, offsetPct, aspect: width / height };
@@ -186,8 +210,9 @@ export default function LandingImageFrame({
 
       {tools && (
         <>
-          {handle('left', { left: 0, top: 0, bottom: 14, width: 10 }, 'ew-resize')}
-          {handle('right', { right: 0, top: 0, bottom: 14, width: 10 }, 'ew-resize')}
+          {handle('top', { left: 14, right: 14, top: 0, height: 10 }, 'ns-resize')}
+          {handle('left', { left: 0, top: 14, bottom: 14, width: 10 }, 'ew-resize')}
+          {handle('right', { right: 0, top: 14, bottom: 14, width: 10 }, 'ew-resize')}
           {handle('bottom', { left: 14, right: 14, bottom: 0, height: 10 }, 'ns-resize')}
           {handle('corner-left', { left: 0, bottom: 0, width: 14, height: 14 }, 'nesw-resize')}
           {handle('corner-right', { right: 0, bottom: 0, width: 14, height: 14 }, 'nwse-resize')}
@@ -202,7 +227,7 @@ export default function LandingImageFrame({
             )}
           </div>
           {mode === 'pan' && src && (
-            <div className="lp-frame-zoom" onPointerDown={e => e.stopPropagation()}>
+            <div className="lp-frame-zoom" style={{ zIndex: 40 }} onPointerDown={e => e.stopPropagation()} onPointerDownCapture={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
               <span>Zoom</span>
               <Slider aria-label="Bild im Rahmen vergrößern" min={FRAME_ZOOM_MIN} max={FRAME_ZOOM_MAX} step={0.05} value={[draft.zoom]}
                 onValueChange={v => { const z = v[0]; if (z !== undefined) setDraft(d => ({ ...d, zoom: z })); }}
