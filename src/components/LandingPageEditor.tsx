@@ -8,7 +8,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Monitor, Smartphone, Tablet, Plus,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LandingRenderer from '@/components/landing/LandingRenderer';
@@ -22,6 +22,7 @@ import {
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import VehicleImagePicker from '@/components/landing/VehicleImagePicker';
 import { buildScenePrompt } from '@/lib/landing-scene-prompts';
 
 interface LandingPageEditorProps {
@@ -70,6 +71,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);
+  const [pickFromGallery, setPickFromGallery] = useState(false);
   const [addAfterId, setAddAfterId] = useState<string | null | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<string | null>(null);
   const [contactFormEnabled, setContactFormEnabled] = useState(true);
@@ -370,7 +372,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
       {/* Image Replace Dialog */}
       <Dialog open={!!imageDialogSection} onOpenChange={open => !open && !imageLoading && setImageDialogSection(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={pickFromGallery ? "sm:max-w-2xl" : "sm:max-w-md"}>
           <DialogHeader>
             <DialogTitle>Bild ändern</DialogTitle>
           </DialogHeader>
@@ -381,6 +383,31 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
+              {pickFromGallery ? (
+                <div className="space-y-2">
+                  <button onClick={() => setPickFromGallery(false)} className="text-xs text-muted-foreground hover:text-foreground">← Zurück</button>
+                  <VehicleImagePicker
+                    defaultVehicleId={vehicleId}
+                    onPick={(url) => {
+                      if (imageDialogSection) setImages(prev => ({ ...prev, [imageDialogSection]: url }));
+                      setPickFromGallery(false);
+                      setImageDialogSection(null);
+                      toast.success('Bild übernommen');
+                    }}
+                  />
+                </div>
+              ) : (<>
+              <button
+                onClick={() => setPickFromGallery(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 transition-colors text-left"
+              >
+                <Images className="w-5 h-5 text-muted-foreground shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Aus Fahrzeugbildern wählen</p>
+                  <p className="text-xs text-muted-foreground">Bereits in autohaus.ai generierte Bilder verwenden</p>
+                </div>
+              </button>
+
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <Upload className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
@@ -415,6 +442,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   if (file && imageDialogSection) handleRemaster(imageDialogSection, file);
                 }} />
               </label>
+              </>)}
             </div>
           )}
         </DialogContent>
