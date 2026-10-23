@@ -12,13 +12,15 @@ export function ElementDeleteButton({ onDelete, label = 'Element löschen' }: { 
   </Button>;
 }
 
-export default function LandingElementBox({ children, editable, onDelete, hidden = false, inline = false, label }: {
-  children: ReactNode; editable: boolean; onDelete?: () => void; hidden?: boolean; inline?: boolean; label?: string;
+export default function LandingElementBox({ children, editable, onDelete, hidden = false, inline = false, label, colorControl }: {
+  children: ReactNode; editable: boolean; onDelete?: () => void; hidden?: boolean; inline?: boolean; label?: string; colorControl?: ReactNode;
 }) {
   if (hidden) return null;
-  if (!editable || !onDelete) return <>{children}</>;
+  if (!editable || (!onDelete && !colorControl)) return <>{children}</>;
   const Tag = inline ? 'span' : 'div';
-  return <Tag className={`lp-element-box${inline ? ' lp-element-inline' : ''}`}>
-    {children}<ElementDeleteButton onDelete={onDelete} label={label} />
+  return <Tag className={`lp-element-box${inline ? ' lp-element-inline' : ''}${colorControl ? ' lp-has-color' : ''}`}>
+    {children}
+    {colorControl}
+    {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
   </Tag>;
 }
