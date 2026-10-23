@@ -30,3 +30,4 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Landingpage section images stack via pageContent.imageStacks ('@main' = original image, extras keyed '<sectionId>::img-*' in imageMap/imageFrames/imageSources) with a fixed flex gap, shared by React and HTML export, so inserted blocks never overlap and deletions reflow.
 
 - Landingpage section background overrides live in pageContent.sectionColors keyed by stable section IDs; React and HTML use landing-section-colors to preserve saved colors and readable text through undo and export.
+- Generated landingpages render no footer or copyright block in React or HTML export, because the page is embedded between the dealer website's own header and footer which already carry legal and company notices; AI disclosure stays on each generated image.

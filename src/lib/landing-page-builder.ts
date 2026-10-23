@@ -13,7 +13,7 @@ import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 import { LANDING_IMAGE_FRAME_CSS, frameImageCss, frameOuterCss, normalizeImageFrame, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
-import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
+import { buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
   LIVE_INVENTORY_CSS,
   LIVE_INVENTORY_NARROW_CSS,
@@ -408,13 +408,6 @@ ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-
 
   ${liveInventory && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config) })) : ''}
 
-  <footer style="background:#0b1220;color:#94a3b8;padding:32px 0;text-align:center;font-size:12px">
-    <div class="lp-content-width">
-    <p>© ${new Date().getFullYear()} ${escapeHtml(dealerName)}. Alle Angaben ohne Gewähr.</p>
-    ${buildAiDisclosureFooterHTML("landing")}
-    ${dealer.defaultLegalText ? `<p style="margin-top:10px;margin-left:auto;margin-right:auto;line-height:1.6">${escapeHtml(dealer.defaultLegalText)}</p>` : ''}
-    </div>
-  </footer>
 
   ${contactFormHTML}
 </body>
