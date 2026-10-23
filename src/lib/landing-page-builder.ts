@@ -117,8 +117,8 @@ function renderSection(
     ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:#fff">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px">${s.content || ''}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
-      ${phone ? `<a href="tel:${phone}" style="background:${secondary};color:${onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
-      ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:#25d366;color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
+      ${phone && !removed('phone') ? `<a href="tel:${phone}" style="background:${secondary};color:${onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
+      ${whatsapp && !removed('whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:#25d366;color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
     </div>
   </div>
 </section>`;
@@ -223,8 +223,8 @@ export function buildLandingPageHTML(
   const sections = content.sections || [];
   const seo = content.seo || ({} as any);
 
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? dealer.primaryColor! : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? dealer.secondaryColor! : '#e2b04a';
+  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
+  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 

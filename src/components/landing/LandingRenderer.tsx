@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Upload, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Plus, ImageIcon } from 'lucide-react';
+import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { getAiDisclosureText } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
@@ -345,8 +345,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   imageLoading,
   liveInventory,
 }) => {
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? dealer.primaryColor! : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? dealer.secondaryColor! : '#e2b04a';
+  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
+  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 
@@ -796,20 +796,20 @@ const SectionRenderer: React.FC<{
               style={{ fontSize: 17, opacity: 0.9, marginBottom: 32 }}
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {phone && (
-                <a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
+              {phone && !removed('phone') && (
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} inline><a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
                   📞 Anrufen
-                </a>
+                </a></LandingElementBox>
               )}
-              {whatsapp && (
-                <a
+              {whatsapp && !removed('whatsapp') && (
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} inline><a
                   href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener"
                   style={{ background: '#25d366', color: '#fff', padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}
                 >
                   💬 WhatsApp
-                </a>
+                </a></LandingElementBox>
               )}
             </div>
           </div>
