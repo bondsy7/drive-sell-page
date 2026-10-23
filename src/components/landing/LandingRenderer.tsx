@@ -1,5 +1,7 @@
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import LandingLogo from '@/components/landing/LandingLogo';
+import ImageFrame from '@/components/landing/LandingImageFrame';
+import { LANDING_IMAGE_FRAME_CSS, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { LANDING_LOGO_CSS, type LandingLogoId } from '@/lib/landing-logo-size';
 import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -49,6 +51,9 @@ export interface RendererProps {
   onDeleteSection?: (id: string) => void;
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
+  /** Desktop editor only: frame/pan/zoom tools for images. */
+  frameEditing?: boolean;
+  onFrameChange?: (imageId: string, frame: LandingImageFrame | null) => void;
   onAddSection?: (afterId: string | null) => void;
   imageLoading?: string | null;
   liveInventory?: LiveInventoryView | null;
@@ -123,82 +128,6 @@ const Editable: React.FC<{
     </LandingElementBox>
   );
 };
-
-const ImageFrame: React.FC<{
-  src?: string;
-  alt: string;
-  aspect: string;
-  editable: boolean;
-  loading?: boolean;
-  onReplace?: () => void;
-  primary: string;
-  onDelete?: () => void;
-  labelImage?: boolean;
-  rounded?: boolean;
-}> = ({ src, alt, aspect, editable, loading, onReplace, primary, onDelete, labelImage = true, rounded = true }) => (
-  <div
-    className="lp-image-frame"
-    style={{
-      position: 'relative',
-      width: '100%',
-      aspectRatio: aspect,
-      overflow: 'hidden',
-      borderRadius: rounded ? 16 : 0,
-      background: rgba(primary, 0.06),
-    }}
-  >
-    {src ? (
-      <img
-        src={src}
-        alt={labelImage ? withAiDisclosureAlt(alt) : alt}
-        loading="lazy"
-        decoding="async"
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-      />
-    ) : (
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: rgba(primary, 0.5),
-          fontSize: 13,
-          fontWeight: 500,
-        }}
-      >
-        <ImageIcon size={20} style={{ marginRight: 8 }} /> Kein Bild
-      </div>
-    )}
-    {src && labelImage && <img src={getAiDisclosureLabelVector("landing")} alt={getAiDisclosureLabelAlt("landing")} className={`${AI_DISCLOSURE_OVERLAY_CLASS} z-10`} />}
-    {editable && onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
-    {editable && (
-      <button
-        onClick={onReplace}
-        className="lp-image-overlay"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          border: 'none',
-          background: 'rgba(15,23,42,0)',
-          color: '#fff',
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-          opacity: 0,
-          transition: 'opacity 160ms ease, background-color 160ms ease',
-        }}
-      >
-        {loading ? <RefreshCw size={18} className="lp-spin" /> : <><Sparkles size={16} /> Bild ändern</>}
-      </button>
-    )}
-  </div>
-);
 
 const SectionShell: React.FC<{
   id: string;
@@ -330,6 +259,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onDeleteSection,
   onDeleteElement,
   onResizeLogo,
+  frameEditing = false,
+  onFrameChange,
   onAddSection,
   imageLoading,
   liveInventory,
@@ -416,6 +347,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         }
         ${LANDING_LAYOUT_CSS}
         ${LANDING_LOGO_CSS}
+        ${LANDING_IMAGE_FRAME_CSS}
       `}</style>
 
       {/* Sticky header */}
@@ -581,7 +513,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>}
 
           {/* Right: image */}
-          {heroHasImage && <div className="lp-hero-media" style={{ position: 'relative', minHeight: 420, background: '#0f172a' }}>
+          {heroHasImage && <div className="lp-hero-media" style={content.imageFrames?.hero ? { position: 'relative', alignSelf: 'start' } : { position: 'relative', minHeight: 420, background: '#0f172a' }}>
             <ImageFrame
               src={heroImage}
               labelImage={shouldLabelLandingImage(content, 'hero', heroImage)}
@@ -593,6 +525,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
               onDelete={() => onDeleteElement?.('hero.image')}
               primary={primary}
               rounded={false}
+              frame={content.imageFrames?.hero}
+              frameEditing={editable && frameEditing}
+              onFrameChange={(f) => onFrameChange?.('hero', f)}
             />
           </div>}
         </div>
@@ -620,6 +555,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
           onToggle={() => onToggleSection?.(s.id)}
           onDelete={() => onDeleteSection?.(s.id)}
           onReplaceImage={() => onReplaceImage?.(s.id)}
+          frame={content.imageFrames?.[s.id]}
+          frameEditing={editable && frameEditing}
+          onFrameChange={(f) => onFrameChange?.(s.id, f)}
           onAddAfter={onAddSection ? () => onAddSection(s.id) : undefined}
         />
       ))}
@@ -729,8 +667,14 @@ const SectionRenderer: React.FC<{
   onToggle: () => void;
   onDelete: () => void;
   onReplaceImage: () => void;
+  frame?: Partial<LandingImageFrame>;
+  frameEditing?: boolean;
+  onFrameChange?: (f: LandingImageFrame | null) => void;
   onAddAfter?: () => void;
 }> = ({
+  frame,
+  frameEditing,
+  onFrameChange,
   section: s,
   removedElements,
   onDeleteElement,
@@ -878,6 +822,9 @@ const SectionRenderer: React.FC<{
               onReplace={onReplaceImage}
                 onDelete={() => onDeleteElement?.('image')}
               primary={primary}
+              frame={frame}
+              frameEditing={frameEditing}
+              onFrameChange={onFrameChange}
             />
           </div>
           <Editable
@@ -926,6 +873,9 @@ const SectionRenderer: React.FC<{
                 onReplace={onReplaceImage}
                 onDelete={() => onDeleteElement?.('image')}
                 primary={primary}
+                frame={frame}
+                frameEditing={frameEditing}
+                onFrameChange={onFrameChange}
               />
             </div>
           )}
@@ -962,6 +912,9 @@ const SectionRenderer: React.FC<{
                 onReplace={onReplaceImage}
                 onDelete={() => onDeleteElement?.('image')}
                 primary={primary}
+                frame={frame}
+                frameEditing={frameEditing}
+                onFrameChange={onFrameChange}
               />
             </div>
           )}
