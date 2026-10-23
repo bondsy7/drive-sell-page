@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import {
   CONTACT_LIMITS, DEFAULT_CONTACT_HEADING, isValidRecipientEmail, type LandingContactFormConfig,
 } from '@/lib/landing-contact-config';
-import { landingPrimary, readableOn } from '@/lib/landing-theme';
+import { landingSecondary, readableOn } from '@/lib/landing-theme';
 
 export const ContactFormConfigDialog: React.FC<{
   open: boolean;
@@ -60,17 +60,17 @@ export const ContactFormConfigDialog: React.FC<{
 };
 
 /** Editor-only stand-in for the floating "Jetzt anfragen" widget of the published page. */
-export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConfig; primary?: string }> = ({ config, primary }) => {
+export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConfig; accent?: string }> = ({ config, accent }) => {
   const [open, setOpen] = useState(false);
-  // Same resolver as the page itself: the widget must not show another brand colour.
-  const pagePrimary = landingPrimary({ primaryColor: primary });
-  const onPrimary = readableOn(pagePrimary);
+  // Same colour the page's own buttons use, so the widget never stands out.
+  const accentColor = landingSecondary({ secondaryColor: accent });
+  const onAccent = readableOn(accentColor);
   return (
     <>
       <Button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-40 rounded-full px-6 h-12 gap-2 shadow-lg"
-        style={{ background: pagePrimary, color: onPrimary }}
+        style={{ background: accentColor, color: onAccent }}
       >
         <MessageSquare className="w-4 h-4" /> Jetzt anfragen
       </Button>
@@ -85,7 +85,7 @@ export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConf
             <Input placeholder="Ihre E-Mail *" disabled />
             <Input placeholder="Telefonnummer (optional)" disabled />
             <Textarea placeholder="Ihre Nachricht (optional)" rows={3} disabled />
-            <Button className="w-full" disabled style={{ background: pagePrimary, color: onPrimary }}>Anfrage senden</Button>
+            <Button className="w-full" disabled style={{ background: accentColor, color: onAccent }}>Anfrage senden</Button>
             <p className="text-xs text-muted-foreground text-center">
               Vorschau – auf der Website geht die Anfrage an {config.recipientEmail || 'die hinterlegte Adresse'}.
             </p>

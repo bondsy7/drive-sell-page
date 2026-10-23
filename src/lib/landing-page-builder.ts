@@ -262,7 +262,7 @@ export function buildLandingPageHTML(
         currentCategory: contactForm.pageType || '',
         heading: contactForm.heading,
         intro: contactForm.intro,
-        primary,
+        accent: secondary,
       })
     : '';
 
