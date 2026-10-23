@@ -527,7 +527,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>}
 
           {/* Right: image */}
-          {heroHasImage && <div className="lp-hero-media" style={content.imageFrames?.hero ? { position: 'relative', alignSelf: 'start' } : { position: 'relative', minHeight: 420, background: '#0f172a' }}>
+          {heroHasImage && <div className="lp-hero-media" style={content.imageFrames?.hero ? { position: 'relative', alignSelf: 'start' } : { position: 'relative', minHeight: 420 }}>
             <ImageFrame
               src={heroImage}
               labelImage={shouldLabelLandingImage(content, 'hero', heroImage)}
@@ -538,7 +538,6 @@ const LandingRenderer: React.FC<RendererProps> = ({
               onReplace={() => onReplaceImage?.('hero')}
               onDelete={() => onDeleteElement?.('hero.image')}
               primary={primary}
-              rounded={false}
               frame={content.imageFrames?.hero}
               frameEditing={editable && frameEditing}
               onFrameChange={(f) => onFrameChange?.('hero', f)}
