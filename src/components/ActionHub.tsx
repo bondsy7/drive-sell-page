@@ -126,11 +126,51 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
     );
   };
 
+  // Breite Werkszeugkarte mit grüner Fläche für Werkzeuge, die als Hauptprodukt gezeigt werden.
+  const renderWideTool = (tile: ActionTile) => {
+    const moduleKey = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
+    const isDisabled = Boolean(tile.disabled || disabledModules.has(moduleKey));
+
+    return (
+      <Button
+        key={tile.id}
+        variant="outline"
+        onClick={() => !isDisabled && onSelect(tile.id)}
+        disabled={isDisabled}
+        className={cn(
+          'group relative flex h-full w-full flex-col items-stretch justify-between gap-4 overflow-hidden rounded-lg border-border bg-highlight p-0 text-left whitespace-normal shadow-card transition-all duration-300',
+          'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-highlight hover:text-highlight-foreground hover:shadow-elevated',
+          'sm:flex-row sm:items-center',
+        )}
+      >
+        <div className="flex items-start gap-4 p-5 sm:p-6">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground [&>svg]:size-5">
+            {tile.icon}
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-xl font-bold text-foreground">{tile.title}</h3>
+              {tile.badge && <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase text-secondary-foreground">{tile.badge}</span>}
+            </div>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">{tile.description}</p>
+          </div>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-md bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition-colors group-hover:bg-primary/90 sm:mr-6 sm:self-auto">
+          {tile.cta ?? 'Angebotsseite erstellen'} <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+        </span>
+      </Button>
+    );
+  };
+
   const hero = availableTiles.find((tile) => tile.id === 'photos');
+
   const studio = availableTiles.find((tile) => tile.id === 'studio');
   const backgroundSwap = availableTiles.find((tile) => tile.id === 'background-swap');
   const remainingPhotoTiles = availableTiles.filter((tile) => tile.group === 'fahrzeugbilder' && tile.id !== 'photos' && tile.id !== 'studio' && tile.id !== 'background-swap');
   const remainingTiles = availableTiles.filter((tile) => tile.group !== 'fahrzeugbilder');
+  const landingPageTool = remainingTiles.find((tile) => tile.id === 'manual-landing');
+  const otherToolTiles = remainingTiles.filter((tile) => tile.id !== 'manual-landing');
+
 
   if (loading) return <p className="text-muted-foreground" role="status">Zugriff wird geprüft …</p>;
   if (availableTiles.length === 0 && !auto3Connected) return <GeneratorMaintenanceNotice />;
@@ -175,15 +215,17 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         </section>
       )}
 
-      {remainingTiles.length > 0 && <section aria-labelledby="generator-more-tools" className="space-y-4">
+      {(landingPageTool || otherToolTiles.length > 0) && <section aria-labelledby="generator-more-tools" className="space-y-4">
         <div>
           <h2 id="generator-more-tools" className="font-display text-xl font-bold text-foreground">Weitere Werkzeuge</h2>
           <p className="text-xs text-muted-foreground">Werbung, Verkaufsseiten, Analyse und Beratung</p>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {remainingTiles.map((tile) => renderTool(tile))}
-        </div>
+        {landingPageTool && <div>{renderWideTool(landingPageTool)}</div>}
+        {otherToolTiles.length > 0 && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {otherToolTiles.map((tile) => renderTool(tile))}
+        </div>}
       </section>}
+
 
       <div className="flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>Ergebnisse stehen automatisch für passende Folgeaktionen bereit.</span>
