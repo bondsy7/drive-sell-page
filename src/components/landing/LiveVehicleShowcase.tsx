@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { ArrowLeft, ArrowRight, Car } from 'lucide-react';
 import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
+import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { Button } from '@/components/ui/button';
 import {
   livePriceLabel,
@@ -26,6 +27,7 @@ interface Props {
 const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, loading, error, editable }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   if (!config?.enabled) return null;
+  const notes = new Map(buildFinanceFootnotes(vehicles, config).map(n => [n.vehicleId, n]));
 
   const scroll = (dir: -1 | 1) => {
     const el = trackRef.current;
@@ -44,7 +46,7 @@ const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, 
     </div>
   ) : (
     <div className={config.layout === 'grid' ? 'lp-live-grid' : 'lp-live-track'} ref={config.layout === 'grid' ? undefined : trackRef}>
-      {vehicles.map(v => config.cardDesign?.preset === 'jacobs' ? <JacobsVehicleCard key={v.externalVehicleId} vehicle={v} design={config.cardDesign} editable={editable} /> : (
+      {vehicles.map(v => config.cardDesign?.preset === 'jacobs' ? <JacobsVehicleCard key={v.externalVehicleId} vehicle={v} design={config.cardDesign} editable={editable} footnote={notes.get(v.externalVehicleId)} /> : (
         <a
           key={v.externalVehicleId}
           className="lp-live-card"
@@ -63,7 +65,7 @@ const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, 
             {v.variant && <div className="lp-live-variant">{v.variant}</div>}
             <div className="lp-live-specs">{liveSpecLabel(v)}</div>
             <div className="lp-live-price">{livePriceLabel(v)}</div>
-            {v.monthlyRate ? <div className="lp-live-rate">ab {v.monthlyRate.toLocaleString('de-DE')} €/Monat</div> : null}
+            {v.monthlyRate ? <div className="lp-live-rate">ab {v.monthlyRate.toLocaleString('de-DE')} €/Monat{notes.get(v.externalVehicleId) && <sup title={notes.get(v.externalVehicleId)!.text}>{toSuperscript(notes.get(v.externalVehicleId)!.number)}</sup>}</div> : null}
             {inventoryUrl && <span className="lp-live-more">Zum Angebot →</span>}
           </div>
         </a>

@@ -1,8 +1,10 @@
 import { Car, Gauge, SlidersHorizontal, Fuel, Zap, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { FinanceFootnote } from '@/lib/finance-footnotes';
+import { toSuperscript } from '@/lib/finance-footnotes';
 import { jacobsFuelLabel, jacobsMonthlyRate, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
 
-export default function JacobsVehicleCard({ vehicle: v, design, editable }: { vehicle: LiveVehicle; design: LiveVehicleCardDesign; editable?: boolean }) {
+export default function JacobsVehicleCard({ vehicle: v, design, editable, footnote }: { vehicle: LiveVehicle; design: LiveVehicleCardDesign; editable?: boolean; footnote?: FinanceFootnote }) {
   const href = liveVehicleHref(v, design);
   const title = jacobsTitleLabel(v);
   const rate = jacobsMonthlyRate(v);
@@ -20,7 +22,7 @@ export default function JacobsVehicleCard({ vehicle: v, design, editable }: { ve
         </div>
       </div>
     </a>
-    <div className="lp-jacobs-price-panel"><div className="lp-jacobs-price">{jacobsPriceLabel(v)}</div><div className="lp-jacobs-rate">{rate ? `oder ab ${rate.toLocaleString('de-DE')} € mtl.` : ''}</div></div>
+    <div className="lp-jacobs-price-panel"><div className="lp-jacobs-price">{jacobsPriceLabel(v)}</div><div className="lp-jacobs-rate">{rate ? <>oder ab {rate.toLocaleString('de-DE')} € mtl.{footnote && <a href={`#lp-fin-${footnote.number}`} title={footnote.text} aria-label={`Finanzierungsbeispiel ${footnote.number}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 700 }}>{toSuperscript(footnote.number)}</a>}</> : ''}</div></div>
     <div className="lp-jacobs-footer">
       {href ? <Button asChild variant="outline" className="lp-jacobs-cta"><a href={href} target="_blank" rel="noopener noreferrer" onClick={stopEditingClick}>Zum Fahrzeug</a></Button> : <span className="lp-jacobs-cta" aria-disabled="true">Fahrzeuglink nicht verfügbar</span>}
       {design.contactEmail && <Button asChild variant="outline" size="icon" className="lp-jacobs-action"><a href={`mailto:${design.contactEmail}?subject=${encodeURIComponent(`Anfrage: ${title} (${v.internalNumber || ''})`)}`} aria-label="Anfrage senden" title="Anfrage senden" onClick={stopEditingClick}><Mail /></a></Button>}

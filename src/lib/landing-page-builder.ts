@@ -6,6 +6,8 @@ import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
+import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
+import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
@@ -186,8 +188,10 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
   const { config, vehicles, inventoryUrl = '' } = live;
   if (!config?.enabled) return '';
 
+  const notes = new Map(buildFinanceFootnotes(vehicles, config).map(n => [n.vehicleId, n]));
   const card = (v: LiveVehicle) => {
-    if (config.cardDesign?.preset === 'jacobs') return renderToStaticMarkup(createElement(JacobsVehicleCard, { vehicle: v, design: config.cardDesign }));
+    const note = notes.get(v.externalVehicleId);
+    if (config.cardDesign?.preset === 'jacobs') return renderToStaticMarkup(createElement(JacobsVehicleCard, { vehicle: v, design: config.cardDesign, footnote: note }));
     const name = escapeHtml(liveTitleLabel(v));
     const href = inventoryUrl ? escapeHtml(inventoryUrl) : '#';
     return `<a class="lp-live-card" href="${href}"${inventoryUrl ? ' target="_blank" rel="noopener noreferrer"' : ''}>
@@ -197,7 +201,7 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
     ${v.variant ? `<div class="lp-live-variant">${escapeHtml(v.variant)}</div>` : ''}
     <div class="lp-live-specs">${escapeHtml(liveSpecLabel(v))}</div>
     <div class="lp-live-price">${escapeHtml(livePriceLabel(v))}</div>
-    ${v.monthlyRate ? `<div class="lp-live-rate">ab ${escapeHtml(v.monthlyRate.toLocaleString('de-DE'))} €/Monat</div>` : ''}
+    ${v.monthlyRate ? `<div class="lp-live-rate">ab ${escapeHtml(v.monthlyRate.toLocaleString('de-DE'))} €/Monat${note ? `<sup title="${escapeHtml(note.text)}">${toSuperscript(note.number)}</sup>` : ''}</div>` : ''}
     ${inventoryUrl ? '<span class="lp-live-more">Zum Angebot →</span>' : ''}
   </div>
 </a>`;
@@ -387,6 +391,8 @@ ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-
       </div>
     </div>
   </section>`}
+
+  ${liveInventory && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config) })) : ''}
 
   <footer style="background:#0b1220;color:#94a3b8;padding:32px 0;text-align:center;font-size:12px">
     <div class="lp-content-width">
