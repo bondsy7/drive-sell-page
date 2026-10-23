@@ -2,6 +2,7 @@
 export const LANDING_LAYOUT_CSS = `
 .lp-layout{--lp-content-max:1200px;--lp-content-gutter:32px;--lp-column-gap:56px}
 .lp-layout .lp-content-width,.lp-layout .lp-live-inner{box-sizing:border-box;width:100%;max-width:var(--lp-content-max);margin-inline:auto;padding-inline:var(--lp-content-gutter) !important;min-width:0}
+.lp-layout .lp-section-inner:not(.lp-content-width){padding-inline:0 !important}
 .lp-layout .lp-hero-grid{padding-block:80px;gap:var(--lp-column-gap) !important}
 .lp-layout .lp-hero-text{padding:0 !important;min-width:0}
 .lp-layout .lp-hero-text > div{width:100%;max-width:none !important}
