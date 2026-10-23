@@ -1,3 +1,4 @@
+import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -15,6 +16,7 @@ import {
 } from '@/lib/live-inventory';
 
 export interface LandingPageContent {
+  imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
   removedElements?: string[];
   meta: { title: string; description: string; h1: string };
   hero: { headline: string; subheadline: string; ctaText: string; imagePrompt?: string };
@@ -98,7 +100,8 @@ function renderSection(
   onSec: string,
   phone: string,
   whatsapp: string,
-  removedElements: string[] = []
+  removedElements: string[] = [],
+  labelImage = true
 ): string {
   if (s.enabled === false) return '';
   const removed = (field: string) => removedElements.includes(`${s.id}.${field}`);
@@ -142,7 +145,7 @@ function renderSection(
     return `<section style="background:${bg}">
   <div style="max-width:1100px;margin:0 auto;padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${image ? `<div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${buildAiDisclosureImageOverlayHTML("landing")}<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
+    ${image ? `<div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
 </section>`;
@@ -150,7 +153,7 @@ function renderSection(
 
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
-  const imgHtml = `<div class="lp-split-media" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
+  const imgHtml = `<div class="lp-split-media" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image && labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
   const textHtml = removed('headline') && removed('content') ? '' : `<div>
     <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${isDark ? 'rgba(255,255,255,0.6)' : primary};margin-bottom:14px">${`0${idx + 1}`.slice(-2)}</div>
     ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
@@ -254,7 +257,7 @@ export function buildLandingPageHTML(
   const heroSub = hero.subheadline || '';
 
   const sectionBlocks = sections
-    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements))
+    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id])))
     .join('\n');
 
   const liveBlock = liveInventory && !removed('live-fahrzeuge') ? buildLiveInventorySectionHTML(liveInventory) : '';
@@ -351,8 +354,8 @@ ${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:
       </div>
 ` : ''}
 ${heroHasImage ? `      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
-        ${heroImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}
-        ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(withAiDisclosureAlt(`${brand} ${model}`))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
+        ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
+        ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
       </div>` : ''}
     </div>
   </section>`}

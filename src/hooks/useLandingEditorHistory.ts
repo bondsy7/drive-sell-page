@@ -12,5 +12,8 @@ export function useLandingEditorHistory<T>(initial: T) {
     });
   }, []);
   const undo = useCallback(() => setHistory(previous => undoChange(previous)), []);
-  return { state: history.current, update, undo, canUndo: history.past.length > 0 };
+  const change = useCallback((transform: (state: T) => T) => {
+    setHistory(previous => recordChange(previous, transform(previous.current)));
+  }, []);
+  return { state: history.current, update, change, undo, canUndo: history.past.length > 0 };
 }
