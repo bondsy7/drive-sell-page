@@ -802,8 +802,9 @@ const SectionRenderer: React.FC<{
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+              colorControl={textControl('headline')}
               placeholder="CTA-Überschrift"
-              style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: theme.custom ? textColor : '#fff' }}
+              style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: textOverride('headline', theme.custom ? textColor : '#fff') }}
             />
             <Editable
               as="div"
@@ -812,9 +813,10 @@ const SectionRenderer: React.FC<{
               value={s.content}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+              colorControl={textControl('content')}
               placeholder="Text…"
               className="lp-body-html"
-              style={{ fontSize: 17, opacity: 0.9, marginBottom: 32 }}
+              style={{ fontSize: 17, opacity: 0.9, marginBottom: 32, ...(textOverrideOptional('content') ? { color: textOverrideOptional('content') } : {}) }}
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {phone && !removed('phone') && (
@@ -852,8 +854,9 @@ const SectionRenderer: React.FC<{
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+            colorControl={textControl('headline')}
             placeholder="Überschrift"
-            style={{ fontSize: 34, fontWeight: 700, marginBottom: 24, textAlign: 'center', color: textColor }}
+            style={{ fontSize: 34, fontWeight: 700, marginBottom: 24, textAlign: 'center', color: textOverride('headline', textColor) }}
           />
           <Editable
             as="div"
@@ -862,9 +865,10 @@ const SectionRenderer: React.FC<{
             value={s.content}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+            colorControl={textControl('content')}
             placeholder="Inhalt eingeben…"
             className="lp-body-html"
-            style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
+            style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
           />
         </div>
       </SectionShell>
@@ -882,8 +886,9 @@ const SectionRenderer: React.FC<{
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+            colorControl={textControl('headline')}
             placeholder="Überschrift"
-            style={{ fontSize: 34, fontWeight: 700, marginBottom: 32, textAlign: 'center', color: textColor }}
+            style={{ fontSize: 34, fontWeight: 700, marginBottom: 32, textAlign: 'center', color: textOverride('headline', textColor) }}
           />
           <div style={{ marginBottom: 28 }}>
             {stack('16 / 9', removed('image') ? null : (<ImageFrame
@@ -908,8 +913,9 @@ const SectionRenderer: React.FC<{
             value={s.content}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+            colorControl={textControl('content')}
             className="lp-body-html"
-            style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
+            style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
           />
         </div>
       </SectionShell>
@@ -960,8 +966,9 @@ const SectionRenderer: React.FC<{
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+              colorControl={textControl('headline')}
               placeholder="Überschrift"
-              style={{ fontSize: 32, fontWeight: 700, marginBottom: 20, lineHeight: 1.15, color: textColor }}
+              style={{ fontSize: 32, fontWeight: 700, marginBottom: 20, lineHeight: 1.15, color: textOverride('headline', textColor) }}
             />
             <Editable
               as="div"
@@ -970,8 +977,9 @@ const SectionRenderer: React.FC<{
               value={s.content}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+              colorControl={textControl('content')}
               className="lp-body-html"
-              style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
+              style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
             />
           </div>}
           {!imageOnLeft && (
