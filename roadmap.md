@@ -1,3 +1,6 @@
+## Landingpage-Logogrößen (23.10.2026)
+- [x] Markenlogo und Händlerlogos in Kopfzeile/Kontaktbereich per Klick mit Regler darunter vergrößern/verkleinern; einzelne Größen werden gespeichert und ins HTML übernommen. Auf Pauls KIA-EV4-Seite Vergrößern, erneutes Öffnen, Rückgängig und HTML-Vorschau geprüft; Originalgröße wiederhergestellt, 11 Tests grün, nicht veröffentlicht.
+
 ## Landing Page manuell als Hauptwerkzeug (23.10.2026)
 - [x] „Landing Page manuell“ erscheint als breite, hellgrün hinterlegte Karte direkt unter der Überschrift „Weitere Werkzeuge“; neue Tokens `--highlight`, `--highlight-foreground`, `--highlight-border` (hell und dunkel), Kartenklick öffnet den Generator wie bisher. An Pauls Profil Desktop (1120 px breit, 1 Karte, keine Duplikate im Raster) und Mobil 420 px (kein Überlauf) geprüft, Vorschau fehlerfrei; nicht veröffentlicht.
 
