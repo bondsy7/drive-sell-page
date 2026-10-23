@@ -1,3 +1,6 @@
+## Landingpage-Abschnittsfarben (23.10.2026)
+- [ ] Farbauswahl unter Abschnitt löschen mit Profilfarben und freier Farbe; Speicherung, Rückgängig und HTML-Ausgabe prüfen.
+
 ## Landingpage-Logogrößen (23.10.2026)
 - [x] Markenlogo und Händlerlogos in Kopfzeile/Kontaktbereich per Klick mit Regler darunter vergrößern/verkleinern; einzelne Größen werden gespeichert und ins HTML übernommen. Auf Pauls KIA-EV4-Seite Vergrößern, erneutes Öffnen, Rückgängig und HTML-Vorschau geprüft; Originalgröße wiederhergestellt, 11 Tests grün, nicht veröffentlicht.
 
