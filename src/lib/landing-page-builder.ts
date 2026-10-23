@@ -9,6 +9,7 @@ import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
 import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
 import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
+import { LANDING_IMAGE_FRAME_CSS, frameImageCss, frameOuterCss, normalizeImageFrame, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
@@ -30,6 +31,11 @@ export interface LandingPageContent {
   hero: { headline: string; subheadline: string; ctaText: string; imagePrompt?: string };
   sections: LandingPageSection[];
   seo?: { keywords?: string[]; structuredData?: any };
+}
+
+function resolveFrame(content: LandingPageContent, id: string, aspect: number): LandingImageFrame | null {
+  const raw = content.imageFrames?.[id];
+  return raw ? normalizeImageFrame(raw, aspect) : null;
 }
 
 export interface LandingPageSection {
@@ -135,7 +141,7 @@ function renderSection(
     return `<section style="background:${bg}">
   <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${image ? `<div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
+    ${image ? `<div class="${frame ? 'lp-framed' : ''}" style="position:relative;${frame ? frameOuterCss(frame) : 'aspect-ratio:16/9'};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${frame ? ';' + frameImageCss(frame) : ''}" loading="lazy" decoding="async"/></div>` : ''}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
 </section>`;
@@ -143,7 +149,8 @@ function renderSection(
 
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
-  const imgHtml = `<div class="lp-split-media" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image && labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
+  const splitFrame = resolveFrame(content, s.id, 4 / 3);
+  const imgHtml = `<div class="lp-split-media"><div class="${splitFrame ? 'lp-framed' : ''}" style="position:relative;${splitFrame ? frameOuterCss(splitFrame) : 'aspect-ratio:4/3'};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image && labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${splitFrame ? ';' + frameImageCss(splitFrame) : ''}" loading="lazy" decoding="async"/>` : ''}</div></div>`;
   const textHtml = removed('headline') && removed('content') ? '' : `<div>
     ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
@@ -230,6 +237,7 @@ export function buildLandingPageHTML(
   const heroHasImage = !removed('hero.image');
   const heroHasText = !['brand', 'headline', 'subheadline', 'ctaText', 'whatsapp'].every(field => removed(`hero.${field}`));
   const heroImage = heroHasImage ? images.hero || '' : '';
+  const heroFrame = resolveFrame(content, 'hero', 1);
   const dealerName = dealer.name || '';
   const dealerLogo = dealer.logoUrl || '';
   const phone = dealer.phone || '';
@@ -299,6 +307,7 @@ export function buildLandingPageHTML(
     .lp-body-html th,.lp-body-html td{padding:8px 12px;border:1px solid var(--lp-border);text-align:left}
     .lp-body-html th{background:var(--lp-tint);font-weight:600}
     body{container-type:inline-size;container-name:lp}
+    ${LANDING_IMAGE_FRAME_CSS}
     ${LIVE_INVENTORY_CSS}
     /* Narrow layouts (tablet / mobile and real devices): image and text always stack. */
     @media(max-width:768px){
@@ -351,10 +360,15 @@ ${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:
         </div>
       </div>
 ` : ''}
-${heroHasImage ? `      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
+${heroHasImage ? (heroFrame ? `      <div class="lp-hero-media" style="position:relative;align-self:start">
+        <div class="lp-framed" style="position:relative;overflow:hidden;${frameOuterCss(heroFrame)}">
+        ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
+        ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block;${frameImageCss(heroFrame)}" loading="eager" decoding="async"/>` : ''}
+        </div>
+      </div>` : `      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
         ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
-      </div>` : ''}
+      </div>`) : ''}
     </div>
   </section>`}
 
