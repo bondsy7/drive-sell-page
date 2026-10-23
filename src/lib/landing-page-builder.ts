@@ -235,9 +235,23 @@ export function buildLandingPageHTML(
     .lp-body-html table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
     .lp-body-html th,.lp-body-html td{padding:8px 12px;border:1px solid var(--lp-border);text-align:left}
     .lp-body-html th{background:var(--lp-tint);font-weight:600}
+    body{container-type:inline-size;container-name:lp}
+    /* Narrow layouts (tablet / mobile and real devices): image and text always stack. */
     @media(max-width:768px){
-      section > div{padding:56px 20px !important}
+      section > div:not(.lp-hero-grid){padding:56px 20px !important}
       .lp-split{grid-template-columns:1fr !important;gap:24px !important}
+      .lp-split-media{order:-1 !important}
+      .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
+      .lp-hero-media{min-height:300px !important}
+      h1{font-size:32px !important;line-height:1.15 !important}
+      h2{font-size:26px !important}
+    }
+    @container lp (max-width:900px){
+      section > div:not(.lp-hero-grid){padding:56px 20px !important}
+      .lp-split{grid-template-columns:1fr !important;gap:28px !important;align-items:start !important}
+      .lp-split-media{order:-1 !important}
+      .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
+      .lp-hero-media{min-height:300px !important}
       h1{font-size:32px !important;line-height:1.15 !important}
       h2{font-size:26px !important}
     }
