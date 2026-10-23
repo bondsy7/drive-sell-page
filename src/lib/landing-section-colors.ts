@@ -11,3 +11,8 @@ export function sectionColorTheme(custom: unknown, bgStyle: string, primary: str
   const foreground = override ? readableOn(override) : ['dark', 'accent'].includes(bgStyle) ? '#ffffff' : '#0f172a';
   return { background, foreground, body: override ? rgba(foreground, 0.85) : ['dark', 'accent'].includes(bgStyle) ? 'rgba(255,255,255,0.85)' : '#475569', custom: !!override };
 }
+
+/** Stored text colour for a text element, falling back to the section's resolved colour. */
+export function textColorOverride(custom: unknown, fallback: string): string {
+  return normalizeSectionColor(custom) || fallback;
+}

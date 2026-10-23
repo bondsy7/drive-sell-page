@@ -1,5 +1,5 @@
 import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
-import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
+import { normalizeSectionColor, sectionColorTheme, textColorOverride } from '@/lib/landing-section-colors';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import LandingLogo from '@/components/landing/LandingLogo';
 import ImageFrame from '@/components/landing/LandingImageFrame';
@@ -14,6 +14,7 @@ import type { LandingPageContent, LandingPageSection, LandingPageDealer, Landing
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
+import TextColorButton from '@/components/landing/TextColorButton';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
@@ -54,6 +55,7 @@ export interface RendererProps {
   onToggleSection?: (id: string) => void;
   onDeleteSection?: (id: string) => void;
   onSectionColorChange?: (id: string, color: string | null) => void;
+  onTextColorChange?: (id: string, color: string | null) => void;
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
   /** Desktop editor only: frame/pan/zoom tools for images. */
@@ -79,7 +81,8 @@ const Editable: React.FC<{
   html?: boolean;
   hidden?: boolean;
   onDelete?: () => void;
-}> = ({ value, editable, onChange, as: Tag = 'div', multiline, className, style, placeholder, html, hidden, onDelete }) => {
+  colorControl?: React.ReactNode;
+}> = ({ value, editable, onChange, as: Tag = 'div', multiline, className, style, placeholder, html, hidden, onDelete, colorControl }) => {
   const ref = useRef<HTMLElement>(null);
   const commit = useCallback(() => {
     if (!ref.current) return;
@@ -117,7 +120,7 @@ const Editable: React.FC<{
   if (hidden) return null;
   if (html) {
     return (
-      <LandingElementBox editable={editable} onDelete={onDelete} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
+      <LandingElementBox editable={editable} onDelete={onDelete} colorControl={colorControl} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
       <Tag
         ref={ref as any}
         className={`lp-editable ${className || ''}`}
@@ -129,7 +132,7 @@ const Editable: React.FC<{
     );
   }
   return (
-    <LandingElementBox editable={editable} onDelete={onDelete} inline={Tag === 'span'} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
+    <LandingElementBox editable={editable} onDelete={onDelete} colorControl={colorControl} inline={Tag === 'span'} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
     <Tag ref={ref as any} className={`lp-editable ${className || ''}`} style={combined} {...editableProps}>
       {value || (editable ? '' : '')}
     </Tag>
@@ -277,6 +280,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onToggleSection,
   onDeleteSection,
   onSectionColorChange,
+  onTextColorChange,
   onDeleteElement,
   onResizeLogo,
   frameEditing = false,
@@ -296,6 +300,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
     { label: 'Sekundärfarbe', value: dealer.secondaryColor },
   ].flatMap(color => { const value = normalizeSectionColor(color.value); return value ? [{ label: color.label, value }] : []; });
   const colorControl = (id: string) => editable && onSectionColorChange ? <SectionBackgroundPicker value={content.sectionColors?.[id]} colors={profileColors} onChange={color => onSectionColorChange(id, color)} /> : undefined;
+  const textControl = (id: string) => editable && onTextColorChange
+    ? <TextColorButton value={content.textColors?.[id]} colors={profileColors} onChange={color => onTextColorChange(id, color)} />
+    : undefined;
+  const textOverride = (id: string, fallback: string) => textColorOverride(content.textColors?.[id], fallback);
 
   const removed = (id: string) => isLandingElementRemoved(content, id);
   const heroHasImage = !removed('hero.image');
@@ -477,9 +485,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 value={content.hero?.headline || `${brand} ${model}`}
                 onChange={(v) => onUpdateHero?.('headline', v)}
                 hidden={removed('hero.headline')} onDelete={() => onDeleteElement?.('hero.headline')}
+                colorControl={textControl('hero.headline')}
                 placeholder="Headline eingeben…"
                 className="lp-hero-h1"
-                style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: onHero }}
+                style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: textOverride('hero.headline', onHero) }}
               />
               <Editable
                 as="p"
@@ -488,9 +497,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 value={content.hero?.subheadline || ''}
                 onChange={(v) => onUpdateHero?.('subheadline', v)}
                 hidden={removed('hero.subheadline')} onDelete={() => onDeleteElement?.('hero.subheadline')}
+                colorControl={textControl('hero.subheadline')}
                 placeholder="Untertitel eingeben…"
                 className="lp-hero-p"
-                style={{ fontSize: 19, lineHeight: 1.55, color: rgba(onHero, 0.85), marginBottom: 36 }}
+                style={{ fontSize: 19, lineHeight: 1.55, color: textOverride('hero.subheadline', rgba(onHero, 0.85)), marginBottom: 36 }}
               />
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} label="Anfragebutton löschen" inline>
@@ -512,7 +522,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     editable={editable}
                     value={heroCtaText}
                     onChange={(v) => onUpdateHero?.('ctaText', v)}
-
+                    colorControl={textControl('hero.ctaText')}
+                    style={{ color: textOverride('hero.ctaText', onSecondary) }}
                     placeholder="CTA-Text"
                   />
                 </a>
@@ -568,6 +579,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
           section={s}
           backgroundColor={content.sectionColors?.[s.id]}
           colorControl={colorControl(s.id)}
+          textColors={content.textColors}
+          profileColors={profileColors}
+          onTextColorChange={onTextColorChange}
           index={idx}
           image={images[s.id]}
           labelImage={shouldLabelLandingImage(content, s.id, images[s.id])}
@@ -699,6 +713,9 @@ const SectionRenderer: React.FC<{
   section: LandingPageSection;
   backgroundColor?: string;
   colorControl?: React.ReactNode;
+  textColors?: Record<string, string>;
+  profileColors?: { label: string; value: string }[];
+  onTextColorChange?: (id: string, color: string | null) => void;
   index: number;
   image?: string;
   labelImage: boolean;
@@ -731,6 +748,9 @@ const SectionRenderer: React.FC<{
   section: s,
   backgroundColor,
   colorControl,
+  textColors,
+  profileColors,
+  onTextColorChange,
   removedElements,
   onDeleteElement,
   index,
@@ -755,6 +775,11 @@ const SectionRenderer: React.FC<{
   const bg = theme.background;
   const textColor = theme.foreground;
   const bodyColor = theme.body;
+  const textControl = (field: string) => editable && onTextColorChange
+    ? <TextColorButton value={textColors?.[`${s.id}.${field}`]} colors={profileColors || []} onChange={color => onTextColorChange(`${s.id}.${field}`, color)} />
+    : undefined;
+  const textOverride = (field: string, fallback: string) => textColorOverride(textColors?.[`${s.id}.${field}`], fallback);
+  const textOverrideOptional = (field: string) => normalizeSectionColor(textColors?.[`${s.id}.${field}`]);
   const enabled = (s as any).enabled !== false;
 
   // CTA band
@@ -777,8 +802,9 @@ const SectionRenderer: React.FC<{
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+              colorControl={textControl('headline')}
               placeholder="CTA-Überschrift"
-              style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: theme.custom ? textColor : '#fff' }}
+              style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: textOverride('headline', theme.custom ? textColor : '#fff') }}
             />
             <Editable
               as="div"
@@ -787,9 +813,10 @@ const SectionRenderer: React.FC<{
               value={s.content}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+              colorControl={textControl('content')}
               placeholder="Text…"
               className="lp-body-html"
-              style={{ fontSize: 17, opacity: 0.9, marginBottom: 32 }}
+              style={{ fontSize: 17, opacity: 0.9, marginBottom: 32, ...(textOverrideOptional('content') ? { color: textOverrideOptional('content') } : {}) }}
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {phone && !removed('phone') && (
@@ -827,8 +854,9 @@ const SectionRenderer: React.FC<{
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+            colorControl={textControl('headline')}
             placeholder="Überschrift"
-            style={{ fontSize: 34, fontWeight: 700, marginBottom: 24, textAlign: 'center', color: textColor }}
+            style={{ fontSize: 34, fontWeight: 700, marginBottom: 24, textAlign: 'center', color: textOverride('headline', textColor) }}
           />
           <Editable
             as="div"
@@ -837,9 +865,10 @@ const SectionRenderer: React.FC<{
             value={s.content}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+            colorControl={textControl('content')}
             placeholder="Inhalt eingeben…"
             className="lp-body-html"
-            style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
+            style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
           />
         </div>
       </SectionShell>
@@ -857,8 +886,9 @@ const SectionRenderer: React.FC<{
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+            colorControl={textControl('headline')}
             placeholder="Überschrift"
-            style={{ fontSize: 34, fontWeight: 700, marginBottom: 32, textAlign: 'center', color: textColor }}
+            style={{ fontSize: 34, fontWeight: 700, marginBottom: 32, textAlign: 'center', color: textOverride('headline', textColor) }}
           />
           <div style={{ marginBottom: 28 }}>
             {stack('16 / 9', removed('image') ? null : (<ImageFrame
@@ -883,8 +913,9 @@ const SectionRenderer: React.FC<{
             value={s.content}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+            colorControl={textControl('content')}
             className="lp-body-html"
-            style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
+            style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
           />
         </div>
       </SectionShell>
@@ -935,8 +966,9 @@ const SectionRenderer: React.FC<{
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
+              colorControl={textControl('headline')}
               placeholder="Überschrift"
-              style={{ fontSize: 32, fontWeight: 700, marginBottom: 20, lineHeight: 1.15, color: textColor }}
+              style={{ fontSize: 32, fontWeight: 700, marginBottom: 20, lineHeight: 1.15, color: textOverride('headline', textColor) }}
             />
             <Editable
               as="div"
@@ -945,8 +977,9 @@ const SectionRenderer: React.FC<{
               value={s.content}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
+              colorControl={textControl('content')}
               className="lp-body-html"
-              style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
+              style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
             />
           </div>}
           {!imageOnLeft && (
