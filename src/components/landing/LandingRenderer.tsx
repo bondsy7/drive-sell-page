@@ -371,8 +371,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
         .lp-root h1,.lp-root h2,.lp-root h3{font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;letter-spacing:-0.01em;color:#0f172a}
         .lp-root p{line-height:1.7}
         .lp-root a{color:var(--lp-primary);text-decoration:none}
-        .lp-editable[contenteditable="true"]:hover{outline-color:var(--lp-primary) !important;background:var(--lp-tint)}
-        .lp-editable[contenteditable="true"]:focus{outline:2px solid var(--lp-primary) !important;background:#fff;outline-offset:2px}
+        .lp-editable[contenteditable="true"]:hover{outline-color:var(--lp-primary) !important;background:rgba(15,23,42,0.10)}
+        .lp-editable[contenteditable="true"]:focus{outline:2px solid var(--lp-primary) !important;background:rgba(15,23,42,0.10);outline-offset:2px}
         .lp-editable[contenteditable="true"]:empty::before{content:attr(data-placeholder);color:rgba(15,23,42,0.35)}
         .lp-image-frame:hover .lp-image-overlay{opacity:1;background:rgba(15,23,42,0.55)}
         .lp-section:hover .lp-section-toolbar{opacity:1}
