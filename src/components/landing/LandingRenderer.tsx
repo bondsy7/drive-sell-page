@@ -28,30 +28,7 @@ export interface LiveInventoryView {
   error?: string | null;
 }
 
-/* ─── Helpers ─── */
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!m) return null;
-  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
-}
-function rgba(hex: string, alpha: number): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(23,79,107,${alpha})`;
-  return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
-}
-function relativeLuminance(hex: string): number {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0.2;
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-function readableOn(hex: string): string {
-  return relativeLuminance(hex) > 0.55 ? '#0f172a' : '#ffffff';
-}
+/* ─── Colour helpers come from @/lib/landing-theme (shared with the HTML export) ─── */
 
 /* ─── Section registry ─── */
 

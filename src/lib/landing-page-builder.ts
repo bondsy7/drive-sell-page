@@ -9,6 +9,7 @@ import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
 import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
 import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
+import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
   LIVE_INVENTORY_CSS,
