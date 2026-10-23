@@ -65,7 +65,7 @@ const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, 
             {v.variant && <div className="lp-live-variant">{v.variant}</div>}
             <div className="lp-live-specs">{liveSpecLabel(v)}</div>
             <div className="lp-live-price">{livePriceLabel(v)}</div>
-            {v.monthlyRate ? <div className="lp-live-rate">ab {v.monthlyRate.toLocaleString('de-DE')} €/Monat{notes.get(v.externalVehicleId) && <sup title={notes.get(v.externalVehicleId)!.text}>{toSuperscript(notes.get(v.externalVehicleId)!.number)}</sup>}</div> : null}
+            {notes.get(v.externalVehicleId) ? <div className="lp-live-rate">ab {notes.get(v.externalVehicleId)!.rate.toLocaleString('de-DE')} €/Monat<sup title={notes.get(v.externalVehicleId)!.text}>{toSuperscript(notes.get(v.externalVehicleId)!.number)}</sup></div> : null}
             {inventoryUrl && <span className="lp-live-more">Zum Angebot →</span>}
           </div>
         </a>
