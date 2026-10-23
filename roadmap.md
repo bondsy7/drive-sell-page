@@ -1,6 +1,5 @@
-## Landingpage-KI-Kennzeichnung (23.10.2026)
 ## Eindeutige Landingpage-Löschbuttons (23.10.2026)
-- [ ] Löschbuttons ohne Überlagerung mit sichtbarer Zielbeschriftung neben jedem X; an Pauls Seite prüfen, nicht veröffentlichen.
+- [x] Jedes X sichtbar mit Löschziel beschriftet; Abschnittsaktionen separat, Bildlöschen unten statt über KI-Label, Textaktionen im eigenen Bereich. An Pauls Seite alle Element-Hover ohne Buttonüberschneidungen, Desktop/Mobil sowie Bildlöschen/Rückgängig geprüft; ursprüngliches Bild wiederhergestellt, 8 Tests grün, Vorschau fehlerfrei; nicht veröffentlicht.
 
 ## Landingpage-KI-Kennzeichnung (23.10.2026)
 - [x] Generierte Landingpage-Bilder in Editor, Vorschau und HTML als AI Modified markiert; erste gespeicherte Seitenfassung nutzt ebenfalls den gemeinsamen HTML-Renderer. Eigene nachträgliche Uploads bleiben ohne automatisches Label; Hinweis bei „Eigene Bilder“. An Pauls Seite Upload, gespeicherte Ausnahme nach erneutem Öffnen und atomisches Rückgängig geprüft; ursprüngliches Bild wiederhergestellt, 7 Vorschau-Labels, keine Browserfehler, 20 Tests grün, Vorschau fehlerfrei; nicht veröffentlicht, keine KI-Generierung gestartet.
