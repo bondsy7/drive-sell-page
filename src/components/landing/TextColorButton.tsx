@@ -19,7 +19,7 @@ export default function TextColorButton({ value, colors, onChange, label = 'Text
         <span className="lp-delete-label">Textfarbe</span>
       </Button>
     </PopoverTrigger>
-    <PopoverContent align="end" className="w-64 space-y-3" onClick={event => event.stopPropagation()}>
+    <PopoverContent align="end" className="w-64 space-y-3" onOpenAutoFocus={event => event.preventDefault()} onClick={event => event.stopPropagation()}>
       <p className="text-sm font-semibold">Textfarbe</p>
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">Profilfarben</p>
