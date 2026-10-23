@@ -1,5 +1,14 @@
 import { buildContactFormHTML } from '@/lib/templates/shared';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
+import {
+  LIVE_INVENTORY_CSS,
+  LIVE_INVENTORY_NARROW_CSS,
+  livePriceLabel,
+  liveSpecLabel,
+  liveTitleLabel,
+  type LiveInventoryConfig,
+  type LiveVehicle,
+} from '@/lib/live-inventory';
 
 export interface LandingPageContent {
   meta: { title: string; description: string; h1: string };
@@ -150,6 +159,49 @@ function renderSection(
 </section>`;
 }
 
+/* ─── Live vehicle block (mini vehicle shop from the connected dealer stock) ─── */
+
+export interface LandingPageLiveInventory {
+  config: LiveInventoryConfig;
+  vehicles: LiveVehicle[];
+  inventoryUrl?: string;
+}
+
+function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
+  const { config, vehicles, inventoryUrl = '' } = live;
+  if (!config?.enabled) return '';
+
+  const card = (v: LiveVehicle) => {
+    const name = escapeHtml(liveTitleLabel(v));
+    const href = inventoryUrl ? escapeHtml(inventoryUrl) : '#';
+    return `<a class="lp-live-card" href="${href}"${inventoryUrl ? ' target="_blank" rel="noopener noreferrer"' : ''}>
+  <div class="lp-live-media">${v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" alt="${name}" loading="lazy" decoding="async"/>` : ''}</div>
+  <div class="lp-live-body">
+    <div class="lp-live-name">${name}</div>
+    ${v.variant ? `<div class="lp-live-variant">${escapeHtml(v.variant)}</div>` : ''}
+    <div class="lp-live-specs">${escapeHtml(liveSpecLabel(v))}</div>
+    <div class="lp-live-price">${escapeHtml(livePriceLabel(v))}</div>
+    ${v.monthlyRate ? `<div class="lp-live-rate">ab ${escapeHtml(v.monthlyRate.toLocaleString('de-DE'))} €/Monat</div>` : ''}
+    ${inventoryUrl ? '<span class="lp-live-more">Zum Angebot →</span>' : ''}
+  </div>
+</a>`;
+  };
+
+  const inner = vehicles.length
+    ? `<div class="${config.layout === 'grid' ? 'lp-live-grid' : 'lp-live-track'}">${vehicles.map(card).join('\n')}</div>`
+    : '<div class="lp-live-empty">Derzeit keine passenden Fahrzeuge verfügbar.</div>';
+
+  // The rule travels with the page so an external site can re-resolve the live stock.
+  const rule = escapeHtml(JSON.stringify({ ...config, selectedIds: config.selectedIds ?? [] }));
+
+  return `<section id="live-fahrzeuge" style="background:var(--lp-tint);border-top:1px solid var(--lp-border)" data-live-inventory="${rule}">
+  <div class="lp-live-inner">
+    <div class="lp-live-head"><h2 class="lp-live-title">${escapeHtml(config.title || 'Aktuelle Fahrzeuge aus unserem Bestand')}</h2></div>
+    ${inner}
+  </div>
+</section>`;
+}
+
 /* ─── Main builder ─── */
 
 export function buildLandingPageHTML(
@@ -159,7 +211,8 @@ export function buildLandingPageHTML(
   brand: string,
   model: string,
   brandLogoUrl?: string,
-  contactForm?: LandingPageContactForm
+  contactForm?: LandingPageContactForm,
+  liveInventory?: LandingPageLiveInventory
 ): string {
   const meta = content.meta || ({} as any);
   const hero = content.hero || ({} as any);
@@ -192,6 +245,8 @@ export function buildLandingPageHTML(
   const sectionBlocks = sections
     .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp))
     .join('\n');
+
+  const liveBlock = liveInventory ? buildLiveInventorySectionHTML(liveInventory) : '';
 
   const contactFormHTML = contactForm
     ? buildContactFormHTML({
@@ -236,6 +291,7 @@ export function buildLandingPageHTML(
     .lp-body-html th,.lp-body-html td{padding:8px 12px;border:1px solid var(--lp-border);text-align:left}
     .lp-body-html th{background:var(--lp-tint);font-weight:600}
     body{container-type:inline-size;container-name:lp}
+    ${LIVE_INVENTORY_CSS}
     /* Narrow layouts (tablet / mobile and real devices): image and text always stack. */
     @media(max-width:768px){
       section > div:not(.lp-hero-grid){padding:56px 20px !important}
@@ -245,6 +301,7 @@ export function buildLandingPageHTML(
       .lp-hero-media{min-height:300px !important}
       h1{font-size:32px !important;line-height:1.15 !important}
       h2{font-size:26px !important}
+      ${LIVE_INVENTORY_NARROW_CSS}
     }
     @container lp (max-width:900px){
       section > div:not(.lp-hero-grid){padding:56px 20px !important}
@@ -254,6 +311,7 @@ export function buildLandingPageHTML(
       .lp-hero-media{min-height:300px !important}
       h1{font-size:32px !important;line-height:1.15 !important}
       h2{font-size:26px !important}
+      ${LIVE_INVENTORY_NARROW_CSS}
     }
   </style>
 </head>
@@ -288,6 +346,8 @@ export function buildLandingPageHTML(
   </section>
 
   ${sectionBlocks}
+
+  ${liveBlock}
 
   <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 24px">
     <div style="max-width:960px;margin:0 auto;text-align:center">
