@@ -1,3 +1,4 @@
+import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
@@ -380,7 +381,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const heroCtaText = content.hero?.ctaText || 'Jetzt anfragen';
 
   return (
-    <div className="lp-root" style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
+    <div className="lp-root lp-layout" style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
       <style>{`
         .lp-root h1,.lp-root h2,.lp-root h3{font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;letter-spacing:-0.01em;color:#0f172a}
         .lp-root p{line-height:1.7}
@@ -428,6 +429,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           .lp-split-media{order:-1 !important}
           ${LIVE_INVENTORY_NARROW_CSS}
         }
+        ${LANDING_LAYOUT_CSS}
       `}</style>
 
       {/* Sticky header */}
@@ -440,13 +442,14 @@ const LandingRenderer: React.FC<RendererProps> = ({
           background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--lp-border)',
-          padding: '14px 24px',
+          padding: '14px 0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 16,
         }}
       >
+        <div className="lp-content-width lp-header-inner">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {brandLogoUrl && <img src={brandLogoUrl} alt={brand} style={{ height: 30, width: 'auto' }} />}
           {dealerLogo && <img src={dealerLogo} alt={dealerName} style={{ height: 34, width: 'auto' }} />}
@@ -469,20 +472,21 @@ const LandingRenderer: React.FC<RendererProps> = ({
             Jetzt anfragen
           </a>
         )}
+        </div>
       </header>
       </LandingElementBox>
 
       {/* HERO */}
       {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg="#0b1220">
         <div
-          className="lp-section-inner lp-hero-grid"
+          className="lp-section-inner lp-content-width lp-hero-grid"
           style={{
             position: 'relative',
             minHeight: 560,
             display: 'grid',
-            gridTemplateColumns: heroHasImage && heroHasText ? '1fr 1fr' : '1fr',
+            gridTemplateColumns: heroHasImage && heroHasText ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
             gap: 0,
-            padding: 0,
+            padding: '80px 32px',
             overflow: 'hidden',
           }}
         >
@@ -654,10 +658,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
         style={{
           background: 'var(--lp-tint)',
           borderTop: '1px solid var(--lp-border)',
-          padding: '80px 24px',
+          padding: '80px 0',
         }}
       >
-        <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
+        <div className="lp-content-width" style={{ textAlign: 'center' }}>
           {dealerLogo && <img src={dealerLogo} alt={dealerName} style={{ height: 56, marginBottom: 20 }} />}
           <h2 style={{ fontSize: 30, fontWeight: 700, marginBottom: 10 }}>{dealerName}</h2>
           {address && <p style={{ color: '#64748b', fontSize: 15, marginBottom: 20 }}>{address}</p>}
@@ -687,12 +691,14 @@ const LandingRenderer: React.FC<RendererProps> = ({
       </section>
       </LandingElementBox>
 
-      <footer style={{ background: '#0b1220', color: '#94a3b8', padding: '32px 24px', textAlign: 'center', fontSize: 12 }}>
+      <footer style={{ background: '#0b1220', color: '#94a3b8', padding: '32px 0', textAlign: 'center', fontSize: 12 }}>
+        <div className="lp-content-width">
         <p>© {new Date().getFullYear()} {dealerName}. Alle Angaben ohne Gewähr.</p>
         <p style={{ marginTop: 8 }}>{getAiDisclosureText('landing')}</p>
         {dealer.defaultLegalText && (
-          <p style={{ marginTop: 10, maxWidth: 800, margin: '10px auto 0', lineHeight: 1.6 }}>{dealer.defaultLegalText}</p>
+          <p style={{ marginTop: 10, margin: '10px auto 0', lineHeight: 1.6 }}>{dealer.defaultLegalText}</p>
         )}
+        </div>
       </footer>
     </div>
   );
@@ -777,11 +783,11 @@ const SectionRenderer: React.FC<{
           style={{
             background: `linear-gradient(135deg, ${primary}, #0b1220)`,
             color: '#fff',
-            padding: '88px 24px',
+            padding: '88px 0',
             textAlign: 'center',
           }}
         >
-          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div className="lp-content-width">
             <Editable
               as="h2"
               editable={editable}
@@ -831,7 +837,7 @@ const SectionRenderer: React.FC<{
   if (isFullWidth) {
     return (
       <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
-        <div className="lp-section-inner" style={{ maxWidth: removed('image') ? 1200 : 900, margin: '0 auto', padding: '96px 32px' }}>
+        <div className="lp-section-inner lp-content-width" style={{ padding: '96px 32px' }}>
           <Editable
             as="h2"
             editable={editable}
@@ -861,7 +867,7 @@ const SectionRenderer: React.FC<{
   if (s.type === 'gallery' || s.type === 'specs') {
     return (
       <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
-        <div className="lp-section-inner" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 32px' }}>
+        <div className="lp-section-inner lp-content-width" style={{ padding: '96px 32px' }}>
           <Editable
             as="h2"
             editable={editable}
@@ -904,10 +910,8 @@ const SectionRenderer: React.FC<{
   return (
     <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
       <div
-        className="lp-section-inner"
+        className="lp-section-inner lp-content-width"
         style={{
-          maxWidth: 1200,
-          margin: '0 auto',
           padding: '96px 32px',
         }}
       >
@@ -915,7 +919,7 @@ const SectionRenderer: React.FC<{
           className="lp-split"
           style={{
             display: 'grid',
-            gridTemplateColumns: removed('headline') && removed('content') ? '1fr' : imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr',
+            gridTemplateColumns: removed('headline') && removed('content') ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))',
             gap: 56,
             alignItems: 'center',
           }}

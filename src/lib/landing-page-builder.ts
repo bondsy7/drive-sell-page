@@ -1,3 +1,4 @@
+import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { createElement } from 'react';
@@ -118,8 +119,8 @@ function renderSection(
   const bodyColor = isDark ? 'rgba(255,255,255,0.85)' : '#475569';
 
   if (s.type === 'cta') {
-    return `<section style="background:linear-gradient(135deg,${primary},#0b1220);color:#fff;padding:88px 24px;text-align:center">
-  <div style="max-width:720px;margin:0 auto">
+    return `<section style="background:linear-gradient(135deg,${primary},#0b1220);color:#fff;padding:88px 0;text-align:center">
+  <div class="lp-content-width">
     ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:#fff">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px">${s.content || ''}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
@@ -134,7 +135,7 @@ function renderSection(
 
   if (isFullWidth) {
     return `<section style="background:${bg}">
-  <div style="max-width:${removed('image') ? 1200 : 900}px;margin:0 auto;padding:96px 32px">
+  <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
@@ -143,7 +144,7 @@ function renderSection(
 
   if (s.type === 'gallery' || s.type === 'specs') {
     return `<section style="background:${bg}">
-  <div style="max-width:1100px;margin:0 auto;padding:96px 32px">
+  <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${image ? `<div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
@@ -161,8 +162,8 @@ function renderSection(
   </div>`;
 
   return `<section style="background:${bg}">
-  <div style="max-width:1200px;margin:0 auto;padding:96px 32px">
-    <div class="lp-split" style="display:grid;grid-template-columns:${!textHtml ? '1fr' : imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr'};gap:56px;align-items:center">
+  <div class="lp-content-width" style="padding:96px 32px">
+    <div class="lp-split" style="display:grid;grid-template-columns:${!textHtml ? 'minmax(0,1fr)' : 'repeat(2,minmax(0,1fr))'};gap:56px;align-items:center">
       ${imageOnLeft ? imgHtml + textHtml : textHtml + imgHtml}
     </div>
   </div>
@@ -327,20 +328,23 @@ export function buildLandingPageHTML(
       h2{font-size:26px !important}
       ${LIVE_INVENTORY_NARROW_CSS}
     }
+    ${LANDING_LAYOUT_CSS}
   </style>
 </head>
-<body>
-${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+<body class="lp-layout">
+${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0">
+    <div class="lp-content-width lp-header-inner">
     <div style="display:flex;align-items:center;gap:14px">
       ${brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${escapeHtml(brand)}" style="height:30px;width:auto"/>` : ''}
       ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:34px;width:auto"/>` : ''}
       ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
     ${phone ? `<a href="tel:${phone}" style="background:var(--lp-primary);color:var(--lp-primary-on);padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
+    </div>
   </header>`}
 
 ${removed('hero') ? '' : `  <section style="position:relative;min-height:560px;overflow:hidden;background:#0b1220">
-    <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText ? '1fr 1fr' : '1fr'};min-height:560px" class="lp-split lp-hero-grid">
+    <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)'};min-height:560px" class="lp-content-width lp-hero-grid">
 ${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:linear-gradient(135deg,#0b1220 0%,${primary} 130%);color:#fff;min-height:420px">
         <div style="max-width:${heroHasImage ? '520px' : 'none'}">
 ${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${rgba(secondary, 0.2)};border:1px solid ${rgba(secondary, 0.4)};color:${secondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>`}
@@ -364,8 +368,8 @@ ${heroHasImage ? `      <div class="lp-hero-media" style="position:relative;min-
 
   ${liveBlock}
 
-${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 24px">
-    <div style="max-width:960px;margin:0 auto;text-align:center">
+${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 0">
+    <div class="lp-content-width" style="text-align:center">
       ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:56px;margin:0 auto 20px"/>` : ''}
       <h2 style="font-size:30px;font-weight:700;margin-bottom:10px">${escapeHtml(dealerName)}</h2>
       ${address ? `<p style="color:#64748b;font-size:15px;margin-bottom:20px">${escapeHtml(address)}</p>` : ''}
@@ -377,10 +381,12 @@ ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-
     </div>
   </section>`}
 
-  <footer style="background:#0b1220;color:#94a3b8;padding:32px 24px;text-align:center;font-size:12px">
+  <footer style="background:#0b1220;color:#94a3b8;padding:32px 0;text-align:center;font-size:12px">
+    <div class="lp-content-width">
     <p>© ${new Date().getFullYear()} ${escapeHtml(dealerName)}. Alle Angaben ohne Gewähr.</p>
     ${buildAiDisclosureFooterHTML("landing")}
-    ${dealer.defaultLegalText ? `<p style="margin-top:10px;max-width:800px;margin-left:auto;margin-right:auto;line-height:1.6">${escapeHtml(dealer.defaultLegalText)}</p>` : ''}
+    ${dealer.defaultLegalText ? `<p style="margin-top:10px;margin-left:auto;margin-right:auto;line-height:1.6">${escapeHtml(dealer.defaultLegalText)}</p>` : ''}
+    </div>
   </footer>
 
   ${contactFormHTML}
