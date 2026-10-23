@@ -97,7 +97,8 @@ function renderSection(
   phone: string,
   whatsapp: string,
   removedElements: string[] = [],
-  labelImage = true
+  labelImage = true,
+  frames: LandingPageContent['imageFrames'] = undefined,
 ): string {
   if (s.enabled === false) return '';
   const removed = (field: string) => removedElements.includes(`${s.id}.${field}`);
@@ -138,6 +139,7 @@ function renderSection(
   }
 
   if (s.type === 'gallery' || s.type === 'specs') {
+    const frame = frames?.[s.id] ? normalizeImageFrame(frames[s.id], 16 / 9) : null;
     return `<section style="background:${bg}">
   <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
@@ -149,7 +151,7 @@ function renderSection(
 
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
-  const splitFrame = resolveFrame(content, s.id, 4 / 3);
+  const splitFrame = frames?.[s.id] ? normalizeImageFrame(frames[s.id], 4 / 3) : null;
   const imgHtml = `<div class="lp-split-media"><div class="${splitFrame ? 'lp-framed' : ''}" style="position:relative;${splitFrame ? frameOuterCss(splitFrame) : 'aspect-ratio:4/3'};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image && labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${splitFrame ? ';' + frameImageCss(splitFrame) : ''}" loading="lazy" decoding="async"/>` : ''}</div></div>`;
   const textHtml = removed('headline') && removed('content') ? '' : `<div>
     ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
@@ -256,7 +258,7 @@ export function buildLandingPageHTML(
   const heroSub = hero.subheadline || '';
 
   const sectionBlocks = sections
-    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id])))
+    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames))
     .join('\n');
 
   const liveBlock = liveInventory && !removed('live-fahrzeuge') ? buildLiveInventorySectionHTML(liveInventory) : '';
