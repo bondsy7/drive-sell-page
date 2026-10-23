@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 
 const invoke = vi.hoisted(() => vi.fn(async () => ({ data: null, error: { message: 'Teststopp' } })));
 const ensureVehicleAuto = vi.hoisted(() => vi.fn(async () => 'vehicle-1'));
