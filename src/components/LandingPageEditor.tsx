@@ -38,7 +38,7 @@ interface LandingPageEditorProps {
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
 const VIEWPORT_WIDTH: Record<Viewport, number | undefined> = {
-  desktop: undefined,
+  desktop: 1600,
   tablet: 820,
   mobile: 420,
 };
