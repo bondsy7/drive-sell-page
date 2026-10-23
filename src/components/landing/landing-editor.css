@@ -23,4 +23,15 @@
 .lp-section:hover > .lp-section-controls > .lp-element-delete,
 .lp-section:focus-within > .lp-section-controls > .lp-element-delete { opacity: 1; pointer-events: auto; }
 @media (hover: none) { .lp-root .lp-element-delete { opacity: 1; pointer-events: auto; } }
-@media (prefers-reduced-motion: reduce) { .lp-root .lp-element-delete { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-root .lp-element-delete { transition: none; } }/* Image frame tools (desktop editor only) */
+.lp-root .lp-frame-handle { background: transparent; transition: background-color 120ms ease; }
+.lp-root .lp-image-frame:hover > .lp-frame-handle,
+.lp-root .lp-frame-frame > .lp-frame-handle { background: color-mix(in srgb, var(--lp-primary) 35%, transparent); }
+.lp-root .lp-frame-handle:hover { background: var(--lp-primary) !important; }
+.lp-root .lp-frame-toolbar { position: absolute; top: 12px; left: 12px; z-index: 32; display: flex; gap: 6px; opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
+.lp-root .lp-image-frame:hover > .lp-frame-toolbar,
+.lp-root .lp-frame-pan > .lp-frame-toolbar,
+.lp-root .lp-frame-frame > .lp-frame-toolbar { opacity: 1; pointer-events: auto; }
+.lp-root .lp-frame-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: none; border-radius: 999px; background: var(--lp-editor-control-bg); color: var(--lp-editor-control-fg); box-shadow: var(--lp-editor-control-shadow); font-size: 12px; font-weight: 600; cursor: pointer; }
+.lp-root .lp-frame-zoom { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 33; display: flex; align-items: center; gap: 10px; width: min(280px, calc(100% - 24px)); padding: 8px 12px; border-radius: 999px; background: var(--lp-editor-control-bg); color: var(--lp-editor-control-fg); box-shadow: var(--lp-editor-control-shadow); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.lp-root .lp-snap-guide { z-index: 80; pointer-events: none; background: var(--lp-secondary, #e00000); }
