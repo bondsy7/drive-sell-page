@@ -2,7 +2,8 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
-import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt, getAiDisclosureText } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
@@ -147,8 +148,9 @@ const ImageFrame: React.FC<{
   onReplace?: () => void;
   primary: string;
   onDelete?: () => void;
+  labelImage?: boolean;
   rounded?: boolean;
-}> = ({ src, alt, aspect, editable, loading, onReplace, primary, onDelete, rounded = true }) => (
+}> = ({ src, alt, aspect, editable, loading, onReplace, primary, onDelete, labelImage = true, rounded = true }) => (
   <div
     className="lp-image-frame"
     style={{
@@ -163,7 +165,7 @@ const ImageFrame: React.FC<{
     {src ? (
       <img
         src={src}
-        alt={alt}
+        alt={labelImage ? withAiDisclosureAlt(alt) : alt}
         loading="lazy"
         decoding="async"
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
@@ -184,6 +186,7 @@ const ImageFrame: React.FC<{
         <ImageIcon size={20} style={{ marginRight: 8 }} /> Kein Bild
       </div>
     )}
+    {src && labelImage && <img src={getAiDisclosureLabelVector("landing")} alt={getAiDisclosureLabelAlt("landing")} className={`${AI_DISCLOSURE_OVERLAY_CLASS} z-10`} />}
     {editable && onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
     {editable && (
       <button
@@ -591,6 +594,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           {heroHasImage && <div className="lp-hero-media" style={{ position: 'relative', minHeight: 420, background: '#0f172a' }}>
             <ImageFrame
               src={heroImage}
+              labelImage={shouldLabelLandingImage(content, 'hero', heroImage)}
               alt={`${brand} ${model}`}
               aspect="1 / 1"
               editable={editable}
@@ -611,6 +615,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           section={s}
           index={idx}
           image={images[s.id]}
+          labelImage={shouldLabelLandingImage(content, s.id, images[s.id])}
           editable={editable}
           primary={primary}
           secondary={secondary}
@@ -713,6 +718,7 @@ const SectionRenderer: React.FC<{
   section: LandingPageSection;
   index: number;
   image?: string;
+  labelImage: boolean;
   editable: boolean;
   primary: string;
   secondary: string;
@@ -734,6 +740,7 @@ const SectionRenderer: React.FC<{
   onDeleteElement,
   index,
   image,
+  labelImage,
   editable,
   primary,
   secondary,
@@ -867,6 +874,7 @@ const SectionRenderer: React.FC<{
           <div style={{ marginBottom: 28 }}>
             <ImageFrame
               src={image}
+                labelImage={labelImage}
               alt={s.headline}
               aspect="16 / 9"
               editable={editable}
@@ -916,6 +924,7 @@ const SectionRenderer: React.FC<{
             <div className="lp-split-media">
               <ImageFrame
                 src={image}
+                labelImage={labelImage}
                 alt={s.headline}
                 aspect="4 / 3"
                 editable={editable}
@@ -963,6 +972,7 @@ const SectionRenderer: React.FC<{
             <div className="lp-split-media">
               <ImageFrame
                 src={image}
+                labelImage={labelImage}
                 alt={s.headline}
                 aspect="4 / 3"
                 editable={editable}

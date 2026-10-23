@@ -1,3 +1,4 @@
+import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -557,6 +558,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
               </label>
             )}
           </div>
+          <p className="text-xs text-muted-foreground">{LANDING_UPLOAD_DISCLOSURE_NOTICE}</p>
           <p className="text-[10px] text-muted-foreground">Eigene Bilder werden priorisiert, fehlende werden KI-generiert. Tipp: Motor, Innenraum, Heck etc. hochladen für passende Section-Bilder.</p>
         </div>
       </div>

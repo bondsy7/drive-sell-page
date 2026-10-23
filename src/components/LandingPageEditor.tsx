@@ -32,6 +32,7 @@ import {
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 import { useLandingEditorHistory } from '@/hooks/useLandingEditorHistory';
 import { removeLandingElement } from '@/lib/landing-element-editing';
+import { replaceLandingImage, LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
 
 interface LandingPageEditorProps {
@@ -74,7 +75,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 }) => {
   const { user } = useAuth();
   const { data: profileCardDesign } = useLiveVehicleCardDesign();
-  const { state: editorState, update: updateEditor, undo, canUndo } = useLandingEditorHistory({
+  const { state: editorState, update: updateEditor, change, undo, canUndo } = useLandingEditorHistory({
     content: {
       ...initialContent,
       meta: initialContent?.meta || { title: '', description: '', h1: '' },
@@ -88,7 +89,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const { content, images, contactFormEnabled } = editorState;
   const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
   const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
-  const setImages = useCallback((value: React.SetStateAction<Record<string, string>>) => updateEditor('images', value), [updateEditor]);
+  const replaceImage = useCallback((id: string, url: string, kind: 'upload' | 'ai') => change(state => replaceLandingImage(state, id, url, kind)), [change]);
   const setLiveInventory = useCallback((value: React.SetStateAction<LiveInventoryConfig>) => updateEditor('liveInventory', value), [updateEditor]);
   const setContactFormEnabled = useCallback((value: React.SetStateAction<boolean>) => updateEditor('contactFormEnabled', value), [updateEditor]);
   const deleteElement = useCallback((id: string) => setContent(previous => removeLandingElement(previous, id)), [setContent]);
@@ -221,7 +222,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       const base64 = await fileToBase64(file);
       const url = await uploadImageToStorage(base64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {
-        setImages(prev => ({ ...prev, [sectionId]: url }));
+        replaceImage(sectionId, url, 'upload');
         toast.success('Bild hochgeladen!');
       }
     } catch {
@@ -250,7 +251,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       if (user) {
         const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
         if (url) {
-          setImages(prev => ({ ...prev, [sectionId]: url }));
+          replaceImage(sectionId, url, 'ai');
           toast.success('Bild neu generiert!');
         }
       }
@@ -281,7 +282,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
         if (data?.imageBase64) {
           const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${t.id}-${Date.now()}.png`);
           if (url) {
-            setImages(prev => ({ ...prev, [t.id]: url }));
+            replaceImage(t.id, url, 'ai');
             ok++;
           }
         }
@@ -304,7 +305,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       if (error || !data?.imageBase64) { toast.error('Remastering fehlgeschlagen'); return; }
       const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {
-        setImages(prev => ({ ...prev, [sectionId]: url }));
+        replaceImage(sectionId, url, 'ai');
         toast.success('Bild remastered!');
       }
     } catch {
@@ -456,7 +457,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   <VehicleImagePicker
                     defaultVehicleId={vehicleId}
                     onPick={(url) => {
-                      if (imageDialogSection) setImages(prev => ({ ...prev, [imageDialogSection]: url }));
+                      if (imageDialogSection) replaceImage(imageDialogSection, url, 'ai');
                       setPickFromGallery(false);
                       setImageDialogSection(null);
                       toast.success('Bild übernommen');
@@ -478,8 +479,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <Upload className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Bild hochladen</p>
+                  <p className="text-sm font-medium text-foreground">Eigene Bilder</p>
                   <p className="text-xs text-muted-foreground">Ein eigenes Bild verwenden</p>
+                  <p className="text-xs text-muted-foreground mt-1">{LANDING_UPLOAD_DISCLOSURE_NOTICE}</p>
                 </div>
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files?.[0];
