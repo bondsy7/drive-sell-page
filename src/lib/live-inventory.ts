@@ -93,3 +93,36 @@ export const liveSpecLabel = (v: LiveVehicle) => [
   v.year ? `${v.year}` : null,
   v.mileage != null ? `${v.mileage.toLocaleString('de-DE')} km` : null,
 ].filter(Boolean).join(' · ');
+
+/* ─── Shared block styles: one source for the editor canvas and the exported HTML ─── */
+
+export const LIVE_INVENTORY_CSS = `
+.lp-live-inner{max-width:1200px;margin:0 auto;padding:96px 32px}
+.lp-live-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px;flex-wrap:wrap}
+.lp-live-title{font-size:34px;font-weight:700;color:#0f172a;line-height:1.15}
+.lp-live-nav{display:flex;gap:8px}
+.lp-live-nav button{width:34px;height:34px;border-radius:999px;border:1px solid var(--lp-border);background:#fff;color:#0f172a;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color 140ms ease}
+.lp-live-nav button:hover{background:var(--lp-tint)}
+.lp-live-track{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 4px 18px;scrollbar-width:thin}
+.lp-live-track > .lp-live-card{flex:0 0 320px;scroll-snap-align:start}
+.lp-live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.lp-live-card{display:flex;flex-direction:column;border:1px solid var(--lp-border);border-radius:16px;overflow:hidden;background:#fff;text-decoration:none;color:inherit;transition:box-shadow 180ms ease, transform 180ms ease}
+.lp-live-card:hover{box-shadow:0 10px 30px rgba(15,23,42,.10);transform:translateY(-2px)}
+.lp-live-media{position:relative;aspect-ratio:4/3;background:var(--lp-tint);overflow:hidden;display:flex;align-items:center;justify-content:center;color:rgba(15,23,42,.35)}
+.lp-live-media img{width:100%;height:100%;object-fit:cover;display:block}
+.lp-live-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px}
+.lp-live-name{font-size:16px;font-weight:700;color:#0f172a;line-height:1.3}
+.lp-live-variant{font-size:13px;color:#64748b;line-height:1.4}
+.lp-live-specs{font-size:12px;color:#64748b}
+.lp-live-price{font-size:19px;font-weight:800;color:var(--lp-primary);margin-top:6px}
+.lp-live-rate{font-size:12px;color:#64748b}
+.lp-live-more{margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--lp-primary)}
+.lp-live-empty{padding:28px;border:1px dashed var(--lp-border);border-radius:14px;text-align:center;color:#64748b;font-size:14px}
+`;
+
+/** Narrow layouts (tablet / mobile preview and real devices): one card per view. */
+export const LIVE_INVENTORY_NARROW_CSS = `
+  .lp-live-inner{padding:56px 20px !important}
+  .lp-live-title{font-size:26px !important}
+  .lp-live-track > .lp-live-card{flex:0 0 82%}
+`;
