@@ -18,7 +18,6 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   if (hidden) return null;
   if (!editable || (!onDelete && !colorControl)) return <>{children}</>;
   const Tag = inline ? 'span' : 'div';
-  const hasControls = Boolean(colorControl || onDelete);
   if (inline) {
     // Inline elements (e.g. CTA buttons) must keep their natural height: the hover
     // controls float in one row above the element instead of reserving padding.
