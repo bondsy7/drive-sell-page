@@ -18,7 +18,22 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   if (hidden) return null;
   if (!editable || (!onDelete && !colorControl)) return <>{children}</>;
   const Tag = inline ? 'span' : 'div';
-  return <Tag className={`lp-element-box${inline ? ' lp-element-inline' : ''}${colorControl ? ' lp-has-color' : ''}`}>
+  if (inline) {
+    // Inline elements (e.g. CTA buttons) must keep their natural height: the hover
+    // controls float in one row above the element instead of reserving padding.
+    return <Tag className={`lp-element-box lp-element-inline${colorControl ? ' lp-has-color' : ''}${!onDelete ? ' lp-color-only' : ''}`}>
+      {children}
+      {(colorControl || onDelete) && (
+        <span className="lp-controls-row"
+          onMouseDown={event => event.preventDefault()}
+          onClick={event => { event.preventDefault(); event.stopPropagation(); }}>
+          {colorControl}
+          {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
+        </span>
+      )}
+    </Tag>;
+  }
+  return <Tag className={`lp-element-box${colorControl ? ' lp-has-color' : ''}`}>
     {children}
     {colorControl}
     {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
