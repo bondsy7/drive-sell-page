@@ -119,7 +119,7 @@ const Editable: React.FC<{
   if (hidden) return null;
   if (html) {
     return (
-      <LandingElementBox editable={editable} onDelete={onDelete}>
+      <LandingElementBox editable={editable} onDelete={onDelete} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
       <Tag
         ref={ref as any}
         className={`lp-editable ${className || ''}`}
@@ -131,7 +131,7 @@ const Editable: React.FC<{
     );
   }
   return (
-    <LandingElementBox editable={editable} onDelete={onDelete} inline={Tag === 'span'}>
+    <LandingElementBox editable={editable} onDelete={onDelete} inline={Tag === 'span'} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
     <Tag ref={ref as any} className={`lp-editable ${className || ''}`} style={combined} {...editableProps}>
       {value || (editable ? '' : '')}
     </Tag>
@@ -237,7 +237,7 @@ const SectionShell: React.FC<{
       className="lp-section"
       style={{ position: 'relative', background: bg, opacity: enabled ? 1 : 0.4 }}
     >
-      {editable && (
+      {editable && <div className="lp-section-controls">
         <div
           className="lp-section-toolbar"
           style={{
@@ -262,8 +262,8 @@ const SectionShell: React.FC<{
           </ToolbarButton>
 
         </div>
-      )}
-      {editable && onDelete && <ElementDeleteButton onDelete={onDelete} label="Abschnitt löschen" />}
+        {onDelete && <ElementDeleteButton onDelete={onDelete} label={id === 'hero' ? 'Header löschen' : 'Abschnitt löschen'} />}
+      </div>}
       {children}
       {editable && onAddAfter && (
         <div
@@ -500,7 +500,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
             }}
           >
             <div style={{ maxWidth: heroHasImage ? 520 : undefined }}>
-              <LandingElementBox editable={editable} hidden={removed('hero.brand')} onDelete={() => onDeleteElement?.('hero.brand')} inline>
+              <LandingElementBox editable={editable} hidden={removed('hero.brand')} onDelete={() => onDeleteElement?.('hero.brand')} label="Marke löschen" inline>
               <div
                 style={{
                   display: 'inline-flex',
@@ -542,7 +542,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 style={{ fontSize: 19, lineHeight: 1.55, color: 'rgba(255,255,255,0.85)', marginBottom: 36 }}
               />
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} inline>
+                <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} label="Anfragebutton löschen" inline>
                 <a
                   href="#kontakt"
                   style={{
@@ -567,7 +567,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 </a>
                 </LandingElementBox>
                 {whatsapp && !removed('hero.whatsapp') && (
-                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} inline><a
+                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} label="WhatsApp-Button löschen" inline><a
                     href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener"
@@ -804,12 +804,12 @@ const SectionRenderer: React.FC<{
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {phone && !removed('phone') && (
-                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} inline><a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} label="Telefonbutton löschen" inline><a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
                   📞 Anrufen
                 </a></LandingElementBox>
               )}
               {whatsapp && !removed('whatsapp') && (
-                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} inline><a
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} label="WhatsApp-Button löschen" inline><a
                   href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener"

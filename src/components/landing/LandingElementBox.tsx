@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import './landing-editor.css';
 
 export function ElementDeleteButton({ onDelete, label = 'Element löschen' }: { onDelete: () => void; label?: string }) {
-  return <Button type="button" variant="ghost" size="icon" className="lp-element-delete" title={label} aria-label={label}
+  return <Button type="button" variant="ghost" size="sm" className="lp-element-delete" title={label} aria-label={label}
     onMouseDown={event => event.preventDefault()}
     onClick={event => { event.preventDefault(); event.stopPropagation(); onDelete(); }}>
-    <X size={16} aria-hidden="true" />
+    <span className="lp-delete-icon"><X size={16} aria-hidden="true" /></span>
+    <span className="lp-delete-label">{label}</span>
   </Button>;
 }
 
