@@ -1,4 +1,6 @@
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
+import { LANDING_LOGO_CSS, type LandingLogoSizes } from '@/lib/landing-logo-size';
+import LandingLogo from '@/components/landing/LandingLogo';
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { createElement } from 'react';
@@ -17,6 +19,7 @@ import {
 } from '@/lib/live-inventory';
 
 export interface LandingPageContent {
+  logoSizes?: LandingLogoSizes;
   imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
   removedElements?: string[];
   meta: { title: string; description: string; h1: string };
@@ -333,14 +336,15 @@ export function buildLandingPageHTML(
       ${LIVE_INVENTORY_NARROW_CSS}
     }
     ${LANDING_LAYOUT_CSS}
+    ${LANDING_LOGO_CSS}
   </style>
 </head>
 <body class="lp-layout">
 ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0">
     <div class="lp-content-width lp-header-inner">
-    <div style="display:flex;align-items:center;gap:14px">
-      ${brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${escapeHtml(brand)}" style="height:30px;width:auto"/>` : ''}
-      ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:34px;width:auto"/>` : ''}
+    <div class="lp-header-logos">
+      ${brandLogoUrl ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.brand', src: brandLogoUrl, alt: brand, sizes: content.logoSizes })) : ''}
+      ${dealerLogo ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
       ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
     ${phone ? `<a href="tel:${phone}" style="background:var(--lp-primary);color:var(--lp-primary-on);padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
@@ -374,7 +378,7 @@ ${heroHasImage ? `      <div class="lp-hero-media" style="position:relative;min-
 
 ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 0">
     <div class="lp-content-width" style="text-align:center">
-      ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:56px;margin:0 auto 20px"/>` : ''}
+      ${dealerLogo ? renderToStaticMarkup(createElement(LandingLogo, { id: 'contact.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
       <h2 style="font-size:30px;font-weight:700;margin-bottom:10px">${escapeHtml(dealerName)}</h2>
       ${address ? `<p style="color:#64748b;font-size:15px;margin-bottom:20px">${escapeHtml(address)}</p>` : ''}
       <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:20px">

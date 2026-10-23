@@ -1,3 +1,6 @@
+## Landingpage-Logogrößen (23.10.2026)
+- [ ] Alle Logos per Klick mit Regler darunter vergrößern/verkleinern; Größen speichern, Rückgängig und HTML-Ausgabe prüfen, nicht veröffentlichen.
+
 ## Landing Page manuell als Hauptwerkzeug (23.10.2026)
 - [x] „Landing Page manuell“ erscheint als breite, hellgrün hinterlegte Karte direkt unter der Überschrift „Weitere Werkzeuge“; neue Tokens `--highlight`, `--highlight-foreground`, `--highlight-border` (hell und dunkel), Kartenklick öffnet den Generator wie bisher. An Pauls Profil Desktop (1120 px breit, 1 Karte, keine Duplikate im Raster) und Mobil 420 px (kein Überlauf) geprüft, Vorschau fehlerfrei; nicht veröffentlicht.
 

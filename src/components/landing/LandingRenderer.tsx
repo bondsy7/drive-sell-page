@@ -1,4 +1,6 @@
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
+import LandingLogo from '@/components/landing/LandingLogo';
+import { LANDING_LOGO_CSS, type LandingLogoId } from '@/lib/landing-logo-size';
 import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
@@ -65,6 +67,7 @@ export interface RendererProps {
   onToggleSection?: (id: string) => void;
   onDeleteSection?: (id: string) => void;
   onDeleteElement?: (id: string) => void;
+  onResizeLogo?: (id: LandingLogoId, height: number) => void;
   onAddSection?: (afterId: string | null) => void;
   imageLoading?: string | null;
   liveInventory?: LiveInventoryView | null;
@@ -345,6 +348,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onToggleSection,
   onDeleteSection,
   onDeleteElement,
+  onResizeLogo,
   onAddSection,
   imageLoading,
   liveInventory,
@@ -430,6 +434,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           ${LIVE_INVENTORY_NARROW_CSS}
         }
         ${LANDING_LAYOUT_CSS}
+        ${LANDING_LOGO_CSS}
       `}</style>
 
       {/* Sticky header */}
@@ -450,9 +455,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
         }}
       >
         <div className="lp-content-width lp-header-inner">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {brandLogoUrl && <img src={brandLogoUrl} alt={brand} style={{ height: 30, width: 'auto' }} />}
-          {dealerLogo && <img src={dealerLogo} alt={dealerName} style={{ height: 34, width: 'auto' }} />}
+        <div className="lp-header-logos">
+          {brandLogoUrl && <LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} />}
+          {dealerLogo && <LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} />}
           {!dealerLogo && dealerName && (
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15 }}>{dealerName}</span>
           )}
@@ -662,7 +667,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         }}
       >
         <div className="lp-content-width" style={{ textAlign: 'center' }}>
-          {dealerLogo && <img src={dealerLogo} alt={dealerName} style={{ height: 56, marginBottom: 20 }} />}
+          {dealerLogo && <LandingLogo id="contact.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} />}
           <h2 style={{ fontSize: 30, fontWeight: 700, marginBottom: 10 }}>{dealerName}</h2>
           {address && <p style={{ color: '#64748b', fontSize: 15, marginBottom: 20 }}>{address}</p>}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 20 }}>

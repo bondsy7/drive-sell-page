@@ -441,6 +441,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
               onDeleteElement={deleteElement}
+              onResizeLogo={(id, height) => setContent(previous => ({ ...previous, logoSizes: { ...previous.logoSizes, [id]: height } }))}
               onAddSection={(afterId) => setAddAfterId(afterId)}
               imageLoading={imageLoading}
               liveInventory={liveInventory.enabled
