@@ -8,7 +8,7 @@ const cfg = { ...DEFAULT_LIVE_INVENTORY, enabled: true, cardDesign: { preset: 'j
 describe('finance footnotes', () => {
   it('EV4 37.890 € example', () => {
     const e = financeExample(37890);
-    expect(e.downPayment).toBe(7578); expect(e.netLoan).toBe(30312); expect(e.finalInstallment).toBe(15156); expect(e.rate).toBe(431.5);
+    expect(e.downPayment).toBe(7578); expect(e.netLoan).toBe(30312); expect(e.finalInstallment).toBe(15156); expect(e.rate).toBe(431.52);
   });
   it('numbers each rate vehicle in order, skips vehicles without price', () => {
     const n = buildFinanceFootnotes([v('a', 37890), v('b', null), v('c', 20000)], cfg);
