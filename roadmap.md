@@ -1,3 +1,6 @@
+## Einheitliche Landingpage-Inhaltsbreiten (23.10.2026)
+- [ ] Alle Inhaltsbereiche und gleich breiten Spalten in Editor und HTML auf gemeinsame Außenkanten ausrichten; Desktop, Tablet und Mobil an Pauls Seite prüfen; nicht veröffentlichen.
+
 ## Eindeutige Landingpage-Löschbuttons (23.10.2026)
 - [x] Jedes X sichtbar mit Löschziel beschriftet; Abschnittsaktionen separat, Bildlöschen unten statt über KI-Label, Textaktionen im eigenen Bereich. An Pauls Seite alle Element-Hover ohne Buttonüberschneidungen, Desktop/Mobil sowie Bildlöschen/Rückgängig geprüft; ursprüngliches Bild wiederhergestellt, 8 Tests grün, Vorschau fehlerfrei; nicht veröffentlicht.
 
