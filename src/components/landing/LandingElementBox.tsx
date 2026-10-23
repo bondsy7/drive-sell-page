@@ -22,7 +22,7 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   if (inline) {
     // Inline elements (e.g. CTA buttons) must keep their natural height: the hover
     // controls float in one row above the element instead of reserving padding.
-    return <Tag className={`lp-element-box lp-element-inline${hasControls ? ' lp-has-controls' : ''}`}>
+    return <Tag className={`lp-element-box lp-element-inline${colorControl ? ' lp-has-color' : ''}${!onDelete ? ' lp-color-only' : ''}`}>
       {children}
       {hasControls && (
         <span className="lp-controls-row">

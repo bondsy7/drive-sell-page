@@ -74,6 +74,9 @@
 /* Inline elements keep natural size: hover controls float in one row above the element. */
 .lp-element-box.lp-element-inline { padding-top: 0; }
 .lp-element-box.lp-element-inline.lp-has-color { padding-top: 0; }
+/* Colour-only inline rows (nested inside a button) float below the element so they
+   never collide with the outer delete pill above. */
+.lp-root .lp-element-inline.lp-color-only > .lp-controls-row { top: calc(100% + 6px); }
 .lp-root .lp-element-inline > .lp-controls-row {
   position: absolute; top: -38px; right: 0; z-index: 36;
   display: flex; align-items: flex-start; gap: 6px;
