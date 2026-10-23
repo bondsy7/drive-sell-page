@@ -9,6 +9,7 @@ import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt, getAiDisclosureText } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
+import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
 import {
   LIVE_INVENTORY_CSS,
@@ -28,30 +29,7 @@ export interface LiveInventoryView {
   error?: string | null;
 }
 
-/* ─── Helpers ─── */
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!m) return null;
-  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
-}
-function rgba(hex: string, alpha: number): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(23,79,107,${alpha})`;
-  return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
-}
-function relativeLuminance(hex: string): number {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0.2;
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-function readableOn(hex: string): string {
-  return relativeLuminance(hex) > 0.55 ? '#0f172a' : '#ffffff';
-}
+/* ─── Colour helpers come from @/lib/landing-theme (shared with the HTML export) ─── */
 
 /* ─── Section registry ─── */
 
@@ -356,8 +334,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   imageLoading,
   liveInventory,
 }) => {
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
+  const primary = landingPrimary(dealer);
+  const secondary = landingSecondary(dealer);
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 

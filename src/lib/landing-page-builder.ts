@@ -9,6 +9,7 @@ import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
 import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
 import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
+import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
   LIVE_INVENTORY_CSS,
@@ -70,27 +71,7 @@ export interface LandingPageContactForm {
   intro?: string;
 }
 
-/* ─── color helpers ─── */
-function hexToRgb(hex: string) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
-}
-function rgba(hex: string, a: number) {
-  const rgb = hexToRgb(hex);
-  return rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${a})` : `rgba(23,79,107,${a})`;
-}
-function luma(hex: string) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0.2;
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-function readableOn(hex: string) {
-  return luma(hex) > 0.55 ? '#0f172a' : '#ffffff';
-}
+/* ─── color helpers come from @/lib/landing-theme (shared with the React renderer) ─── */
 function escapeHtml(s: string): string {
   return String(s || '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any)[c]
@@ -239,8 +220,8 @@ export function buildLandingPageHTML(
   const sections = content.sections || [];
   const seo = content.seo || ({} as any);
 
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
+  const primary = landingPrimary(dealer);
+  const secondary = landingSecondary(dealer);
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 
@@ -281,6 +262,7 @@ export function buildLandingPageHTML(
         currentCategory: contactForm.pageType || '',
         heading: contactForm.heading,
         intro: contactForm.intro,
+        accent: secondary,
       })
     : '';
 
