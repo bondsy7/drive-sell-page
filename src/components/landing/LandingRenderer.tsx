@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
-import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt, getAiDisclosureText } from "@/lib/ai-disclosure";
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
@@ -675,15 +675,6 @@ const LandingRenderer: React.FC<RendererProps> = ({
         <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} />
       )}
 
-      <footer style={{ background: '#0b1220', color: '#94a3b8', padding: '32px 0', textAlign: 'center', fontSize: 12 }}>
-        <div className="lp-content-width">
-        <p>© {new Date().getFullYear()} {dealerName}. Alle Angaben ohne Gewähr.</p>
-        <p style={{ marginTop: 8 }}>{getAiDisclosureText('landing')}</p>
-        {dealer.defaultLegalText && (
-          <p style={{ marginTop: 10, margin: '10px auto 0', lineHeight: 1.6 }}>{dealer.defaultLegalText}</p>
-        )}
-        </div>
-      </footer>
     </div>
   );
 };
