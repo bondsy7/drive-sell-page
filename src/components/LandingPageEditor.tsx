@@ -551,6 +551,11 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               onMoveSection={moveSection}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
+              onSectionColorChange={(id, color) => setContent(previous => {
+                const sectionColors = { ...previous.sectionColors };
+                if (color) sectionColors[id] = color; else delete sectionColors[id];
+                return { ...previous, sectionColors };
+              })}
               onDeleteElement={deleteElement}
               onResizeLogo={(id, height) => setContent(previous => ({ ...previous, logoSizes: { ...previous.logoSizes, [id]: height } }))}
               frameEditing={viewport === 'desktop'}

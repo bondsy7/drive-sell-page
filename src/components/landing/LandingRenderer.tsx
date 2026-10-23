@@ -1,3 +1,5 @@
+import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
+import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import LandingLogo from '@/components/landing/LandingLogo';
 import ImageFrame from '@/components/landing/LandingImageFrame';
@@ -51,6 +53,7 @@ export interface RendererProps {
   onMoveSection?: (id: string, dir: 'up' | 'down') => void;
   onToggleSection?: (id: string) => void;
   onDeleteSection?: (id: string) => void;
+  onSectionColorChange?: (id: string, color: string | null) => void;
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
   /** Desktop editor only: frame/pan/zoom tools for images. */
@@ -144,7 +147,8 @@ const SectionShell: React.FC<{
   onAddAfter?: () => void;
   children: React.ReactNode;
   bg?: string;
-}> = ({ id, editable, enabled = true, onMove, onToggle, onDelete, onAddAfter, children, bg }) => {
+  colorControl?: React.ReactNode;
+}> = ({ id, editable, enabled = true, onMove, onToggle, onDelete, onAddAfter, children, bg, colorControl }) => {
   if (!enabled && !editable) return null;
   return (
     <motion.section
@@ -181,7 +185,10 @@ const SectionShell: React.FC<{
           </ToolbarButton>
 
         </div>
-        {onDelete && <ElementDeleteButton onDelete={onDelete} label={id === 'hero' ? 'Header löschen' : 'Abschnitt löschen'} />}
+        <div className="lp-section-actions">
+          {onDelete && <ElementDeleteButton onDelete={onDelete} label={id === 'hero' ? 'Header löschen' : 'Abschnitt löschen'} />}
+          {colorControl}
+        </div>
       </div>}
       {children}
       {editable && onAddAfter && (
@@ -269,6 +276,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onMoveSection,
   onToggleSection,
   onDeleteSection,
+  onSectionColorChange,
   onDeleteElement,
   onResizeLogo,
   frameEditing = false,
@@ -281,6 +289,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const secondary = landingSecondary(dealer);
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
+  const heroBackground = normalizeSectionColor(content.sectionColors?.hero) || primary;
+  const onHero = readableOn(heroBackground);
+  const profileColors = [
+    { label: 'Primärfarbe', value: dealer.primaryColor },
+    { label: 'Sekundärfarbe', value: dealer.secondaryColor },
+  ].flatMap(color => { const value = normalizeSectionColor(color.value); return value ? [{ label: color.label, value }] : []; });
+  const colorControl = (id: string) => editable && onSectionColorChange ? <SectionBackgroundPicker value={content.sectionColors?.[id]} colors={profileColors} onChange={color => onSectionColorChange(id, color)} /> : undefined;
 
   const removed = (id: string) => isLandingElementRemoved(content, id);
   const heroHasImage = !removed('hero.image');
@@ -409,7 +424,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       </LandingElementBox>
 
       {/* HERO */}
-      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg={primary}>
+      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg={heroBackground} colorControl={colorControl('hero')}>
         <div
           className="lp-section-inner lp-content-width lp-hero-grid"
           style={{
@@ -430,8 +445,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               padding: '80px 56px',
-              background: primary,
-              color: onPrimary,
+              background: heroBackground,
+              color: onHero,
               minHeight: 420,
             }}
           >
@@ -464,7 +479,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 hidden={removed('hero.headline')} onDelete={() => onDeleteElement?.('hero.headline')}
                 placeholder="Headline eingeben…"
                 className="lp-hero-h1"
-                style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: onPrimary }}
+                style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: onHero }}
               />
               <Editable
                 as="p"
@@ -475,7 +490,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 hidden={removed('hero.subheadline')} onDelete={() => onDeleteElement?.('hero.subheadline')}
                 placeholder="Untertitel eingeben…"
                 className="lp-hero-p"
-                style={{ fontSize: 19, lineHeight: 1.55, color: rgba(onPrimary, 0.85), marginBottom: 36 }}
+                style={{ fontSize: 19, lineHeight: 1.55, color: rgba(onHero, 0.85), marginBottom: 36 }}
               />
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} label="Anfragebutton löschen" inline>
@@ -510,13 +525,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      background: rgba(onPrimary, 0.1),
-                      color: onPrimary,
+                      background: rgba(onHero, 0.1),
+                      color: onHero,
                       padding: '14px 28px',
                       borderRadius: 12,
                       fontWeight: 600,
                       fontSize: 15,
-                      border: `1px solid ${rgba(onPrimary, 0.2)}`,
+                      border: `1px solid ${rgba(onHero, 0.2)}`,
                     }}
                   >
                     💬 WhatsApp
@@ -551,6 +566,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
         <SectionRenderer
           key={s.id}
           section={s}
+          backgroundColor={content.sectionColors?.[s.id]}
+          colorControl={colorControl(s.id)}
           index={idx}
           image={images[s.id]}
           labelImage={shouldLabelLandingImage(content, s.id, images[s.id])}
@@ -689,6 +706,8 @@ function contactPillStyle(primary: string): React.CSSProperties {
 
 const SectionRenderer: React.FC<{
   section: LandingPageSection;
+  backgroundColor?: string;
+  colorControl?: React.ReactNode;
   index: number;
   image?: string;
   labelImage: boolean;
@@ -719,6 +738,8 @@ const SectionRenderer: React.FC<{
   frameEditing,
   onFrameChange,
   section: s,
+  backgroundColor,
+  colorControl,
   removedElements,
   onDeleteElement,
   index,
@@ -739,27 +760,21 @@ const SectionRenderer: React.FC<{
   onAddAfter,
 }) => {
   const removed = (field: string) => removedElements?.includes(`${s.id}.${field}`) ?? false;
-  const bgMap: Record<string, string> = {
-    white: '#ffffff',
-    light: rgba(primary, 0.04),
-    dark: '#0b1220',
-    accent: primary,
-  };
-  const bg = bgMap[s.bgStyle] || '#ffffff';
-  const isDark = s.bgStyle === 'dark' || s.bgStyle === 'accent';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
-  const bodyColor = isDark ? 'rgba(255,255,255,0.85)' : '#475569';
+  const theme = sectionColorTheme(backgroundColor, s.bgStyle, primary);
+  const bg = theme.background;
+  const textColor = theme.foreground;
+  const bodyColor = theme.body;
   const enabled = (s as any).enabled !== false;
 
   // CTA band
   if (s.type === 'cta') {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={theme.custom ? bg : undefined}>
         <div
           className="lp-section-inner"
           style={{
-            background: `linear-gradient(135deg, ${primary}, #0b1220)`,
-            color: '#fff',
+            background: theme.custom ? bg : `linear-gradient(135deg, ${primary}, #0b1220)`,
+            color: theme.custom ? textColor : '#fff',
             padding: '88px 0',
             textAlign: 'center',
           }}
@@ -772,7 +787,7 @@ const SectionRenderer: React.FC<{
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
               placeholder="CTA-Überschrift"
-              style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: '#fff' }}
+              style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: theme.custom ? textColor : '#fff' }}
             />
             <Editable
               as="div"
@@ -813,7 +828,7 @@ const SectionRenderer: React.FC<{
 
   if (isFullWidth) {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={bg}>
         <div className="lp-section-inner lp-content-width" style={{ padding: '96px 32px' }}>
           <Editable
             as="h2"
@@ -843,7 +858,7 @@ const SectionRenderer: React.FC<{
   // Gallery: image on top, text below
   if (s.type === 'gallery' || s.type === 'specs') {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={bg}>
         <div className="lp-section-inner lp-content-width" style={{ padding: '96px 32px' }}>
           <Editable
             as="h2"
@@ -888,7 +903,7 @@ const SectionRenderer: React.FC<{
   // Editorial split (default content type with image) - alternating
   const imageOnLeft = index % 2 === 0;
   return (
-    <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
+    <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={bg}>
       <div
         className="lp-section-inner lp-content-width"
         style={{
