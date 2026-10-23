@@ -32,6 +32,17 @@ export interface LiveVehicle {
   powerPs?: number | null;
   emissionText?: string | null;
   transmission?: string | null;
+  /** Financing details delivered by Auto3 (euro values, interest in percent). */
+  financing?: {
+    termMonths: number | null;
+    downPayment: number | null;
+    finalInstallment: number | null;
+    netLoan: number | null;
+    total: number | null;
+    effectiveRate: number | null;
+    nominalRate: number | null;
+    bank: string | null;
+  } | null;
 }
 
 export interface LiveVehicleCardDesign {
@@ -94,6 +105,8 @@ export interface LiveInventoryConfig {
   layout: 'slider' | 'grid';
   title: string;
   cardDesign?: LiveVehicleCardDesign;
+  /** Lender named in the § 17 PAngV footnotes when Auto3 does not deliver one. */
+  financeBank?: string;
 }
 
 export const DEFAULT_LIVE_INVENTORY: LiveInventoryConfig = {
