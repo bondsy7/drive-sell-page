@@ -945,18 +945,6 @@ const SectionRenderer: React.FC<{
             </div>
           )}
           {!(removed('headline') && removed('content')) && <div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: isDark ? rgba('#ffffff', 0.6) : primary,
-                marginBottom: 14,
-              }}
-            >
-              {`0${index + 1}`.slice(-2)}
-            </div>
             <Editable
               as="h2"
               editable={editable}
