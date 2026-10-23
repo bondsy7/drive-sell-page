@@ -35,6 +35,11 @@ import { removeLandingElement } from '@/lib/landing-element-editing';
 import { insertStackImage, isStackImageId, newStackImageId, removeStackImage, sectionOfImageId } from '@/lib/landing-image-stack';
 import { replaceLandingImage, LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
+import { useCredits } from '@/hooks/useCredits';
+import CreditBadge from '@/components/landing/CreditBadge';
+import {
+  LANDING_IMAGE_TIER, creditLabel, landingImageCost, planBulkImageRun, readInsufficientCredits,
+} from '@/lib/landing-credit-costs';
 import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
 import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
 
@@ -78,6 +83,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 }) => {
   const { user } = useAuth();
   const { data: profileCardDesign } = useLiveVehicleCardDesign();
+  const { balance, costs, loading: creditsLoading } = useCredits();
+  const generateCost = landingImageCost(costs, 'image_generate');
+  const remasterCost = landingImageCost(costs, 'image_remaster');
   const { state: editorState, update: updateEditor, change, undo, canUndo } = useLandingEditorHistory({
     content: {
       ...initialContent,
@@ -258,6 +266,10 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   };
 
   const handleRegenerate = async (sectionId: string) => {
+    if (balance < generateCost) {
+      toast.error(`Zu wenig Credits: Dieses Bild kostet ${creditLabel(generateCost)}. Ihr Guthaben beträgt ${creditLabel(balance)}.`);
+      return;
+    }
     const baseId = sectionOfImageId(sectionId);
     const section = content.sections.find(s => s.id === baseId);
     const headline = baseId === 'hero' ? content.hero.headline : section?.headline;
@@ -270,8 +282,13 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     setImageLoading(sectionId);
     try {
       const { data, error } = await supabase.functions.invoke('generate-vehicle-image', {
-        body: { imagePrompt: prompt, modelTier: 'schnell' },
+        body: { imagePrompt: prompt, modelTier: LANDING_IMAGE_TIER },
       });
+      const short = error ? await readInsufficientCredits(error) : null;
+      if (short) {
+        toast.error(`Zu wenig Credits: Dieses Bild kostet ${creditLabel(short.cost)}. Ihr Guthaben beträgt ${creditLabel(short.balance)}.`);
+        return;
+      }
       if (error || !data?.imageBase64) { toast.error('Generierung fehlgeschlagen'); return; }
       if (user) {
         const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
@@ -288,22 +305,41 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     }
   };
 
-  const handleGenerateAllScenes = async () => {
-    if (!user) return;
-    const targets: { id: string; type?: string; headline?: string }[] = [
+  const bulkTargets = useMemo<{ id: string; type?: string; headline?: string }[]>(
+    () => [
       { id: 'hero', headline: content.hero.headline },
       ...content.sections
         .filter(s => s.enabled !== false && ['content', 'gallery', 'specs'].includes(s.type))
         .map(s => ({ id: s.id, type: s.type, headline: s.headline })),
-    ];
+    ],
+    [content],
+  );
+  const bulkPlan = useMemo(
+    () => planBulkImageRun(bulkTargets.length, generateCost, balance),
+    [bulkTargets.length, generateCost, balance],
+  );
+
+  const handleGenerateAllScenes = async () => {
+    if (!user) return;
+    if (!bulkPlan.canRun) {
+      toast.error(`Zu wenig Credits: ${bulkPlan.imageCount} Bilder kosten ${creditLabel(bulkPlan.totalCost)}. Ihr Guthaben beträgt ${creditLabel(bulkPlan.balance)}.`);
+      return;
+    }
     setImageLoading('__bulk__');
     let ok = 0;
-    for (const t of targets) {
+    let stopped = false;
+    for (const t of bulkTargets) {
       const { prompt } = buildScenePrompt({ brand, model, sectionId: t.id, sectionType: t.type, headline: t.headline });
       try {
-        const { data } = await supabase.functions.invoke('generate-vehicle-image', {
-          body: { imagePrompt: prompt, modelTier: 'schnell' },
+        const { data, error } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: prompt, modelTier: LANDING_IMAGE_TIER },
         });
+        const short = error ? await readInsufficientCredits(error) : null;
+        if (short) {
+          stopped = true;
+          toast.error(`Ihr Guthaben reicht nicht mehr aus: ${creditLabel(short.cost)} pro Bild werden benötigt. ${ok} von ${bulkTargets.length} Szenen wurden generiert.`);
+          break;
+        }
         if (data?.imageBase64) {
           const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${t.id}-${Date.now()}.png`);
           if (url) {
@@ -314,19 +350,28 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       } catch (e) { console.warn('scene gen failed', t.id, e); }
     }
     setImageLoading(null);
-    toast.success(`${ok} von ${targets.length} Szenen generiert`);
+    if (!stopped) toast.success(`${ok} von ${bulkTargets.length} Szenen generiert`);
   };
 
   const handleRemaster = async (sectionId: string, file: File) => {
     if (!user) return;
+    if (balance < remasterCost) {
+      toast.error(`Zu wenig Credits: Das Remastern kostet ${creditLabel(remasterCost)}. Ihr Guthaben beträgt ${creditLabel(balance)}.`);
+      return;
+    }
     setImageLoading(sectionId);
     try {
       const base64 = await fileToBase64(file);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: base64,
         vehicleDescription: `${brand} ${model}`,
-        modelTier: 'schnell',
+        modelTier: LANDING_IMAGE_TIER,
       });
+      const short = error ? await readInsufficientCredits(error) : null;
+      if (short) {
+        toast.error(`Zu wenig Credits: Das Remastern kostet ${creditLabel(short.cost)}. Ihr Guthaben beträgt ${creditLabel(short.balance)}.`);
+        return;
+      }
       if (error || !data?.imageBase64) { toast.error('Remastering fehlgeschlagen'); return; }
       const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {
@@ -408,7 +453,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             onClick={() => setBulkConfirmOpen(true)}
             disabled={imageLoading === '__bulk__'}
             className="gap-2"
-            title="Für jeden Abschnitt ein neues KI-Bild generieren (Texte bleiben unverändert)"
+            title={`${bulkPlan.imageCount} neue KI-Bilder generieren (${creditLabel(bulkPlan.totalCost)}, Texte bleiben unverändert)`}
           >
             {imageLoading === '__bulk__' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Alle Bilder generieren
