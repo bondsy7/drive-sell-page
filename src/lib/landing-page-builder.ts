@@ -1,3 +1,4 @@
+import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
@@ -11,6 +12,7 @@ import {
 } from '@/lib/live-inventory';
 
 export interface LandingPageContent {
+  removedElements?: string[];
   meta: { title: string; description: string; h1: string };
   hero: { headline: string; subheadline: string; ctaText: string; imagePrompt?: string };
   sections: LandingPageSection[];
@@ -92,9 +94,11 @@ function renderSection(
   secondary: string,
   onSec: string,
   phone: string,
-  whatsapp: string
+  whatsapp: string,
+  removedElements: string[] = []
 ): string {
   if (s.enabled === false) return '';
+  const removed = (field: string) => removedElements.includes(`${s.id}.${field}`);
 
   const bgMap: Record<string, string> = {
     white: '#ffffff',
@@ -110,8 +114,8 @@ function renderSection(
   if (s.type === 'cta') {
     return `<section style="background:linear-gradient(135deg,${primary},#0b1220);color:#fff;padding:88px 24px;text-align:center">
   <div style="max-width:720px;margin:0 auto">
-    <h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:#fff">${escapeHtml(s.headline)}</h2>
-    <div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px">${s.content || ''}</div>
+    ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:#fff">${escapeHtml(s.headline)}</h2>`}
+    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px">${s.content || ''}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
       ${phone ? `<a href="tel:${phone}" style="background:${secondary};color:${onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
       ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:#25d366;color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
@@ -120,13 +124,13 @@ function renderSection(
 </section>`;
   }
 
-  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || (!image && !s.imagePrompt);
+  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || removed('image') || (!image && !s.imagePrompt);
 
   if (isFullWidth) {
     return `<section style="background:${bg}">
   <div style="max-width:900px;margin:0 auto;padding:96px 32px">
-    <h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>
-    <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
+    ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
+    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
 </section>`;
   }
@@ -134,9 +138,9 @@ function renderSection(
   if (s.type === 'gallery' || s.type === 'specs') {
     return `<section style="background:${bg}">
   <div style="max-width:1100px;margin:0 auto;padding:96px 32px">
-    <h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>
+    ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${image ? `<div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${buildAiDisclosureImageOverlayHTML("landing")}<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
-    <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
+    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
 </section>`;
   }
@@ -146,8 +150,8 @@ function renderSection(
   const imgHtml = `<div class="lp-split-media" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
   const textHtml = `<div>
     <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${isDark ? 'rgba(255,255,255,0.6)' : primary};margin-bottom:14px">${`0${idx + 1}`.slice(-2)}</div>
-    <h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>
-    <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
+    ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
+    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>`;
 
   return `<section style="background:${bg}">
@@ -224,7 +228,10 @@ export function buildLandingPageHTML(
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 
-  const heroImage = images.hero || '';
+  const removed = (id: string) => isLandingElementRemoved(content, id);
+  const heroHasImage = !removed('hero.image');
+  const heroHasText = !['brand', 'headline', 'subheadline', 'ctaText', 'whatsapp'].every(field => removed(`hero.${field}`));
+  const heroImage = heroHasImage ? images.hero || '' : '';
   const dealerName = dealer.name || '';
   const dealerLogo = dealer.logoUrl || '';
   const phone = dealer.phone || '';
@@ -243,12 +250,12 @@ export function buildLandingPageHTML(
   const heroSub = hero.subheadline || '';
 
   const sectionBlocks = sections
-    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp))
+    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements))
     .join('\n');
 
-  const liveBlock = liveInventory ? buildLiveInventorySectionHTML(liveInventory) : '';
+  const liveBlock = liveInventory && !removed('live-fahrzeuge') ? buildLiveInventorySectionHTML(liveInventory) : '';
 
-  const contactFormHTML = contactForm
+  const contactFormHTML = contactForm && !removed('kontakt')
     ? buildContactFormHTML({
         dealerUserId: contactForm.dealerUserId,
         projectId: contactForm.projectId,
@@ -316,40 +323,41 @@ export function buildLandingPageHTML(
   </style>
 </head>
 <body>
-  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
     <div style="display:flex;align-items:center;gap:14px">
       ${brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${escapeHtml(brand)}" style="height:30px;width:auto"/>` : ''}
       ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:34px;width:auto"/>` : ''}
       ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
     ${phone ? `<a href="tel:${phone}" style="background:var(--lp-primary);color:var(--lp-primary-on);padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
-  </header>
+  </header>`}
 
-  <section style="position:relative;min-height:560px;overflow:hidden;background:#0b1220">
-    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:560px" class="lp-split lp-hero-grid">
-      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:linear-gradient(135deg,#0b1220 0%,${primary} 130%);color:#fff;min-height:420px">
-        <div style="max-width:520px">
-          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${rgba(secondary, 0.2)};border:1px solid ${rgba(secondary, 0.4)};color:${secondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>
-          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:#fff">${escapeHtml(heroHeadline)}</h1>
-          <p style="font-size:19px;line-height:1.55;color:rgba(255,255,255,0.85);margin-bottom:36px">${escapeHtml(heroSub)}</p>
+${removed('hero') ? '' : `  <section style="position:relative;min-height:560px;overflow:hidden;background:#0b1220">
+    <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText ? '1fr 1fr' : '1fr'};min-height:560px" class="lp-split lp-hero-grid">
+${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:linear-gradient(135deg,#0b1220 0%,${primary} 130%);color:#fff;min-height:420px">
+        <div style="max-width:${heroHasImage ? '520px' : 'none'}">
+${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${rgba(secondary, 0.2)};border:1px solid ${rgba(secondary, 0.4)};color:${secondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>`}
+${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:#fff">${escapeHtml(heroHeadline)}</h1>`}
+${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:rgba(255,255,255,0.85);margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${secondary};color:${onSecondary};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>
-            ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.1);color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid rgba(255,255,255,0.2)">💬 WhatsApp</a>` : ''}
+${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${secondary};color:${onSecondary};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
+            ${whatsapp && !removed('hero.whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.1);color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid rgba(255,255,255,0.2)">💬 WhatsApp</a>` : ''}
           </div>
         </div>
       </div>
-      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
+` : ''}
+${heroHasImage ? `      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
         ${heroImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(withAiDisclosureAlt(`${brand} ${model}`))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
-      </div>
+      </div>` : ''}
     </div>
-  </section>
+  </section>`}
 
   ${sectionBlocks}
 
   ${liveBlock}
 
-  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 24px">
+${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 24px">
     <div style="max-width:960px;margin:0 auto;text-align:center">
       ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:56px;margin:0 auto 20px"/>` : ''}
       <h2 style="font-size:30px;font-weight:700;margin-bottom:10px">${escapeHtml(dealerName)}</h2>
@@ -360,7 +368,7 @@ export function buildLandingPageHTML(
         ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;background:#25d366;color:#fff;border:1px solid #25d366;font-size:14px;font-weight:600">💬 WhatsApp</a>` : ''}
       </div>
     </div>
-  </section>
+  </section>`}
 
   <footer style="background:#0b1220;color:#94a3b8;padding:32px 24px;text-align:center;font-size:12px">
     <p>© ${new Date().getFullYear()} ${escapeHtml(dealerName)}. Alle Angaben ohne Gewähr.</p>
