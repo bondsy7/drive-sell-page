@@ -629,6 +629,68 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </div>
       </div>
 
+      {/* Zusatzbestätigung vor der Generierung */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Seite nach dieser Konfiguration generieren?</DialogTitle>
+            <DialogDescription className="text-sm">
+              Prüfen Sie die Einstellungen vor der Generierung. Die Grundeinstellungen der Seite
+              lassen sich im Nachgang nicht mehr ändern – nur der Seiteninhalt.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-1.5 text-xs">
+            {[
+              { label: 'Fahrzeug', value: [brand, model, variant].filter(Boolean).join(' ') || '–' },
+              { label: 'Seitentyp', value: PAGE_TYPES.find(t => t.value === pageType)?.label || '–' },
+              { label: 'Zielgruppe', value: TARGET_AUDIENCES.find(t => t.value === targetAudience)?.label || 'Alle' },
+              { label: 'Ton', value: TONES.find(t => t.value === tone)?.label || '–' },
+              { label: 'Bildstil', value: IMAGE_STYLES.find(t => t.value === imageStyle)?.label || '–' },
+              {
+                label: 'Eigene Bilder',
+                value: uploadedImages.length
+                  ? `${uploadedImages.length} übernommen`
+                  : 'keine – Bilder werden KI-generiert',
+              },
+              {
+                label: 'Live-Fahrzeuge',
+                value: liveInventory.enabled
+                  ? `${liveInventory.layout === 'slider' ? 'Slider' : 'Raster'}, max. ${liveInventory.maxItems}`
+                  : 'nicht aktiviert',
+              },
+            ].map(row => (
+              <div key={row.label} className="flex items-start justify-between gap-4">
+                <span className="text-muted-foreground">{row.label}</span>
+                <span className="text-right font-semibold text-foreground">{row.value}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground">
+            Nach dem Bestätigen werden {cost} Credits verbraucht. Die Generierung dauert einige Minuten
+            und kann nicht rückgängig gemacht werden.
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={loading}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmOpen(false);
+                handleGenerate();
+              }}
+              disabled={loading}
+              className="font-semibold"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Ja, jetzt generieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <VehicleAssetPicker
         open={assetPickerOpen}
         vehicleId={vehicleIdParam}
