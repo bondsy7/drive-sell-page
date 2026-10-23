@@ -205,7 +205,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
               </div>
 
               {gaps.length > 0 && (
-                <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-foreground space-y-1.5">
+                <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground space-y-1.5">
                   <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle className="w-3.5 h-3.5" />Bei {gaps.length} Fahrzeug{gaps.length === 1 ? '' : 'en'} wird die Monatsrate nicht angezeigt</p>
                   <p className="text-muted-foreground">Für eine rechtssichere Rate (§ 17 PAngV) fehlen Angaben. Preis und Fahrzeug werden trotzdem gezeigt.</p>
                   <ul className="max-h-40 overflow-y-auto space-y-0.5">
