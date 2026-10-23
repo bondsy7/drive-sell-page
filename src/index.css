@@ -159,6 +159,12 @@
 
     --star: 38 92% 50%;
 
+    /* Hervorhebung für Werkzeuge, die als Hauptprodukt beworben werden */
+    --highlight: 145 45% 94%;
+    --highlight-foreground: 152 30% 14%;
+    --highlight-border: 145 32% 78%;
+
+
     --border: 214 24% 89%;
     --input: 214 24% 86%;
     --ring: 170.77 100% 33.14%;
@@ -211,6 +217,10 @@
     --destructive-foreground: 0 0% 98%;
 
     --star: 38 92% 55%;
+    --highlight: 145 22% 13%;
+    --highlight-foreground: 145 28% 88%;
+    --highlight-border: 145 18% 26%;
+
     --border: 0 0% 18%;
     --input: 0 0% 18%;
     --ring: 170.77 100% 33.14%;
