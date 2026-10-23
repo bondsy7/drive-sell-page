@@ -409,7 +409,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       </LandingElementBox>
 
       {/* HERO */}
-      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg="#0b1220">
+      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg={primary}>
         <div
           className="lp-section-inner lp-content-width lp-hero-grid"
           style={{
@@ -430,8 +430,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               padding: '80px 56px',
-              background: `linear-gradient(135deg, #0b1220 0%, ${primary} 130%)`,
-              color: '#fff',
+              background: primary,
+              color: onPrimary,
               minHeight: 420,
             }}
           >
@@ -464,7 +464,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 hidden={removed('hero.headline')} onDelete={() => onDeleteElement?.('hero.headline')}
                 placeholder="Headline eingeben…"
                 className="lp-hero-h1"
-                style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: '#fff' }}
+                style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: onPrimary }}
               />
               <Editable
                 as="p"
@@ -475,7 +475,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 hidden={removed('hero.subheadline')} onDelete={() => onDeleteElement?.('hero.subheadline')}
                 placeholder="Untertitel eingeben…"
                 className="lp-hero-p"
-                style={{ fontSize: 19, lineHeight: 1.55, color: 'rgba(255,255,255,0.85)', marginBottom: 36 }}
+                style={{ fontSize: 19, lineHeight: 1.55, color: rgba(onPrimary, 0.85), marginBottom: 36 }}
               />
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} label="Anfragebutton löschen" inline>
@@ -510,13 +510,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      background: 'rgba(255,255,255,0.1)',
-                      color: '#fff',
+                      background: rgba(onPrimary, 0.1),
+                      color: onPrimary,
                       padding: '14px 28px',
                       borderRadius: 12,
                       fontWeight: 600,
                       fontSize: 15,
-                      border: '1px solid rgba(255,255,255,0.2)',
+                      border: `1px solid ${rgba(onPrimary, 0.2)}`,
                     }}
                   >
                     💬 WhatsApp
