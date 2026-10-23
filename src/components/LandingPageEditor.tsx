@@ -8,7 +8,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus, Car,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus, Car, Undo2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LandingRenderer from '@/components/landing/LandingRenderer';
@@ -30,6 +30,8 @@ import {
   type LiveInventoryConfig, type LiveVehicle,
 } from '@/lib/live-inventory';
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
+import { useLandingEditorHistory } from '@/hooks/useLandingEditorHistory';
+import { removeLandingElement } from '@/lib/landing-element-editing';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -70,13 +72,23 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   brand, model, brandLogoUrl, initialLiveInventory, initialVehicleData, onBack,
 }) => {
   const { user } = useAuth();
-  const [content, setContent] = useState<LandingPageContent>({
-    meta: initialContent?.meta || { title: '', description: '', h1: '' },
-    hero: initialContent?.hero || { headline: '', subheadline: '', ctaText: '' },
-    sections: (initialContent?.sections || []).map(s => ({ ...s, enabled: s.enabled !== false })),
-    seo: initialContent?.seo,
+  const { state: editorState, update: updateEditor, undo, canUndo } = useLandingEditorHistory({
+    content: {
+      ...initialContent,
+      meta: initialContent?.meta || { title: '', description: '', h1: '' },
+      hero: initialContent?.hero || { headline: '', subheadline: '', ctaText: '' },
+      sections: (initialContent?.sections || []).map(s => ({ ...s, enabled: s.enabled !== false })),
+    } as LandingPageContent,
+    images: initialImages,
+    liveInventory: initialLiveInventory?.enabled ? { ...DEFAULT_LIVE_INVENTORY, ...initialLiveInventory } : DEFAULT_LIVE_INVENTORY,
+    contactFormEnabled: initialVehicleData?.contactFormEnabled !== false,
   });
-  const [images, setImages] = useState<Record<string, string>>(initialImages);
+  const { content, images, liveInventory, contactFormEnabled } = editorState;
+  const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
+  const setImages = useCallback((value: React.SetStateAction<Record<string, string>>) => updateEditor('images', value), [updateEditor]);
+  const setLiveInventory = useCallback((value: React.SetStateAction<LiveInventoryConfig>) => updateEditor('liveInventory', value), [updateEditor]);
+  const setContactFormEnabled = useCallback((value: React.SetStateAction<boolean>) => updateEditor('contactFormEnabled', value), [updateEditor]);
+  const deleteElement = useCallback((id: string) => setContent(previous => removeLandingElement(previous, id)), [setContent]);
   const [dealer] = useState<LandingPageDealer>(initialDealer);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -84,14 +96,10 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [pickFromGallery, setPickFromGallery] = useState(false);
   const [addAfterId, setAddAfterId] = useState<string | null | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<string | null>(null);
-  const [contactFormEnabled, setContactFormEnabled] = useState(true);
   const [vehicleTitle] = useState(`${brand} ${model}`);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // ── Live-Fahrzeuge: die Regel kommt aus dem Projekt, die Fahrzeuge immer aus dem aktuellen Bestand ──
-  const [liveInventory, setLiveInventory] = useState<LiveInventoryConfig>(
-    initialLiveInventory?.enabled ? { ...DEFAULT_LIVE_INVENTORY, ...initialLiveInventory } : DEFAULT_LIVE_INVENTORY
-  );
   const [liveItems, setLiveItems] = useState<LiveVehicle[] | null>(null);
   const [liveUrl, setLiveUrl] = useState('');
   const [liveLoading, setLiveLoading] = useState(false);
@@ -142,6 +150,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           dealer,
           brandLogoUrl,
           liveInventory: liveInventory.enabled ? liveInventory : null,
+          contactFormEnabled,
         } as any,
         html_content: html,
         updated_at: new Date().toISOString(),
@@ -176,7 +185,6 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   }, []);
 
   const deleteSection = useCallback((id: string) => {
-    if (!confirm('Section wirklich löschen?')) return;
     setContent(prev => ({ ...prev, sections: prev.sections.filter(s => s.id !== id) }));
   }, []);
 
@@ -349,6 +357,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               <Smartphone className="w-3.5 h-3.5" />
             </button>
           </div>
+          <Button variant="outline" size="icon" onClick={undo} disabled={!canUndo} title="Letzte Änderung rückgängig machen" aria-label="Letzte Änderung rückgängig machen">
+            <Undo2 className="w-4 h-4" />
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -405,6 +416,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               onMoveSection={moveSection}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
+              onDeleteElement={deleteElement}
               onAddSection={(afterId) => setAddAfterId(afterId)}
               imageLoading={imageLoading}
               liveInventory={liveInventory.enabled
