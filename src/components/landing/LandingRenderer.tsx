@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Upload, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Plus, ImageIcon } from 'lucide-react';
+import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
+import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
 import {
   LIVE_INVENTORY_CSS,
@@ -60,6 +62,7 @@ export interface RendererProps {
   onMoveSection?: (id: string, dir: 'up' | 'down') => void;
   onToggleSection?: (id: string) => void;
   onDeleteSection?: (id: string) => void;
+  onDeleteElement?: (id: string) => void;
   onAddSection?: (afterId: string | null) => void;
   imageLoading?: string | null;
   liveInventory?: LiveInventoryView | null;
@@ -75,7 +78,9 @@ const Editable: React.FC<{
   style?: React.CSSProperties;
   placeholder?: string;
   html?: boolean;
-}> = ({ value, editable, onChange, as: Tag = 'div', multiline, className, style, placeholder, html }) => {
+  hidden?: boolean;
+  onDelete?: () => void;
+}> = ({ value, editable, onChange, as: Tag = 'div', multiline, className, style, placeholder, html, hidden, onDelete }) => {
   const ref = useRef<HTMLElement>(null);
   const commit = useCallback(() => {
     if (!ref.current) return;
@@ -110,9 +115,10 @@ const Editable: React.FC<{
 
   const combined = { ...hoverStyle, ...style };
 
+  if (hidden) return null;
   if (html) {
     return (
-      // @ts-ignore
+      <LandingElementBox editable={editable} onDelete={onDelete}>
       <Tag
         ref={ref as any}
         className={`lp-editable ${className || ''}`}
@@ -120,13 +126,15 @@ const Editable: React.FC<{
         dangerouslySetInnerHTML={{ __html: value || '' }}
         {...editableProps}
       />
+      </LandingElementBox>
     );
   }
   return (
-    // @ts-ignore
+    <LandingElementBox editable={editable} onDelete={onDelete} inline={Tag === 'span'}>
     <Tag ref={ref as any} className={`lp-editable ${className || ''}`} style={combined} {...editableProps}>
       {value || (editable ? '' : '')}
     </Tag>
+    </LandingElementBox>
   );
 };
 
@@ -138,8 +146,9 @@ const ImageFrame: React.FC<{
   loading?: boolean;
   onReplace?: () => void;
   primary: string;
+  onDelete?: () => void;
   rounded?: boolean;
-}> = ({ src, alt, aspect, editable, loading, onReplace, primary, rounded = true }) => (
+}> = ({ src, alt, aspect, editable, loading, onReplace, primary, onDelete, rounded = true }) => (
   <div
     className="lp-image-frame"
     style={{
@@ -175,6 +184,7 @@ const ImageFrame: React.FC<{
         <ImageIcon size={20} style={{ marginRight: 8 }} /> Kein Bild
       </div>
     )}
+    {editable && onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
     {editable && (
       <button
         onClick={onReplace}
@@ -247,9 +257,10 @@ const SectionShell: React.FC<{
           <ToolbarButton onClick={onToggle} title={enabled ? 'Ausblenden' : 'Einblenden'}>
             {enabled ? <Eye size={14} /> : <EyeOff size={14} />}
           </ToolbarButton>
-          <ToolbarButton onClick={onDelete} title="Löschen"><Trash2 size={14} /></ToolbarButton>
+
         </div>
       )}
+      {editable && onDelete && <ElementDeleteButton onDelete={onDelete} label="Abschnitt löschen" />}
       {children}
       {editable && onAddAfter && (
         <div
@@ -329,15 +340,19 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onMoveSection,
   onToggleSection,
   onDeleteSection,
+  onDeleteElement,
   onAddSection,
   imageLoading,
   liveInventory,
 }) => {
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? dealer.primaryColor! : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? dealer.secondaryColor! : '#e2b04a';
+  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
+  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 
+  const removed = (id: string) => isLandingElementRemoved(content, id);
+  const heroHasImage = !removed('hero.image');
+  const heroHasText = !['brand', 'headline', 'subheadline', 'ctaText', 'whatsapp'].every(field => removed(`hero.${field}`));
   const heroImage = images.hero || '';
   const dealerName = dealer.name || '';
   const dealerLogo = dealer.logoUrl || '';
@@ -413,6 +428,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       `}</style>
 
       {/* Sticky header */}
+      <LandingElementBox editable={editable} hidden={removed('header')} onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen">
       <header
         style={{
           position: 'sticky',
@@ -451,23 +467,24 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </a>
         )}
       </header>
+      </LandingElementBox>
 
       {/* HERO */}
-      <SectionShell id="hero" editable={editable} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg="#0b1220">
+      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg="#0b1220">
         <div
           className="lp-section-inner lp-hero-grid"
           style={{
             position: 'relative',
             minHeight: 560,
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: heroHasImage && heroHasText ? '1fr 1fr' : '1fr',
             gap: 0,
             padding: 0,
             overflow: 'hidden',
           }}
         >
           {/* Left: text */}
-          <div
+          {heroHasText && <div
             className="lp-hero-text"
             style={{
               display: 'flex',
@@ -479,7 +496,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
               minHeight: 420,
             }}
           >
-            <div style={{ maxWidth: 520 }}>
+            <div style={{ maxWidth: heroHasImage ? 520 : undefined }}>
+              <LandingElementBox editable={editable} hidden={removed('hero.brand')} onDelete={() => onDeleteElement?.('hero.brand')} inline>
               <div
                 style={{
                   display: 'inline-flex',
@@ -498,11 +516,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
               >
                 {brand}
               </div>
+              </LandingElementBox>
               <Editable
                 as="h1"
                 editable={editable}
                 value={content.hero?.headline || `${brand} ${model}`}
                 onChange={(v) => onUpdateHero?.('headline', v)}
+                hidden={removed('hero.headline')} onDelete={() => onDeleteElement?.('hero.headline')}
                 placeholder="Headline eingeben…"
                 className="lp-hero-h1"
                 style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, marginBottom: 20, color: '#fff' }}
@@ -513,11 +533,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 multiline
                 value={content.hero?.subheadline || ''}
                 onChange={(v) => onUpdateHero?.('subheadline', v)}
+                hidden={removed('hero.subheadline')} onDelete={() => onDeleteElement?.('hero.subheadline')}
                 placeholder="Untertitel eingeben…"
                 className="lp-hero-p"
                 style={{ fontSize: 19, lineHeight: 1.55, color: 'rgba(255,255,255,0.85)', marginBottom: 36 }}
               />
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} inline>
                 <a
                   href="#kontakt"
                   style={{
@@ -536,11 +558,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     editable={editable}
                     value={heroCtaText}
                     onChange={(v) => onUpdateHero?.('ctaText', v)}
+
                     placeholder="CTA-Text"
                   />
                 </a>
-                {whatsapp && (
-                  <a
+                </LandingElementBox>
+                {whatsapp && !removed('hero.whatsapp') && (
+                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} inline><a
                     href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener"
@@ -557,14 +581,14 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     }}
                   >
                     💬 WhatsApp
-                  </a>
+                  </a></LandingElementBox>
                 )}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Right: image */}
-          <div className="lp-hero-media" style={{ position: 'relative', minHeight: 420, background: '#0f172a' }}>
+          {heroHasImage && <div className="lp-hero-media" style={{ position: 'relative', minHeight: 420, background: '#0f172a' }}>
             <ImageFrame
               src={heroImage}
               alt={`${brand} ${model}`}
@@ -572,12 +596,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
               editable={editable}
               loading={imageLoading === 'hero'}
               onReplace={() => onReplaceImage?.('hero')}
+              onDelete={() => onDeleteElement?.('hero.image')}
               primary={primary}
               rounded={false}
             />
-          </div>
+          </div>}
         </div>
-      </SectionShell>
+      </SectionShell>}
 
       {/* Sections */}
       {sections.map((s, idx) => (
@@ -593,6 +618,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
           phone={phone}
           whatsapp={whatsapp}
           imageLoading={imageLoading === s.id}
+          removedElements={content.removedElements}
+          onDeleteElement={(field) => onDeleteElement?.(`${s.id}.${field}`)}
           onUpdate={(field, v) => onUpdateSection?.(s.id, field, v)}
           onMove={(dir) => onMoveSection?.(s.id, dir)}
           onToggle={() => onToggleSection?.(s.id)}
@@ -602,7 +629,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
         />
       ))}
 
-      {liveInventory?.config?.enabled && (
+      {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && (
+        <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
         <LiveVehicleShowcase
           config={liveInventory.config}
           vehicles={liveInventory.vehicles}
@@ -611,9 +639,11 @@ const LandingRenderer: React.FC<RendererProps> = ({
           error={liveInventory.error}
           editable={editable}
         />
+        </LandingElementBox>
       )}
 
       {/* Contact */}
+      <LandingElementBox editable={editable} hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
       <section
         id="kontakt"
         style={{
@@ -650,6 +680,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>
         </div>
       </section>
+      </LandingElementBox>
 
       <footer style={{ background: '#0b1220', color: '#94a3b8', padding: '32px 24px', textAlign: 'center', fontSize: 12 }}>
         <p>© {new Date().getFullYear()} {dealerName}. Alle Angaben ohne Gewähr.</p>
@@ -689,6 +720,8 @@ const SectionRenderer: React.FC<{
   phone: string;
   whatsapp: string;
   imageLoading: boolean;
+  removedElements?: string[];
+  onDeleteElement?: (field: string) => void;
   onUpdate: (field: 'headline' | 'content', v: string) => void;
   onMove: (dir: 'up' | 'down') => void;
   onToggle: () => void;
@@ -697,6 +730,8 @@ const SectionRenderer: React.FC<{
   onAddAfter?: () => void;
 }> = ({
   section: s,
+  removedElements,
+  onDeleteElement,
   index,
   image,
   editable,
@@ -713,6 +748,7 @@ const SectionRenderer: React.FC<{
   onReplaceImage,
   onAddAfter,
 }) => {
+  const removed = (field: string) => removedElements?.includes(`${s.id}.${field}`) ?? false;
   const bgMap: Record<string, string> = {
     white: '#ffffff',
     light: rgba(primary, 0.04),
@@ -744,6 +780,7 @@ const SectionRenderer: React.FC<{
               editable={editable}
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
+              hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
               placeholder="CTA-Überschrift"
               style={{ fontSize: 36, fontWeight: 700, marginBottom: 16, color: '#fff' }}
             />
@@ -753,25 +790,26 @@ const SectionRenderer: React.FC<{
               editable={editable}
               value={s.content}
               onChange={(v) => onUpdate('content', v)}
+              hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
               placeholder="Text…"
               className="lp-body-html"
               style={{ fontSize: 17, opacity: 0.9, marginBottom: 32 }}
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {phone && (
-                <a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
+              {phone && !removed('phone') && (
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} inline><a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
                   📞 Anrufen
-                </a>
+                </a></LandingElementBox>
               )}
-              {whatsapp && (
-                <a
+              {whatsapp && !removed('whatsapp') && (
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} inline><a
                   href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener"
                   style={{ background: '#25d366', color: '#fff', padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}
                 >
                   💬 WhatsApp
-                </a>
+                </a></LandingElementBox>
               )}
             </div>
           </div>
@@ -781,17 +819,18 @@ const SectionRenderer: React.FC<{
   }
 
   // Full-width text-only (steps, faq, comparison, benefits, content-only)
-  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || (!image && !s.imagePrompt);
+  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || removed('image') || (!image && !s.imagePrompt);
 
   if (isFullWidth) {
     return (
       <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
-        <div className="lp-section-inner" style={{ maxWidth: 900, margin: '0 auto', padding: '96px 32px' }}>
+        <div className="lp-section-inner" style={{ maxWidth: removed('image') ? 1200 : 900, margin: '0 auto', padding: '96px 32px' }}>
           <Editable
             as="h2"
             editable={editable}
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
+              hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
             placeholder="Überschrift"
             style={{ fontSize: 34, fontWeight: 700, marginBottom: 24, textAlign: 'center', color: textColor }}
           />
@@ -801,6 +840,7 @@ const SectionRenderer: React.FC<{
             editable={editable}
             value={s.content}
             onChange={(v) => onUpdate('content', v)}
+              hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
             placeholder="Inhalt eingeben…"
             className="lp-body-html"
             style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
@@ -820,6 +860,7 @@ const SectionRenderer: React.FC<{
             editable={editable}
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
+              hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
             placeholder="Überschrift"
             style={{ fontSize: 34, fontWeight: 700, marginBottom: 32, textAlign: 'center', color: textColor }}
           />
@@ -831,6 +872,7 @@ const SectionRenderer: React.FC<{
               editable={editable}
               loading={imageLoading}
               onReplace={onReplaceImage}
+                onDelete={() => onDeleteElement?.('image')}
               primary={primary}
             />
           </div>
@@ -840,6 +882,7 @@ const SectionRenderer: React.FC<{
             editable={editable}
             value={s.content}
             onChange={(v) => onUpdate('content', v)}
+              hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
             className="lp-body-html"
             style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
           />
@@ -864,7 +907,7 @@ const SectionRenderer: React.FC<{
           className="lp-split"
           style={{
             display: 'grid',
-            gridTemplateColumns: imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr',
+            gridTemplateColumns: removed('headline') && removed('content') ? '1fr' : imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr',
             gap: 56,
             alignItems: 'center',
           }}
@@ -878,11 +921,12 @@ const SectionRenderer: React.FC<{
                 editable={editable}
                 loading={imageLoading}
                 onReplace={onReplaceImage}
+                onDelete={() => onDeleteElement?.('image')}
                 primary={primary}
               />
             </div>
           )}
-          <div>
+          {!(removed('headline') && removed('content')) && <div>
             <div
               style={{
                 fontSize: 12,
@@ -900,6 +944,7 @@ const SectionRenderer: React.FC<{
               editable={editable}
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
+              hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
               placeholder="Überschrift"
               style={{ fontSize: 32, fontWeight: 700, marginBottom: 20, lineHeight: 1.15, color: textColor }}
             />
@@ -909,10 +954,11 @@ const SectionRenderer: React.FC<{
               editable={editable}
               value={s.content}
               onChange={(v) => onUpdate('content', v)}
+              hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
               className="lp-body-html"
               style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
             />
-          </div>
+          </div>}
           {!imageOnLeft && (
             <div className="lp-split-media">
               <ImageFrame
@@ -922,6 +968,7 @@ const SectionRenderer: React.FC<{
                 editable={editable}
                 loading={imageLoading}
                 onReplace={onReplaceImage}
+                onDelete={() => onDeleteElement?.('image')}
                 primary={primary}
               />
             </div>

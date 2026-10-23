@@ -21,3 +21,4 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Detail intake: Reference V2; manual wins; reuse files.
 - Shared branding separates wall/plate assets; V3 excludes source logos.
 - Reuse ModelSelector; retain tier IDs. Gate generator by modules; reuse maintenance notice.
+- Landingpage element deletion uses stable IDs in pageContent.removedElements shared by React rendering and HTML export; editor undo snapshots cover content, image maps, inventory and contact settings so saves and reversals remain consistent.
