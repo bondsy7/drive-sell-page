@@ -418,6 +418,8 @@ export interface ContactFormOptions {
   /** Configurable form heading/intro (landing pages). Recipient stays server-side. */
   heading?: string;
   intro?: string;
+  /** Landing pages: page primary colour so the enquiry button matches the page. */
+  primary?: string;
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
@@ -425,13 +427,23 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
   const formHeading = escapeHtml(options.heading || DEFAULT_CONTACT_HEADING);
   const formIntro = escapeHtml(options.intro ?? vehicleTitle);
 
+  // Landing pages pass their own primary colour so the enquiry button matches the
+  // page's buttons. Offer pages pass nothing and keep the neutral blue design.
+  const brandColor = /^#[0-9a-fA-F]{6}$/.test(options.primary || '') ? (options.primary as string) : '#3366cc';
+  const brandButtonText = readableOn(brandColor);
+  const brandButtonBg = options.primary
+    ? `background:${brandColor}`
+    : 'background:linear-gradient(135deg,#3366cc,#2952a3)';
+  const brandShadow = rgba(brandColor, 0.4);
+  const brandShadowStrong = rgba(brandColor, 0.5);
+
   const cat = (currentCategory || '').toLowerCase();
   const isPurchase = ['barkauf', 'neuwagen', 'gebrauchtwagen', 'tageszulassung'].includes(cat);
   const showLeasing = cat !== 'leasing';
   const showFinancing = cat !== 'finanzierung';
   const showPurchase = !isPurchase;
 
-  const checkboxStyle = `accent-color:#3366cc;width:16px;height:16px;cursor:pointer`;
+  const checkboxStyle = `accent-color:${brandColor};width:16px;height:16px;cursor:pointer`;
   const labelStyle = `display:flex;align-items:center;gap:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1a2332;cursor:pointer`;
 
   const interestCheckboxes = `
@@ -448,11 +460,11 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
   <!-- Sticky CTA -->
   <div id="leadCta" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
     <button onclick="document.getElementById('leadModal').style.display='flex'" style="
-      background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;
+      ${brandButtonBg};color:${brandButtonText};border:none;cursor:pointer;
       padding:14px 28px;border-radius:50px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
-      box-shadow:0 4px 24px rgba(51,102,204,0.4);transition:all .2s;display:flex;align-items:center;gap:8px;
-    " onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 32px rgba(51,102,204,0.5)'"
-       onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 24px rgba(51,102,204,0.4)'">
+      box-shadow:0 4px 24px ${brandShadow};transition:all .2s;display:flex;align-items:center;gap:8px;
+    " onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 32px ${brandShadowStrong}'"
+       onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 24px ${brandShadow}'">
       <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Jetzt anfragen
     </button>
@@ -468,13 +480,13 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
       </div>
       <form id="leadForm" onsubmit="return submitLead(event)">
         <div style="display:flex;flex-direction:column;gap:12px">
-          <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
-          <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
-          <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
-          <textarea name="message" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+          <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
+          <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
+          <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
+          <textarea name="message" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
           ${interestCheckboxes}
           <button type="submit" id="leadSubmitBtn" style="
-            background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;
+            ${brandButtonBg};color:${brandButtonText};border:none;cursor:pointer;
             padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
             transition:all .2s;
           " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
