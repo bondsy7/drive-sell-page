@@ -6,7 +6,6 @@
  * Auto3/Indicar dealer stock every time the page is shown, so sold cars
  * disappear and new matching cars appear automatically.
  */
-import { supabase } from '@/integrations/supabase/client';
 
 export interface LiveVehicle {
   externalVehicleId: string;
@@ -65,20 +64,6 @@ export function resolveLiveVehicles(items: LiveVehicle[], c: LiveInventoryConfig
     return items.filter(v => wanted.has(v.externalVehicleId));
   }
   return items.filter(v => matchesLiveFilter(v, c)).slice(0, Math.max(1, c.maxItems));
-}
-
-/** Loads the current dealer stock for the connected Auto3/Indicar URL. */
-export async function fetchLiveInventory(): Promise<{ items: LiveVehicle[]; inventoryUrl: string; error?: string }> {
-  const { data, error } = await supabase.functions.invoke('auto3-inventory', { body: { action: 'live_list' } });
-  if (error || data?.error) {
-    let msg = data?.error as string | undefined;
-    try { msg = msg || (await (error as any)?.context?.json?.())?.error; } catch { /* ignore */ }
-    return { items: [], inventoryUrl: '', error: msg || 'Der Live-Bestand konnte nicht geladen werden.' };
-  }
-  return {
-    items: (data?.items || []) as LiveVehicle[],
-    inventoryUrl: typeof data?.tenantUrl === 'string' ? data.tenantUrl : '',
-  };
 }
 
 /* ─── formatting (identical in editor preview and exported HTML) ─── */
