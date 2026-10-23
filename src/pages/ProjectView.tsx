@@ -73,7 +73,7 @@ const ProjectView = () => {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <main className="w-full max-w-[1680px] mx-auto px-2 sm:px-4 py-4 sm:py-6">
           <LandingPageEditor
             projectId={id!}
             vehicleId={project.vehicle_id}
