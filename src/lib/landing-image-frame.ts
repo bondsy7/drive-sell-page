@@ -13,8 +13,8 @@ export interface LandingImageFrame {
   /** Focus point in % (0–100). */
   x: number;
   y: number;
-  /** Horizontal alignment inside the column when narrower than 100 %. */
-  align: 'start' | 'end';
+  /** Left offset inside the column in % (0 … 100 - widthPct). */
+  offsetPct: number;
 }
 
 export type LandingImageFrames = Record<string, LandingImageFrame>;
@@ -26,17 +26,24 @@ export const FRAME_ZOOM_MIN = 1;
 export const FRAME_ZOOM_MAX = 3;
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+export function parseAspect(a: string): number {
+  const [w, h] = a.split('/').map(p => Number(p.trim()));
+  return w > 0 && h > 0 ? w / h : 1;
+}
+
 const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 
 export function normalizeImageFrame(raw: Partial<LandingImageFrame> | undefined | null, fallbackAspect: number): LandingImageFrame {
-  return {
+  const f: LandingImageFrame = {
     widthPct: clamp(num(raw?.widthPct, 100), FRAME_MIN_WIDTH_PCT, 100),
     aspect: clamp(num(raw?.aspect, fallbackAspect), 0.2, 6),
     zoom: clamp(num(raw?.zoom, 1), FRAME_ZOOM_MIN, FRAME_ZOOM_MAX),
     x: clamp(num(raw?.x, 50), 0, 100),
     y: clamp(num(raw?.y, 50), 0, 100),
-    align: raw?.align === 'end' ? 'end' : 'start',
+    offsetPct: 0,
   };
+  f.offsetPct = clamp(num(raw?.offsetPct, 0), 0, 100 - f.widthPct);
+  return f;
 }
 
 /**
@@ -58,8 +65,7 @@ export function frameOuterStyle(f: LandingImageFrame): Record<string, string | n
   return {
     width: `${f.widthPct}%`,
     aspectRatio: `${f.aspect}`,
-    marginLeft: f.align === 'end' ? 'auto' : 0,
-    marginRight: f.align === 'end' ? 0 : 'auto',
+    marginLeft: `${f.offsetPct}%`,
   };
 }
 
@@ -72,7 +78,7 @@ export function frameImageStyle(f: LandingImageFrame): Record<string, string | n
 }
 
 export function frameOuterCss(f: LandingImageFrame): string {
-  return `width:${f.widthPct}%;aspect-ratio:${f.aspect};margin-left:${f.align === 'end' ? 'auto' : '0'};margin-right:${f.align === 'end' ? '0' : 'auto'}`;
+  return `width:${f.widthPct}%;aspect-ratio:${f.aspect};margin-left:${f.offsetPct}%`;
 }
 
 export function frameImageCss(f: LandingImageFrame): string {
