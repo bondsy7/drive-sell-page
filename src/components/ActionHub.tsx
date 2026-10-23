@@ -138,7 +138,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         onClick={() => !isDisabled && onSelect(tile.id)}
         disabled={isDisabled}
         className={cn(
-          'group relative flex h-full w-full flex-col items-stretch justify-between gap-4 overflow-hidden rounded-lg border-border bg-highlight p-0 text-left whitespace-normal shadow-card transition-all duration-300',
+          'group relative flex h-full w-full flex-col items-stretch justify-between gap-4 overflow-hidden rounded-lg border-highlight-border bg-highlight p-0 text-left whitespace-normal shadow-card transition-all duration-300',
           'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-highlight hover:text-highlight-foreground hover:shadow-elevated',
           'sm:flex-row sm:items-center',
         )}
