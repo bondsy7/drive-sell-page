@@ -1,4 +1,5 @@
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
+import { buildLandingPageHTML } from '@/lib/landing-page-builder';
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -289,7 +290,12 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             liveInventory: liveInventory.enabled ? liveInventory : null,
           } as any,
           template_id: 'landing-page',
-          html_content: data.html,
+          html_content: buildLandingPageHTML(data.pageContent, data.imageMap || {}, dealer, brand, model, data.brandLogoUrl || '', {
+            dealerUserId: user.id,
+            vehicleId: effectiveVehicleId,
+            supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+            vehicleTitle: `${brand} ${model}`,
+          }),
         }).select('id').single();
 
         if (saveError || !project) {
