@@ -483,9 +483,34 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               Für den Header und jeden Abschnitt wird ein neues KI-Bild erstellt. Bereits vorhandene Bilder – auch eigene Uploads – werden dabei ersetzt. Texte und übrige Inhalte bleiben unverändert.
             </DialogDescription>
           </DialogHeader>
+          <div className="rounded-lg border border-border bg-muted/40 p-3">
+            <p className="text-sm font-medium text-foreground">
+              Dieser Vorgang erzeugt {bulkPlan.imageCount} Bilder und verbraucht {creditLabel(bulkPlan.totalCost)}.
+            </p>
+            {creditsLoading ? (
+              <p className="text-xs text-muted-foreground mt-1.5">Ihr Guthaben wird geladen…</p>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground mt-1.5">Ihr aktuelles Guthaben: {creditLabel(bulkPlan.balance)}.</p>
+                {bulkPlan.missing > 0 ? (
+                  <p className="text-xs font-medium text-destructive mt-1">
+                    Ihnen fehlen {creditLabel(bulkPlan.missing)}. Bitte laden Sie Guthaben auf.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">Danach verbleiben {creditLabel(bulkPlan.balance - bulkPlan.totalCost)}.</p>
+                )}
+              </>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkConfirmOpen(false)}>Abbrechen</Button>
-            <Button onClick={() => { setBulkConfirmOpen(false); handleGenerateAllScenes(); }}>Ja, Bilder generieren</Button>
+            <Button
+              onClick={() => { setBulkConfirmOpen(false); handleGenerateAllScenes(); }}
+              disabled={creditsLoading || !bulkPlan.canRun}
+              title={bulkPlan.missing > 0 ? `Ihnen fehlen ${creditLabel(bulkPlan.missing)}` : undefined}
+            >
+              Ja, Bilder generieren
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -579,6 +604,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   <p className="text-sm font-medium text-foreground">Aus Fahrzeugbildern wählen</p>
                   <p className="text-xs text-muted-foreground">Bereits in autohaus.ai generierte Bilder verwenden</p>
                 </div>
+                <CreditBadge credits={0} />
               </button>
 
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
@@ -588,6 +614,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   <p className="text-xs text-muted-foreground">Ein eigenes Bild verwenden</p>
                   <p className="text-xs text-muted-foreground mt-1">{LANDING_UPLOAD_DISCLOSURE_NOTICE}</p>
                 </div>
+                <CreditBadge credits={0} />
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files?.[0];
                   if (file && imageDialogSection) handleImageUpload(imageDialogSection, file);
@@ -601,16 +628,24 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 <Sparkles className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Neu generieren</p>
-                  <p className="text-xs text-muted-foreground">KI erstellt ein neues Bild passend zur Section</p>
+                  <p className="text-xs text-muted-foreground">Erzeugt ein neues KI-Bild (verbraucht {creditLabel(generateCost)})</p>
+                  {!creditsLoading && balance < generateCost && (
+                    <p className="text-xs font-medium text-destructive mt-1">Ihnen fehlen {creditLabel(generateCost - balance)}.</p>
+                  )}
                 </div>
+                <CreditBadge credits={generateCost} />
               </button>
 
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <RefreshCw className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Foto remastern</p>
-                  <p className="text-xs text-muted-foreground">Eigenes Foto in Profi-Qualität umwandeln</p>
+                  <p className="text-xs text-muted-foreground">Wandelt Ihr Foto in Studio-Qualität um ({creditLabel(remasterCost)})</p>
+                  {!creditsLoading && balance < remasterCost && (
+                    <p className="text-xs font-medium text-destructive mt-1">Ihnen fehlen {creditLabel(remasterCost - balance)}.</p>
+                  )}
                 </div>
+                <CreditBadge credits={remasterCost} />
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files?.[0];
                   if (file && imageDialogSection) handleRemaster(imageDialogSection, file);
