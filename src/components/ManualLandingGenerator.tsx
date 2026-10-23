@@ -18,6 +18,14 @@ import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import LiveVehiclesBlock, { DEFAULT_LIVE_INVENTORY, type LiveInventoryConfig } from '@/components/landing/LiveVehiclesBlock';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -91,6 +99,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
+  // Zusatzbestätigung: Grundeinstellungen sind nach der Generierung nicht mehr änderbar.
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Vehicle asset picker
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
@@ -586,7 +596,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             <Progress value={progressPercent} className="h-2" />
           </div>
         )}
-        <Button onClick={handleGenerate} disabled={!canGenerate || loading} className="w-full h-12 text-base font-semibold">
+        <Button onClick={() => canGenerate && setConfirmOpen(true)} disabled={!canGenerate || loading} className="w-full h-12 text-base font-semibold">
           {loading ? (
             <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{progress}</>
           ) : (
