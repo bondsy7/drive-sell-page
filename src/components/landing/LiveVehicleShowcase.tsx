@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
 import { ArrowLeft, ArrowRight, Car } from 'lucide-react';
+import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
+import { Button } from '@/components/ui/button';
 import {
   livePriceLabel,
   liveSpecLabel,
@@ -42,7 +44,7 @@ const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, 
     </div>
   ) : (
     <div className={config.layout === 'grid' ? 'lp-live-grid' : 'lp-live-track'} ref={config.layout === 'grid' ? undefined : trackRef}>
-      {vehicles.map(v => (
+      {vehicles.map(v => config.cardDesign?.preset === 'jacobs' ? <JacobsVehicleCard key={v.externalVehicleId} vehicle={v} design={config.cardDesign} editable={editable} /> : (
         <a
           key={v.externalVehicleId}
           className="lp-live-card"
@@ -70,14 +72,14 @@ const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, 
   );
 
   return (
-    <section id="live-fahrzeuge" style={{ background: 'var(--lp-tint)', borderTop: '1px solid var(--lp-border)' }}>
+    <section id="live-fahrzeuge" className={config.cardDesign?.preset === 'jacobs' ? 'lp-live-jacobs' : undefined} style={{ background: 'var(--lp-tint)', borderTop: '1px solid var(--lp-border)' }}>
       <div className="lp-live-inner">
         <div className="lp-live-head">
           <h2 className="lp-live-title">{config.title || 'Aktuelle Fahrzeuge aus unserem Bestand'}</h2>
           {config.layout === 'slider' && vehicles.length > 1 && !loading && !error && (
             <div className="lp-live-nav">
-              <button type="button" onClick={() => scroll(-1)} title="Zurück" aria-label="Zurück"><ArrowLeft size={16} /></button>
-              <button type="button" onClick={() => scroll(1)} title="Weiter" aria-label="Weiter"><ArrowRight size={16} /></button>
+              <Button variant="outline" size="icon" type="button" onClick={() => scroll(-1)} title="Zurück" aria-label="Zurück"><ArrowLeft size={16} /></Button>
+              <Button variant="outline" size="icon" type="button" onClick={() => scroll(1)} title="Weiter" aria-label="Weiter"><ArrowRight size={16} /></Button>
             </div>
           )}
         </div>

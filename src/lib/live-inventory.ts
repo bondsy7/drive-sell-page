@@ -1,3 +1,10 @@
+import jacobsCardCss from '@/styles/jacobs-vehicle-cards.css?raw';
+import jacobsRegular from '@/assets/jacobs-montserrat-regular.asset.json';
+import jacobsBold from '@/assets/jacobs-montserrat-bold.asset.json';
+
+const assetOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const jacobsFonts = `@font-face{font-family:'Jacobs Montserrat';src:url('${assetOrigin}${jacobsRegular.url}') format('truetype');font-weight:400;font-display:swap}@font-face{font-family:'Jacobs Montserrat';src:url('${assetOrigin}${jacobsBold.url}') format('truetype');font-weight:700;font-display:swap}`;
+
 /**
  * Shared logic for the "Live-Fahrzeuge" landing-page block.
  *
@@ -115,6 +122,8 @@ export const liveSpecLabel = (v: LiveVehicle) => [
 /* ─── Shared block styles: one source for the editor canvas and the exported HTML ─── */
 
 export const LIVE_INVENTORY_CSS = `
+${jacobsFonts}
+${jacobsCardCss}
 .lp-live-inner{max-width:1200px;margin:0 auto;padding:96px 32px}
 .lp-live-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px;flex-wrap:wrap}
 .lp-live-title{font-size:34px;font-weight:700;color:#0f172a;line-height:1.15}

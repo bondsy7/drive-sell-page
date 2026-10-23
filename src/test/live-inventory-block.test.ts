@@ -3,6 +3,8 @@ import {
   DEFAULT_LIVE_INVENTORY,
   matchesLiveFilter,
   resolveLiveVehicles,
+  resolveProfileCardDesign,
+  liveVehicleHref,
   type LiveInventoryConfig,
   type LiveVehicle,
 } from '@/lib/live-inventory';
@@ -30,6 +32,23 @@ const STOCK: LiveVehicle[] = [
 const cfg = (patch: Partial<LiveInventoryConfig>): LiveInventoryConfig => ({ ...DEFAULT_LIVE_INVENTORY, ...patch });
 
 describe('Live-Fahrzeuge block', () => {
+  const settings = { liveVehicleCardDesign: { preset: 'jacobs' } };
+  it.each(['edin.ljevo@wirsindjacobs.de', 'p.erhard@autoactiva.de', 'd.bonds@autoactiva.de'])('verwendet gespeichertes Jacobs-Design für %s', email => {
+    expect(resolveProfileCardDesign(email, settings)?.preset).toBe('jacobs');
+  });
+  it('ändert keine anderen Profile', () => {
+    expect(resolveProfileCardDesign('other@example.de', settings)).toBeUndefined();
+    expect(resolveProfileCardDesign('p.erhard@autoactiva.de', {})).toBeUndefined();
+  });
+  it('verlinkt das Fahrzeug über seine interne Nummer, nicht über die Auto3-ID', () => {
+    expect(liveVehicleHref({ ...car('10076', 'Skoda', 'Peaq', true), internalNumber: 'WM-006603' }, resolveProfileCardDesign('p.erhard@autoactiva.de', settings)))
+      .toBe('https://www.wir-sind-jacobs.de/fahrzeuge-details/?intern-nummer=WM-006603');
+  });
+  it('codiert interne Nummern und erfindet bei fehlender Nummer keinen Fahrzeuglink', () => {
+    const design = resolveProfileCardDesign('p.erhard@autoactiva.de', settings);
+    expect(liveVehicleHref({ ...car('10076', 'Skoda', 'Peaq', true), internalNumber: 'WM / 1&2' }, design)).toBe('https://www.wir-sind-jacobs.de/fahrzeuge-details/?intern-nummer=WM%20%2F%201%262');
+    expect(liveVehicleHref(car('10076', 'Skoda', 'Peaq', true), design, 'https://jacobs.indicar.de')).toBeUndefined();
+  });
   it('zeigt nichts, wenn der Block ausgeschaltet ist', () => {
     expect(resolveLiveVehicles(STOCK, cfg({ enabled: false, brand: 'Skoda' }))).toEqual([]);
   });

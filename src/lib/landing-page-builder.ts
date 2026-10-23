@@ -1,4 +1,7 @@
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 import { buildAiDisclosureFooterHTML, buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
@@ -176,6 +179,7 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
   if (!config?.enabled) return '';
 
   const card = (v: LiveVehicle) => {
+    if (config.cardDesign?.preset === 'jacobs') return renderToStaticMarkup(createElement(JacobsVehicleCard, { vehicle: v, design: config.cardDesign }));
     const name = escapeHtml(liveTitleLabel(v));
     const href = inventoryUrl ? escapeHtml(inventoryUrl) : '#';
     return `<a class="lp-live-card" href="${href}"${inventoryUrl ? ' target="_blank" rel="noopener noreferrer"' : ''}>
@@ -198,7 +202,7 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
   // The rule travels with the page so an external site can re-resolve the live stock.
   const rule = escapeHtml(JSON.stringify({ ...config, selectedIds: config.selectedIds ?? [] }));
 
-  return `<section id="live-fahrzeuge" style="background:var(--lp-tint);border-top:1px solid var(--lp-border)" data-live-inventory="${rule}">
+  return `<section id="live-fahrzeuge" class="${config.cardDesign?.preset === 'jacobs' ? 'lp-live-jacobs' : ''}" style="background:var(--lp-tint);border-top:1px solid var(--lp-border)" data-live-inventory="${rule}">
   <div class="lp-live-inner">
     <div class="lp-live-head"><h2 class="lp-live-title">${escapeHtml(config.title || 'Aktuelle Fahrzeuge aus unserem Bestand')}</h2></div>
     ${inner}
