@@ -419,8 +419,8 @@ export interface ContactFormOptions {
   /** Configurable form heading/intro (landing pages). Recipient stays server-side. */
   heading?: string;
   intro?: string;
-  /** Landing pages: page primary colour so the enquiry button matches the page. */
-  primary?: string;
+  /** Landing pages: colour of the page's own buttons, used by the enquiry widget. */
+  accent?: string;
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
@@ -428,11 +428,11 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
   const formHeading = escapeHtml(options.heading || DEFAULT_CONTACT_HEADING);
   const formIntro = escapeHtml(options.intro ?? vehicleTitle);
 
-  // Landing pages pass their own primary colour so the enquiry button matches the
-  // page's buttons. Offer pages pass nothing and keep the neutral blue design.
-  const brandColor = /^#[0-9a-fA-F]{6}$/.test(options.primary || '') ? (options.primary as string) : '#3366cc';
+  // Landing pages pass the colour of their own buttons so the enquiry widget matches
+  // the page. Offer pages pass nothing and keep the neutral blue design.
+  const brandColor = /^#[0-9a-fA-F]{6}$/.test(options.accent || '') ? (options.accent as string) : '#3366cc';
   const brandButtonText = readableOn(brandColor);
-  const brandButtonBg = options.primary
+  const brandButtonBg = options.accent
     ? `background:${brandColor}`
     : 'background:linear-gradient(135deg,#3366cc,#2952a3)';
   const brandShadow = rgba(brandColor, 0.4);

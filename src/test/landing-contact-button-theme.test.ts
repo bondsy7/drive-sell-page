@@ -9,9 +9,9 @@ const BASE = {
 };
 
 describe('landing page enquiry button colour', () => {
-  it('uses the page primary colour with readable white text on a red brand', () => {
-    const html = buildContactFormHTML({ ...BASE, primary: '#c8102e' });
-    expect(html).toContain('background:#c8102e');
+  it('uses the page button colour with readable white text on a red brand', () => {
+    const html = buildContactFormHTML({ ...BASE, accent: '#e00000' });
+    expect(html).toContain('background:#e00000');
     expect(html).toContain('color:#ffffff');
     expect(html).not.toContain('#3366cc');
   });
@@ -19,18 +19,18 @@ describe('landing page enquiry button colour', () => {
   it('keeps the neutral blue offer-page design when no page colour is given', () => {
     const html = buildContactFormHTML(BASE);
     expect(html).toContain('background:linear-gradient(135deg,#3366cc,#2952a3)');
-    expect(html).not.toContain('background:#c8102e');
+    expect(html).not.toContain('background:#e00000');
   });
 
   it('picks dark text for a light brand colour', () => {
     expect(readableOn('#f2c14e')).toBe('#0f172a');
-    expect(readableOn('#c8102e')).toBe('#ffffff');
+    expect(readableOn('#e00000')).toBe('#ffffff');
   });
 
-  it('falls back to petrol blue for missing or malformed dealer colours', () => {
+  it('falls back to the neutral colours for missing or malformed dealer colours', () => {
     expect(landingPrimary({ primaryColor: 'nope' })).toBe('#174f6b');
     expect(landingPrimary(undefined)).toBe('#174f6b');
-    expect(landingPrimary({ primaryColor: '#c8102e' })).toBe('#c8102e');
+    expect(landingSecondary({ secondaryColor: '#e00000' })).toBe('#e00000');
     expect(landingSecondary({ secondaryColor: '#zzz' })).toBe('#e2b04a');
   });
 });
