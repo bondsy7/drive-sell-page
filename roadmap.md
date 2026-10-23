@@ -1,5 +1,5 @@
 ## Landingpage-Kontaktformular (23.10.2026)
-- [ ] Kontaktformular gemäß Bestandswebsite-Screenshot in Editor und HTML gestalten und prüfen; bestehender Versand bleibt erhalten.
+- [x] Kontaktformular gemäß Bestandswebsite-Screenshot in Editor und HTML gestaltet; Pflichtfelder, Datenschutzbestätigung und simulierten Versand auf Pauls KIA-Seite geprüft, 9 Tests und Vorschau fehlerfrei; keine echte E-Mail und keine Veröffentlichung. Anrufen nur bei hinterlegter Telefonnummer; Website-Datenschutzlink nutzt vorläufig /datenschutz/.
 
 ## Landingpage-Abschnittsfarben (23.10.2026)
 - [x] Farbauswahl unter Abschnitt löschen mit Profilfarben und freier Farbe; an Pauls Seite Speicherung nach erneutem Öffnen, Rückgängig, Zurücksetzen und HTML-Vorschau geprüft; ursprüngliche Farbe wiederhergestellt. 6 Tests und Vorschau fehlerfrei, nicht veröffentlicht.
