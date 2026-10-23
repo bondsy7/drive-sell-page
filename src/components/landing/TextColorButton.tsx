@@ -14,9 +14,7 @@ export default function TextColorButton({ value, colors, onChange, label = 'Text
   const valid = normalizeSectionColor(draft);
   return <Popover open={open} onOpenChange={next => { setOpen(next); if (next) setDraft(value || colors[0]?.value || ''); }}>
     <PopoverTrigger asChild>
-      <Button type="button" variant="ghost" size="sm" className="lp-element-color" title={label} aria-label={label}
-        onMouseDown={event => event.preventDefault()}
-        onClick={event => event.preventDefault()}>
+      <Button type="button" variant="ghost" size="sm" className="lp-element-color" title={label} aria-label={label}>
         <span className="lp-delete-icon"><Palette size={16} aria-hidden="true" /></span>
         <span className="lp-delete-label">Textfarbe</span>
       </Button>
