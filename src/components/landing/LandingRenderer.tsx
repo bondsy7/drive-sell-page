@@ -667,7 +667,7 @@ const SectionRenderer: React.FC<{
   onToggle: () => void;
   onDelete: () => void;
   onReplaceImage: () => void;
-  frame?: LandingImageFrame;
+  frame?: Partial<LandingImageFrame>;
   frameEditing?: boolean;
   onFrameChange?: (f: LandingImageFrame | null) => void;
   onAddAfter?: () => void;
