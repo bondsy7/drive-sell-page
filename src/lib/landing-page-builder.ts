@@ -23,6 +23,7 @@ import {
 
 export interface LandingPageContent {
   logoSizes?: LandingLogoSizes;
+  imageFrames?: Record<string, Partial<import('@/lib/landing-image-frame').LandingImageFrame>>;
   imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
   removedElements?: string[];
   meta: { title: string; description: string; h1: string };
