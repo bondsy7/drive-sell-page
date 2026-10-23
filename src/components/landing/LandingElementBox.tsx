@@ -23,7 +23,7 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
     // controls float in one row above the element instead of reserving padding.
     return <Tag className={`lp-element-box lp-element-inline${colorControl ? ' lp-has-color' : ''}${!onDelete ? ' lp-color-only' : ''}`}>
       {children}
-      {hasControls && (
+      {(colorControl || onDelete) && (
         <span className="lp-controls-row">
           {colorControl}
           {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
