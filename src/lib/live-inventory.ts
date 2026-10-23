@@ -62,7 +62,7 @@ export function liveVehicleHref(v: LiveVehicle, design?: LiveVehicleCardDesign, 
 
 export const jacobsTitleLabel = (v: LiveVehicle) => v.variant ? `${v.brand || ''} ${v.variant}`.trim() : liveTitleLabel(v);
 export const jacobsPriceLabel = (v: LiveVehicle) => v.priceEur != null ? `${v.priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : 'Preis auf Anfrage';
-export const jacobsFuelLabel = (v: LiveVehicle) => ({ PETROL: 'Benzin', DIESEL: 'Diesel', ELECTRIC: 'Elektro', HYBRID: 'Hybrid', PLUGIN_HYBRID: 'Plug-in-Hybrid' }[v.fuelType || ''] || v.fuelType || '—');
+export const jacobsFuelLabel = (v: LiveVehicle) => ({ FUEL: 'Benzin', PETROL: 'Benzin', DIESEL: 'Diesel', ELECTRIC: 'Elektro', HYBRID: 'Hybrid', PLUGIN_HYBRID: 'Plug-in-Hybrid' }[v.fuelType || ''] || v.fuelType || '—');
 export const jacobsPowerLabel = (v: LiveVehicle) => v.powerKw != null ? `${v.powerKw} kW${v.powerPs != null ? ` (${v.powerPs} PS)` : ''}` : '—';
 
 /** Saved rule: the renderer (and later the website plugin) re-resolves live vehicles from this. */

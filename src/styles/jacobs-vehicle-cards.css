@@ -19,9 +19,9 @@
 .lp-jacobs-content { padding:16px 18px 10px; }
 .lp-jacobs-heading { min-height:70px; }
 .lp-live-jacobs .lp-jacobs-title { font-family:'Jacobs Montserrat',ui-sans-serif,system-ui,sans-serif; font-size:16px; line-height:1.3; font-weight:700; color:var(--jacobs-card-heading); margin:0 0 6px; letter-spacing:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.lp-jacobs-subtitle { font-size:13px; margin:0; line-height:1.35; }
+.lp-jacobs-subtitle { font-size:13px; margin:0; line-height:1.35; color:var(--jacobs-card-text); }
 .lp-jacobs-specs { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px 18px; border-top:1px solid var(--jacobs-card-border); margin:14px -18px 0; padding:14px 18px 2px; }
-.lp-jacobs-spec { display:flex; align-items:center; gap:8px; min-width:0; }
+.lp-jacobs-spec { display:flex; align-items:center; gap:8px; min-width:0; color:var(--jacobs-card-text); }
 .lp-jacobs-spec svg { width:18px; height:18px; flex-shrink:0; color:var(--jacobs-card-accent); }
 .lp-jacobs-spec span { overflow-wrap:anywhere; }
 .lp-jacobs-price-panel { padding:18px; border-top:1px solid var(--jacobs-card-border); margin-top:auto; text-align:right; min-height:86px; }
