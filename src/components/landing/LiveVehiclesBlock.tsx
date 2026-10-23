@@ -11,6 +11,7 @@ import {
   type LiveVehicle,
 } from '@/lib/live-inventory';
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
+import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
 
 // Re-exported so existing importers keep working.
 export { DEFAULT_LIVE_INVENTORY, matchesLiveFilter } from '@/lib/live-inventory';
@@ -27,10 +28,11 @@ interface Props {
 }
 
 const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggestedBrand }) => {
+  const { data: cardDesign } = useLiveVehicleCardDesign();
   const [items, setItems] = useState<LiveVehicle[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const set = (p: Partial<LiveInventoryConfig>) => onChange({ ...value, ...p });
+  const set = (p: Partial<LiveInventoryConfig>) => onChange({ ...value, cardDesign: cardDesign || undefined, ...p });
 
   const load = async () => {
     setLoading(true); setError(null);

@@ -19,6 +19,7 @@ export function useCiPersistence(args: {
   const loadedForUserRef = useRef<string | null>(null);
   const lastSavedJsonRef = useRef<string>("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileSettingsRef = useRef<Record<string, unknown>>({});
 
   // Initial load
   useEffect(() => {
@@ -34,6 +35,7 @@ export function useCiPersistence(args: {
       if (cancelled) return;
       const stored = (data?.ci_settings ?? null) as Partial<CiState> | null;
       if (stored && typeof stored === "object") {
+        profileSettingsRef.current = stored as unknown as Record<string, unknown>;
         lastSavedJsonRef.current = JSON.stringify(stored);
         onLoaded(stored);
       }
@@ -51,7 +53,7 @@ export function useCiPersistence(args: {
     debounceRef.current = setTimeout(async () => {
       const { error } = await supabase
         .from("profiles")
-        .update({ ci_settings: ci as any })
+        .update({ ci_settings: { ...profileSettingsRef.current, ...ci } as any })
         .eq("id", userId);
       if (!error) lastSavedJsonRef.current = json;
     }, 800);

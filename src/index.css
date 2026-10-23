@@ -1,3 +1,4 @@
+@import './styles/jacobs-vehicle-cards.css';
 /* Keine externen Schriftdienste: datenschutzfreundlicher System-Font-Stack (siehe tailwind.config.ts). */
 
 @font-face {

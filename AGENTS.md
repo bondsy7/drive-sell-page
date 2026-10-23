@@ -22,3 +22,4 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Shared branding separates wall/plate assets; V3 excludes source logos.
 - Reuse ModelSelector; retain tier IDs. Gate generator by modules; reuse maintenance notice.
 - Landingpage element deletion uses stable IDs in pageContent.removedElements shared by React rendering and HTML export; editor undo snapshots cover content, image maps, inventory and contact settings so saves and reversals remain consistent.
+- Live vehicle card presets come from profile CI settings and travel with the saved inventory rule; React and HTML use shared styles/formatters and dealer internal numbers for detail links, never Auto3 record IDs, so plugin delivery preserves the dealer presentation without touching import/remaster logic.
