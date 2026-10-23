@@ -432,7 +432,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {contactFormEnabled && viewMode === 'edit' && <ContactFormWidgetPreview config={contactFormConfig} />}
+      {contactFormEnabled && viewMode === 'edit' && <ContactFormWidgetPreview config={contactFormConfig} primary={dealer.primaryColor} />}
 
       {/* Canvas */}
       <div className="flex-1 overflow-auto p-4 sm:p-6 flex justify-center">
