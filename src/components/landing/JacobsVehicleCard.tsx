@@ -1,10 +1,11 @@
 import { Car, Gauge, SlidersHorizontal, Fuel, Zap, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { jacobsFuelLabel, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
+import { jacobsFuelLabel, jacobsMonthlyRate, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
 
 export default function JacobsVehicleCard({ vehicle: v, design, editable }: { vehicle: LiveVehicle; design: LiveVehicleCardDesign; editable?: boolean }) {
   const href = liveVehicleHref(v, design);
   const title = jacobsTitleLabel(v);
+  const rate = jacobsMonthlyRate(v);
   const stopEditingClick = editable ? (event: React.MouseEvent) => event.preventDefault() : undefined;
   return <article className="lp-live-card lp-jacobs-card">
     <a className="lp-jacobs-main" href={href} target={href ? '_blank' : undefined} rel="noopener noreferrer" aria-label={`Zum Fahrzeug: ${title}`} onClick={stopEditingClick}>
@@ -19,7 +20,7 @@ export default function JacobsVehicleCard({ vehicle: v, design, editable }: { ve
         </div>
       </div>
     </a>
-    <div className="lp-jacobs-price-panel"><div className="lp-jacobs-price">{jacobsPriceLabel(v)}</div><div className="lp-jacobs-rate">{v.monthlyRate ? `oder ab ${v.monthlyRate.toLocaleString('de-DE')} € mtl.` : ''}</div></div>
+    <div className="lp-jacobs-price-panel"><div className="lp-jacobs-price">{jacobsPriceLabel(v)}</div><div className="lp-jacobs-rate">{rate ? `oder ab ${rate.toLocaleString('de-DE')} € mtl.` : ''}</div></div>
     <div className="lp-jacobs-footer">
       {href ? <Button asChild variant="outline" className="lp-jacobs-cta"><a href={href} target="_blank" rel="noopener noreferrer" onClick={stopEditingClick}>Zum Fahrzeug</a></Button> : <span className="lp-jacobs-cta" aria-disabled="true">Fahrzeuglink nicht verfügbar</span>}
       {design.contactEmail && <Button asChild variant="outline" size="icon" className="lp-jacobs-action"><a href={`mailto:${design.contactEmail}?subject=${encodeURIComponent(`Anfrage: ${title} (${v.internalNumber || ''})`)}`} aria-label="Anfrage senden" title="Anfrage senden" onClick={stopEditingClick}><Mail /></a></Button>}

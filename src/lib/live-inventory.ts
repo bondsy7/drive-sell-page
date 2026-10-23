@@ -62,6 +62,23 @@ export function liveVehicleHref(v: LiveVehicle, design?: LiveVehicleCardDesign, 
 
 export const jacobsTitleLabel = (v: LiveVehicle) => v.variant ? `${v.brand || ''} ${v.variant}`.trim() : liveTitleLabel(v);
 export const jacobsPriceLabel = (v: LiveVehicle) => v.priceEur != null ? `${v.priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : 'Preis auf Anfrage';
+
+/** Same example financing the Jacobs website plugin uses when Auto3 delivers no rate:
+ *  20 % down payment, 48 months, 40 % final installment, 5.99 % p.a. */
+export const JACOBS_FALLBACK_FINANCE = { downPaymentShare: 0.2, termMonths: 48, finalShare: 0.4, annualRate: 0.0599 } as const;
+export function jacobsFallbackMonthlyRate(priceEur: number | null | undefined): number | null {
+  if (!priceEur || !Number.isFinite(priceEur) || priceEur <= 0) return null;
+  const { downPaymentShare, termMonths: n, finalShare, annualRate } = JACOBS_FALLBACK_FINANCE;
+  const r = annualRate / 12;
+  const loan = priceEur * (1 - downPaymentShare);
+  const disc = Math.pow(1 + r, -n);
+  return Math.round(((loan - priceEur * finalShare * disc) / ((1 - disc) / r)) * 100) / 100;
+}
+/** Auto3 rate wins; otherwise the website's example calculation. Rounded up to whole euros like the website. */
+export const jacobsMonthlyRate = (v: LiveVehicle): number | null => {
+  const rate = v.monthlyRate || jacobsFallbackMonthlyRate(v.priceEur);
+  return rate ? Math.round(rate) : null;
+};
 export const jacobsFuelLabel = (v: LiveVehicle) => ({ FUEL: 'Benzin', PETROL: 'Benzin', DIESEL: 'Diesel', ELECTRIC: 'Elektro', HYBRID: 'Hybrid', PLUGIN_HYBRID: 'Plug-in-Hybrid' }[v.fuelType || ''] || v.fuelType || '—');
 export const jacobsPowerLabel = (v: LiveVehicle) => v.powerKw != null ? `${v.powerKw} kW${v.powerPs != null ? ` (${v.powerPs} PS)` : ''}` : '—';
 
