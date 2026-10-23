@@ -10,6 +10,7 @@ import TemplateSidebar from '@/components/TemplateSidebar';
 
 import type { VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
+import { isLiveInventoryConfig } from '@/lib/live-inventory';
 
 const ProjectView = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,6 +84,8 @@ const ProjectView = () => {
             brand={vd.brand || ''}
             model={vd.model || ''}
             brandLogoUrl={vd.brandLogoUrl}
+            initialLiveInventory={isLiveInventoryConfig(vd.liveInventory) ? vd.liveInventory : null}
+            initialVehicleData={vd}
             onBack={() => navigate('/dashboard?tab=landings')}
           />
         </main>

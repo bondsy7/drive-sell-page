@@ -279,11 +279,18 @@ Deno.serve(async (req) => {
 
     // Lightweight live inventory for landing-page blocks: listing only, no VIN, no detail calls.
     if (action === "live_list") {
-      const raws: Raw[] = [];
-      for (let page = 0; page < 20; page++) {
-        const r = await auto3Get(`/v1/vehicle/vehicle/buy?page=${page}&pageSize=100&includeImages=true`, tenantUrl);
-        raws.push(...((r?.content || []) as Raw[]));
-        if (page + 1 >= (r?.totalPages ?? 1)) break;
+      // Page 0 tells us how many pages exist; the rest are fetched in parallel so the
+      // landing-page block is usable even with a few hundred vehicles in stock.
+      const first = await auto3Get(`/v1/vehicle/vehicle/buy?page=0&pageSize=100&includeImages=true`, tenantUrl);
+      const totalPages = Math.min(20, Math.max(1, Number(first?.totalPages ?? 1) || 1));
+      const raws: Raw[] = [...((first?.content || []) as Raw[])];
+      if (totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            auto3Get(`/v1/vehicle/vehicle/buy?page=${i + 1}&pageSize=100&includeImages=true`, tenantUrl)
+          )
+        );
+        for (const r of rest) raws.push(...((r?.content || []) as Raw[]));
       }
       const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null; };
       const items = raws.map((r) => ({

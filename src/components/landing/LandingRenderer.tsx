@@ -3,6 +3,21 @@ import { motion } from 'framer-motion';
 import { RefreshCw, Upload, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
+import {
+  LIVE_INVENTORY_CSS,
+  LIVE_INVENTORY_NARROW_CSS,
+  type LiveInventoryConfig,
+  type LiveVehicle,
+} from '@/lib/live-inventory';
+
+export interface LiveInventoryView {
+  config: LiveInventoryConfig;
+  vehicles: LiveVehicle[];
+  inventoryUrl?: string;
+  loading?: boolean;
+  error?: string | null;
+}
 
 /* ─── Helpers ─── */
 
@@ -47,6 +62,7 @@ export interface RendererProps {
   onDeleteSection?: (id: string) => void;
   onAddSection?: (afterId: string | null) => void;
   imageLoading?: string | null;
+  liveInventory?: LiveInventoryView | null;
 }
 
 const Editable: React.FC<{
@@ -315,6 +331,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onDeleteSection,
   onAddSection,
   imageLoading,
+  liveInventory,
 }) => {
   const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? dealer.primaryColor! : '#174f6b';
   const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? dealer.secondaryColor! : '#e2b04a';
@@ -367,6 +384,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         .lp-body-html th,.lp-body-html td{padding:8px 12px;border:1px solid var(--lp-border);text-align:left}
         .lp-body-html th{background:var(--lp-tint);font-weight:600}
         .lp-root{container-type:inline-size;container-name:lp}
+        ${LIVE_INVENTORY_CSS}
         /* Narrow layouts (tablet / mobile preview and real devices): image and text always stack. */
         @media(max-width:768px){
           .lp-hero-h1{font-size:32px !important;line-height:1.15 !important}
@@ -378,6 +396,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           .lp-hero-media .lp-image-frame{aspect-ratio:4 / 3 !important}
           .lp-split{grid-template-columns:1fr !important;gap:24px !important}
           .lp-split-media{order:-1 !important}
+          ${LIVE_INVENTORY_NARROW_CSS}
         }
         @container lp (max-width:900px){
           .lp-hero-h1{font-size:32px !important;line-height:1.15 !important}
@@ -389,6 +408,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           .lp-hero-media .lp-image-frame{aspect-ratio:4 / 3 !important}
           .lp-split{grid-template-columns:1fr !important;gap:28px !important;align-items:start !important}
           .lp-split-media{order:-1 !important}
+          ${LIVE_INVENTORY_NARROW_CSS}
         }
       `}</style>
 
@@ -581,6 +601,17 @@ const LandingRenderer: React.FC<RendererProps> = ({
           onAddAfter={onAddSection ? () => onAddSection(s.id) : undefined}
         />
       ))}
+
+      {liveInventory?.config?.enabled && (
+        <LiveVehicleShowcase
+          config={liveInventory.config}
+          vehicles={liveInventory.vehicles}
+          inventoryUrl={liveInventory.inventoryUrl}
+          loading={liveInventory.loading}
+          error={liveInventory.error}
+          editable={editable}
+        />
+      )}
 
       {/* Contact */}
       <section

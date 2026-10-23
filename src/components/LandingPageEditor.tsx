@@ -8,7 +8,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus, Car,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LandingRenderer from '@/components/landing/LandingRenderer';
@@ -24,6 +24,12 @@ import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import VehicleImagePicker from '@/components/landing/VehicleImagePicker';
 import { buildScenePrompt } from '@/lib/landing-scene-prompts';
+import LiveVehiclesBlock from '@/components/landing/LiveVehiclesBlock';
+import {
+  DEFAULT_LIVE_INVENTORY, resolveLiveVehicles,
+  type LiveInventoryConfig, type LiveVehicle,
+} from '@/lib/live-inventory';
+import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -34,6 +40,10 @@ interface LandingPageEditorProps {
   brand: string;
   model: string;
   brandLogoUrl?: string;
+  /** Gespeicherte Live-Fahrzeug-Regel aus vehicle_data (falls vorhanden). */
+  initialLiveInventory?: LiveInventoryConfig | null;
+  /** Kompletter vehicle_data-Wert, damit beim Speichern nichts verloren geht. */
+  initialVehicleData?: Record<string, unknown>;
   onBack: () => void;
 }
 
@@ -57,7 +67,7 @@ const SECTION_TYPES: { value: string; label: string; description: string }[] = [
 
 const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   projectId, vehicleId, initialContent, initialImages, dealer: initialDealer,
-  brand, model, brandLogoUrl, onBack,
+  brand, model, brandLogoUrl, initialLiveInventory, initialVehicleData, onBack,
 }) => {
   const { user } = useAuth();
   const [content, setContent] = useState<LandingPageContent>({
@@ -78,6 +88,29 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [vehicleTitle] = useState(`${brand} ${model}`);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  // ── Live-Fahrzeuge: die Regel kommt aus dem Projekt, die Fahrzeuge immer aus dem aktuellen Bestand ──
+  const [liveInventory, setLiveInventory] = useState<LiveInventoryConfig>(
+    initialLiveInventory?.enabled ? { ...DEFAULT_LIVE_INVENTORY, ...initialLiveInventory } : DEFAULT_LIVE_INVENTORY
+  );
+  const [liveItems, setLiveItems] = useState<LiveVehicle[] | null>(null);
+  const [liveUrl, setLiveUrl] = useState('');
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
+  const [liveDialogOpen, setLiveDialogOpen] = useState(false);
+
+  const loadLive = useCallback(async () => {
+    setLiveLoading(true); setLiveError(null);
+    const res = await fetchLiveInventory();
+    setLiveLoading(false);
+    if (res.error) { setLiveError(res.error); return; }
+    setLiveItems(res.items);
+    setLiveUrl(res.inventoryUrl);
+  }, []);
+
+  useEffect(() => { if (liveInventory.enabled && !liveItems && !liveLoading) loadLive(); /* eslint-disable-next-line */ }, [liveInventory.enabled]);
+
+  const liveVehicles = useMemo(() => resolveLiveVehicles(liveItems || [], liveInventory), [liveItems, liveInventory]);
+
   const contactForm: LandingPageContactForm | undefined = contactFormEnabled && user ? {
     dealerUserId: user.id,
     projectId,
@@ -87,8 +120,11 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   } : undefined;
 
   const html = useMemo(
-    () => buildLandingPageHTML(content, images, dealer, brand, model, brandLogoUrl, contactForm),
-    [content, images, dealer, brand, model, brandLogoUrl, contactForm],
+    () => buildLandingPageHTML(
+      content, images, dealer, brand, model, brandLogoUrl, contactForm,
+      liveInventory.enabled ? { config: liveInventory, vehicles: liveVehicles, inventoryUrl: liveUrl } : undefined,
+    ),
+    [content, images, dealer, brand, model, brandLogoUrl, contactForm, liveInventory, liveVehicles, liveUrl],
   );
 
   // Debounced auto-save
@@ -96,7 +132,17 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       await supabase.from('projects').update({
-        vehicle_data: { type: 'landing-page', brand, model, pageContent: content, imageMap: images, dealer, brandLogoUrl } as any,
+        vehicle_data: {
+          ...(initialVehicleData || {}),
+          type: 'landing-page',
+          brand,
+          model,
+          pageContent: content,
+          imageMap: images,
+          dealer,
+          brandLogoUrl,
+          liveInventory: liveInventory.enabled ? liveInventory : null,
+        } as any,
         html_content: html,
         updated_at: new Date().toISOString(),
       }).eq('id', projectId);
@@ -322,6 +368,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             {imageLoading === '__bulk__' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Alle Szenen generieren
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setLiveDialogOpen(true)} className="gap-2" title="Fahrzeuge aus dem Live-Bestand in die Seite einblenden">
+            <Car className="w-4 h-4" /> Live-Fahrzeuge
+          </Button>
           <Button size="sm" onClick={handleExport} className="gap-2">
             <Download className="w-4 h-4" /> HTML herunterladen
           </Button>
@@ -358,6 +407,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               onDeleteSection={deleteSection}
               onAddSection={(afterId) => setAddAfterId(afterId)}
               imageLoading={imageLoading}
+              liveInventory={liveInventory.enabled
+                ? { config: liveInventory, vehicles: liveVehicles, inventoryUrl: liveUrl, loading: liveLoading, error: liveError }
+                : null}
             />
           ) : (
             <iframe
@@ -445,6 +497,19 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               </>)}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Live-Fahrzeuge Dialog */}
+      <Dialog open={liveDialogOpen} onOpenChange={setLiveDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Live-Fahrzeuge</DialogTitle>
+          </DialogHeader>
+          <LiveVehiclesBlock value={liveInventory} onChange={setLiveInventory} suggestedBrand={brand} />
+          <p className="text-xs text-muted-foreground">
+            Die Auswahl wird automatisch gespeichert und erscheint auf der Seite direkt vor dem Kontaktbereich.
+          </p>
         </DialogContent>
       </Dialog>
 
