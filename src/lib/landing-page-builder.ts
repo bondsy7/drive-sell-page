@@ -1,3 +1,4 @@
+import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import { LANDING_LOGO_CSS, type LandingLogoSizes } from '@/lib/landing-logo-size';
 import LandingLogo from '@/components/landing/LandingLogo';
@@ -25,6 +26,8 @@ import {
 export interface LandingPageContent {
   logoSizes?: LandingLogoSizes;
   imageFrames?: Record<string, Partial<import('@/lib/landing-image-frame').LandingImageFrame>>;
+  /** Ordered image blocks per section; '@main' marks the section's original image. */
+  imageStacks?: Record<string, string[]>;
   imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
   removedElements?: string[];
   meta: { title: string; description: string; h1: string };
@@ -99,9 +102,25 @@ function renderSection(
   removedElements: string[] = [],
   labelImage = true,
   frames: LandingPageContent['imageFrames'] = undefined,
+  stackCtx?: { content: LandingPageContent; images: Record<string, string> },
 ): string {
   if (s.enabled === false) return '';
   const removed = (field: string) => removedElements.includes(`${s.id}.${field}`);
+  const stackEntries = stackCtx ? getImageStack(stackCtx.content, s.id) : [STACK_MAIN];
+  const hasExtra = !!stackCtx && hasExtraImages(stackCtx.content, stackCtx.images, s.id);
+  const stackHtml = (aspect: number, aspectCss: string, mainBlankAllowed: boolean) => {
+    const blocks = stackEntries.map(entry => {
+      const isMain = entry === STACK_MAIN;
+      if (isMain && removed('image')) return '';
+      const url = isMain ? image : stackCtx?.images[entry];
+      if (!url && !(isMain && mainBlankAllowed)) return '';
+      const key = stackImageKey(s.id, entry);
+      const fr = frames?.[key] ? normalizeImageFrame(frames[key], aspect) : null;
+      const lbl = isMain ? labelImage : (stackCtx ? shouldLabelLandingImage(stackCtx.content, key, url) : true);
+      return `<div class="${fr ? 'lp-framed' : ''}" style="position:relative;${fr ? frameOuterCss(fr) : aspectCss};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${url && lbl ? buildAiDisclosureImageOverlayHTML("landing") : ''}${url ? `<img src="${url}" alt="${escapeHtml(lbl ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${fr ? ';' + frameImageCss(fr) : ''}" loading="lazy" decoding="async"/>` : ''}</div>`;
+    }).filter(Boolean);
+    return blocks.length ? `<div style="display:flex;flex-direction:column;gap:${STACK_GAP_PX}px">${blocks.join('')}</div>` : '';
+  };
 
   const bgMap: Record<string, string> = {
     white: '#ffffff',
@@ -127,7 +146,7 @@ function renderSection(
 </section>`;
   }
 
-  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || removed('image') || (!image && !s.imagePrompt);
+  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || (removed('image') || (!image && !s.imagePrompt)) && !hasExtra;
 
   if (isFullWidth) {
     return `<section style="background:${bg}">
@@ -139,11 +158,10 @@ function renderSection(
   }
 
   if (s.type === 'gallery' || s.type === 'specs') {
-    const frame = frames?.[s.id] ? normalizeImageFrame(frames[s.id], 16 / 9) : null;
     return `<section style="background:${bg}">
   <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${image ? `<div class="${frame ? 'lp-framed' : ''}" style="position:relative;${frame ? frameOuterCss(frame) : 'aspect-ratio:16/9'};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px">${labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${frame ? ';' + frameImageCss(frame) : ''}" loading="lazy" decoding="async"/></div>` : ''}
+    ${(() => { const h = stackHtml(16 / 9, 'aspect-ratio:16/9', false); return h ? `<div style="margin-bottom:28px">${h}</div>` : ''; })()}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
 </section>`;
@@ -151,8 +169,7 @@ function renderSection(
 
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
-  const splitFrame = frames?.[s.id] ? normalizeImageFrame(frames[s.id], 4 / 3) : null;
-  const imgHtml = `<div class="lp-split-media"><div class="${splitFrame ? 'lp-framed' : ''}" style="position:relative;${splitFrame ? frameOuterCss(splitFrame) : 'aspect-ratio:4/3'};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image && labelImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(labelImage ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${splitFrame ? ';' + frameImageCss(splitFrame) : ''}" loading="lazy" decoding="async"/>` : ''}</div></div>`;
+  const imgHtml = `<div class="lp-split-media">${stackHtml(4 / 3, 'aspect-ratio:4/3', true)}</div>`;
   const textHtml = removed('headline') && removed('content') ? '' : `<div>
     ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
@@ -258,7 +275,7 @@ export function buildLandingPageHTML(
   const heroSub = hero.subheadline || '';
 
   const sectionBlocks = sections
-    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames))
+    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, { content, images }))
     .join('\n');
 
   const liveBlock = liveInventory && !removed('live-fahrzeuge') ? buildLiveInventorySectionHTML(liveInventory) : '';
