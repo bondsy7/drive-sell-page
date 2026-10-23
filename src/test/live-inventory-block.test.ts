@@ -61,7 +61,8 @@ describe('Live-Fahrzeuge block', () => {
   });
 
   it('prüft Marke und Modell ohne Rücksicht auf Groß- und Kleinschreibung', () => {
-    expect(matchesLiveFilter(car('9', 'ŠKODA', 'KAROQ', true), cfg({ brand: 'Škoda', model: 'karoq' }))).toBe(false);
+    expect(matchesLiveFilter(car('9', 'ŠKODA', 'KAROQ', true), cfg({ brand: 'Škoda', model: 'karoq' }))).toBe(true);
     expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'skoda', model: 'KAROQ' }))).toBe(true);
+    expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'Škoda' }))).toBe(false);
   });
 });
