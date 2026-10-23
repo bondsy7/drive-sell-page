@@ -237,3 +237,9 @@
 
 ## Landingpage-Ansichten (23.10.2026)
 - [x] Bild und Text in Tablet- und Mobil-Ansicht einspaltig untereinander (Bild über Text); in Bearbeitungs- und Vorschauansicht für Computer/Tablet/Mobil gemessen geprüft, Computeransicht bleibt zweispaltig.
+
+## Live-Fahrzeuge in Landingpages (23.10.2026)
+- [x] Fahrzeugblock wird auf der Seite angezeigt (vor dem Kontaktbereich, Slider oder Raster); Auswahl im Editor per „Live-Fahrzeuge"-Knopf; 8 Karten aus dem Jacobs-Bestand in Bearbeitung und Vorschau geprüft, Tablet/Mobil je eine Karte pro Ansicht; 6 neue Tests, 1264 Tests insgesamt erfolgreich.
+- [x] Autostore speichert die Auswahl jetzt mit (vorher ging die Live-Auswahl beim Bearbeiten verloren).
+- [ ] Bestandsschnittstelle paralleler machen (Änderung liegt vor, wartet auf Freigabe zum Online-Stellen) — aktuell ca. 20 s Ladezeit für 588 Fahrzeuge.
+- [ ] Einzelne Fahrzeugkarte direkt zum jeweiligen Angebot führen (Auto3 liefert derzeit keine Adresse pro Fahrzeug).
