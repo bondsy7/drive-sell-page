@@ -1,3 +1,6 @@
+## Landingpage-Kontaktformular (23.10.2026)
+- [ ] Kontaktformular gemäß Bestandswebsite-Screenshot in Editor und HTML gestalten und prüfen; bestehender Versand bleibt erhalten.
+
 ## Landingpage-Abschnittsfarben (23.10.2026)
 - [x] Farbauswahl unter Abschnitt löschen mit Profilfarben und freier Farbe; an Pauls Seite Speicherung nach erneutem Öffnen, Rückgängig, Zurücksetzen und HTML-Vorschau geprüft; ursprüngliche Farbe wiederhergestellt. 6 Tests und Vorschau fehlerfrei, nicht veröffentlicht.
 - [x] „Hintergrundfarbe“ erscheint wie der Löschbutton erst beim Hover über den Abschnitt; offenstehendes Farbfenster bleibt sichtbar. An Pauls Seite Hover, Öffnen, Schließen und erneutes Ausblenden geprüft, nicht veröffentlicht.
