@@ -1,4 +1,3 @@
-## DEKRA-Funktionspause (21.10.2026)
 ## Landingpage-KI-Kennzeichnung (23.10.2026)
 - [ ] Alle generierten Landingpage-Bilder in Editor, Vorschau und HTML als AI Modified markieren; eigene nachträgliche Uploads ausnehmen und Hinweis anzeigen; Speichern/Rückgängig prüfen, nicht veröffentlichen.
 
