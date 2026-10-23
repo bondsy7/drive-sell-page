@@ -227,7 +227,7 @@ export default function LandingImageFrame({
             )}
           </div>
           {mode === 'pan' && src && (
-            <div className="lp-frame-zoom" style={{ zIndex: 40 }} onPointerDown={e => e.stopPropagation()} onPointerDownCapture={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+            <div className="lp-frame-zoom" style={{ zIndex: 40 }} onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
               <span>Zoom</span>
               <Slider aria-label="Bild im Rahmen vergrößern" min={FRAME_ZOOM_MIN} max={FRAME_ZOOM_MAX} step={0.05} value={[draft.zoom]}
                 onValueChange={v => { const z = v[0]; if (z !== undefined) setDraft(d => ({ ...d, zoom: z })); }}
