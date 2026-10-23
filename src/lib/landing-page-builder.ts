@@ -128,7 +128,7 @@ function renderSection(
 
   if (isFullWidth) {
     return `<section style="background:${bg}">
-  <div style="max-width:900px;margin:0 auto;padding:96px 32px">
+  <div style="max-width:${removed('image') ? 1200 : 900}px;margin:0 auto;padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
   </div>
@@ -148,7 +148,7 @@ function renderSection(
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
   const imgHtml = `<div class="lp-split-media" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
-  const textHtml = `<div>
+  const textHtml = removed('headline') && removed('content') ? '' : `<div>
     <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${isDark ? 'rgba(255,255,255,0.6)' : primary};margin-bottom:14px">${`0${idx + 1}`.slice(-2)}</div>
     ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>`}
@@ -156,7 +156,7 @@ function renderSection(
 
   return `<section style="background:${bg}">
   <div style="max-width:1200px;margin:0 auto;padding:96px 32px">
-    <div class="lp-split" style="display:grid;grid-template-columns:${imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr'};gap:56px;align-items:center">
+    <div class="lp-split" style="display:grid;grid-template-columns:${!textHtml ? '1fr' : imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr'};gap:56px;align-items:center">
       ${imageOnLeft ? imgHtml + textHtml : textHtml + imgHtml}
     </div>
   </div>

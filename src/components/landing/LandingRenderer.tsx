@@ -119,7 +119,6 @@ const Editable: React.FC<{
   if (html) {
     return (
       <LandingElementBox editable={editable} onDelete={onDelete}>
-      // @ts-ignore
       <Tag
         ref={ref as any}
         className={`lp-editable ${className || ''}`}
@@ -825,7 +824,7 @@ const SectionRenderer: React.FC<{
   if (isFullWidth) {
     return (
       <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} bg={bg}>
-        <div className="lp-section-inner" style={{ maxWidth: 900, margin: '0 auto', padding: '96px 32px' }}>
+        <div className="lp-section-inner" style={{ maxWidth: removed('image') ? 1200 : 900, margin: '0 auto', padding: '96px 32px' }}>
           <Editable
             as="h2"
             editable={editable}
@@ -908,7 +907,7 @@ const SectionRenderer: React.FC<{
           className="lp-split"
           style={{
             display: 'grid',
-            gridTemplateColumns: imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr',
+            gridTemplateColumns: removed('headline') && removed('content') ? '1fr' : imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr',
             gap: 56,
             alignItems: 'center',
           }}
@@ -927,7 +926,7 @@ const SectionRenderer: React.FC<{
               />
             </div>
           )}
-          <div>
+          {!(removed('headline') && removed('content')) && <div>
             <div
               style={{
                 fontSize: 12,
@@ -959,7 +958,7 @@ const SectionRenderer: React.FC<{
               className="lp-body-html"
               style={{ fontSize: 16, color: bodyColor, lineHeight: 1.75 }}
             />
-          </div>
+          </div>}
           {!imageOnLeft && (
             <div className="lp-split-media">
               <ImageFrame
