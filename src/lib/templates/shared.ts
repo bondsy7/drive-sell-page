@@ -3,6 +3,7 @@ import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
 import { parsePrice } from "@/lib/finance-utils";
 import { escapeHtml, DEFAULT_CONTACT_HEADING } from "@/lib/landing-contact-config";
+import { readableOn, rgba } from "@/lib/landing-theme";
 
 /**
  * Liefert den anzuzeigenden Fahrzeugtitel.
