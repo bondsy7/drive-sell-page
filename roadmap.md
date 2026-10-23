@@ -1,3 +1,6 @@
+## Einheitliche Landingpage-Inhaltsbreiten (23.10.2026)
+- [x] Gemeinsame Inhaltsbreite für Header, Texte, Bilder, Galerie, CTA, Bestand und Kontakt in Editor und HTML; Desktop-Spalten gleich breit. An Pauls Seite Desktop (1200 px), Tablet (818 px) und Mobil (418 px) mit bündigen Außenkanten geprüft; Tablet/Mobil bleiben einspaltig, 20 Tests grün, Vorschau fehlerfrei; nicht veröffentlicht.
+
 ## Eindeutige Landingpage-Löschbuttons (23.10.2026)
 - [x] Jedes X sichtbar mit Löschziel beschriftet; Abschnittsaktionen separat, Bildlöschen unten statt über KI-Label, Textaktionen im eigenen Bereich. An Pauls Seite alle Element-Hover ohne Buttonüberschneidungen, Desktop/Mobil sowie Bildlöschen/Rückgängig geprüft; ursprüngliches Bild wiederhergestellt, 8 Tests grün, Vorschau fehlerfrei; nicht veröffentlicht.
 
