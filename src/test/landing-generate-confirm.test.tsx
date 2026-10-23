@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 
-const invoke = vi.hoisted(() => vi.fn(async () => ({ data: null, error: { message: 'Teststopp' } })));
+const invoke = vi.hoisted(() => vi.fn(async (_name: string) => ({ data: null, error: { message: 'Teststopp' } })));
 const ensureVehicleAuto = vi.hoisted(() => vi.fn(async () => 'vehicle-1'));
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user-1' } }) }));
