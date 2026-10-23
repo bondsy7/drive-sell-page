@@ -51,7 +51,7 @@ async function configurePage() {
   fireEvent.click(screen.getByText('Marke wählen...'));
   fireEvent.click(await screen.findByRole('button', { name: /Audi/ }));
   fireEvent.click(await screen.findByRole('button', { name: 'A3' }));
-  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+  fireEvent.keyDown(screen.getAllByRole('combobox')[0], { key: 'ArrowDown' });
   fireEvent.keyDown(await screen.findByRole('option', { name: /Leasing-Angebot/ }), { key: 'Enter' });
 }
 
