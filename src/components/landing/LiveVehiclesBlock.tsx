@@ -4,51 +4,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  DEFAULT_LIVE_INVENTORY,
+  matchesLiveFilter,
+  fetchLiveInventory,
+  type LiveInventoryConfig,
+  type LiveVehicle,
+} from '@/lib/live-inventory';
 
-export interface LiveVehicle {
-  externalVehicleId: string;
-  brand: string | null;
-  model: string | null;
-  variant: string | null;
-  year: number | null;
-  used: boolean | null;
-  thumbnail: string | null;
-  priceEur: number | null;
-  monthlyRate: number | null;
-  mileage: number | null;
-  fuelType: string | null;
-  powerKw: number | null;
-  powerPs: number | null;
-}
-
-/** Saved rule: the plugin/renderer re-resolves live vehicles from this, nothing is frozen. */
-export interface LiveInventoryConfig {
-  enabled: boolean;
-  mode: 'filter' | 'manual';
-  brand: string; // '' = alle
-  model: string; // '' = alle
-  condition: 'all' | 'new' | 'used';
-  selectedIds: string[];
-  maxItems: number;
-  layout: 'slider' | 'grid';
-  title: string;
-}
-
-export const DEFAULT_LIVE_INVENTORY: LiveInventoryConfig = {
-  enabled: false, mode: 'filter', brand: '', model: '', condition: 'all',
-  selectedIds: [], maxItems: 8, layout: 'slider', title: 'Aktuelle Fahrzeuge aus unserem Bestand',
-};
+// Re-exported so existing importers keep working.
+export { DEFAULT_LIVE_INVENTORY, matchesLiveFilter } from '@/lib/live-inventory';
+export type { LiveInventoryConfig, LiveVehicle } from '@/lib/live-inventory';
 
 const ALL = '__all__';
-
-export function matchesLiveFilter(v: LiveVehicle, c: LiveInventoryConfig): boolean {
-  if (c.brand && (v.brand || '').toLowerCase() !== c.brand.toLowerCase()) return false;
-  if (c.model && (v.model || '').toLowerCase() !== c.model.toLowerCase()) return false;
-  if (c.condition === 'new' && v.used !== false) return false;
-  if (c.condition === 'used' && v.used !== true) return false;
-  return true;
-}
 
 interface Props {
   value: LiveInventoryConfig;
@@ -66,15 +34,10 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
 
   const load = async () => {
     setLoading(true); setError(null);
-    const { data, error } = await supabase.functions.invoke('auto3-inventory', { body: { action: 'live_list' } });
+    const res = await fetchLiveInventory();
     setLoading(false);
-    if (error || data?.error) {
-      let msg = data?.error as string | undefined;
-      try { msg = msg || (await (error as any)?.context?.json?.())?.error; } catch { /* ignore */ }
-      setError(msg || 'Der Live-Bestand konnte nicht geladen werden.');
-      return;
-    }
-    setItems((data?.items || []) as LiveVehicle[]);
+    if (res.error) { setError(res.error); return; }
+    setItems(res.items);
   };
 
   useEffect(() => { if (value.enabled && !items && !loading) load(); /* eslint-disable-next-line */ }, [value.enabled]);
