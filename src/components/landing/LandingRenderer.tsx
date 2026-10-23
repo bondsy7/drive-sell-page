@@ -1,6 +1,8 @@
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import LandingLogo from '@/components/landing/LandingLogo';
 import ImageFrame from '@/components/landing/LandingImageFrame';
+import ImageStack from '@/components/landing/LandingImageStack';
+import { getImageStack, hasExtraImages } from '@/lib/landing-image-stack';
 import { LANDING_IMAGE_FRAME_CSS, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { LANDING_LOGO_CSS, type LandingLogoId } from '@/lib/landing-logo-size';
 import React, { useCallback, useMemo, useRef } from 'react';
@@ -54,6 +56,9 @@ export interface RendererProps {
   /** Desktop editor only: frame/pan/zoom tools for images. */
   frameEditing?: boolean;
   onFrameChange?: (imageId: string, frame: LandingImageFrame | null) => void;
+  /** Insert a new image block above/below an existing one in a section. */
+  onInsertImage?: (sectionId: string, anchor: string, pos: 'before' | 'after') => void;
+  onDeleteStackImage?: (imageId: string) => void;
   onAddSection?: (afterId: string | null) => void;
   imageLoading?: string | null;
   liveInventory?: LiveInventoryView | null;
@@ -259,6 +264,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onUpdateHero,
   onUpdateSection,
   onReplaceImage,
+  onInsertImage,
+  onDeleteStackImage,
   onMoveSection,
   onToggleSection,
   onDeleteSection,
@@ -566,6 +573,32 @@ const LandingRenderer: React.FC<RendererProps> = ({
           frameEditing={editable && frameEditing}
           onFrameChange={(f) => onFrameChange?.(s.id, f)}
           onAddAfter={onAddSection ? () => onAddSection(s.id) : undefined}
+          hasExtra={hasExtraImages(content, images, s.id)}
+          stack={(aspect, main) => (
+            <ImageStack
+              entries={getImageStack(content, s.id)}
+              main={main}
+              editable={editable}
+              onInsert={onInsertImage ? (anchor, pos) => onInsertImage(s.id, anchor, pos) : undefined}
+              renderExtra={(key) => (
+                <ImageFrame
+                  src={images[key]}
+                  labelImage={shouldLabelLandingImage(content, key, images[key])}
+                  alt={s.headline}
+                  aspect={aspect}
+                  editable={editable}
+                  loading={imageLoading === key}
+                  onReplace={() => onReplaceImage?.(key)}
+                  onDelete={onDeleteStackImage ? () => onDeleteStackImage(key) : undefined}
+                  primary={primary}
+                  frame={content.imageFrames?.[key]}
+                  frameEditing={editable && frameEditing}
+                  onFrameChange={(f) => onFrameChange?.(key, f)}
+                />
+              )}
+              hasImage={(key) => !!images[key]}
+            />
+          )}
         />
       ))}
 
@@ -678,7 +711,11 @@ const SectionRenderer: React.FC<{
   frameEditing?: boolean;
   onFrameChange?: (f: LandingImageFrame | null) => void;
   onAddAfter?: () => void;
+  hasExtra?: boolean;
+  stack: (aspect: string, main: React.ReactNode | null) => React.ReactNode;
 }> = ({
+  hasExtra,
+  stack,
   frame,
   frameEditing,
   onFrameChange,
@@ -773,7 +810,7 @@ const SectionRenderer: React.FC<{
   }
 
   // Full-width text-only (steps, faq, comparison, benefits, content-only)
-  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || removed('image') || (!image && !s.imagePrompt);
+  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || (removed('image') || (!image && !s.imagePrompt)) && !hasExtra;
 
   if (isFullWidth) {
     return (
@@ -819,7 +856,7 @@ const SectionRenderer: React.FC<{
             style={{ fontSize: 34, fontWeight: 700, marginBottom: 32, textAlign: 'center', color: textColor }}
           />
           <div style={{ marginBottom: 28 }}>
-            <ImageFrame
+            {stack('16 / 9', removed('image') ? null : (<ImageFrame
               src={image}
                 labelImage={labelImage}
               alt={s.headline}
@@ -832,7 +869,7 @@ const SectionRenderer: React.FC<{
               frame={frame}
               frameEditing={frameEditing}
               onFrameChange={onFrameChange}
-            />
+            />))}
           </div>
           <Editable
             as="div"
@@ -870,7 +907,7 @@ const SectionRenderer: React.FC<{
         >
           {imageOnLeft && (
             <div className="lp-split-media">
-              <ImageFrame
+              {stack('4 / 3', removed('image') ? null : (<ImageFrame
                 src={image}
                 labelImage={labelImage}
                 alt={s.headline}
@@ -883,7 +920,7 @@ const SectionRenderer: React.FC<{
                 frame={frame}
                 frameEditing={frameEditing}
                 onFrameChange={onFrameChange}
-              />
+              />))}
             </div>
           )}
           {!(removed('headline') && removed('content')) && <div>
@@ -909,7 +946,7 @@ const SectionRenderer: React.FC<{
           </div>}
           {!imageOnLeft && (
             <div className="lp-split-media">
-              <ImageFrame
+              {stack('4 / 3', removed('image') ? null : (<ImageFrame
                 src={image}
                 labelImage={labelImage}
                 alt={s.headline}
@@ -922,7 +959,7 @@ const SectionRenderer: React.FC<{
                 frame={frame}
                 frameEditing={frameEditing}
                 onFrameChange={onFrameChange}
-              />
+              />))}
             </div>
           )}
         </div>
