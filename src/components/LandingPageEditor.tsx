@@ -26,9 +26,10 @@ import VehicleImagePicker from '@/components/landing/VehicleImagePicker';
 import { buildScenePrompt } from '@/lib/landing-scene-prompts';
 import LiveVehiclesBlock from '@/components/landing/LiveVehiclesBlock';
 import {
-  DEFAULT_LIVE_INVENTORY, fetchLiveInventory, resolveLiveVehicles,
+  DEFAULT_LIVE_INVENTORY, resolveLiveVehicles,
   type LiveInventoryConfig, type LiveVehicle,
 } from '@/lib/live-inventory';
+import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 
 interface LandingPageEditorProps {
   projectId: string;

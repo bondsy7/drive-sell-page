@@ -7,10 +7,10 @@ import { Input } from '@/components/ui/input';
 import {
   DEFAULT_LIVE_INVENTORY,
   matchesLiveFilter,
-  fetchLiveInventory,
   type LiveInventoryConfig,
   type LiveVehicle,
 } from '@/lib/live-inventory';
+import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 
 // Re-exported so existing importers keep working.
 export { DEFAULT_LIVE_INVENTORY, matchesLiveFilter } from '@/lib/live-inventory';
