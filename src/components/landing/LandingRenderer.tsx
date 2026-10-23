@@ -9,6 +9,7 @@ import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt, getAiDisclosureText } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
+import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
 import {
   LIVE_INVENTORY_CSS,
@@ -333,8 +334,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   imageLoading,
   liveInventory,
 }) => {
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
+  const primary = landingPrimary(dealer);
+  const secondary = landingSecondary(dealer);
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 

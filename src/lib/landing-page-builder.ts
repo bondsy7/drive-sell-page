@@ -220,8 +220,8 @@ export function buildLandingPageHTML(
   const sections = content.sections || [];
   const seo = content.seo || ({} as any);
 
-  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? (dealer.primaryColor || '#174f6b') : '#174f6b';
-  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? (dealer.secondaryColor || '#e2b04a') : '#e2b04a';
+  const primary = landingPrimary(dealer);
+  const secondary = landingSecondary(dealer);
   const onPrimary = readableOn(primary);
   const onSecondary = readableOn(secondary);
 
@@ -262,6 +262,7 @@ export function buildLandingPageHTML(
         currentCategory: contactForm.pageType || '',
         heading: contactForm.heading,
         intro: contactForm.intro,
+        primary,
       })
     : '';
 
