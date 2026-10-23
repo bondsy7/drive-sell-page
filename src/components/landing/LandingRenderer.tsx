@@ -17,6 +17,9 @@ import {
   type LiveVehicle,
 } from '@/lib/live-inventory';
 
+import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
+import { buildFinanceFootnotes } from '@/lib/finance-footnotes';
+
 export interface LiveInventoryView {
   config: LiveInventoryConfig;
   vehicles: LiveVehicle[];
@@ -695,6 +698,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
         </div>
       </section>
       </LandingElementBox>
+
+      {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && !liveInventory.loading && (
+        <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} />
+      )}
 
       <footer style={{ background: '#0b1220', color: '#94a3b8', padding: '32px 0', textAlign: 'center', fontSize: 12 }}>
         <div className="lp-content-width">
