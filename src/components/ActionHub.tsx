@@ -60,7 +60,7 @@ const TILES: ActionTile[] = [
   { id: 'video', icon: <Video />, title: 'Video erstellen', description: 'Fahrzeugbilder in ein professionelles Showroom-Video verwandeln.', group: 'werbung', image: afterAsset.url },
   { id: 'music-studio', icon: <Music />, title: 'Musik Studio', description: 'Musik, Jingles und Spot-Soundtracks mit Gesang oder Instrumenten komponieren.', group: 'werbung', badge: 'Neu' },
   { id: 'pdf-landing', icon: <FileText />, title: 'PDF → Angebotsseite', description: 'Angebots-PDF hochladen, Daten auslesen und eine fertige Angebotsseite erstellen.', group: 'verkauf' },
-  { id: 'manual-landing', icon: <Layout />, title: 'Landing Page manuell', description: 'Fahrzeugdaten eingeben und eine Angebotsseite ohne PDF erstellen.', group: 'verkauf' },
+  { id: 'manual-landing', icon: <Layout />, title: 'Landing Page Generator', description: 'Fahrzeugwählen und eine SEO-optimierte Landingpage erstellen.', group: 'verkauf' },
   { id: 'damage-repair', icon: <Wrench />, title: 'Schadensreparatur', description: 'Dellen, Kratzer und Steinschläge auf Fahrzeugbildern digital reparieren.', group: 'analyse', image: beforeAsset.url },
   { id: 'damage-analysis', icon: <Search />, title: 'Schadensanalyse', description: 'Schäden markieren, Kosten schätzen und einen Sachverständigenbericht erstellen.', group: 'analyse', image: beforeAsset.url },
   { id: 'reference-v2', icon: <Database />, title: 'Referenz-Bibliothek V2', description: 'Fahrzeugreferenzen aufnehmen, Perspektiven planen und Abdeckung prüfen.', group: 'assistenten', badge: 'Neu' },
