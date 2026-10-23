@@ -236,7 +236,7 @@
 - [ ] Echten Lkw-Lauf mit Advanced nach Bereitstellung der Bildfunktion prüfen — keine kostenpflichtige Generierung ohne Freigabe
 
 ## Landingpage-Ansichten (23.10.2026)
-- [ ] Einzelne Seitenelemente per weißem X löschen, Layout nachrücken lassen und Seitenänderungen schrittweise rückgängig machen; Speichern und HTML-Vorschau prüfen.
+- [x] Bilder, Texte und Abschnitte per weißem X löschen; Inhalte nutzen frei gewordene Breite. Rückgängig neben Ansichtsauswahl stellt auch Text-/Bildänderungen wieder her; Speichern, HTML-Vorschau und Desktop/Tablet/Mobil an Pauls Seite geprüft, Originalstand wiederhergestellt; 10 Tests erfolgreich, nicht veröffentlicht.
 - [x] Bild und Text in Tablet- und Mobil-Ansicht einspaltig untereinander (Bild über Text); in Bearbeitungs- und Vorschauansicht für Computer/Tablet/Mobil gemessen geprüft, Computeransicht bleibt zweispaltig.
 
 ## Live-Fahrzeuge in Landingpages (23.10.2026)
