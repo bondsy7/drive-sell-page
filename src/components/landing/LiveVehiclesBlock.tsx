@@ -177,6 +177,34 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Bank für Finanzierungsangaben</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Select value={profileBankNames.includes(value.financeBank || '') ? value.financeBank! : (value.financeBank ? OTHER : NONE)}
+                    onValueChange={(b) => { if (b === OTHER) { setCustomBank(true); set({ financeBank: '' }); } else { setCustomBank(false); set({ financeBank: b === NONE ? '' : b }); } }} disabled={disabled}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Keine Bank gewählt</SelectItem>
+                      {profileBankNames.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      <SelectItem value={OTHER}>Andere Bank eingeben …</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(customBank || (value.financeBank && !profileBankNames.includes(value.financeBank))) && (
+                    <Input placeholder="Name und Anschrift der Bank" value={value.financeBank || ''} maxLength={200} onChange={e => set({ financeBank: e.target.value })} disabled={disabled} />
+                  )}
+                </div>
+              </div>
+
+              {gaps.length > 0 && (
+                <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-foreground space-y-1.5">
+                  <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle className="w-3.5 h-3.5" />Bei {gaps.length} Fahrzeug{gaps.length === 1 ? '' : 'en'} wird die Monatsrate nicht angezeigt</p>
+                  <p className="text-muted-foreground">Für eine rechtssichere Rate (§ 17 PAngV) fehlen Angaben. Preis und Fahrzeug werden trotzdem gezeigt.</p>
+                  <ul className="max-h-40 overflow-y-auto space-y-0.5">
+                    {gaps.map(g => <li key={g.vehicleId}><strong>{g.title}{g.internalNumber ? ` (Nr. ${g.internalNumber})` : ''}:</strong> fehlt {g.missing.join(', ')}</li>)}
+                  </ul>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-foreground">
