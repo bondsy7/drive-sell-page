@@ -32,6 +32,7 @@ import {
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 import { useLandingEditorHistory } from '@/hooks/useLandingEditorHistory';
 import { removeLandingElement } from '@/lib/landing-element-editing';
+import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -72,6 +73,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   brand, model, brandLogoUrl, initialLiveInventory, initialVehicleData, onBack,
 }) => {
   const { user } = useAuth();
+  const { data: profileCardDesign } = useLiveVehicleCardDesign();
   const { state: editorState, update: updateEditor, undo, canUndo } = useLandingEditorHistory({
     content: {
       ...initialContent,
@@ -83,7 +85,8 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     liveInventory: initialLiveInventory?.enabled ? { ...DEFAULT_LIVE_INVENTORY, ...initialLiveInventory } : DEFAULT_LIVE_INVENTORY,
     contactFormEnabled: initialVehicleData?.contactFormEnabled !== false,
   });
-  const { content, images, liveInventory, contactFormEnabled } = editorState;
+  const { content, images, contactFormEnabled } = editorState;
+  const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
   const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
   const setImages = useCallback((value: React.SetStateAction<Record<string, string>>) => updateEditor('images', value), [updateEditor]);
   const setLiveInventory = useCallback((value: React.SetStateAction<LiveInventoryConfig>) => updateEditor('liveInventory', value), [updateEditor]);

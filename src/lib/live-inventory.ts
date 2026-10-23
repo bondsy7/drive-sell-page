@@ -24,7 +24,39 @@ export interface LiveVehicle {
   powerKw?: number | null;
   powerPs?: number | null;
   emissionText?: string | null;
+  transmission?: string | null;
 }
+
+export interface LiveVehicleCardDesign {
+  preset: 'jacobs';
+  detailUrlTemplate: string;
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
+const JACOBS_TEST_PROFILES = ['edin.ljevo@wirsindjacobs.de', 'p.erhard@autoactiva.de', 'd.bonds@autoactiva.de'];
+
+export function resolveProfileCardDesign(email: string | undefined, settings: unknown): LiveVehicleCardDesign | undefined {
+  if (!email || !JACOBS_TEST_PROFILES.includes(email.toLowerCase())) return undefined;
+  if (!settings || typeof settings !== 'object' || !('liveVehicleCardDesign' in settings)) return undefined;
+  const design = settings.liveVehicleCardDesign;
+  if (!design || typeof design !== 'object' || !('preset' in design) || design.preset !== 'jacobs') return undefined;
+  return { preset: 'jacobs', detailUrlTemplate: 'https://www.wir-sind-jacobs.de/fahrzeuge-details/?intern-nummer={internalNumber}' };
+}
+
+/** The public dealer uses its internal stock number, never the Auto3 record ID. */
+export function liveVehicleHref(v: LiveVehicle, design?: LiveVehicleCardDesign, inventoryUrl?: string): string | undefined {
+  if (design?.preset === 'jacobs') {
+    if (!v.internalNumber?.trim()) return undefined;
+    return 'https://www.wir-sind-jacobs.de/fahrzeuge-details/?intern-nummer=' + encodeURIComponent(v.internalNumber.trim());
+  }
+  try { const url = new URL(inventoryUrl || ''); return /^https?:$/.test(url.protocol) ? url.href : undefined; } catch { return undefined; }
+}
+
+export const jacobsTitleLabel = (v: LiveVehicle) => v.variant ? `${v.brand || ''} ${v.variant}`.trim() : liveTitleLabel(v);
+export const jacobsPriceLabel = (v: LiveVehicle) => v.priceEur != null ? `${v.priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : 'Preis auf Anfrage';
+export const jacobsFuelLabel = (v: LiveVehicle) => ({ PETROL: 'Benzin', DIESEL: 'Diesel', ELECTRIC: 'Elektro', HYBRID: 'Hybrid', PLUGIN_HYBRID: 'Plug-in-Hybrid' }[v.fuelType || ''] || v.fuelType || '—');
+export const jacobsPowerLabel = (v: LiveVehicle) => v.powerKw != null ? `${v.powerKw} kW${v.powerPs != null ? ` (${v.powerPs} PS)` : ''}` : '—';
 
 /** Saved rule: the renderer (and later the website plugin) re-resolves live vehicles from this. */
 export interface LiveInventoryConfig {
@@ -37,6 +69,7 @@ export interface LiveInventoryConfig {
   maxItems: number;
   layout: 'slider' | 'grid';
   title: string;
+  cardDesign?: LiveVehicleCardDesign;
 }
 
 export const DEFAULT_LIVE_INVENTORY: LiveInventoryConfig = {
