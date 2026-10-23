@@ -20,9 +20,9 @@ describe('landing page credit costs', () => {
     expect(landingImageCost(COSTS, 'image_remaster')).toBe(1);
   });
 
-  it('still shows a price while the cost table has not loaded', () => {
+  it('uses the server default while the cost table has not loaded', () => {
     expect(landingImageCost({}, 'image_generate')).toBe(1);
-    expect(landingImageCost({}, 'image_remaster')).toBe(1);
+    expect(landingImageCost({}, 'image_remaster')).toBe(2);
   });
 
   it('charges every image of a bulk run and names the missing credits', () => {

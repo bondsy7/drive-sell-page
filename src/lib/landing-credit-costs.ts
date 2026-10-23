@@ -15,7 +15,10 @@ export const LANDING_IMAGE_TIER = 'schnell';
 
 export type LandingPaidAction = 'image_generate' | 'image_remaster';
 
-/** Cost of one AI image; falls back to 1 credit while the cost table is still loading. */
+/**
+ * Cost of one AI image, resolved exactly like the edge functions resolve it:
+ * the configured table first, the server default when a row is missing.
+ */
 export function landingImageCost(
   costs: CreditCosts,
   action: LandingPaidAction,

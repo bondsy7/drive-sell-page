@@ -367,12 +367,17 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
         vehicleDescription: `${brand} ${model}`,
         modelTier: LANDING_IMAGE_TIER,
       });
-      const short = error ? await readInsufficientCredits(error) : null;
+      const short = data?.errorCode === 'insufficient_credits'
+        ? { balance: Number(data.balance) || 0, cost: Number(data.cost) || 0 }
+        : await readInsufficientCredits(error);
       if (short) {
         toast.error(`Zu wenig Credits: Das Remastern kostet ${creditLabel(short.cost)}. Ihr Guthaben beträgt ${creditLabel(short.balance)}.`);
         return;
       }
-      if (error || !data?.imageBase64) { toast.error('Remastering fehlgeschlagen'); return; }
+      if (error || !data?.imageBase64) {
+        toast.error(typeof data?.error === 'string' && data.error ? data.error : 'Remastering fehlgeschlagen');
+        return;
+      }
       const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {
         replaceImage(sectionId, url, 'ai');
