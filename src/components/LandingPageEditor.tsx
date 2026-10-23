@@ -321,6 +321,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
   const handleGenerateAllScenes = async () => {
     if (!user) return;
+    if (creditsLoading) { toast.error('Ihr Guthaben wird gerade geladen, bitte einen Moment Geduld.'); return; }
     if (!bulkPlan.canRun) {
       toast.error(`Zu wenig Credits: ${bulkPlan.imageCount} Bilder kosten ${creditLabel(bulkPlan.totalCost)}. Ihr Guthaben beträgt ${creditLabel(bulkPlan.balance)}.`);
       return;
@@ -490,7 +491,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           </DialogHeader>
           <div className="rounded-lg border border-border bg-muted/40 p-3">
             <p className="text-sm font-medium text-foreground">
-              Dieser Vorgang erzeugt {bulkPlan.imageCount} Bilder und verbraucht {creditLabel(bulkPlan.totalCost)}.
+              {creditsLoading
+                ? `Dieser Vorgang erzeugt ${bulkPlan.imageCount} Bilder. Die Kosten werden gerade berechnet…`
+                : `Dieser Vorgang erzeugt ${bulkPlan.imageCount} Bilder und verbraucht ${creditLabel(bulkPlan.totalCost)}.`}
             </p>
             {creditsLoading ? (
               <p className="text-xs text-muted-foreground mt-1.5">Ihr Guthaben wird geladen…</p>
@@ -633,24 +636,24 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 <Sparkles className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Neu generieren</p>
-                  <p className="text-xs text-muted-foreground">Erzeugt ein neues KI-Bild (verbraucht {creditLabel(generateCost)})</p>
+                  <p className="text-xs text-muted-foreground">{creditsLoading ? 'Erzeugt ein neues KI-Bild' : `Erzeugt ein neues KI-Bild (verbraucht ${creditLabel(generateCost)})`}</p>
                   {!creditsLoading && balance < generateCost && (
                     <p className="text-xs font-medium text-destructive mt-1">Ihnen fehlen {creditLabel(generateCost - balance)}.</p>
                   )}
                 </div>
-                <CreditBadge credits={generateCost} />
+                {!creditsLoading && <CreditBadge credits={generateCost} />}
               </button>
 
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <RefreshCw className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Foto remastern</p>
-                  <p className="text-xs text-muted-foreground">Wandelt Ihr Foto in Studio-Qualität um ({creditLabel(remasterCost)})</p>
+                  <p className="text-xs text-muted-foreground">{creditsLoading ? 'Wandelt Ihr Foto in Studio-Qualität um' : `Wandelt Ihr Foto in Studio-Qualität um (${creditLabel(remasterCost)})`}</p>
                   {!creditsLoading && balance < remasterCost && (
                     <p className="text-xs font-medium text-destructive mt-1">Ihnen fehlen {creditLabel(remasterCost - balance)}.</p>
                   )}
                 </div>
-                <CreditBadge credits={remasterCost} />
+                {!creditsLoading && <CreditBadge credits={remasterCost} />}
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files?.[0];
                   if (file && imageDialogSection) handleRemaster(imageDialogSection, file);
