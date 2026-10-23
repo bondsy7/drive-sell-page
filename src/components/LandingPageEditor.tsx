@@ -8,7 +8,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Monitor, Smartphone, Tablet, Plus,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LandingRenderer from '@/components/landing/LandingRenderer';
@@ -22,6 +22,7 @@ import {
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import VehicleImagePicker from '@/components/landing/VehicleImagePicker';
 import { buildScenePrompt } from '@/lib/landing-scene-prompts';
 
 interface LandingPageEditorProps {
@@ -70,6 +71,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);
+  const [pickFromGallery, setPickFromGallery] = useState(false);
   const [addAfterId, setAddAfterId] = useState<string | null | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<string | null>(null);
   const [contactFormEnabled, setContactFormEnabled] = useState(true);
@@ -370,7 +372,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
       {/* Image Replace Dialog */}
       <Dialog open={!!imageDialogSection} onOpenChange={open => !open && !imageLoading && setImageDialogSection(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={pickFromGallery ? "sm:max-w-2xl" : "sm:max-w-md"}>
           <DialogHeader>
             <DialogTitle>Bild ändern</DialogTitle>
           </DialogHeader>
@@ -440,6 +442,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   if (file && imageDialogSection) handleRemaster(imageDialogSection, file);
                 }} />
               </label>
+              </>)}
             </div>
           )}
         </DialogContent>
