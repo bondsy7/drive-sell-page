@@ -1,4 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
+
+const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+const RECIPIENT_RE = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,13 +42,19 @@ Deno.serve(async (req) => {
     );
 
     let resolvedVehicleId = vehicleId || null;
-    if (!resolvedVehicleId && projectId) {
+    // Landing-page recipient/subject come only from the saved page of this dealer, never from the request.
+    let pageContact: { recipientEmail?: string; subject?: string } | null = null;
+    if (projectId) {
       const { data: project } = await supabase
         .from("projects")
-        .select("vehicle_id")
+        .select("vehicle_id, user_id, vehicle_data")
         .eq("id", projectId)
         .maybeSingle();
-      resolvedVehicleId = project?.vehicle_id || null;
+      if (!resolvedVehicleId) resolvedVehicleId = project?.vehicle_id || null;
+      const cfg = (project?.vehicle_data as any)?.contactFormConfig;
+      if (project?.user_id === dealerUserId && cfg && typeof cfg.recipientEmail === "string" && RECIPIENT_RE.test(cfg.recipientEmail.trim())) {
+        pageContact = { recipientEmail: cfg.recipientEmail.trim().slice(0, 255), subject: typeof cfg.subject === "string" ? cfg.subject.slice(0, 200) : undefined };
+      }
     }
 
     const { data: lead, error } = await supabase.from("leads").insert({
@@ -69,6 +79,35 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (lead?.id && pageContact?.recipientEmail) {
+      try {
+        const apiKey = await getSecret("RESEND_API_KEY");
+        const from = await getSecret("RESEND_FROM_EMAIL");
+        if (!apiKey || !from) {
+          console.warn("[submit-lead] event=recipient_mail_skipped reason=resend_not_configured");
+        } else {
+          const interests = [
+            interestedTestDrive && "Probefahrt", interestedTradeIn && "Inzahlungnahme", interestedLeasing && "Leasing",
+            interestedFinancing && "Finanzierung", interestedPurchase && "Barkauf",
+          ].filter(Boolean).join(", ");
+          const rows: [string, unknown][] = [["Fahrzeug", vehicleTitle], ["Name", name], ["E-Mail", email], ["Telefon", phone], ["Interesse", interests], ["Nachricht", message]];
+          const html = `<h2>Neue Anfrage über die Landingpage</h2><table cellpadding="6">${rows.filter(([, v]) => v).map(([k, v]) => `<tr><td><b>${k}</b></td><td style="white-space:pre-line">${esc(String(v).slice(0, 2000))}</td></tr>`).join("")}</table>`;
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              from, to: [pageContact.recipientEmail], reply_to: String(email).slice(0, 255),
+              subject: (pageContact.subject || `Neue Anfrage${vehicleTitle ? ` zu ${String(vehicleTitle).slice(0, 120)}` : ""}`).replace(/[\r\n]+/g, " "),
+              html,
+            }),
+          });
+          console.log(`[submit-lead] event=recipient_mail status=${res.status} lead=${lead.id}`);
+        }
+      } catch (mailErr) {
+        console.error("[submit-lead] event=recipient_mail_error", mailErr);
+      }
     }
 
     // Check if dealer has autopilot enabled and trigger auto-processing.

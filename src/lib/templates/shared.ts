@@ -2,6 +2,7 @@ import { withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
 import { parsePrice } from "@/lib/finance-utils";
+import { escapeHtml, DEFAULT_CONTACT_HEADING } from "@/lib/landing-contact-config";
 
 /**
  * Liefert den anzuzeigenden Fahrzeugtitel.
@@ -414,10 +415,15 @@ export interface ContactFormOptions {
   vehicleTitle: string;
   /** Current category so we show alternative options */
   currentCategory?: 'leasing' | 'finanzierung' | 'kauf' | string;
+  /** Configurable form heading/intro (landing pages). Recipient stays server-side. */
+  heading?: string;
+  intro?: string;
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
   const { dealerUserId, projectId, vehicleId, supabaseUrl, vehicleTitle, currentCategory } = options;
+  const formHeading = escapeHtml(options.heading || DEFAULT_CONTACT_HEADING);
+  const formIntro = escapeHtml(options.intro ?? vehicleTitle);
 
   const cat = (currentCategory || '').toLowerCase();
   const isPurchase = ['barkauf', 'neuwagen', 'gebrauchtwagen', 'tageszulassung'].includes(cat);
@@ -457,8 +463,8 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
     <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
       <button onclick="document.getElementById('leadModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px">✕</button>
       <div style="margin-bottom:20px">
-        <h3 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:20px;font-weight:700;color:#1a2332;margin-bottom:4px">Interesse an diesem Fahrzeug?</h3>
-        <p style="font-size:13px;color:#6b7a8d">${vehicleTitle}</p>
+        <h3 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:20px;font-weight:700;color:#1a2332;margin-bottom:4px">${formHeading}</h3>
+        ${formIntro ? `<p style="font-size:13px;color:#6b7a8d;white-space:pre-line">${formIntro}</p>` : ''}
       </div>
       <form id="leadForm" onsubmit="return submitLead(event)">
         <div style="display:flex;flex-direction:column;gap:12px">

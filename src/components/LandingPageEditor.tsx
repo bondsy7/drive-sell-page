@@ -34,6 +34,8 @@ import { useLandingEditorHistory } from '@/hooks/useLandingEditorHistory';
 import { removeLandingElement } from '@/lib/landing-element-editing';
 import { replaceLandingImage, LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
+import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
+import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -85,7 +87,14 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     images: initialImages,
     liveInventory: initialLiveInventory?.enabled ? { ...DEFAULT_LIVE_INVENTORY, ...initialLiveInventory } : DEFAULT_LIVE_INVENTORY,
     contactFormEnabled: initialVehicleData?.contactFormEnabled !== false,
+    contactFormConfig: sanitizeContactFormConfig(
+      initialVehicleData?.contactFormConfig,
+      defaultContactFormConfig(`${brand} ${model}`.trim(), initialDealer?.email || ''),
+    ),
   });
+  const contactFormConfig = editorState.contactFormConfig;
+  const setContactFormConfig = useCallback((value: LandingContactFormConfig) => updateEditor('contactFormConfig', value), [updateEditor]);
+  const [contactConfigOpen, setContactConfigOpen] = useState(false);
   const { content, images, contactFormEnabled } = editorState;
   const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
   const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
@@ -129,6 +138,8 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     vehicleId,
     supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
     vehicleTitle,
+    heading: contactFormConfig.heading,
+    intro: contactFormConfig.intro,
   } : undefined;
 
   const html = useMemo(
@@ -155,6 +166,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           brandLogoUrl,
           liveInventory: liveInventory.enabled ? liveInventory : null,
           contactFormEnabled,
+          contactFormConfig,
         } as any,
         html_content: html,
         updated_at: new Date().toISOString(),
@@ -371,6 +383,11 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Kontaktformular</span>
             <Switch checked={contactFormEnabled} onCheckedChange={setContactFormEnabled} />
+            {contactFormEnabled && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setContactConfigOpen(true)} title="Kontaktformular einstellen" aria-label="Kontaktformular einstellen">
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </div>
           <Button
             size="sm"
@@ -398,6 +415,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <span>Klicke direkt in Texte, um sie zu bearbeiten. Bilder werden per Hover ausgetauscht. Zwischen Sections erscheint ein <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-muted"><Plus className="w-3 h-3" /></span> zum Einfügen neuer Abschnitte.</span>
         </div>
       )}
+
+      <ContactFormConfigDialog open={contactConfigOpen} onOpenChange={setContactConfigOpen} value={contactFormConfig} onConfirm={setContactFormConfig} />
+      {contactFormEnabled && viewMode === 'edit' && <ContactFormWidgetPreview config={contactFormConfig} />}
 
       {/* Canvas */}
       <div className="flex-1 overflow-auto p-4 sm:p-6 flex justify-center">

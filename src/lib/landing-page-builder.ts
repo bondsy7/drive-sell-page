@@ -61,6 +61,8 @@ export interface LandingPageContactForm {
   supabaseUrl: string;
   vehicleTitle: string;
   pageType?: string;
+  heading?: string;
+  intro?: string;
 }
 
 /* ─── color helpers ─── */
@@ -271,6 +273,8 @@ export function buildLandingPageHTML(
         supabaseUrl: contactForm.supabaseUrl,
         vehicleTitle: contactForm.vehicleTitle,
         currentCategory: contactForm.pageType || '',
+        heading: contactForm.heading,
+        intro: contactForm.intro,
       })
     : '';
 
