@@ -46,6 +46,10 @@ afterEach(() => {
   invoke.mockClear();
 });
 
+beforeAll(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
+
 async function configurePage() {
   render(<ManualLandingGenerator onBack={vi.fn()} onComplete={vi.fn()} />);
   fireEvent.click(screen.getByText('Marke wählen...'));
