@@ -366,11 +366,29 @@ const LandingRenderer: React.FC<RendererProps> = ({
         .lp-body-html table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
         .lp-body-html th,.lp-body-html td{padding:8px 12px;border:1px solid var(--lp-border);text-align:left}
         .lp-body-html th{background:var(--lp-tint);font-weight:600}
+        .lp-root{container-type:inline-size;container-name:lp}
+        /* Narrow layouts (tablet / mobile preview and real devices): image and text always stack. */
         @media(max-width:768px){
           .lp-hero-h1{font-size:32px !important;line-height:1.15 !important}
           .lp-hero-p{font-size:16px !important}
-          .lp-section-inner{padding:56px 20px !important}
+          .lp-section-inner:not(.lp-hero-grid){padding:56px 20px !important}
+          .lp-hero-grid{grid-template-columns:1fr !important}
+          .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
+          .lp-hero-media{min-height:300px !important}
+          .lp-hero-media .lp-image-frame{aspect-ratio:4 / 3 !important}
           .lp-split{grid-template-columns:1fr !important;gap:24px !important}
+          .lp-split-media{order:-1 !important}
+        }
+        @container lp (max-width:900px){
+          .lp-hero-h1{font-size:32px !important;line-height:1.15 !important}
+          .lp-hero-p{font-size:16px !important}
+          .lp-section-inner:not(.lp-hero-grid){padding:56px 20px !important}
+          .lp-hero-grid{grid-template-columns:1fr !important}
+          .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
+          .lp-hero-media{min-height:300px !important}
+          .lp-hero-media .lp-image-frame{aspect-ratio:4 / 3 !important}
+          .lp-split{grid-template-columns:1fr !important;gap:28px !important;align-items:start !important}
+          .lp-split-media{order:-1 !important}
         }
       `}</style>
 
@@ -417,7 +435,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       {/* HERO */}
       <SectionShell id="hero" editable={editable} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg="#0b1220">
         <div
-          className="lp-section-inner"
+          className="lp-section-inner lp-hero-grid"
           style={{
             position: 'relative',
             minHeight: 560,
@@ -430,6 +448,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         >
           {/* Left: text */}
           <div
+            className="lp-hero-text"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -525,7 +544,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>
 
           {/* Right: image */}
-          <div style={{ position: 'relative', minHeight: 420, background: '#0f172a' }}>
+          <div className="lp-hero-media" style={{ position: 'relative', minHeight: 420, background: '#0f172a' }}>
             <ImageFrame
               src={heroImage}
               alt={`${brand} ${model}`}
@@ -820,7 +839,7 @@ const SectionRenderer: React.FC<{
           }}
         >
           {imageOnLeft && (
-            <div>
+            <div className="lp-split-media">
               <ImageFrame
                 src={image}
                 alt={s.headline}
@@ -864,7 +883,7 @@ const SectionRenderer: React.FC<{
             />
           </div>
           {!imageOnLeft && (
-            <div>
+            <div className="lp-split-media">
               <ImageFrame
                 src={image}
                 alt={s.headline}
