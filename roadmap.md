@@ -1,4 +1,6 @@
-## Einheitliche Landingpage-Inhaltsbreiten (23.10.2026)
+## Landing Page manuell als Hauptwerkzeug (23.10.2026)
+- [x] „Landing Page manuell“ erscheint als breite, hellgrün hinterlegte Karte direkt unter der Überschrift „Weitere Werkzeuge“; neue Tokens `--highlight`, `--highlight-foreground`, `--highlight-border` (hell und dunkel), Kartenklick öffnet den Generator wie bisher. An Pauls Profil Desktop (1120 px breit, 1 Karte, keine Duplikate im Raster) und Mobil 420 px (kein Überlauf) geprüft, Vorschau fehlerfrei; nicht veröffentlicht.
+
 - [x] Gemeinsame Inhaltsbreite für Header, Texte, Bilder, Galerie, CTA, Bestand und Kontakt in Editor und HTML; Desktop-Spalten gleich breit. An Pauls Seite Desktop (1200 px), Tablet (818 px) und Mobil (418 px) mit bündigen Außenkanten geprüft; Tablet/Mobil bleiben einspaltig, 20 Tests grün, Vorschau fehlerfrei; nicht veröffentlicht.
 
 ## Eindeutige Landingpage-Löschbuttons (23.10.2026)
