@@ -234,3 +234,6 @@
 - [x] Fehler gefunden: Beim Neuaufbau der Fahrzeugdaten gingen Fahrzeugart und Lkw-Konfiguration verloren, das Fahrzeug speicherte still als Pkw
 - [x] Gemeinsame Erhaltungsregel für Fahrzeugart, Aufbautyp und Lkw-Konfiguration eingeführt und im Aufnahmebereich angewendet; 4 neue Tests plus 16 Bestandstests grün
 - [ ] Echten Lkw-Lauf mit Advanced nach Bereitstellung der Bildfunktion prüfen — keine kostenpflichtige Generierung ohne Freigabe
+
+## Landingpage-Ansichten (23.10.2026)
+- [x] Bild und Text in Tablet- und Mobil-Ansicht einspaltig untereinander (Bild über Text); in Bearbeitungs- und Vorschauansicht für Computer/Tablet/Mobil gemessen geprüft, Computeransicht bleibt zweispaltig.
