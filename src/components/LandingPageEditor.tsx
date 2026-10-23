@@ -35,6 +35,11 @@ import { removeLandingElement } from '@/lib/landing-element-editing';
 import { insertStackImage, isStackImageId, newStackImageId, removeStackImage, sectionOfImageId } from '@/lib/landing-image-stack';
 import { replaceLandingImage, LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
+import { useCredits } from '@/hooks/useCredits';
+import CreditBadge from '@/components/landing/CreditBadge';
+import {
+  LANDING_IMAGE_TIER, creditLabel, landingImageCost, planBulkImageRun, readInsufficientCredits,
+} from '@/lib/landing-credit-costs';
 import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
 import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
 
@@ -78,6 +83,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 }) => {
   const { user } = useAuth();
   const { data: profileCardDesign } = useLiveVehicleCardDesign();
+  const { balance, costs, loading: creditsLoading } = useCredits();
+  const generateCost = landingImageCost(costs, 'image_generate');
+  const remasterCost = landingImageCost(costs, 'image_remaster');
   const { state: editorState, update: updateEditor, change, undo, canUndo } = useLandingEditorHistory({
     content: {
       ...initialContent,
@@ -258,6 +266,10 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   };
 
   const handleRegenerate = async (sectionId: string) => {
+    if (balance < generateCost) {
+      toast.error(`Zu wenig Credits: Dieses Bild kostet ${creditLabel(generateCost)}. Ihr Guthaben beträgt ${creditLabel(balance)}.`);
+      return;
+    }
     const baseId = sectionOfImageId(sectionId);
     const section = content.sections.find(s => s.id === baseId);
     const headline = baseId === 'hero' ? content.hero.headline : section?.headline;
@@ -270,8 +282,13 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     setImageLoading(sectionId);
     try {
       const { data, error } = await supabase.functions.invoke('generate-vehicle-image', {
-        body: { imagePrompt: prompt, modelTier: 'schnell' },
+        body: { imagePrompt: prompt, modelTier: LANDING_IMAGE_TIER },
       });
+      const short = error ? await readInsufficientCredits(error) : null;
+      if (short) {
+        toast.error(`Zu wenig Credits: Dieses Bild kostet ${creditLabel(short.cost)}. Ihr Guthaben beträgt ${creditLabel(short.balance)}.`);
+        return;
+      }
       if (error || !data?.imageBase64) { toast.error('Generierung fehlgeschlagen'); return; }
       if (user) {
         const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
@@ -288,22 +305,42 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     }
   };
 
-  const handleGenerateAllScenes = async () => {
-    if (!user) return;
-    const targets: { id: string; type?: string; headline?: string }[] = [
+  const bulkTargets = useMemo<{ id: string; type?: string; headline?: string }[]>(
+    () => [
       { id: 'hero', headline: content.hero.headline },
       ...content.sections
         .filter(s => s.enabled !== false && ['content', 'gallery', 'specs'].includes(s.type))
         .map(s => ({ id: s.id, type: s.type, headline: s.headline })),
-    ];
+    ],
+    [content],
+  );
+  const bulkPlan = useMemo(
+    () => planBulkImageRun(bulkTargets.length, generateCost, balance),
+    [bulkTargets.length, generateCost, balance],
+  );
+
+  const handleGenerateAllScenes = async () => {
+    if (!user) return;
+    if (creditsLoading) { toast.error('Ihr Guthaben wird gerade geladen, bitte einen Moment Geduld.'); return; }
+    if (!bulkPlan.canRun) {
+      toast.error(`Zu wenig Credits: ${bulkPlan.imageCount} Bilder kosten ${creditLabel(bulkPlan.totalCost)}. Ihr Guthaben beträgt ${creditLabel(bulkPlan.balance)}.`);
+      return;
+    }
     setImageLoading('__bulk__');
     let ok = 0;
-    for (const t of targets) {
+    let stopped = false;
+    for (const t of bulkTargets) {
       const { prompt } = buildScenePrompt({ brand, model, sectionId: t.id, sectionType: t.type, headline: t.headline });
       try {
-        const { data } = await supabase.functions.invoke('generate-vehicle-image', {
-          body: { imagePrompt: prompt, modelTier: 'schnell' },
+        const { data, error } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: prompt, modelTier: LANDING_IMAGE_TIER },
         });
+        const short = error ? await readInsufficientCredits(error) : null;
+        if (short) {
+          stopped = true;
+          toast.error(`Ihr Guthaben reicht nicht mehr aus: ${creditLabel(short.cost)} pro Bild werden benötigt. ${ok} von ${bulkTargets.length} Szenen wurden generiert.`);
+          break;
+        }
         if (data?.imageBase64) {
           const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${t.id}-${Date.now()}.png`);
           if (url) {
@@ -314,20 +351,34 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       } catch (e) { console.warn('scene gen failed', t.id, e); }
     }
     setImageLoading(null);
-    toast.success(`${ok} von ${targets.length} Szenen generiert`);
+    if (!stopped) toast.success(`${ok} von ${bulkTargets.length} Szenen generiert`);
   };
 
   const handleRemaster = async (sectionId: string, file: File) => {
     if (!user) return;
+    if (balance < remasterCost) {
+      toast.error(`Zu wenig Credits: Das Remastern kostet ${creditLabel(remasterCost)}. Ihr Guthaben beträgt ${creditLabel(balance)}.`);
+      return;
+    }
     setImageLoading(sectionId);
     try {
       const base64 = await fileToBase64(file);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: base64,
         vehicleDescription: `${brand} ${model}`,
-        modelTier: 'schnell',
+        modelTier: LANDING_IMAGE_TIER,
       });
-      if (error || !data?.imageBase64) { toast.error('Remastering fehlgeschlagen'); return; }
+      const short = data?.errorCode === 'insufficient_credits'
+        ? { balance: Number(data.balance) || 0, cost: Number(data.cost) || 0 }
+        : await readInsufficientCredits(error);
+      if (short) {
+        toast.error(`Zu wenig Credits: Das Remastern kostet ${creditLabel(short.cost)}. Ihr Guthaben beträgt ${creditLabel(short.balance)}.`);
+        return;
+      }
+      if (error || !data?.imageBase64) {
+        toast.error(typeof data?.error === 'string' && data.error ? data.error : 'Remastering fehlgeschlagen');
+        return;
+      }
       const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {
         replaceImage(sectionId, url, 'ai');
@@ -408,7 +459,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             onClick={() => setBulkConfirmOpen(true)}
             disabled={imageLoading === '__bulk__'}
             className="gap-2"
-            title="Für jeden Abschnitt ein neues KI-Bild generieren (Texte bleiben unverändert)"
+            title={`${bulkPlan.imageCount} neue KI-Bilder generieren (${creditLabel(bulkPlan.totalCost)}, Texte bleiben unverändert)`}
           >
             {imageLoading === '__bulk__' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Alle Bilder generieren
@@ -438,9 +489,36 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               Für den Header und jeden Abschnitt wird ein neues KI-Bild erstellt. Bereits vorhandene Bilder – auch eigene Uploads – werden dabei ersetzt. Texte und übrige Inhalte bleiben unverändert.
             </DialogDescription>
           </DialogHeader>
+          <div className="rounded-lg border border-border bg-muted/40 p-3">
+            <p className="text-sm font-medium text-foreground">
+              {creditsLoading
+                ? `Dieser Vorgang erzeugt ${bulkPlan.imageCount} Bilder. Die Kosten werden gerade berechnet…`
+                : `Dieser Vorgang erzeugt ${bulkPlan.imageCount} Bilder und verbraucht ${creditLabel(bulkPlan.totalCost)}.`}
+            </p>
+            {creditsLoading ? (
+              <p className="text-xs text-muted-foreground mt-1.5">Ihr Guthaben wird geladen…</p>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground mt-1.5">Ihr aktuelles Guthaben: {creditLabel(bulkPlan.balance)}.</p>
+                {bulkPlan.missing > 0 ? (
+                  <p className="text-xs font-medium text-destructive mt-1">
+                    Ihnen fehlen {creditLabel(bulkPlan.missing)}. Bitte laden Sie Guthaben auf.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">Danach verbleiben {creditLabel(bulkPlan.balance - bulkPlan.totalCost)}.</p>
+                )}
+              </>
+            )}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkConfirmOpen(false)}>Abbrechen</Button>
-            <Button onClick={() => { setBulkConfirmOpen(false); handleGenerateAllScenes(); }}>Ja, Bilder generieren</Button>
+            <Button
+              onClick={() => { setBulkConfirmOpen(false); handleGenerateAllScenes(); }}
+              disabled={creditsLoading || !bulkPlan.canRun}
+              title={bulkPlan.missing > 0 ? `Ihnen fehlen ${creditLabel(bulkPlan.missing)}` : undefined}
+            >
+              Ja, Bilder generieren
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -534,6 +612,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   <p className="text-sm font-medium text-foreground">Aus Fahrzeugbildern wählen</p>
                   <p className="text-xs text-muted-foreground">Bereits in autohaus.ai generierte Bilder verwenden</p>
                 </div>
+                <CreditBadge credits={0} />
               </button>
 
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
@@ -543,6 +622,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   <p className="text-xs text-muted-foreground">Ein eigenes Bild verwenden</p>
                   <p className="text-xs text-muted-foreground mt-1">{LANDING_UPLOAD_DISCLOSURE_NOTICE}</p>
                 </div>
+                <CreditBadge credits={0} />
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files?.[0];
                   if (file && imageDialogSection) handleImageUpload(imageDialogSection, file);
@@ -556,16 +636,24 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 <Sparkles className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Neu generieren</p>
-                  <p className="text-xs text-muted-foreground">KI erstellt ein neues Bild passend zur Section</p>
+                  <p className="text-xs text-muted-foreground">{creditsLoading ? 'Erzeugt ein neues KI-Bild' : `Erzeugt ein neues KI-Bild (verbraucht ${creditLabel(generateCost)})`}</p>
+                  {!creditsLoading && balance < generateCost && (
+                    <p className="text-xs font-medium text-destructive mt-1">Ihnen fehlen {creditLabel(generateCost - balance)}.</p>
+                  )}
                 </div>
+                {!creditsLoading && <CreditBadge credits={generateCost} />}
               </button>
 
               <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors">
                 <RefreshCw className="w-5 h-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Foto remastern</p>
-                  <p className="text-xs text-muted-foreground">Eigenes Foto in Profi-Qualität umwandeln</p>
+                  <p className="text-xs text-muted-foreground">{creditsLoading ? 'Wandelt Ihr Foto in Studio-Qualität um' : `Wandelt Ihr Foto in Studio-Qualität um (${creditLabel(remasterCost)})`}</p>
+                  {!creditsLoading && balance < remasterCost && (
+                    <p className="text-xs font-medium text-destructive mt-1">Ihnen fehlen {creditLabel(remasterCost - balance)}.</p>
+                  )}
                 </div>
+                {!creditsLoading && <CreditBadge credits={remasterCost} />}
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files?.[0];
                   if (file && imageDialogSection) handleRemaster(imageDialogSection, file);
