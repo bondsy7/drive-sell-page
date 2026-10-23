@@ -16,7 +16,7 @@ export default function TextColorButton({ value, colors, onChange, label = 'Text
     <PopoverTrigger asChild>
       <Button type="button" variant="ghost" size="sm" className="lp-element-color" title={label} aria-label={label}
         onMouseDown={event => event.preventDefault()}
-        onClick={event => { event.preventDefault(); event.stopPropagation(); }}>
+        onClick={event => event.preventDefault()}>
         <span className="lp-delete-icon"><Palette size={16} aria-hidden="true" /></span>
         <span className="lp-delete-label">Textfarbe</span>
       </Button>
