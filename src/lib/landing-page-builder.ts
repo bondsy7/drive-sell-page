@@ -134,7 +134,7 @@ function renderSection(
 
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
-  const imgHtml = `<div style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
+  const imgHtml = `<div class="lp-split-media" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? buildAiDisclosureImageOverlayHTML("landing") : ''}${image ? `<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
   const textHtml = `<div>
     <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${isDark ? 'rgba(255,255,255,0.6)' : primary};margin-bottom:14px">${`0${idx + 1}`.slice(-2)}</div>
     <h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>
@@ -254,8 +254,8 @@ export function buildLandingPageHTML(
   </header>
 
   <section style="position:relative;min-height:560px;overflow:hidden;background:#0b1220">
-    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:560px" class="lp-split">
-      <div style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:linear-gradient(135deg,#0b1220 0%,${primary} 130%);color:#fff;min-height:420px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:560px" class="lp-split lp-hero-grid">
+      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:linear-gradient(135deg,#0b1220 0%,${primary} 130%);color:#fff;min-height:420px">
         <div style="max-width:520px">
           <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${rgba(secondary, 0.2)};border:1px solid ${rgba(secondary, 0.4)};color:${secondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>
           <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:#fff">${escapeHtml(heroHeadline)}</h1>
@@ -266,7 +266,7 @@ export function buildLandingPageHTML(
           </div>
         </div>
       </div>
-      <div style="position:relative;min-height:420px;background:#0f172a">
+      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
         ${heroImage ? buildAiDisclosureImageOverlayHTML("landing") : ''}
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(withAiDisclosureAlt(`${brand} ${model}`))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
       </div>

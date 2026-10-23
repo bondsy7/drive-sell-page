@@ -839,7 +839,7 @@ const SectionRenderer: React.FC<{
           }}
         >
           {imageOnLeft && (
-            <div>
+            <div className="lp-split-media">
               <ImageFrame
                 src={image}
                 alt={s.headline}
@@ -883,7 +883,7 @@ const SectionRenderer: React.FC<{
             />
           </div>
           {!imageOnLeft && (
-            <div>
+            <div className="lp-split-media">
               <ImageFrame
                 src={image}
                 alt={s.headline}
