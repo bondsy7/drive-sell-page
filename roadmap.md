@@ -256,3 +256,6 @@
 - [x] Autostore speichert die Auswahl jetzt mit (vorher ging die Live-Auswahl beim Bearbeiten verloren).
 - [ ] Bestandsschnittstelle paralleler machen (Änderung liegt vor, wartet auf Freigabe zum Online-Stellen) — aktuell ca. 20 s Ladezeit für 588 Fahrzeuge.
 - [x] Jacobs-Fahrzeugkarten führen über die interne Bestandsnummer direkt zum konkreten Angebot; mit echtem Fahrzeugziel geprüft. Andere Händler behalten ihre bestehenden Links.
+
+## Bestätigung vor der Landingpage-Generierung (23.10.2026)
+- [x] „Landing Page generieren" öffnet zuerst eine Bestätigung mit allen Grundeinstellungen (Fahrzeug, Seitentyp, Zielgruppe, Ton, Bildstil, eigene Bilder, Live-Fahrzeuge) und dem Hinweis, dass sich diese im Nachgang nicht mehr ändern lassen; abgebrochen wird nichts gestartet, erst „Ja, jetzt generieren" läuft wirklich. Dialog in der Vorschau geöffnet und abgebrochen, 2 neue Tests grün, nicht veröffentlicht.
