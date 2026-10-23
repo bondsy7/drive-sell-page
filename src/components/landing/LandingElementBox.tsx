@@ -24,7 +24,9 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
     return <Tag className={`lp-element-box lp-element-inline${colorControl ? ' lp-has-color' : ''}${!onDelete ? ' lp-color-only' : ''}`}>
       {children}
       {(colorControl || onDelete) && (
-        <span className="lp-controls-row">
+        <span className="lp-controls-row"
+          onMouseDown={event => event.preventDefault()}
+          onClick={event => { event.preventDefault(); event.stopPropagation(); }}>
           {colorControl}
           {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
         </span>
