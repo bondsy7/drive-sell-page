@@ -35,3 +35,7 @@
 .lp-root .lp-frame-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: none; border-radius: 999px; background: var(--lp-editor-control-bg); color: var(--lp-editor-control-fg); box-shadow: var(--lp-editor-control-shadow); font-size: 12px; font-weight: 600; cursor: pointer; }
 .lp-root .lp-frame-zoom { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 33; display: flex; align-items: center; gap: 10px; width: min(280px, calc(100% - 24px)); padding: 8px 12px; border-radius: 999px; background: var(--lp-editor-control-bg); color: var(--lp-editor-control-fg); box-shadow: var(--lp-editor-control-shadow); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .lp-root .lp-snap-guide { z-index: 80; pointer-events: none; background: var(--lp-secondary); }
+.lp-root .lp-stack-insert { position: absolute; left: 50%; transform: translate(-50%, -50%); z-index: 45; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(15,23,42,0.12); background: var(--lp-editor-control-bg, #fff); color: var(--lp-editor-control-fg, #0f172a); box-shadow: var(--lp-editor-control-shadow); font-size: 12px; font-weight: 600; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 120ms ease; white-space: nowrap; }
+.lp-root .lp-stack-insert-before { top: 0; }
+.lp-root .lp-stack-insert-after { top: 100%; }
+.lp-root .lp-stack-item:hover > .lp-stack-insert, .lp-root .lp-stack-insert:focus-visible { opacity: 1; pointer-events: auto; }

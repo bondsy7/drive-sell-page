@@ -32,6 +32,7 @@ import {
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 import { useLandingEditorHistory } from '@/hooks/useLandingEditorHistory';
 import { removeLandingElement } from '@/lib/landing-element-editing';
+import { insertStackImage, isStackImageId, newStackImageId, removeStackImage, sectionOfImageId } from '@/lib/landing-image-stack';
 import { replaceLandingImage, LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
 import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
@@ -99,7 +100,17 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const { content, images, contactFormEnabled } = editorState;
   const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
   const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
-  const replaceImage = useCallback((id: string, url: string, kind: 'upload' | 'ai') => change(state => replaceLandingImage(state, id, url, kind)), [change]);
+  const pendingInsert = useRef<{ sectionId: string; anchor: string; pos: 'before' | 'after'; id: string } | null>(null);
+  const replaceImage = useCallback((id: string, url: string, kind: 'upload' | 'ai') => change(state => {
+    const next = replaceLandingImage(state, id, url, kind);
+    const p = pendingInsert.current;
+    if (p && p.id === id) {
+      pendingInsert.current = null;
+      return { ...next, content: insertStackImage(next.content, p.sectionId, p.anchor, p.pos, id) };
+    }
+    return next;
+  }), [change]);
+  const deleteStackImage = useCallback((id: string) => change(state => removeStackImage(state, id)), [change]);
   const setLiveInventory = useCallback((value: React.SetStateAction<LiveInventoryConfig>) => updateEditor('liveInventory', value), [updateEditor]);
   const setContactFormEnabled = useCallback((value: React.SetStateAction<boolean>) => updateEditor('contactFormEnabled', value), [updateEditor]);
   const deleteElement = useCallback((id: string) => setContent(previous => removeLandingElement(previous, id)), [setContent]);
@@ -247,11 +258,12 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   };
 
   const handleRegenerate = async (sectionId: string) => {
-    const section = content.sections.find(s => s.id === sectionId);
-    const headline = sectionId === 'hero' ? content.hero.headline : section?.headline;
+    const baseId = sectionOfImageId(sectionId);
+    const section = content.sections.find(s => s.id === baseId);
+    const headline = baseId === 'hero' ? content.hero.headline : section?.headline;
     const { prompt } = buildScenePrompt({
       brand, model,
-      sectionId,
+      sectionId: baseId,
       sectionType: section?.type,
       headline,
     });
@@ -336,7 +348,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
   const currentDialogPrompt = imageDialogSection === 'hero'
     ? content.hero.imagePrompt
-    : content.sections.find(s => s.id === imageDialogSection)?.imagePrompt;
+    : content.sections.find(s => s.id === sectionOfImageId(imageDialogSection || ''))?.imagePrompt;
 
   const canvasWidth = VIEWPORT_WIDTH[viewport];
 
@@ -451,7 +463,13 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               editable
               onUpdateHero={updateHero}
               onUpdateSection={updateSection}
-              onReplaceImage={(id) => setImageDialogSection(id)}
+              onReplaceImage={(id) => { pendingInsert.current = null; setImageDialogSection(id); }}
+              onInsertImage={(sectionId, anchor, pos) => {
+                const id = newStackImageId(sectionId);
+                pendingInsert.current = { sectionId, anchor, pos, id };
+                setImageDialogSection(id);
+              }}
+              onDeleteStackImage={deleteStackImage}
               onMoveSection={moveSection}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
@@ -484,7 +502,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       <Dialog open={!!imageDialogSection} onOpenChange={open => !open && !imageLoading && setImageDialogSection(null)}>
         <DialogContent className={pickFromGallery ? "sm:max-w-2xl" : "sm:max-w-md"}>
           <DialogHeader>
-            <DialogTitle>Bild ändern</DialogTitle>
+            <DialogTitle>{imageDialogSection && isStackImageId(imageDialogSection) && !images[imageDialogSection] ? 'Bild einfügen' : 'Bild ändern'}</DialogTitle>
           </DialogHeader>
           {imageLoading ? (
             <div className="flex items-center justify-center gap-2 py-8">
