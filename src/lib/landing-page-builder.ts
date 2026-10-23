@@ -380,11 +380,11 @@ ${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:
       </div>
 ` : ''}
 ${heroHasImage ? (heroFrame ? `      <div class="lp-hero-media" style="position:relative;align-self:start">
-        <div class="lp-framed" style="position:relative;overflow:hidden;${frameOuterCss(heroFrame)}">
+        <div class="lp-framed" style="position:relative;overflow:hidden;border-radius:16px;${frameOuterCss(heroFrame)}">
         ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block;${frameImageCss(heroFrame)}" loading="eager" decoding="async"/>` : ''}
         </div>
-      </div>` : `      <div class="lp-hero-media" style="position:relative;min-height:420px;background:#0f172a">
+      </div>` : `      <div class="lp-hero-media" style="position:relative;min-height:420px;background:${rgba(primary, 0.06)};border-radius:16px;overflow:hidden">
         ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
       </div>`) : ''}
