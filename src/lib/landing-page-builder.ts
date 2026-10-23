@@ -1,3 +1,4 @@
+import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
 import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import { LANDING_LOGO_CSS, type LandingLogoSizes } from '@/lib/landing-logo-size';
@@ -24,6 +25,7 @@ import {
 } from '@/lib/live-inventory';
 
 export interface LandingPageContent {
+  sectionColors?: Record<string, string>;
   logoSizes?: LandingLogoSizes;
   imageFrames?: Record<string, Partial<import('@/lib/landing-image-frame').LandingImageFrame>>;
   /** Ordered image blocks per section; '@main' marks the section's original image. */
@@ -122,21 +124,15 @@ function renderSection(
     return blocks.length ? `<div style="display:flex;flex-direction:column;gap:${STACK_GAP_PX}px">${blocks.join('')}</div>` : '';
   };
 
-  const bgMap: Record<string, string> = {
-    white: '#ffffff',
-    light: rgba(primary, 0.04),
-    dark: '#0b1220',
-    accent: primary,
-  };
-  const bg = bgMap[s.bgStyle] || '#ffffff';
-  const isDark = s.bgStyle === 'dark' || s.bgStyle === 'accent';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
-  const bodyColor = isDark ? 'rgba(255,255,255,0.85)' : '#475569';
+  const theme = sectionColorTheme(stackCtx?.content.sectionColors?.[s.id], s.bgStyle, primary);
+  const bg = theme.background;
+  const textColor = theme.foreground;
+  const bodyColor = theme.body;
 
   if (s.type === 'cta') {
-    return `<section style="background:linear-gradient(135deg,${primary},#0b1220);color:#fff;padding:88px 0;text-align:center">
+    return `<section style="background:${theme.custom ? bg : `linear-gradient(135deg,${primary},#0b1220)`};color:${theme.custom ? textColor : '#fff'};padding:88px 0;text-align:center">
   <div class="lp-content-width">
-    ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:#fff">${escapeHtml(s.headline)}</h2>`}
+    ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:${theme.custom ? textColor : '#fff'}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px">${s.content || ''}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
       ${phone && !removed('phone') ? `<a href="tel:${phone}" style="background:${secondary};color:${onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
@@ -250,6 +246,8 @@ export function buildLandingPageHTML(
   const primary = landingPrimary(dealer);
   const secondary = landingSecondary(dealer);
   const onPrimary = readableOn(primary);
+  const heroBackground = normalizeSectionColor(content.sectionColors?.hero) || primary;
+  const onHero = readableOn(heroBackground);
   const onSecondary = readableOn(secondary);
 
   const removed = (id: string) => isLandingElementRemoved(content, id);
@@ -365,16 +363,16 @@ ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;ba
     </div>
   </header>`}
 
-${removed('hero') ? '' : `  <section style="position:relative;min-height:560px;overflow:hidden;background:${primary}">
+${removed('hero') ? '' : `  <section style="position:relative;min-height:560px;overflow:hidden;background:${heroBackground}">
     <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)'};min-height:560px" class="lp-content-width lp-hero-grid">
-${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:${primary};color:${onPrimary};min-height:420px">
+${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:${heroBackground};color:${onHero};min-height:420px">
         <div style="max-width:${heroHasImage ? '520px' : 'none'}">
 ${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${secondary};border:1px solid ${secondary};color:${onSecondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>`}
-${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${onPrimary}">${escapeHtml(heroHeadline)}</h1>`}
-${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:${rgba(onPrimary, 0.85)};margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
+${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${onHero}">${escapeHtml(heroHeadline)}</h1>`}
+${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:${rgba(onHero, 0.85)};margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
           <div style="display:flex;gap:12px;flex-wrap:wrap">
 ${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${secondary};color:${onSecondary};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
-            ${whatsapp && !removed('hero.whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:${rgba(onPrimary, 0.1)};color:${onPrimary};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${rgba(onPrimary, 0.2)}">💬 WhatsApp</a>` : ''}
+            ${whatsapp && !removed('hero.whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:${rgba(onHero, 0.1)};color:${onHero};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${rgba(onHero, 0.2)}">💬 WhatsApp</a>` : ''}
           </div>
         </div>
       </div>
