@@ -1,10 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 import LandingLogo from '@/components/landing/LandingLogo';
 import { resolveLandingLogoHeight } from '@/lib/landing-logo-size';
 import { recordChange, undoChange } from '@/lib/landing-element-editing';
 
 describe('Landingpage logo editing', () => {
+  beforeAll(() => vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} }));
+  afterAll(() => vi.unstubAllGlobals());
   it('opens the selected logo control only in editing mode and commits its new size', () => {
     const resize = vi.fn();
     render(<LandingLogo id="header.brand" src="/logo.png" alt="Skoda" editable onResize={resize} />);
