@@ -41,3 +41,4 @@
 .lp-root .lp-stack-insert-before { top: 0; }
 .lp-root .lp-stack-insert-after { top: 100%; }
 .lp-root .lp-stack-item:hover > .lp-stack-insert, .lp-root .lp-stack-insert:focus-visible { opacity: 1; pointer-events: auto; }
+
