@@ -9,6 +9,7 @@ import {
   CONTACT_LIMITS, DEFAULT_CONTACT_HEADING, isValidRecipientEmail, type LandingContactFormConfig,
 } from '@/lib/landing-contact-config';
 import { landingSecondary, readableOn } from '@/lib/landing-theme';
+import LandingInquiryFields, { LANDING_INQUIRY_CSS } from './LandingInquiryFields';
 
 export const ContactFormConfigDialog: React.FC<{
   open: boolean;
@@ -60,8 +61,9 @@ export const ContactFormConfigDialog: React.FC<{
 };
 
 /** Editor-only stand-in for the floating "Jetzt anfragen" widget of the published page. */
-export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConfig; accent?: string }> = ({ config, accent }) => {
+export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConfig; accent?: string; phone?: string }> = ({ config, accent, phone }) => {
   const [open, setOpen] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   // Same colour the page's own buttons use, so the widget never stands out.
   const accentColor = landingSecondary({ secondaryColor: accent });
   const onAccent = readableOn(accentColor);
@@ -74,22 +76,17 @@ export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConf
       >
         <MessageSquare className="w-4 h-4" /> Jetzt anfragen
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={open} onOpenChange={next => { setOpen(next); if (next) setSubmitted(false); }}>
+        <DialogContent className="lp-inquiry sm:max-w-md max-h-[94dvh] overflow-y-auto p-5 gap-4 rounded-md" style={{ '--inquiry-accent': accentColor, '--inquiry-on-accent': onAccent } as React.CSSProperties}>
+          <style>{LANDING_INQUIRY_CSS}</style>
           <DialogHeader>
-            <DialogTitle>{config.heading || DEFAULT_CONTACT_HEADING}</DialogTitle>
-            {config.intro && <DialogDescription className="whitespace-pre-line">{config.intro}</DialogDescription>}
+            <DialogTitle className="text-lg text-left">{config.heading && config.heading !== DEFAULT_CONTACT_HEADING ? config.heading : 'Fahrzeuganfrage'}</DialogTitle>
+            <DialogDescription className="sr-only">{config.intro || 'Anfrage zum Fahrzeug'}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Ihr Name *" disabled />
-            <Input placeholder="Ihre E-Mail *" disabled />
-            <Input placeholder="Telefonnummer (optional)" disabled />
-            <Textarea placeholder="Ihre Nachricht (optional)" rows={3} disabled />
-            <Button className="w-full" disabled style={{ background: accentColor, color: onAccent }}>Anfrage senden</Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Vorschau – auf der Website geht die Anfrage an {config.recipientEmail || 'die hinterlegte Adresse'}.
-            </p>
-          </div>
+          <form onSubmit={event => { event.preventDefault(); setSubmitted(true); }}>
+            <LandingInquiryFields phone={phone} />
+            {submitted && <p role="status" className="text-xs mt-3">Vorschau – es wurde keine Anfrage gesendet.</p>}
+          </form>
         </DialogContent>
       </Dialog>
     </>

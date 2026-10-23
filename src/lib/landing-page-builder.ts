@@ -294,6 +294,8 @@ export function buildLandingPageHTML(
         heading: contactForm.heading,
         intro: contactForm.intro,
         accent: secondary,
+        inventoryStyle: true,
+        phone: dealer.phone,
       })
     : '';
 
