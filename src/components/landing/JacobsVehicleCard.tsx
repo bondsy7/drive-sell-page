@@ -2,12 +2,13 @@ import { Car, Gauge, SlidersHorizontal, Fuel, Zap, Mail, Phone } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import type { FinanceFootnote } from '@/lib/finance-footnotes';
 import { toSuperscript } from '@/lib/finance-footnotes';
-import { jacobsFuelLabel, jacobsMonthlyRate, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
+import { jacobsFuelLabel, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
 
 export default function JacobsVehicleCard({ vehicle: v, design, editable, footnote }: { vehicle: LiveVehicle; design: LiveVehicleCardDesign; editable?: boolean; footnote?: FinanceFootnote }) {
   const href = liveVehicleHref(v, design);
   const title = jacobsTitleLabel(v);
-  const rate = jacobsMonthlyRate(v);
+  // Rate only with complete § 17 PAngV details (footnote exists).
+  const rate = footnote?.rate ?? null;
   const stopEditingClick = editable ? (event: React.MouseEvent) => event.preventDefault() : undefined;
   return <article className="lp-live-card lp-jacobs-card">
     <a className="lp-jacobs-main" href={href} target={href ? '_blank' : undefined} rel="noopener noreferrer" aria-label={`Zum Fahrzeug: ${title}`} onClick={stopEditingClick}>

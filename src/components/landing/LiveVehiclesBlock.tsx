@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Car, Loader2, RefreshCw, CheckSquare, Square } from 'lucide-react';
+import { Car, Loader2, RefreshCw, CheckSquare, Square, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -7,17 +7,22 @@ import { Input } from '@/components/ui/input';
 import {
   DEFAULT_LIVE_INVENTORY,
   matchesLiveFilter,
+  resolveLiveVehicles,
   type LiveInventoryConfig,
   type LiveVehicle,
 } from '@/lib/live-inventory';
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
+import { useDealerBanks } from '@/hooks/useDealerBanks';
+import { findFinanceGaps } from '@/lib/finance-footnotes';
 
 // Re-exported so existing importers keep working.
 export { DEFAULT_LIVE_INVENTORY, matchesLiveFilter } from '@/lib/live-inventory';
 export type { LiveInventoryConfig, LiveVehicle } from '@/lib/live-inventory';
 
 const ALL = '__all__';
+const NONE = '__none__';
+const OTHER = '__other__';
 
 interface Props {
   value: LiveInventoryConfig;
@@ -32,6 +37,9 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
   const [items, setItems] = useState<LiveVehicle[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { banks } = useDealerBanks();
+  const profileBankNames = useMemo(() => [...new Set(banks.filter(b => b.bank_type === 'financing' || b.bank_type === 'leasing').map(b => b.bank_name.trim()).filter(Boolean))], [banks]);
+  const [customBank, setCustomBank] = useState(false);
   const set = (p: Partial<LiveInventoryConfig>) => onChange({ ...value, cardDesign: cardDesign || undefined, ...p });
 
   const load = async () => {
@@ -68,6 +76,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
   }, [items, value.brand]);
 
   const filtered = useMemo(() => (items || []).filter(v => matchesLiveFilter(v, value)), [items, value]);
+  const gaps = useMemo(() => findFinanceGaps(resolveLiveVehicles(items || [], { ...value, cardDesign: cardDesign || value.cardDesign }), { ...value, cardDesign: cardDesign || value.cardDesign }), [items, value, cardDesign]);
   const selected = new Set(value.selectedIds);
   const shownCount = value.mode === 'manual' ? value.selectedIds.length : Math.min(filtered.length, value.maxItems);
 
@@ -176,6 +185,34 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                   <Input value={value.title} maxLength={120} onChange={e => set({ title: e.target.value })} disabled={disabled} />
                 </div>
               </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Bank für Finanzierungsangaben</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Select value={profileBankNames.includes(value.financeBank || '') ? value.financeBank! : (value.financeBank ? OTHER : NONE)}
+                    onValueChange={(b) => { if (b === OTHER) { setCustomBank(true); set({ financeBank: '' }); } else { setCustomBank(false); set({ financeBank: b === NONE ? '' : b }); } }} disabled={disabled}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Keine Bank gewählt</SelectItem>
+                      {profileBankNames.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      <SelectItem value={OTHER}>Andere Bank eingeben …</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(customBank || (value.financeBank && !profileBankNames.includes(value.financeBank))) && (
+                    <Input placeholder="Name und Anschrift der Bank" value={value.financeBank || ''} maxLength={200} onChange={e => set({ financeBank: e.target.value })} disabled={disabled} />
+                  )}
+                </div>
+              </div>
+
+              {gaps.length > 0 && (
+                <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground space-y-1.5">
+                  <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle className="w-3.5 h-3.5" />Bei {gaps.length} Fahrzeug{gaps.length === 1 ? '' : 'en'} wird die Monatsrate nicht angezeigt</p>
+                  <p className="text-muted-foreground">Für eine rechtssichere Rate (§ 17 PAngV) fehlen Angaben. Preis und Fahrzeug werden trotzdem gezeigt.</p>
+                  <ul className="max-h-40 overflow-y-auto space-y-0.5">
+                    {gaps.map(g => <li key={g.vehicleId}><strong>{g.title}{g.internalNumber ? ` (Nr. ${g.internalNumber})` : ''}:</strong> fehlt {g.missing.join(', ')}</li>)}
+                  </ul>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">

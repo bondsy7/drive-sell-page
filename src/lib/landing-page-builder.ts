@@ -201,7 +201,7 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
     ${v.variant ? `<div class="lp-live-variant">${escapeHtml(v.variant)}</div>` : ''}
     <div class="lp-live-specs">${escapeHtml(liveSpecLabel(v))}</div>
     <div class="lp-live-price">${escapeHtml(livePriceLabel(v))}</div>
-    ${v.monthlyRate ? `<div class="lp-live-rate">ab ${escapeHtml(v.monthlyRate.toLocaleString('de-DE'))} €/Monat${note ? `<sup title="${escapeHtml(note.text)}">${toSuperscript(note.number)}</sup>` : ''}</div>` : ''}
+    ${note ? `<div class="lp-live-rate">ab ${escapeHtml(note.rate.toLocaleString('de-DE'))} €/Monat<sup title="${escapeHtml(note.text)}">${toSuperscript(note.number)}</sup></div>` : ''}
     ${inventoryUrl ? '<span class="lp-live-more">Zum Angebot →</span>' : ''}
   </div>
 </a>`;

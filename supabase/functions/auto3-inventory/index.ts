@@ -297,6 +297,17 @@ Deno.serve(async (req) => {
         ...summary(r),
         priceEur: n(r.price) ? Math.round(Number(r.price) / 100) : null,
         monthlyRate: n(r.financing?.monthlyRate),
+        // § 17 PAngV details – only passed through, never computed here.
+        financing: r.financing ? {
+          termMonths: n(r.financing.termInMonths),
+          downPayment: Number.isFinite(Number(r.financing.downPayment)) && r.financing.downPayment !== null ? Number(r.financing.downPayment) : null,
+          finalInstallment: Number.isFinite(Number(r.financing.finalInstallment)) && r.financing.finalInstallment !== null ? Number(r.financing.finalInstallment) : null,
+          netLoan: n(r.financing.netLoanAmount),
+          total: n(r.financing.totalAmount),
+          effectiveRate: n(r.financing.effectiveInterestRate),
+          nominalRate: n(r.financing.nominalInterestRate),
+          bank: typeof r.financing.bank === "string" && r.financing.bank.trim() ? r.financing.bank.trim() : null,
+        } : null,
         mileage: n(r.mileage),
         firstRegistration: r.firstRegistration ?? null,
         fuelType: r.vehicleModel?.fuelType ?? null,
