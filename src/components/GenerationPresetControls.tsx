@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Trash2, Loader2 } from 'lucide-react';
+import { Save, Trash2, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -50,6 +50,7 @@ export default function GenerationPresetControls({ config, onApply, scope = 'car
       <SelectTrigger className="h-9 w-52" aria-label="Einstellungsvorlage"><SelectValue placeholder="Vorlage wählen" /></SelectTrigger>
       <SelectContent>{presets.length ? presets.map(p => <SelectItem key={p.preference_key} value={p.preference_key}>{p.name}</SelectItem>) : <SelectItem value="empty" disabled>Keine Vorlagen</SelectItem>}</SelectContent>
     </Select>
+    {selected && <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Vorlage erneut laden" title="Vorlage erneut laden" disabled={disabled || busy} onClick={() => apply(selected)}><RotateCcw className="h-4 w-4" /></Button>}
     <Button variant="outline" size="sm" disabled={disabled || busy || !prefs.isSuccess} onClick={() => { setName(presets.find(p => p.preference_key === selected)?.name || ''); setOpen(true); }}>
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Als Vorlage speichern
     </Button>
