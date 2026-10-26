@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // reference-v2-analyze-image
 // Reference V2 (Vehicle Reference Engine V2) — automatic vision intake.
 //
@@ -213,6 +214,7 @@ function sanitizeAnalyzerPayload(raw: unknown): void {
 
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const cors = handleCors(req);
   if (cors) return cors;
 

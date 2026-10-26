@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Called by a database trigger when a profile is created. Emails the team about
 // self-registered accounts (admin-created accounts carry app_metadata.created_by_admin).
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -9,6 +10,7 @@ const MAX_AGE_MS = 15 * 60 * 1000;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   let userId = "";
   try { userId = String((await req.json())?.user_id ?? ""); } catch { /* ignore */ }

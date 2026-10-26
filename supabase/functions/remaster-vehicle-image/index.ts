@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { validateV3Wire, v3ResultMetadata, type V3Manifest } from '../_shared/nb21-v3-contract.ts';
 import { enforceV3ServerPrompt } from '../_shared/nb21-v3-prompt.ts';
@@ -516,6 +517,7 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   /**

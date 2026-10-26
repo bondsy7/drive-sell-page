@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // upload-to-openai-files
 // Uploads images ONCE to the OpenAI Files API (purpose=vision) and returns
 // reusable file IDs. Used by the Sunburst (Responses API) image path so that
@@ -71,6 +72,7 @@ async function uploadOne(apiKey: string, img: InImage): Promise<OutFile> {
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const cors = handleCors(req);
   if (cors) return cors;
 

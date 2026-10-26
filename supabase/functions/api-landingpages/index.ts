@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Read-only REST API for landing pages created in autohaus.ai (WordPress plugin source).
 // Separate from api-vehicles on purpose – that function must stay untouched.
 //
@@ -36,6 +37,7 @@ function apiBase(req: Request) {
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "GET") return err(405, "method_not_allowed", "Only GET is supported.");
 

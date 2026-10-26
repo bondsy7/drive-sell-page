@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Suggests banner layout settings from a background image using Gemini Vision.
 // Returns ONLY JSON. No image generation. No text overlay generation.
 
@@ -10,6 +11,7 @@ const ALLOWED_OVERLAY = ["none", "left", "right", "top", "bottom", "full-soft"];
 const ALLOWED_POS = ["top-left", "top-right", "top-center", "center", "bottom-left", "bottom-right", "bottom-center"];
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const pre = handleCors(req);
   if (pre) return pre;
   if (req.method !== "POST") return errorResponse("method not allowed", 405);

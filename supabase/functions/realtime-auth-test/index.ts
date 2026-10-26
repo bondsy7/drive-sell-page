@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Server-side Realtime channel-authorization test runner.
 //
 // Provisions two ephemeral test users via the service role, attempts four
@@ -56,6 +57,7 @@ async function joinPrivate(
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   // --- Auth guard: caller must be an admin (has_role) ---

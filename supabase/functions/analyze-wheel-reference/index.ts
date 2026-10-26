@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // analyze-wheel-reference
 // Analysiert eine dedizierte Felgen-/Reifenaufnahme mit einem schnellen,
 // günstigen Gemini-Vision-Modell und liefert eine strukturierte JSON-Analyse.
@@ -104,6 +105,7 @@ function normBool(v: unknown): boolean | null {
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

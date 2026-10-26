@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Publishes a banner image to Auto3 (dev-api.autoversus.de / api.auto3.de)
 // - Auth: user JWT (getClaims), owner-only
 // - Loads dealer's auto3_account_email from profiles
@@ -23,6 +24,7 @@ interface Body {
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const pre = handleCors(req);
   if (pre) return pre;
 

@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
@@ -19,6 +20,7 @@ interface ReqBody {
 const EdgeRuntimeAny: any = (globalThis as any).EdgeRuntime;
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

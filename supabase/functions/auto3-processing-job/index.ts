@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Auto3 → OneShot background orchestrator.
 // Treats an imported Auto3 vehicle as if the dealer had placed ONE master photo into the
 // OneShot single-upload field plus the Auto3 datasheet, then runs the existing generators
@@ -295,6 +296,7 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);

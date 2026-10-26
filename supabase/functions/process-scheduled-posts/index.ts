@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Cron-invoked processor: publishes scheduled social posts whose time has come.
 // Called every minute by pg_cron. Uses the service role to bypass RLS and
 // invokes `social-publish` internally on behalf of each row's owner.
@@ -9,6 +10,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);

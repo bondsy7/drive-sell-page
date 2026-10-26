@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Reframes a background image to match a target banner format using
 // Ideogram v3 reframe (TURBO rendering speed for low latency).
 // Returns the reframed image as a base64 data URL.
@@ -41,6 +42,7 @@ function pickClosestResolution(targetW: number, targetH: number): { w: number; h
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const pre = handleCors(req);
   if (pre) return pre;
   if (req.method !== "POST") return errorResponse("method not allowed", 405);

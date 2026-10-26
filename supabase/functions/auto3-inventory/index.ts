@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Read-only Auto3 inventory adapter. Never writes to Auto3.
 // Actions: list (inventory + import status), import (attach selected Auto3 vehicles to vehicle records).
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -224,6 +225,7 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Prom
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");

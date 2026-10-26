@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 
@@ -11,6 +12,7 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

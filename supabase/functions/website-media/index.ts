@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Read-only delivery API for dealer websites (server-to-server).
 // GET  /functions/v1/website-media?target=autoschmitt&source=auto3&externalVehicleId=<id>
 // POST /functions/v1/website-media  {target, source, externalVehicleIds: [...]}  (max 100 unique)
@@ -50,6 +51,7 @@ async function loadLive(target: string, source: string, ids: string[]) {
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   if (req.method === "POST") {

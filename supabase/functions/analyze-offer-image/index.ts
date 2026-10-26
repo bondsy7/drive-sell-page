@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // analyze-offer-image – extracts vehicle info from offer screenshots via Gemini
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
@@ -6,6 +7,7 @@ import { getSecret } from "../_shared/get-secret.ts";
 import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const cors = handleCors(req);
   if (cors) return cors;
 
