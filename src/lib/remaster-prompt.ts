@@ -132,6 +132,18 @@ export const SCENE_OPTIONS = [
   { value: 'dealer-lot-dekra', label: 'Fahrzeugplatz – DEKRA', preview: dealerLotDekraPreview.url, group: 'outdoor' as const },
 ] as const;
 
+/** Accounts allowed to select the "Fahrzeugplatz – DEKRA" scene. */
+export const DEKRA_SCENE_EMAILS = ['dekra@autohaus.ai', 'dekra2@autohaus.ai', 'dekra3@autohaus.ai'] as const;
+
+export function canUseDekraScene(email?: string | null): boolean {
+  return !!email && (DEKRA_SCENE_EMAILS as readonly string[]).includes(email.trim().toLowerCase());
+}
+
+/** Scene options visible for the given account (DEKRA scene only for DEKRA accounts). */
+export function getSceneOptionsForUser(email?: string | null) {
+  return canUseDekraScene(email) ? SCENE_OPTIONS : SCENE_OPTIONS.filter(s => s.value !== 'dealer-lot-dekra');
+}
+
 export const LICENSE_PLATE_OPTIONS = [
   { value: 'keep', label: 'Beibehalten' },
   { value: 'remove', label: 'Entfernen' },
