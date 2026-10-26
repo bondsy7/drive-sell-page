@@ -685,7 +685,9 @@ serve(async (req) => {
     const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
     console.log(`[remaster] Engine=${engineConfig.engine} Model=${engineConfig.model} Tier=${tier} (user-selected, binding)`);
 
-    const GEMINI_API_KEY = engineConfig.engine === 'gemini' ? await getSecret("GEMINI_API_KEY") : null;
+    // Validator-Key: der Fidelity-Shadow-Check prüft unabhängig vom Generator-Engine
+    // (auch OpenAI-Tiers) über Gemini Vision und braucht daher immer den Gemini-Key.
+    const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
     if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
