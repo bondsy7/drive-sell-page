@@ -7,9 +7,10 @@ import ImageStack from '@/components/landing/LandingImageStack';
 import { getImageStack, hasExtraImages } from '@/lib/landing-image-stack';
 import { LANDING_IMAGE_FRAME_CSS, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { LANDING_LOGO_CSS, type LandingLogoId } from '@/lib/landing-logo-size';
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { liveInsertIndex, LIVE_BLOCK_ID } from '@/lib/landing-section-order';
 import { motion } from 'framer-motion';
-import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
+import { RefreshCw, Sparkles, ArrowUp, ArrowDown, GripHorizontal, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
@@ -52,6 +53,7 @@ export interface RendererProps {
   onUpdateSection?: (id: string, field: 'headline' | 'content', value: string) => void;
   onReplaceImage?: (sectionId: string) => void;
   onMoveSection?: (id: string, dir: 'up' | 'down') => void;
+  onReorderSection?: (dragId: string, targetId: string, position: 'before' | 'after') => void;
   onToggleSection?: (id: string) => void;
   onDeleteSection?: (id: string) => void;
   onSectionColorChange?: (id: string, color: string | null) => void;
@@ -137,6 +139,50 @@ const Editable: React.FC<{
       {value || (editable ? '' : '')}
     </Tag>
     </LandingElementBox>
+  );
+};
+
+type DragCtx = {
+  dragging: string | null;
+  dropHint: { id: string; pos: 'before' | 'after' } | null;
+  start: (id: string) => void;
+  hover: (id: string, pos: 'before' | 'after') => void;
+  end: () => void;
+  drop: (id: string, pos: 'before' | 'after') => void;
+};
+
+/** Drag-and-drop wrapper: handle centred on the top edge, drop indicator before/after the hovered section. */
+const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: React.ReactNode }> = ({ id, drag, children }) => {
+  if (!drag) return <>{children}</>;
+  const posFor = (e: React.DragEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return e.clientY < r.top + r.height / 2 ? 'before' : 'after';
+  };
+  const hint = drag.dragging && drag.dragging !== id && drag.dropHint?.id === id ? drag.dropHint.pos : null;
+  const line: React.CSSProperties = { position: 'absolute', left: 0, right: 0, height: 4, background: '#174f6b', zIndex: 40, pointerEvents: 'none', borderRadius: 2 };
+  return (
+    <div
+      className="lp-sortable"
+      style={{ position: 'relative', opacity: drag.dragging === id ? 0.45 : 1 }}
+      onDragOver={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.hover(id, posFor(e)); }}
+      onDrop={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.drop(id, posFor(e)); }}
+    >
+      {hint === 'before' && <div style={{ ...line, top: -2 }} />}
+      <button
+        type="button"
+        draggable
+        className="lp-drag-handle"
+        title="Abschnitt verschieben"
+        aria-label="Abschnitt verschieben"
+        onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); drag.start(id); }}
+        onDragEnd={drag.end}
+        style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 24, borderRadius: 999, border: 'none', background: 'rgba(15,23,42,0.88)', color: '#fff', cursor: 'grab', boxShadow: '0 2px 8px rgba(0,0,0,.25)' }}
+      >
+        <GripHorizontal size={16} />
+      </button>
+      {children}
+      {hint === 'after' && <div style={{ ...line, bottom: -2 }} />}
+    </div>
   );
 };
 
@@ -277,6 +323,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onInsertImage,
   onDeleteStackImage,
   onMoveSection,
+  onReorderSection,
   onToggleSection,
   onDeleteSection,
   onSectionColorChange,
@@ -329,6 +376,30 @@ const LandingRenderer: React.FC<RendererProps> = ({
   );
 
   const sections = content.sections || [];
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<{ id: string; pos: 'before' | 'after' } | null>(null);
+  const drag: DragCtx | null = editable && onReorderSection ? {
+    dragging, dropHint,
+    start: (id) => setDragging(id),
+    hover: (id, pos) => setDropHint(h => h?.id === id && h.pos === pos ? h : { id, pos }),
+    end: () => { setDragging(null); setDropHint(null); },
+    drop: (id, pos) => { if (dragging) onReorderSection(dragging, id, pos); setDragging(null); setDropHint(null); },
+  } : null;
+  const liveAt = liveInsertIndex(content);
+  const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
+    <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
+      <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
+        <LiveVehicleShowcase
+          config={liveInventory.config}
+          vehicles={liveInventory.vehicles}
+          inventoryUrl={liveInventory.inventoryUrl}
+          loading={liveInventory.loading}
+          error={liveInventory.error}
+          editable={editable}
+        />
+      </LandingElementBox>
+    </SortableSection>
+  ) : null;
   const heroCtaText = content.hero?.ctaText || 'Jetzt anfragen';
 
   return (
@@ -574,6 +645,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
       {/* Sections */}
       {sections.map((s, idx) => (
+        <React.Fragment key={s.id}>
+        {idx === liveAt && liveNode}
+        <SortableSection id={s.id} drag={drag}>
         <SectionRenderer
           key={s.id}
           section={s}
@@ -630,20 +704,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
             />
           )}
         />
+        </SortableSection>
+        </React.Fragment>
       ))}
-
-      {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && (
-        <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
-        <LiveVehicleShowcase
-          config={liveInventory.config}
-          vehicles={liveInventory.vehicles}
-          inventoryUrl={liveInventory.inventoryUrl}
-          loading={liveInventory.loading}
-          error={liveInventory.error}
-          editable={editable}
-        />
-        </LandingElementBox>
-      )}
+      {liveAt >= sections.length && liveNode}
 
       {/* Contact */}
       <LandingElementBox editable={editable} hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">

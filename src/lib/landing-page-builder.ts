@@ -1,3 +1,4 @@
+import { liveInsertIndex } from '@/lib/landing-section-order';
 import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
 import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
@@ -33,6 +34,8 @@ export interface LandingPageContent {
   imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
   removedElements?: string[];
   textColors?: Record<string, string>;
+  /** Section id after which the live inventory block renders; '@start' = first, unset = after all sections. */
+  liveInventoryAfter?: string;
   meta: { title: string; description: string; h1: string };
   hero: { headline: string; subheadline: string; ctaText: string; imagePrompt?: string };
   sections: LandingPageSection[];
@@ -277,11 +280,11 @@ export function buildLandingPageHTML(
   const heroHeadline = hero.headline || `${brand} ${model}`;
   const heroSub = hero.subheadline || '';
 
-  const sectionBlocks = sections
-    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, { content, images }))
-    .join('\n');
-
   const liveBlock = liveInventory && !removed('live-fahrzeuge') ? buildLiveInventorySectionHTML(liveInventory) : '';
+  const renderedSections = sections
+    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, { content, images }));
+  renderedSections.splice(liveInsertIndex({ sections, liveInventoryAfter: content.liveInventoryAfter }), 0, liveBlock);
+  const sectionBlocks = renderedSections.join('\n');
 
   const contactFormHTML = contactForm && !removed('kontakt')
     ? buildContactFormHTML({
@@ -397,8 +400,6 @@ ${heroHasImage ? (heroFrame ? `      <div class="lp-hero-media" style="position:
   </section>`}
 
   ${sectionBlocks}
-
-  ${liveBlock}
 
 ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 0">
     <div class="lp-content-width" style="text-align:center">
