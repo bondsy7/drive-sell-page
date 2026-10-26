@@ -13,6 +13,7 @@ import { enforceV2SubjectClassLock } from "../_shared/nb21-v2-class.ts";
 import { resolveRemasterCost } from "../_shared/remaster-cost.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { validateGalleryTarget, verifyGalleryOwnership, persistRemasterGallery } from "../_shared/remaster-gallery.ts";
+import { buildFidelityPrompt, parseFindings, decideFidelity, buildCorrections, sha256Hex, FIDELITY_PROMPT_VERSION } from "../_shared/fidelity-check.ts";
 
 
 
@@ -1700,41 +1701,63 @@ REPRODUCTION RULES (ZERO DEVIATION):
       ? 'Das KI-Modell ist gerade überlastet. Bitte versuche es in einigen Sekunden erneut.'
       : (lastError || "Kein Bild generiert. Bitte versuche es erneut."));
 
-    // ── Leichtgewichtige Felgen-Verifikation ──
-    // Vergleicht Speichenzahl/Finish des Ergebnisses mit der Felgenreferenz.
-    // Läuft im Hintergrund (nur Protokoll) – blockiert die Bildauslieferung nicht mehr.
+    // ── Vehicle Fidelity Check (Shadow Mode) ──
+    // Ersetzt den früheren reinen Felgen-Check. Läuft im Hintergrund, nur Protokoll:
+    // keine Korrektur, kein Nutzerhinweis, blockiert die Auslieferung nicht.
     const wheelCheck: { match: boolean; reason?: string } | null = null;
-    if (hasWheelReference && GEMINI_API_KEY) {
+    const mainRefPart = mainImageFileUri?.uri
+      ? { file_data: { mime_type: mainImageFileUri.mimeType || 'image/jpeg', file_uri: mainImageFileUri.uri } }
+      : (typeof imageBase64 === 'string' && imageBase64 ? toInlineData(imageBase64) : null);
+    if (GEMINI_API_KEY && mainRefPart && !isNb21V2 && !isNb21V3) {
       const bgCheck = (async () => {
+      const t0 = Date.now();
       try {
-        const refPart = wheelReferenceFileUri?.uri
-          ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
-          : toInlineData(wheelReferenceBase64);
+        const isInteriorTarget = /interior|innenraum|cockpit|dashboard|sitz/i.test(`${mainImageRole ?? ''} ${galleryTarget?.slotKey ?? ''}`);
+        const refs: any[] = [mainRefPart];
+        const labels = [mainImageRole || 'primary vehicle reference'];
+        if (hasWheelReference && !isInteriorTarget) {
+          refs.push(wheelReferenceFileUri?.uri
+            ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
+            : toInlineData(wheelReferenceBase64));
+          labels.push('wheel reference');
+        }
+        const allowed = ['license plate content', 'dealer/wall branding and showroom background'];
         const checkRes = await fetch(
           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
             body: JSON.stringify({
-              contents: [{ role: 'user', parts: [
-                { text: 'IMAGE 1 = wheel reference. IMAGE 2 = generated vehicle image. Compare ONLY the wheels/rims: spoke count, spoke geometry, finish and colours. Answer strictly as JSON: {"match": true|false, "reason": "short"}' },
-                refPart,
-                toInlineData(resultImage),
-              ] }],
+              contents: [{ role: 'user', parts: [{ text: buildFidelityPrompt(labels, allowed) }, ...refs, toInlineData(resultImage)] }],
               generationConfig: { responseMimeType: 'application/json', temperature: 0 },
             }),
           },
         );
-        if (checkRes.ok) {
-          const cj = await checkRes.json();
-          const raw = cj?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            console.log(`[remaster][wheel] verification match=${!!parsed.match} reason=${parsed.reason ?? ''}`);
-          }
+        if (!checkRes.ok) { console.warn(`[remaster][fidelity] validator status=${checkRes.status}`); return; }
+        const cj = await checkRes.json();
+        const raw = cj?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
+        const findings = raw ? parseFindings(JSON.parse(raw)) : [];
+        const status = findings.length ? decideFidelity(findings) : 'UNCERTAIN';
+        console.log(`[remaster][fidelity] status=${status} findings=${findings.length} mode=shadow`);
+        if (!chargedUserId) return;
+        const resultHash = await sha256Hex(resultImage.slice(0, 200000));
+        const sb = createServiceClient();
+        const summary = {
+          mode: 'shadow', status, promptVersion: FIDELITY_PROMPT_VERSION, validator: 'gemini-2.5-flash',
+          generatorEngine: diag.engine, generatorModel: diag.model, references: labels, resultHash,
+          findings: findings.filter((f) => f.verdict !== 'match'), corrections: buildCorrections(findings), checkedAt: new Date().toISOString(),
+        };
+        await sb.from('generation_attempt_logs').insert({
+          user_id: chargedUserId, job_key: galleryTarget?.slotKey ?? mainImageRole ?? 'remaster', model_tier: modelTier ?? null,
+          stage: 'fidelity', status, attempt: 1, engine: 'gemini', model: 'gemini-2.5-flash',
+          duration_ms: Date.now() - t0, provider_response: summary,
+        });
+        if (galleryTarget) {
+          const { data: row } = await sb.from('project_images').select('generation_context').eq('id', galleryTarget.id).maybeSingle();
+          await sb.from('project_images').update({ generation_context: { ...(row?.generation_context ?? {}), fidelity: summary } }).eq('id', galleryTarget.id);
         }
       } catch (verifyErr) {
-        console.warn('[remaster][wheel] verification skipped:', verifyErr);
+        console.warn('[remaster][fidelity] check skipped:', verifyErr);
       }
       })();
       try { (globalThis as any).EdgeRuntime?.waitUntil?.(bgCheck); } catch { /* ignore */ }
