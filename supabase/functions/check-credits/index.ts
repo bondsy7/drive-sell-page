@@ -1,8 +1,10 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
 

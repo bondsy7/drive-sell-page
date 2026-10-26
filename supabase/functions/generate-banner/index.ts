@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // generate-banner v4 – structured logging + stage tracking
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveInternalActor } from "../_shared/internal-actor.ts";
@@ -178,6 +179,7 @@ function getGeminiModelChain(model: string): string[] {
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const reqId = crypto.randomUUID().slice(0, 8);

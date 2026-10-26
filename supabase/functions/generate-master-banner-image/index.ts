@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Generates a single, ad-quality MASTER banner image from a source vehicle photo
 // and a marketing-style prompt, using the user's Gemini API key (Nano Banana).
 //
@@ -18,6 +19,7 @@ ABSOLUTE RULES:
 - Output a single, photoreal, advertising-grade image.`;
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const pre = handleCors(req);
   if (pre) return pre;
   if (req.method !== "POST") return errorResponse("method not allowed", 405);

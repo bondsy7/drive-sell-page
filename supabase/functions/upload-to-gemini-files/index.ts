@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // upload-to-gemini-files
 // Uploads images to Google Generative Language File API ("Gemini File API")
 // once and returns reusable file URIs. Pipeline / banner / video can then
@@ -94,6 +95,7 @@ async function uploadOne(apiKey: string, img: InImage): Promise<OutFile> {
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const cors = handleCors(req);
   if (cors) return cors;
 

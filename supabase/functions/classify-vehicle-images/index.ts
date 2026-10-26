@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // classify-vehicle-images
 // Classifies a batch of vehicle images in a SINGLE Gemini call.
 // Returns category per image so OneShotStudio can route them to the
@@ -111,6 +112,7 @@ function categoryFlags(c: Category) {
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const cors = handleCors(req);
   if (cors) return cors;
 

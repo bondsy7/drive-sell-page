@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Publishes a banner image to Instagram (Business) and/or a Facebook Page.
 // Organic posting only. No paid ads. Structured to be extended later
 // (carousels, reels, scheduled, boost, Marketing API campaigns).
@@ -39,6 +40,7 @@ interface PlatformResult {
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {

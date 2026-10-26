@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Generates a platform-tailored social media caption using Gemini.
 // Uses the user's profile + optional vehicle record + banner image as context.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -27,6 +28,7 @@ const TONE_HINTS: Record<Tone, string> = {
 };
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {

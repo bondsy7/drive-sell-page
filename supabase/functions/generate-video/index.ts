@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { getSecret } from "../_shared/get-secret.ts";
@@ -401,6 +402,7 @@ async function handlePoll(req: Request, GEMINI_API_KEY: string, body: any): Prom
 }
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

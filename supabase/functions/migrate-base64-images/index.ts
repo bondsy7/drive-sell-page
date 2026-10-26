@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // migrate-base64-images: Cron-compatible batch migration of base64 → Storage URLs
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -7,6 +8,7 @@ import { requireServiceRole } from "../_shared/service-auth.ts";
 const BATCH_SIZE = 10;
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
   const guard = requireServiceRole(req);

@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // generate-360-spin (V2 — identitätsgesperrte Keyframe-Architektur)
 //
 // Schritte: analyze → profile → keyframes → validate_keyframes → frames (Sektoren, bidirektional) → assemble
@@ -580,6 +581,7 @@ async function recordReview(
 // ═══════════════ HANDLER ═══════════════
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

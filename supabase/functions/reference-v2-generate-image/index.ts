@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // reference-v2-generate-image
 // Reference V2 (Vehicle Reference Engine V2) — strict-reference image generation.
 //
@@ -70,6 +71,7 @@ async function fetchWithTimeout(
 }
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const preflight = handleCors(req);
   if (preflight) return preflight;
 

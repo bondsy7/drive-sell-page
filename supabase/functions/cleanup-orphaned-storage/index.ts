@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // cleanup-orphaned-storage: Removes storage files not referenced in any DB table
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
@@ -7,6 +8,7 @@ import { requireServiceRole } from "../_shared/service-auth.ts";
 const DRY_RUN = true; // Set to false when ready to actually delete
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
   const guard = requireServiceRole(req);

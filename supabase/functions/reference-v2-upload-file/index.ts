@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // reference-v2-upload-file
 // Reference V2 (Vehicle Reference Engine V2) — isolated file-reference upload.
 //
@@ -26,6 +27,7 @@ const READY_TIMEOUT_MS = 30_000;
 const READY_POLL_MS = 700;
 
 serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const cors = handleCors(req);
   if (cors) return cors;
 

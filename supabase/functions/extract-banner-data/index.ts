@@ -1,3 +1,4 @@
+import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // Extracts banner-relevant fields (headline, subline, price, …) from a single
 // vehicle data-sheet image (PNG/JPG/WebP). For PDFs, the frontend invokes the
 // existing `analyze-pdf` function and maps its richer output – this endpoint is
@@ -45,6 +46,7 @@ Regeln:
 - Keine Markdown-Sterne, keine Emojis, keine Anführungszeichen um Werte.`;
 
 Deno.serve(async (req) => {
+  { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   const pre = handleCors(req);
   if (pre) return pre;
   if (req.method !== "POST") return errorResponse("method not allowed", 405);
