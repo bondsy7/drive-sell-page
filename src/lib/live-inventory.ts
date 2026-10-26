@@ -72,7 +72,7 @@ export function liveVehicleHref(v: LiveVehicle, design?: LiveVehicleCardDesign, 
 }
 
 export const jacobsTitleLabel = (v: LiveVehicle) => v.variant ? `${v.brand || ''} ${v.variant}`.trim() : liveTitleLabel(v);
-export const jacobsPriceLabel = (v: LiveVehicle) => v.priceEur != null ? `${v.priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : 'Preis auf Anfrage';
+export const jacobsPriceLabel = (v: LiveVehicle) => v.priceEur != null ? `${v.priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€` : 'Preis auf Anfrage';
 
 /** Same example financing the Jacobs website plugin uses when Auto3 delivers no rate:
  *  20 % down payment, 48 months, 40 % final installment, 5.99 % p.a. */
@@ -141,7 +141,7 @@ export function resolveLiveVehicles(items: LiveVehicle[], c: LiveInventoryConfig
 /* ─── formatting (identical in editor preview and exported HTML) ─── */
 
 export const livePriceLabel = (v: LiveVehicle) =>
-  v.priceEur ? `${v.priceEur.toLocaleString('de-DE')} €` : 'Preis auf Anfrage';
+  v.priceEur ? `${v.priceEur.toLocaleString('de-DE')}\u00A0€` : 'Preis auf Anfrage';
 
 export const liveTitleLabel = (v: LiveVehicle) => [v.brand, v.model].filter(Boolean).join(' ') || 'Fahrzeug';
 

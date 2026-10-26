@@ -33,7 +33,7 @@ export function parseInterestRate(str: string): number {
  */
 export function formatPrice(num: number): string {
   if (num <= 0) return '';
-  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '\u00A0€';
 }
 
 /**
