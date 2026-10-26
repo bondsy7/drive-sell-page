@@ -136,7 +136,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
-  
+  if (isBlockedAccount(user.email)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-foreground">Zugang gesperrt</h2>
+            <p className="text-sm text-muted-foreground">
+              Der Zugriff auf dein Konto ist aus Sicherheitsgründen gesperrt. Wenn du einen Zugang benötigst, kontaktiere uns bitte unter{' '}
+              <a href="mailto:info@breadcrumb.de" className="text-accent underline">info@breadcrumb.de</a>.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-foreground">Access blocked</h2>
+            <p className="text-sm text-muted-foreground">
+              Access to your account has been blocked for security reasons. If you need access, please contact us at{' '}
+              <a href="mailto:info@breadcrumb.de" className="text-accent underline">info@breadcrumb.de</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Check email verification
   const emailVerified = user.email_confirmed_at || user.user_metadata?.email_verified;
   if (!emailVerified) {
