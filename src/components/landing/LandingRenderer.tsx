@@ -153,7 +153,9 @@ type DragCtx = {
 
 /** Drag-and-drop wrapper: handle centred on the top edge, drop indicator before/after the hovered section. */
 const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: React.ReactNode }> = ({ id, drag, children }) => {
+  const [hovered, setHovered] = useState(false);
   if (!drag) return <>{children}</>;
+  const showHandle = hovered || drag.dragging === id;
   const posFor = (e: React.DragEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     return e.clientY < r.top + r.height / 2 ? 'before' : 'after';
@@ -164,6 +166,8 @@ const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: Re
     <div
       className="lp-sortable"
       style={{ position: 'relative', opacity: drag.dragging === id ? 0.45 : 1 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onDragOver={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.hover(id, posFor(e)); }}
       onDrop={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.drop(id, posFor(e)); }}
     >
@@ -176,7 +180,7 @@ const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: Re
         aria-label="Abschnitt verschieben"
         onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); drag.start(id); }}
         onDragEnd={drag.end}
-        style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 24, borderRadius: 999, border: 'none', background: 'rgba(15,23,42,0.88)', color: '#fff', cursor: 'grab', boxShadow: '0 2px 8px rgba(0,0,0,.25)' }}
+        style={{ position: 'absolute', top: 10, left: '50%', opacity: showHandle ? 1 : 0, pointerEvents: showHandle ? 'auto' : 'none', transition: 'opacity 140ms ease', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 24, borderRadius: 999, border: 'none', background: 'rgba(15,23,42,0.88)', color: '#fff', cursor: 'grab', boxShadow: '0 2px 8px rgba(0,0,0,.25)' }}
       >
         <GripHorizontal size={16} />
       </button>
