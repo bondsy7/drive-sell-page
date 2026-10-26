@@ -2902,6 +2902,21 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_notifications: {
+        Row: {
+          notified_at: string
+          user_id: string
+        }
+        Insert: {
+          notified_at?: string
+          user_id: string
+        }
+        Update: {
+          notified_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_publications: {
         Row: {
           banner_name: string | null

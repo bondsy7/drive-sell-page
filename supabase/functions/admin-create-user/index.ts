@@ -52,6 +52,7 @@ serve(async (req) => {
       email,
       password,
       email_confirm: true,
+      app_metadata: { created_by_admin: true },
     });
     if (createError) throw createError;
     const userId = created.user!.id;
