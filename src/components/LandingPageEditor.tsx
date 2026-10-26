@@ -539,7 +539,6 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           className="rounded-2xl border border-border overflow-hidden bg-white shadow-sm transition-all duration-200 w-full"
           style={{ maxWidth: canvasWidth }}
         >
-          {viewMode === 'edit' ? (
             <LandingRenderer
               content={content}
               images={images}
@@ -547,7 +546,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               brand={brand}
               model={model}
               brandLogoUrl={brandLogoUrl}
-              editable
+              editable={viewMode === 'edit'}
               onUpdateHero={updateHero}
               onUpdateSection={updateSection}
               onReplaceImage={(id) => { pendingInsert.current = null; setImageDialogSection(id); }}
@@ -573,7 +572,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               })}
               onDeleteElement={deleteElement}
               onResizeLogo={(id, height) => setContent(previous => ({ ...previous, logoSizes: { ...previous.logoSizes, [id]: height } }))}
-              frameEditing={viewport === 'desktop'}
+              frameEditing={viewMode === 'edit' && viewport === 'desktop'}
               onFrameChange={(imageId, frame) => setContent(previous => {
                 const next = { ...(previous.imageFrames || {}) };
                 if (frame) next[imageId] = frame; else delete next[imageId];
@@ -585,14 +584,6 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 ? { config: liveInventory, vehicles: liveVehicles, inventoryUrl: liveUrl, loading: liveLoading, error: liveError }
                 : null}
             />
-          ) : (
-            <iframe
-              srcDoc={html}
-              className="w-full border-0"
-              style={{ minHeight: '85vh' }}
-              title="Landing Page Vorschau"
-            />
-          )}
         </div>
       </div>
 
