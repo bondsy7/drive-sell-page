@@ -77,6 +77,11 @@
 /* Colour-only inline rows (nested inside a button) float below the element so they
    never collide with the outer delete pill above. */
 .lp-root .lp-element-inline.lp-color-only > .lp-controls-row { top: calc(100% + 16px); }
+/* Full-width section wrappers overlay their controls inside the section: no
+   reserved padding strip (would render as a white block between sections). */
+.lp-element-box.lp-element-cover { padding-top: 0; }
+.lp-element-box.lp-element-cover.lp-has-color { padding-top: 0; }
+.lp-root .lp-element-cover > .lp-element-delete { top: 12px; }
 .lp-root .lp-element-inline > .lp-controls-row {
   position: absolute; top: -38px; right: 0; z-index: 36;
   display: flex; align-items: flex-start; gap: 6px;

@@ -12,8 +12,8 @@ export function ElementDeleteButton({ onDelete, label = 'Element löschen' }: { 
   </Button>;
 }
 
-export default function LandingElementBox({ children, editable, onDelete, hidden = false, inline = false, label, colorControl }: {
-  children: ReactNode; editable: boolean; onDelete?: () => void; hidden?: boolean; inline?: boolean; label?: string; colorControl?: ReactNode;
+export default function LandingElementBox({ children, editable, onDelete, hidden = false, inline = false, cover = false, label, colorControl }: {
+  children: ReactNode; editable: boolean; onDelete?: () => void; hidden?: boolean; inline?: boolean; cover?: boolean; label?: string; colorControl?: ReactNode;
 }) {
   if (hidden) return null;
   if (!editable || (!onDelete && !colorControl)) return <>{children}</>;
@@ -33,7 +33,10 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
       )}
     </Tag>;
   }
-  return <Tag className={`lp-element-box${colorControl ? ' lp-has-color' : ''}`}>
+  // Cover boxes (full-width sections) overlay their controls inside the section
+  // instead of reserving space above it – a transparent padding strip would show
+  // the page background as a white block between sections.
+  return <Tag className={`lp-element-box${cover ? ' lp-element-cover' : ''}${colorControl ? ' lp-has-color' : ''}`}>
     {children}
     {colorControl}
     {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
