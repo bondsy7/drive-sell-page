@@ -42,6 +42,9 @@ import { checkV3Preflight } from '@/lib/nb21-v3-preflight';
 import { createV3LightingProfile, type V3LightingProfile } from '@/prompts/nb21/v3';
 import type { Nb21PromptVersion } from '@/lib/nb21-version-dispatch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import GenerationPresetControls from '@/components/GenerationPresetControls';
+import { useGenerationPreferences } from '@/hooks/useGenerationPreferences';
+import { restorePipelineSelection } from '@/lib/generation-preferences';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -57,6 +60,7 @@ interface PipelineRunnerProps {
   vehicleDescription: string;
   vehicleBrand?: string;
   remasterConfig: RemasterConfig;
+  onRemasterConfigChange?: (config: RemasterConfig) => void;
   /** Verbindlicher Fahrzeugklassen-Kontext (fehlt => 'car'). */
   classContext?: VehicleClassContext | null;
   modelTier?: string;
@@ -83,6 +87,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   vehicleDescription,
   vehicleBrand,
   remasterConfig,
+  onRemasterConfigChange,
   classContext,
   modelTier = 'premium',
   projectId,
@@ -96,6 +101,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const { balance, getCost } = useCredits();
   const pipeline = usePipeline();
   const queryClient = useQueryClient();
+  const preferences = useGenerationPreferences();
+  const preferenceScope = classContext?.vehicleClass || 'car';
+  const selectionLoaded = useRef('');
+  const [selectionReady, setSelectionReady] = useState(false);
 
   const workflowKey = useMemo(() => createPipelineWorkflowKey({
     projectId,
@@ -194,6 +203,22 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     () => new Set(PIPELINE_CATEGORIES.map(c => c.key))
   );
 
+  useEffect(() => {
+    if (isContextActive || !preferences.isSuccess || !user) return;
+    const key = `${user.id}:${preferenceScope}`;
+    if (selectionLoaded.current === key) return;
+    const saved = preferences.data?.find(p => p.preference_key === `last:pipeline:${preferenceScope}`);
+    setSelectedKeys(restorePipelineSelection(saved?.settings.selectedKeys, localAvailableJobs));
+    selectionLoaded.current = key;
+    setSelectionReady(true);
+  }, [preferences.isSuccess, preferences.data, user?.id, preferenceScope, isContextActive, localAvailableJobs]);
+
+  const saveSelection = (next: Set<string>) => {
+    if (!selectionReady || isContextActive) return;
+    preferences.save(`last:pipeline:${preferenceScope}`, { selectedKeys: [...next], scope: preferenceScope })
+      .catch(() => toast.error('Pipeline-Auswahl konnte nicht gespeichert werden.'));
+  };
+
   // Sync selectedKeys when context is active
   useEffect(() => {
     if (isContextActive && pipeline.config) {
@@ -204,6 +229,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   // Re-sync selection on brand change (only when not context-active)
   useEffect(() => {
     if (isContextActive) return;
+    const stored = preferences.data?.find(p => p.preference_key === `last:pipeline:${preferenceScope}`)?.settings.selectedKeys;
+    if (stored !== undefined) {
+      setSelectedKeys(restorePipelineSelection(stored, localAvailableJobs));
+      return;
+    }
     setSelectedKeys(prev => {
       const next = new Set(prev);
       localAvailableJobs.forEach(j => {
@@ -214,7 +244,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       });
       return next;
     });
-  }, [detectedBrand, localAvailableJobs, isContextActive, classPipelineJobs]);
+  }, [detectedBrand, localAvailableJobs, isContextActive, classPipelineJobs, preferences.data, preferenceScope]);
 
   /* ─── Manufacturer logo resolution ─── */
   const [resolvedManufacturerLogoUrl, setResolvedManufacturerLogoUrl] = useState<string | null>(null);
@@ -260,21 +290,19 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   /* ─── Selection helpers ─── */
   const toggleJob = (key: string) => {
-    setSelectedKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
+    const next = new Set(selectedKeys);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setSelectedKeys(next);
+    saveSelection(next);
   };
 
   const toggleCategory = (catKey: string) => {
     const catJobs = availableJobs.filter(j => j.category === catKey);
     const allSelected = catJobs.every(j => selectedKeys.has(j.key));
-    setSelectedKeys(prev => {
-      const next = new Set(prev);
-      catJobs.forEach(j => { if (allSelected) next.delete(j.key); else next.add(j.key); });
-      return next;
-    });
+    const next = new Set(selectedKeys);
+    catJobs.forEach(j => { if (allSelected) next.delete(j.key); else next.add(j.key); });
+    setSelectedKeys(next);
+    saveSelection(next);
   };
 
   const toggleCategoryExpand = (catKey: string) => {
@@ -593,6 +621,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       </div>
 
       {/* Job Selection */}
+      {onRemasterConfigChange && <GenerationPresetControls config={remasterConfig} scope={preferenceScope} selectedKeys={[...selectedKeys]} disabled={isContextActive || !selectionReady} onApply={(config, keys) => {
+        onRemasterConfigChange(config);
+        if (keys) setSelectedKeys(restorePipelineSelection(keys, localAvailableJobs));
+      }} />}
       {modelTier === 'nb21' && !isContextActive && <Select value={selectedVersion} onValueChange={value => setTestVersion(value as Nb21PromptVersion)}>
         <SelectTrigger aria-label="Nano Banana 2.1 Promptversion"><SelectValue /></SelectTrigger>
         <SelectContent><SelectItem value="nb21-v1">NB 2.1 · V1 (historisch)</SelectItem><SelectItem value="nb21-v2">NB 2.1 · V2</SelectItem><SelectItem value="nb21-v3">NB 2.1 · V3 (Test)</SelectItem></SelectContent>
@@ -834,7 +866,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         results={referenceCheck}
         sources={assignedEvidence}
         onAssign={(sourceId, role) => setDetailAssignments(previous => ({ ...previous, [sourceId]: role }))}
-        onSkip={key => setSelectedKeys(previous => { const next = new Set(previous); next.delete(key); return next; })}
+        onSkip={key => { const next = new Set(selectedKeys); next.delete(key); setSelectedKeys(next); saveSelection(next); }}
       />}
 
       {/* Actions */}

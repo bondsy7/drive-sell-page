@@ -1,3 +1,8 @@
+## Gespeicherte Foto- und Pipeline-Einstellungen (26.10.2026)
+- [x] Letzte Foto-Einstellungen, Qualitätsauswahl und Pipeline-Ausgaben nutzerbezogen speichern und beim nächsten Start laden.
+- [x] Benannte Vorlagen für Standorte/Aktionen anlegen, aktualisieren, erneut laden und löschen; vorhandene Generierung und Automatik-Freigaben unverändert.
+- [x] Foto-Auswahl nach Neuladen und Vorlagenwiederherstellung in angemeldeter Ansicht geprüft; Pipeline-Wiederherstellung und Nutzertrennung durch Tests geprüft. Keine kostenpflichtige Generierung gestartet; Testvorlagen entfernt.
+
 ## Landingpage-Kontaktformular (23.10.2026)
 - [x] Kontaktformular gemäß Bestandswebsite-Screenshot in Editor und HTML gestaltet; Pflichtfelder, Datenschutzbestätigung und simulierten Versand auf Pauls KIA-Seite geprüft, 9 Tests und Vorschau fehlerfrei; keine echte E-Mail und keine Veröffentlichung. Anrufen nur bei hinterlegter Telefonnummer; Website-Datenschutzlink nutzt vorläufig /datenschutz/.
 
