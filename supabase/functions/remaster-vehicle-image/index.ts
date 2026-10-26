@@ -1702,25 +1702,61 @@ REPRODUCTION RULES (ZERO DEVIATION):
       : (lastError || "Kein Bild generiert. Bitte versuche es erneut."));
 
     // ── Vehicle Fidelity Check (Shadow Mode) ──
-    // Ersetzt den früheren reinen Felgen-Check. Läuft im Hintergrund, nur Protokoll:
-    // keine Korrektur, kein Nutzerhinweis, blockiert die Auslieferung nicht.
+    // Läuft im Hintergrund, nur Protokoll: keine Korrektur, kein Nutzerhinweis,
+    // blockiert die Auslieferung nicht. Gilt für alle Generierungswege inkl. NB21 V2/V3.
     const wheelCheck: { match: boolean; reason?: string } | null = null;
-    const mainRefPart = mainImageFileUri?.uri
+    let mainRefPart = mainImageFileUri?.uri
       ? { file_data: { mime_type: mainImageFileUri.mimeType || 'image/jpeg', file_uri: mainImageFileUri.uri } }
       : (typeof imageBase64 === 'string' && imageBase64 ? toInlineData(imageBase64) : null);
-    if (GEMINI_API_KEY && mainRefPart && !isNb21V2 && !isNb21V3) {
+    let mainRefLabel = mainImageRole || 'primary vehicle reference';
+    // Kandidaten: ausschließlich bereits im Request vorhandene Referenzen (keine neuen Uploads).
+    const fidelityCandidates: { role: string; part: any }[] = [];
+    if (isEvidenceRequest) {
+      // NB21 V2/V3: Referenzen liegen im Wire-Manifest. Nur Fahrzeug-Originale und
+      // die Felgenreferenz – keine Logos, Kennzeichen oder Szenen-Assets.
+      const wireRefs = ((isNb21V3 ? v3References : v2References) ?? []) as V2WireReference[];
+      const vehicleRefs = wireRefs.filter((r) => r.sourceType === 'original' || r.sourceRole === 'wheel');
+      const toRefPart = (r: V2WireReference) => r.fileUri?.uri
+        ? { file_data: { mime_type: r.fileUri.mimeType || 'image/jpeg', file_uri: r.fileUri.uri } }
+        : (r.imageBase64 ? toInlineData(r.imageBase64) : null);
+      const primary = vehicleRefs.find((r) => r.sourceType === 'original');
+      if (!mainRefPart && primary) {
+        const p = toRefPart(primary);
+        if (p) { mainRefPart = p; mainRefLabel = `${primary.role} (${primary.sourceRole})`; }
+      }
+      for (const r of vehicleRefs) {
+        if (r === primary) continue;
+        const p = toRefPart(r);
+        if (p) fidelityCandidates.push({ role: `${r.role} (${r.sourceRole})`, part: p });
+      }
+    } else {
+      if (Array.isArray(additionalFileUris)) {
+        for (let i = 0; i < additionalFileUris.length; i++) {
+          const fu = additionalFileUris[i];
+          if (fu?.uri) fidelityCandidates.push({ role: additionalFileUriRoles?.[i] || 'supporting detail', part: { file_data: { mime_type: fu.mimeType || 'image/jpeg', file_uri: fu.uri } } });
+        }
+      }
+      if (Array.isArray(additionalImages)) {
+        for (let i = 0; i < additionalImages.length; i++) {
+          const img = additionalImages[i];
+          if (typeof img === 'string' && img) fidelityCandidates.push({ role: additionalImageRoles?.[i] || 'supporting detail', part: toInlineData(img) });
+        }
+      }
+      // Bestehende Felgenreferenz-Logik: bleibt die eigene Felgenquelle für Außenansichten.
+      if (hasWheelReference && (wheelReferenceFileUri?.uri || wheelReferenceBase64)) {
+        fidelityCandidates.push({ role: 'wheel reference', part: wheelReferenceFileUri?.uri
+          ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
+          : toInlineData(wheelReferenceBase64) });
+      }
+    }
+    if (shouldRunFidelityCheck({ hasValidatorKey: !!GEMINI_API_KEY, hasMainReference: !!mainRefPart })) {
       const bgCheck = (async () => {
       const t0 = Date.now();
       try {
-        const isInteriorTarget = /interior|innenraum|cockpit|dashboard|sitz/i.test(`${mainImageRole ?? ''} ${galleryTarget?.slotKey ?? ''}`);
-        const refs: any[] = [mainRefPart];
-        const labels = [mainImageRole || 'primary vehicle reference'];
-        if (hasWheelReference && !isInteriorTarget) {
-          refs.push(wheelReferenceFileUri?.uri
-            ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
-            : toInlineData(wheelReferenceBase64));
-          labels.push('wheel reference');
-        }
+        const targetHint = `${mainImageRole ?? ''} ${galleryTarget?.slotKey ?? ''} ${referenceManifest?.target ?? ''} ${referenceManifest?.jobKey ?? ''}`;
+        const selected = selectFidelityReferences({ targetHint, candidates: fidelityCandidates, maxExtras: 2 });
+        const refs: any[] = [mainRefPart, ...selected.map((s) => s.part)];
+        const labels = [mainRefLabel, ...selected.map((s) => s.role)];
         const allowed = ['license plate content', 'dealer/wall branding and showroom background'];
         const checkRes = await fetch(
           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
