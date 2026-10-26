@@ -392,7 +392,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const liveAt = liveInsertIndex(content);
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
-      <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
+      <LandingElementBox editable={editable} cover onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
         <LiveVehicleShowcase
           config={liveInventory.config}
           vehicles={liveInventory.vehicles}
@@ -714,7 +714,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       {liveAt >= sections.length && liveNode}
 
       {/* Contact */}
-      <LandingElementBox editable={editable} hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
+      <LandingElementBox editable={editable} cover hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
       <section
         id="kontakt"
         style={{
