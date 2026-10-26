@@ -27,6 +27,7 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
 }) => {
   const [index, setIndex] = useState(initialIndex);
   const [downloading, setDownloading] = useState(false);
+  const [view, setView] = useState<'original' | 'remastered'>('remastered');
   const goPrev = () => setIndex(i => Math.max(i - 1, 0));
   const goNext = () => setIndex(i => Math.min(i + 1, images.length - 1));
   const swipeHandlers = useSwipeNavigation({
@@ -36,6 +37,7 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
   });
 
   useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
+  useEffect(() => { setView('remastered'); }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -52,12 +54,15 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
   if (!open || !current) return null;
 
   const isRegenerating = regeneratingIds?.has(current.id) ?? false;
+  const showingOriginal = view === 'original' && !!current.originalSrc;
+  const displayedSrc = showingOriginal ? current.originalSrc : current.src;
 
   const download = async () => {
     if (downloading) return;
     setDownloading(true);
     try {
-      await downloadMediaFile(current.src, current.label || 'fahrzeugbild');
+      if (!displayedSrc) return;
+      await downloadMediaFile(displayedSrc, `${current.label || 'fahrzeugbild'}${showingOriginal ? '-original' : ''}`);
     } catch {
       toast.error('Das Bild konnte nicht heruntergeladen werden. Bitte erneut versuchen.');
     } finally {
@@ -126,8 +131,8 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
         {/* Image */}
         <div className="relative">
           <img
-            src={current.src}
-            alt={current.label || 'Vorschau'}
+            src={displayedSrc}
+            alt={`${current.label || 'Vorschau'}${current.originalSrc ? (showingOriginal ? ' – Original' : ' – Remastered') : ''}`}
             className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
             {...swipeHandlers}
           />
@@ -148,14 +153,26 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
         {/* Comparison: original vs remastered */}
         {current.originalSrc && (
           <div className="flex gap-4 mt-3 items-end">
-            <div className="text-center">
+            <Button
+              variant="ghost"
+              aria-label="Original anzeigen"
+              aria-pressed={showingOriginal}
+              onClick={() => setView('original')}
+              className="h-auto p-1 flex-col hover:bg-background/10"
+            >
               <p className="text-[10px] text-background/50 mb-1">Original</p>
-              <img src={current.originalSrc} alt="Original" className="w-24 h-18 object-cover rounded-lg border border-background/20" />
-            </div>
-            <div className="text-center">
+              <img src={current.originalSrc} alt="Original" className={`w-24 h-[72px] object-cover rounded-lg border-2 ${showingOriginal ? 'border-accent' : 'border-background/20'}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              aria-label="Remastered anzeigen"
+              aria-pressed={!showingOriginal}
+              onClick={() => setView('remastered')}
+              className="h-auto p-1 flex-col hover:bg-background/10"
+            >
               <p className="text-[10px] text-background/50 mb-1">Remastered</p>
-              <img src={current.src} alt="Remastered" className="w-24 h-18 object-cover rounded-lg border border-accent" />
-            </div>
+              <img src={current.src} alt="Remastered" className={`w-24 h-[72px] object-cover rounded-lg border-2 ${!showingOriginal ? 'border-accent' : 'border-background/20'}`} />
+            </Button>
           </div>
         )}
 
