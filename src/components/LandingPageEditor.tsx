@@ -687,6 +687,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <p className="text-xs text-muted-foreground">
             Die Auswahl wird automatisch gespeichert und erscheint auf der Seite direkt vor dem Kontaktbereich.
           </p>
+          <Button className="w-full" onClick={() => setLiveDialogOpen(false)}>
+            Bestätigen
+          </Button>
         </DialogContent>
       </Dialog>
 
