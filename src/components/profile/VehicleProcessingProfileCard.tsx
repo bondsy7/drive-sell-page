@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
+import { SCENE_OPTIONS, LICENSE_PLATE_OPTIONS, canUseDekraScene } from '@/lib/remaster-prompt';
 import { ONESHOT_BANNER_FORMATS, type BannerFormatId } from '@/components/oneshot/oneshot-types';
 import { useProcessingProfile } from '@/hooks/useProcessingProfile';
 import {
@@ -117,7 +117,7 @@ export default function VehicleProcessingProfileCard({ embedded = false }: { emb
             <Button type="button" size="sm" variant="outline" onClick={() => { setName(AUTO_SCHMITT_STANDARD_NAME); setS(AUTO_SCHMITT_STANDARD); }}>Standard „Auto Schmitt“ einsetzen</Button>
             <label className="block text-xs font-medium">Profilname<Input className="mt-1 h-8" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} /></label>
             <div className="grid gap-3 sm:grid-cols-3">
-              <label className="text-xs font-medium">Hintergrund / Showroom<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.scene} onChange={(e) => set('scene', e.target.value)}>{SCENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+              <label className="text-xs font-medium">Hintergrund / Showroom<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.scene} onChange={(e) => set('scene', e.target.value)}>{SCENES.filter((o) => o.value !== 'dealer-lot-dekra' || canUseDekraScene(user?.email)).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
               <label className="text-xs font-medium">Kennzeichen<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.licensePlate} onChange={(e) => set('licensePlate', e.target.value as ProcessingSettings['licensePlate'])}>{PLATES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
               <label className="text-xs font-medium">Qualitätsstufe<select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={s.modelTier} onChange={(e) => set('modelTier', e.target.value as ProcessingSettings['modelTier'])}>{MODEL_TIER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
             </div>

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   type RemasterConfig,
   SCENE_OPTIONS,
+  getSceneOptionsForUser,
   LICENSE_PLATE_OPTIONS,
   CLEANUP_OPTIONS,
   fetchManufacturerLogos,
@@ -293,7 +294,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       <div className="min-w-0 space-y-2 rounded-lg border border-border bg-card p-3">
         <Label className="text-xs font-semibold text-foreground">Showroom / Setting <span className="text-destructive">*</span></Label>
         <SceneGallery
-          options={SCENE_OPTIONS as unknown as SceneTileOption[]}
+          options={getSceneOptionsForUser(user?.email) as unknown as SceneTileOption[]}
           value={config.scene}
           onChange={(v) => update({ scene: v })}
         />
