@@ -686,7 +686,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       </LandingElementBox>
 
       {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && !liveInventory.loading && (
-        <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} />
+        <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} title={liveInventory.config.financeTitle} />
       )}
 
     </div>

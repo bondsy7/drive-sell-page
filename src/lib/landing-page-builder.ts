@@ -413,7 +413,7 @@ ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-
     </div>
   </section>`}
 
-  ${liveInventory && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config) })) : ''}
+  ${liveInventory && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config), title: liveInventory.config.financeTitle })) : ''}
 
 
   ${contactFormHTML}

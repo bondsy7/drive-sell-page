@@ -107,6 +107,8 @@ export interface LiveInventoryConfig {
   cardDesign?: LiveVehicleCardDesign;
   /** Lender named in the § 17 PAngV footnotes when Auto3 does not deliver one. */
   financeBank?: string;
+  /** Heading above the finance footnotes; empty = default wording. */
+  financeTitle?: string;
 }
 
 export const DEFAULT_LIVE_INVENTORY: LiveInventoryConfig = {
