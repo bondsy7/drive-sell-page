@@ -26,6 +26,7 @@ import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import SceneGallery, { type SceneTileOption } from '@/components/capture/SceneGallery';
 import OptionCards, { type CardOption } from '@/components/capture/OptionCards';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
+import { useRememberRemasterConfig } from '@/hooks/useGenerationPreferences';
 
 interface RemasterOptionsProps {
   config: RemasterConfig;
@@ -44,6 +45,7 @@ interface RemasterOptionsProps {
 
 const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleClass, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
+  const { ready } = useRememberRemasterConfig(config, onChange);
   const { disabledModules } = useModuleAccess();
   const cleanupAllowed = !disabledModules.has('remaster-cleanup');
   // Saved/legacy DEKRA scene must not be used by non-DEKRA accounts.
@@ -292,6 +294,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
     return null;
   };
+
+  if (!ready) return <p className="text-xs text-muted-foreground">Einstellungen werden geladen…</p>;
 
   return (
     <div className="space-y-4">
