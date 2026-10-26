@@ -45,6 +45,12 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const { user } = useAuth();
   const { disabledModules } = useModuleAccess();
   const cleanupAllowed = !disabledModules.has('remaster-cleanup');
+  // Saved/legacy DEKRA scene must not be used by non-DEKRA accounts.
+  useEffect(() => {
+    if (user && config.scene === 'dealer-lot-dekra' && !canUseDekraScene(user.email)) {
+      onChange({ ...config, scene: 'dealer-lot' as RemasterConfig['scene'] });
+    }
+  }, [user, config, onChange]);
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
   const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
