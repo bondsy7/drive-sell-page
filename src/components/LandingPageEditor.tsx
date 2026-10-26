@@ -409,23 +409,29 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     <div className="flex flex-col h-full min-h-screen bg-muted/30">
       {/* Toolbar */}
       <div className="sticky top-0 z-30 flex items-center justify-between gap-3 flex-wrap px-4 py-3 border-b bg-background/95 backdrop-blur">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={onBack} className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Zurück
           </Button>
           <div className="flex items-center bg-muted rounded-lg p-0.5">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={viewMode === 'edit'}
               onClick={() => setViewMode('edit')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'edit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`w-28 gap-1.5 text-xs ${viewMode === 'edit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Pencil className="w-3.5 h-3.5" /> Bearbeiten
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={viewMode === 'preview'}
               onClick={() => setViewMode('preview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`w-28 gap-1.5 text-xs ${viewMode === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Eye className="w-3.5 h-3.5" /> Vorschau
-            </button>
+            </Button>
           </div>
 
           <div className="hidden sm:flex items-center bg-muted rounded-lg p-0.5 ml-1">
@@ -439,14 +445,10 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               <Smartphone className="w-3.5 h-3.5" />
             </button>
           </div>
-          <Button variant="outline" size="icon" onClick={undo} disabled={!canUndo} title="Letzte Änderung rückgängig machen" aria-label="Letzte Änderung rückgängig machen">
-            <Undo2 className="w-4 h-4" />
+          <Button variant="outline" size="sm" className="w-28 gap-1.5 text-xs" onClick={undo} disabled={!canUndo} title="Letzte Änderung rückgängig machen" aria-label="Letzte Änderung rückgängig machen">
+            <Undo2 className="w-4 h-4" /> Rückgängig
           </Button>
-          {projectId && <LandingStatusSelect projectId={projectId} />}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground mr-2">
+          <div className="hidden md:flex h-9 items-center gap-2 text-xs text-muted-foreground ml-1">
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Kontaktformular</span>
             <Switch checked={contactFormEnabled} onCheckedChange={setContactFormEnabled} />
@@ -456,6 +458,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               </Button>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -470,6 +475,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <Button size="sm" variant="outline" onClick={() => setLiveDialogOpen(true)} className="gap-2" title="Fahrzeuge aus dem Live-Bestand in die Seite einblenden">
             <Car className="w-4 h-4" /> Live-Fahrzeuge
           </Button>
+          {projectId && <LandingStatusSelect projectId={projectId} />}
           <Button size="sm" onClick={handleExport} className="gap-2">
             <Download className="w-4 h-4" /> HTML herunterladen
           </Button>
