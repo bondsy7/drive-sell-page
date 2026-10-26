@@ -106,6 +106,13 @@
       "when": 1792482234807,
       "tag": "0014_nb21_v2_result_version_and_reference_telemetry",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793024865958,
+      "tag": "0015_generation_preferences",
+      "breakpoints": true
     }
   ]
 }

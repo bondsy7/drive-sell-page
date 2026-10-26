@@ -1166,6 +1166,38 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_preferences: {
+        Row: {
+          name: string | null
+          preference_key: string
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          name?: string | null
+          preference_key: string
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          name?: string | null
+          preference_key?: string
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       image_generation_jobs: {
         Row: {
           completed_tasks: number
