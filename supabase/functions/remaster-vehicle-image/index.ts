@@ -13,7 +13,7 @@ import { enforceV2SubjectClassLock } from "../_shared/nb21-v2-class.ts";
 import { resolveRemasterCost } from "../_shared/remaster-cost.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { validateGalleryTarget, verifyGalleryOwnership, persistRemasterGallery } from "../_shared/remaster-gallery.ts";
-import { buildFidelityPrompt, parseFindings, decideFidelity, buildCorrections, sha256Hex, FIDELITY_PROMPT_VERSION } from "../_shared/fidelity-check.ts";
+import { buildFidelityPrompt, parseFindings, decideFidelity, buildCorrections, sha256Hex, FIDELITY_PROMPT_VERSION, selectFidelityReferences, shouldRunFidelityCheck, isCriticalAttribute } from "../_shared/fidelity-check.ts";
 
 
 
