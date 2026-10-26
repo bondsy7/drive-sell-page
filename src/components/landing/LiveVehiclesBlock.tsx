@@ -204,6 +204,11 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Überschrift der Finanzierungsbeispiele</label>
+                <Input placeholder="Finanzierungsbeispiele gem. § 17 PAngV" value={value.financeTitle ?? ''} maxLength={160} onChange={e => set({ financeTitle: e.target.value })} disabled={disabled} />
+              </div>
+
               {gaps.length > 0 && (
                 <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground space-y-1.5">
                   <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle className="w-3.5 h-3.5" />Bei {gaps.length} Fahrzeug{gaps.length === 1 ? '' : 'en'} wird die Monatsrate nicht angezeigt</p>
