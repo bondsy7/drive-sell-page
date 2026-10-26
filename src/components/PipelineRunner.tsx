@@ -229,6 +229,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   // Re-sync selection on brand change (only when not context-active)
   useEffect(() => {
     if (isContextActive) return;
+    const stored = preferences.data?.find(p => p.preference_key === `last:pipeline:${preferenceScope}`)?.settings.selectedKeys;
+    if (stored !== undefined) {
+      setSelectedKeys(restorePipelineSelection(stored, localAvailableJobs));
+      return;
+    }
     setSelectedKeys(prev => {
       const next = new Set(prev);
       localAvailableJobs.forEach(j => {
@@ -239,7 +244,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       });
       return next;
     });
-  }, [detectedBrand, localAvailableJobs, isContextActive, classPipelineJobs]);
+  }, [detectedBrand, localAvailableJobs, isContextActive, classPipelineJobs, preferences.data, preferenceScope]);
 
   /* ─── Manufacturer logo resolution ─── */
   const [resolvedManufacturerLogoUrl, setResolvedManufacturerLogoUrl] = useState<string | null>(null);
@@ -861,7 +866,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         results={referenceCheck}
         sources={assignedEvidence}
         onAssign={(sourceId, role) => setDetailAssignments(previous => ({ ...previous, [sourceId]: role }))}
-        onSkip={key => setSelectedKeys(previous => { const next = new Set(previous); next.delete(key); return next; })}
+        onSkip={key => { const next = new Set(selectedKeys); next.delete(key); setSelectedKeys(next); saveSelection(next); }}
       />}
 
       {/* Actions */}

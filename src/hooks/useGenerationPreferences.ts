@@ -43,15 +43,16 @@ export function useGenerationPreferences() {
   return { ...query, user, save, remove };
 }
 
-export function useRememberRemasterConfig(config: RemasterConfig, onChange: (config: RemasterConfig) => void) {
+export function useRememberRemasterConfig(config: RemasterConfig, onChange: (config: RemasterConfig) => void, enabled = true) {
   const prefs = useGenerationPreferences();
   const [ready, setReady] = useState(false);
   const loaded = useRef<string>();
   const last = useRef('');
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   const current = useRef({ config, onChange });
   current.current = { config, onChange };
   useEffect(() => {
-    if (!prefs.user || !prefs.isSuccess || loaded.current === prefs.user.id) return;
+    if (!enabled || !prefs.user || !prefs.isSuccess || loaded.current === prefs.user.id) return;
     let cancelled = false;
     const id = prefs.user.id;
     const record = prefs.data?.find(p => p.preference_key === 'last:remaster');
@@ -66,16 +67,16 @@ export function useRememberRemasterConfig(config: RemasterConfig, onChange: (con
       } catch { toast.error('Gespeicherte Einstellungen konnten nicht geladen werden.'); }
     })();
     return () => { cancelled = true; };
-  }, [prefs.user?.id, prefs.isSuccess, prefs.data]);
+  }, [enabled, prefs.user?.id, prefs.isSuccess, prefs.data]);
   useEffect(() => {
-    if (!ready || loaded.current !== prefs.user?.id || !prefs.user) return;
+    if (!enabled || !ready || loaded.current !== prefs.user?.id || !prefs.user) return;
     const signature = JSON.stringify(config);
     if (signature === last.current) return;
     last.current = signature;
     const id = prefs.user.id;
     // Queue immediately: navigation cannot discard the last interaction.
-    serializeGenerationConfig(config, id).then(settings => prefs.save('last:remaster', settings))
+    saveQueue.current = saveQueue.current.catch(() => {}).then(() => serializeGenerationConfig(config, id)).then(settings => prefs.save('last:remaster', settings))
       .catch(() => toast.error('Einstellungen konnten nicht gespeichert werden.'));
-  }, [config, ready, prefs.user?.id, prefs.save]);
-  return { ...prefs, ready: ready && loaded.current === prefs.user?.id };
+  }, [enabled, config, ready, prefs.user?.id, prefs.save]);
+  return { ...prefs, ready: !enabled || (ready && loaded.current === prefs.user?.id) };
 }

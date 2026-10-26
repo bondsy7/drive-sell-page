@@ -24,6 +24,7 @@ import { useDetailPerspectiveAnalysis } from '@/hooks/useDetailPerspectiveAnalys
 import DetailPerspectiveAssignment from '@/components/DetailPerspectiveAssignment';
 import PipelineRunner from '@/components/PipelineRunner';
 import GenerationPresetControls from '@/components/GenerationPresetControls';
+import { useRememberRemasterConfig } from '@/hooks/useGenerationPreferences';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
@@ -322,6 +323,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
+  const { ready: preferencesReady } = useRememberRemasterConfig(remasterConfig, setRemasterConfig);
   const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
   const [brandEditOpen, setBrandEditOpen] = useState(false);
   const [detailImages, setDetailImages] = useState<string[]>([]);
@@ -1752,6 +1754,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 badgeOk={!!remasterConfig.scene}
               >
                 <RemasterOptions
+                  rememberSettings={false}
                   config={remasterConfig}
                   onChange={setRemasterConfig}
                   vehicleClass={activeClass}
@@ -1770,7 +1773,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     }
                   }}
                 />
-                <GenerationPresetControls config={remasterConfig} scope={activeClass} onApply={setRemasterConfig} disabled={isProcessing} />
+                <GenerationPresetControls config={remasterConfig} scope={activeClass} onApply={setRemasterConfig} disabled={isProcessing || !preferencesReady} />
               </CaptureSection>
               <BrandDialog open={brandEditOpen} onOpenChange={setBrandEditOpen}>
                 <BrandDialogContent className="max-w-md">

@@ -26,6 +26,10 @@ export async function serializeGenerationConfig(config: RemasterConfig, userId: 
     machineryTidyUp: config.machineryTidyUp,
   };
   const assets: Record<string, string> = {};
+  for (const field of ['dealerLogoUrl', 'manufacturerLogoUrl'] as const) {
+    const url = config[field];
+    if (url && !url.startsWith('data:')) saved[field] = url;
+  }
   for (const field of assetFields) {
     const value = config[field];
     if (!value) continue;
@@ -59,6 +63,8 @@ export async function restoreGenerationConfig(settings: GenerationSettings, emai
   for (const field of assetFields) {
     const url = settings.assets?.[field];
     if (url) config[field] = await ensureCachedBase64(url);
+    if (url && field === 'manufacturerLogoBase64' && !config.manufacturerLogoUrl) config.manufacturerLogoUrl = url;
+    if (url && field === 'dealerLogoBase64' && !config.dealerLogoUrl) config.dealerLogoUrl = url;
   }
   return config;
 }

@@ -29,6 +29,7 @@ import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { useRememberRemasterConfig } from '@/hooks/useGenerationPreferences';
 
 interface RemasterOptionsProps {
+  rememberSettings?: boolean;
   config: RemasterConfig;
   onChange: (config: RemasterConfig) => void;
   /** Aktive Fahrzeugklasse – steuert klassenspezifische Optionen (z. B. Baumaschinen). */
@@ -43,9 +44,9 @@ interface RemasterOptionsProps {
 
 // fileToBase64 imported from '@/lib/image-compress'
 
-const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleClass, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
+const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleClass, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle', rememberSettings = true }) => {
   const { user } = useAuth();
-  const { ready } = useRememberRemasterConfig(config, onChange);
+  const { ready } = useRememberRemasterConfig(config, onChange, rememberSettings);
   const { disabledModules } = useModuleAccess();
   const cleanupAllowed = !disabledModules.has('remaster-cleanup');
   // Saved/legacy DEKRA scene must not be used by non-DEKRA accounts.
@@ -98,7 +99,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           setProfileLogoUrl(logoUrl);
           const urlsToCache = [showroomUrl, logoUrl].filter(Boolean) as string[];
           if (urlsToCache.length) prewarmCache(urlsToCache);
-          if (logoUrl) {
+          if (logoUrl && !configRef.current.dealerLogoBase64) {
             const logoB64 = await ensureCachedBase64(logoUrl);
             onChange({ ...configRef.current, dealerLogoUrl: logoUrl, dealerLogoBase64: logoB64 });
           }
