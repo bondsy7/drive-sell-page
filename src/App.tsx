@@ -1,3 +1,4 @@
+import { isBlockedAccount } from "@/lib/blocked-accounts";
 import { lazy, Suspense } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
