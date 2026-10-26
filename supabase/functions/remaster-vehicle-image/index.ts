@@ -1748,7 +1748,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
           findings: findings.filter((f) => f.verdict !== 'match'), corrections: buildCorrections(findings), checkedAt: new Date().toISOString(),
         };
         await sb.from('generation_attempt_logs').insert({
-          user_id: chargedUserId, job_key: galleryTarget?.slotKey ?? mainImageRole ?? 'remaster', model_tier: modelTier ?? null,
+          user_id: chargedUserId, job_key: galleryTarget?.slotKey ?? mainImageRole ?? 'remaster', model_tier: modelTier ?? 'standard',
           stage: 'fidelity', status, attempt: 1, engine: 'gemini', model: 'gemini-2.5-flash',
           duration_ms: Date.now() - t0, provider_response: summary,
         });
