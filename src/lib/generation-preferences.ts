@@ -4,6 +4,7 @@ import { ensureCachedBase64 } from '@/lib/image-base64-cache';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 
 export interface GenerationSettings {
+  modelTier?: string;
   config?: RemasterConfig;
   assets?: Record<string, string>;
   selectedKeys?: string[];

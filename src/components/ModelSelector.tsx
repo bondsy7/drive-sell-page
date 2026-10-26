@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { Crown, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSelectableModelTiers, resolveSelectableModelTier } from '@/lib/model-choice';
+import { useGenerationPreferences } from '@/hooks/useGenerationPreferences';
+import { toast } from 'sonner';
 
 export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst' | 'nb21';
 
@@ -20,6 +22,16 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
   const { getCost } = useCredits();
   const { user } = useAuth();
   const email = user?.email;
+  const preferences = useGenerationPreferences();
+  const restored = useRef('');
+  useEffect(() => {
+    if (!user || !preferences.isSuccess) return;
+    const key = `${user.id}:${actionType}`;
+    if (restored.current === key) return;
+    restored.current = key;
+    const saved = preferences.data?.find(p => p.preference_key === `last:model:${actionType}`)?.settings.modelTier;
+    if (saved) onChange(resolveSelectableModelTier(saved, email, actionType) as ModelTier);
+  }, [user?.id, actionType, preferences.isSuccess, preferences.data, email, onChange]);
 
   // Öffentlich Premium/Advanced; der zentrale Testaccount sieht alle unterstützten Tiers.
   const visibleTiers = getSelectableModelTiers(actionType, email);
@@ -43,7 +55,10 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onChange(tier.id as ModelTier)}
+                onClick={() => {
+                  onChange(tier.id as ModelTier);
+                  preferences.save(`last:model:${actionType}`, { modelTier: tier.id }).catch(() => toast.error('Qualitätsstufe konnte nicht gespeichert werden.'));
+                }}
                 className={`h-auto flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                   isActive
                     ? tier.id === 'flare'

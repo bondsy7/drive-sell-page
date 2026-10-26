@@ -1753,7 +1753,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 badge={sceneLabel}
                 badgeOk={!!remasterConfig.scene}
               >
-                <RemasterOptions
+                {!preferencesReady ? <p className="text-xs text-muted-foreground">Einstellungen werden geladen…</p> : <RemasterOptions
                   rememberSettings={false}
                   config={remasterConfig}
                   onChange={setRemasterConfig}
@@ -1772,7 +1772,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                       onVehicleDataChange({ ...vehicleData, vehicle: { ...vehicleData.vehicle, model } });
                     }
                   }}
-                />
+                />}
                 <GenerationPresetControls config={remasterConfig} scope={activeClass} onApply={setRemasterConfig} disabled={isProcessing || !preferencesReady} />
               </CaptureSection>
               <BrandDialog open={brandEditOpen} onOpenChange={setBrandEditOpen}>
