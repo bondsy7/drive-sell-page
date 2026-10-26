@@ -42,6 +42,7 @@ import {
 } from '@/lib/landing-credit-costs';
 import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
 import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
+import LandingStatusSelect from '@/components/landing/LandingStatusSelect';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -440,6 +441,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <Button variant="outline" size="icon" onClick={undo} disabled={!canUndo} title="Letzte Änderung rückgängig machen" aria-label="Letzte Änderung rückgängig machen">
             <Undo2 className="w-4 h-4" />
           </Button>
+          {projectId && <LandingStatusSelect projectId={projectId} />}
         </div>
 
         <div className="flex items-center gap-2">
