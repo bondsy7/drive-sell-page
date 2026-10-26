@@ -1,5 +1,5 @@
 // Accounts blocked for security reasons. Keep in sync with src/lib/blocked-accounts.ts.
-const BLOCKED_ACCOUNT_EMAILS = new Set(["akyildizturhan@gmail.com"]);
+const BLOCKED_ACCOUNT_EMAILS = new Set<string>([]);
 
 export function isBlockedEmail(email?: string | null): boolean {
   return !!email && BLOCKED_ACCOUNT_EMAILS.has(email.trim().toLowerCase());
