@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { reorderSections, liveInsertIndex, LIVE_AT_START } from './landing-section-order';
 
-const c = { sections: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] };
+const c: { sections: { id: string }[]; liveInventoryAfter?: string } = { sections: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] };
 
 describe('landing section order', () => {
   it('moves a section between others', () => {
