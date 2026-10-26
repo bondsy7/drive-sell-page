@@ -1781,7 +1781,8 @@ REPRODUCTION RULES (ZERO DEVIATION):
         const summary = {
           mode: 'shadow', status, promptVersion: FIDELITY_PROMPT_VERSION, validator: 'gemini-2.5-flash',
           generatorEngine: diag.engine, generatorModel: diag.model, references: labels, resultHash,
-          findings: findings.filter((f) => f.verdict !== 'match'), corrections: buildCorrections(findings), checkedAt: new Date().toISOString(),
+          findings: findings.filter((f) => f.verdict !== 'match').map((f) => ({ ...f, severity: isCriticalAttribute(f.attribute) ? 'critical' : 'normal' })),
+          corrections: buildCorrections(findings), checkedAt: new Date().toISOString(),
         };
         await sb.from('generation_attempt_logs').insert({
           user_id: chargedUserId, job_key: galleryTarget?.slotKey ?? mainImageRole ?? 'remaster', model_tier: modelTier ?? 'standard',
