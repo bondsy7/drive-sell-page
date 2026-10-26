@@ -73,9 +73,12 @@ export function buildFragment(doc: string, id: string, inventoryEndpoint: string
   // Footnotes belonged to the frozen vehicle list; the plugin renders them for the live vehicles.
   body = body.replace(/<section id="lp-finanzierung"[\s\S]*?<\/section>/i, `<div data-autohaus-finance-footnotes="${id}"></div>`);
 
-  return `<div class="${SCOPE}" data-landingpage-id="${id}">
-${fonts.join("\n")}
+  // Like the PDF offer pages, the fragment uses the dealer website's own font instead of Inter/Space Grotesk.
+  const inheritFont = `<style>.${SCOPE},.${SCOPE} :is(h1,h2,h3,h4,h5,h6,p,li,span,a,div,label,input,textarea,select,button,td,th){font-family:inherit !important}</style>`;
+  void fonts;
+  return `<div class="${SCOPE} lp-layout" data-landingpage-id="${id}">
 ${styles.join("\n")}
+${inheritFont}
 ${jsonLd.join("\n")}
 ${body.trim()}
 </div>`;
