@@ -14,6 +14,7 @@ import {
   type RemasterConfig,
   SCENE_OPTIONS,
   getSceneOptionsForUser,
+  canUseDekraScene,
   LICENSE_PLATE_OPTIONS,
   CLEANUP_OPTIONS,
   fetchManufacturerLogos,
