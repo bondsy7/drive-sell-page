@@ -124,6 +124,7 @@ import AdminRoute from "./components/AdminRoute";
 import KiTransparenz from "./pages/KiTransparenz";
 import ConsentManager from "./components/consent/ConsentManager";
 import LegalOnboardingGate from "./components/legal/LegalOnboardingGate";
+import AccountApprovalGate from "./components/auth/AccountApprovalGate";
 
 const queryClient = new QueryClient();
 
@@ -181,7 +182,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  return <LegalOnboardingGate>{children}</LegalOnboardingGate>;
+  return (
+    <AccountApprovalGate userId={user.id} email={user.email} fullName={user.user_metadata?.full_name ?? user.user_metadata?.name}>
+      <LegalOnboardingGate>{children}</LegalOnboardingGate>
+    </AccountApprovalGate>
+  );
 };
 
 
