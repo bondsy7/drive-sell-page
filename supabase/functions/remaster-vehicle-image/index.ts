@@ -1751,10 +1751,23 @@ REPRODUCTION RULES (ZERO DEVIATION):
           : toInlineData(wheelReferenceBase64) });
       }
     }
-    if (shouldRunFidelityCheck({ hasValidatorKey: !!GEMINI_API_KEY, hasMainReference: !!mainRefPart })) {
+    const mainOpenAIFileId = oaFileId(mainImageOpenAIFile);
+    if (shouldRunFidelityCheck({ hasValidatorKey: !!GEMINI_API_KEY, hasMainReference: !!mainRefPart || !!mainOpenAIFileId })) {
       const bgCheck = (async () => {
       const t0 = Date.now();
       try {
+        // OpenAI file-id-first Requests: Hauptreferenz liegt nur als File-ID vor
+        // und muss für den Gemini-Validator aus der Files API geladen werden.
+        if (!mainRefPart && mainOpenAIFileId && OPENAI_API_KEY) {
+          try {
+            const fRes = await fetch(`https://api.openai.com/v1/files/${mainOpenAIFileId}/content`, { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } });
+            if (fRes.ok) {
+              const buf = Buffer.from(await fRes.arrayBuffer());
+              mainRefPart = { inlineData: { mimeType: mainImageOpenAIFile?.mimeType || 'image/jpeg', data: buf.toString('base64') } };
+            }
+          } catch { /* Hauptreferenz nicht ladbar → Check läuft ohne sie nicht */ }
+        }
+        if (!mainRefPart) return;
         const targetHint = `${mainImageRole ?? ''} ${galleryTarget?.slotKey ?? ''} ${referenceManifest?.target ?? ''} ${referenceManifest?.jobKey ?? ''}`;
         const selected = selectFidelityReferences({ targetHint, candidates: fidelityCandidates, maxExtras: 2 });
         const refs: any[] = [mainRefPart, ...selected.map((s) => s.part)];
