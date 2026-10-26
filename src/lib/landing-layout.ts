@@ -8,6 +8,8 @@ export const LANDING_LAYOUT_CSS = `
 .lp-layout .lp-hero-text > div{width:100%;max-width:none !important}
 .lp-layout .lp-split > *{min-width:0}
 .lp-layout .lp-body-html{width:100%;min-width:0;overflow-wrap:anywhere}
+.lp-layout .lp-body-html :is(p,li,ul,ol,span,strong,b,em,i,a,h2,h3,h4,div,td,th,small,u){color:inherit !important}
+.lp-layout .lp-body-html a{text-decoration:underline}
 .lp-layout .lp-body-html :is(p,h2,h3,h4,div){box-sizing:border-box;width:100%;max-width:none !important;margin-inline:0 !important}
 .lp-layout .lp-content-width :is(h1,h2,h3,p){overflow-wrap:anywhere}
 .lp-layout :is(.lp-body-html,.lp-content-width) :is(ul,ol){padding-left:1.4em !important;list-style-position:outside}
