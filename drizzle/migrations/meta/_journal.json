@@ -113,6 +113,13 @@
       "when": 1793024865958,
       "tag": "0015_generation_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793031435302,
+      "tag": "0016_signup_notifications",
+      "breakpoints": true
     }
   ]
 }
