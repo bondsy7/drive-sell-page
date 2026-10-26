@@ -29,7 +29,7 @@ export default function LandingStatusSelect({ projectId }: { projectId: string }
         if (error) { setStatus(prev); toast.error('Status konnte nicht gespeichert werden.'); }
         else toast.success(`Status: ${OPTIONS.find(o => o.value === next)?.label}`);
       }}
-      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+      className="h-9 rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground"
     >
       {OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
