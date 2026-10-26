@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_approvals: {
+        Row: {
+          company_address: string | null
+          company_name: string | null
+          company_website: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string | null
+          full_name: string | null
+          phone: string | null
+          status: string
+          submitted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_name?: string | null
+          company_website?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          status?: string
+          submitted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_address?: string | null
+          company_name?: string | null
+          company_website?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          status?: string
+          submitted_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_secrets: {
         Row: {
           id: string
@@ -4046,6 +4091,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_account_approved: { Args: { _user_id: string }; Returns: boolean }
       landing_slugify: { Args: { _t: string }; Returns: string }
       reset_monthly_credits: {
         Args: { _description?: string; _plan_credits: number; _user_id: string }

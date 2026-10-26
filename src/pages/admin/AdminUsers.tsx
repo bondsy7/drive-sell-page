@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown, Trash2, XCircle, Settings2, QrCode } from 'lucide-react';
 import UserModuleDialog from '@/components/admin/UserModuleDialog';
+import AccountApprovalRequests from '@/components/admin/AccountApprovalRequests';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -273,6 +274,8 @@ export default function AdminUsers() {
         <h1 className="font-display text-2xl font-bold text-foreground">Nutzerverwaltung</h1>
         <span className="text-sm text-muted-foreground">{users.length} Nutzer registriert</span>
       </div>
+
+      <AccountApprovalRequests />
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
