@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { useCredits } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
 import { Crown, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { resolveSelectableModelTier } from '@/lib/model-choice';
+import { getSelectableModelTiers, resolveSelectableModelTier } from '@/lib/model-choice';
 
 export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst' | 'nb21';
 
@@ -12,24 +13,22 @@ interface ModelSelectorProps {
   onChange: (tier: ModelTier) => void;
 }
 
-const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.ReactNode; group: string }[] = [
-  { id: 'premium', label: 'Premium', sublabel: 'Standard', icon: <Crown className="w-3 h-3" />, group: 'A' },
-  { id: 'flare', label: 'Advanced', sublabel: 'Upgrade', icon: <Flame className="w-3 h-3" />, group: 'A' },
-];
+const tierIcon = (id: string): React.ReactNode =>
+  id === 'premium' ? <Crown className="w-3 h-3" /> : id === 'flare' ? <Flame className="w-3 h-3" /> : undefined;
 
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();
+  const { user } = useAuth();
+  const email = user?.email;
 
-  const visibleTiers = TIERS;
+  // Öffentlich Premium/Advanced; der zentrale Testaccount sieht alle unterstützten Tiers.
+  const visibleTiers = getSelectableModelTiers(actionType, email);
 
   // Hidden legacy choices are not selectable for new work; saved wire IDs stay valid.
   useEffect(() => {
-    const selected = resolveSelectableModelTier(value);
-    if (value !== selected) onChange(selected);
-  }, [value, onChange]);
-
-
-
+    const selected = resolveSelectableModelTier(value, email, actionType);
+    if (value !== selected) onChange(selected as ModelTier);
+  }, [value, email, actionType, onChange]);
 
   return (
     <div className="flex flex-col gap-1">
@@ -44,7 +43,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onChange(tier.id)}
+                onClick={() => onChange(tier.id as ModelTier)}
                 className={`h-auto flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                   isActive
                     ? tier.id === 'flare'
@@ -53,7 +52,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tier.icon}
+                {tierIcon(tier.id)}
                 {tier.label}
                 <span className="text-[10px] opacity-70">({cost} Cr.)</span>
               </Button>
