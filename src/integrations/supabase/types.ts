@@ -1231,6 +1231,30 @@ export type Database = {
           },
         ]
       }
+      landing_page_deletions: {
+        Row: {
+          deleted_at: string
+          id: string
+          slug: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          id: string
+          slug?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          id?: string
+          slug?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
@@ -1803,8 +1827,10 @@ export type Database = {
           created_at: string
           html_content: string | null
           id: string
+          landing_status: string
           main_image_base64: string | null
           main_image_url: string | null
+          slug: string | null
           template_id: string
           title: string
           updated_at: string
@@ -1816,8 +1842,10 @@ export type Database = {
           created_at?: string
           html_content?: string | null
           id?: string
+          landing_status?: string
           main_image_base64?: string | null
           main_image_url?: string | null
+          slug?: string | null
           template_id?: string
           title?: string
           updated_at?: string
@@ -1829,8 +1857,10 @@ export type Database = {
           created_at?: string
           html_content?: string | null
           id?: string
+          landing_status?: string
           main_image_base64?: string | null
           main_image_url?: string | null
+          slug?: string | null
           template_id?: string
           title?: string
           updated_at?: string
@@ -3969,6 +3999,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      landing_slugify: { Args: { _t: string }; Returns: string }
       reset_monthly_credits: {
         Args: { _description?: string; _plan_credits: number; _user_id: string }
         Returns: Json
