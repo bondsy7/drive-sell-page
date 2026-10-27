@@ -162,7 +162,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Check email verification
-  const emailVerified = user.email_confirmed_at || user.user_metadata?.email_verified;
+  const emailVerified = user.email_confirmed_at;
   if (!emailVerified) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">

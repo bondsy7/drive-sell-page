@@ -1,3 +1,7 @@
+## Registrierung als Vormerkung (27.10.2026)
+- [x] E-Mail-Verifizierung und manuelle Freigabe für externe Neuregistrierungen verbindlich prüfen; interne/bestehende Konten unverändert. Automatische E-Mail-Bestätigung ist laut gehosteten Einstellungen deaktiviert.
+- [x] Vormerkung verständlich anzeigen und Freigaberegeln testen; Registrierungsansicht und bestehenden Zugang im Browser geprüft. Keine echte Neuregistrierung oder Bestätigungs-E-Mail durchgespielt.
+
 ## Gespeicherte Foto- und Pipeline-Einstellungen (26.10.2026)
 - [x] Letzte Foto-Einstellungen, Qualitätsauswahl und Pipeline-Ausgaben nutzerbezogen speichern und beim nächsten Start laden.
 - [x] Benannte Vorlagen für Standorte/Aktionen anlegen, aktualisieren, erneut laden und löschen; vorhandene Generierung und Automatik-Freigaben unverändert.

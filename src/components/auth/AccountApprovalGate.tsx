@@ -11,7 +11,7 @@ interface Props { userId: string; email?: string | null; fullName?: string; chil
 /** Self-registered accounts stay locked until the team approves the submitted request. */
 export default function AccountApprovalGate({ userId, email, fullName, children }: Props) {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['account-approval', userId],
     queryFn: async () => {
       const { data, error } = await supabase.from('account_approvals').select('status, submitted_at').eq('user_id', userId).maybeSingle();
@@ -23,13 +23,14 @@ export default function AccountApprovalGate({ userId, email, fullName, children 
   const [sending, setSending] = useState(false);
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
+  if (isError) return <div className="min-h-screen flex flex-col gap-4 items-center justify-center bg-background px-4"><p className="text-muted-foreground">Deine Zugangsfreigabe konnte nicht geprüft werden.</p><Button onClick={() => refetch()}>Erneut prüfen</Button></div>;
   if (!data || data.status === 'approved') return <>{children}</>;
 
   const signOut = () => supabase.auth.signOut();
   const shell = (content: React.ReactNode) => (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md space-y-6">{content}
-        <button onClick={signOut} className="text-sm text-muted-foreground hover:underline">Abmelden</button>
+        <Button variant="ghost" onClick={signOut}>Abmelden</Button>
       </div>
     </div>
   );
@@ -44,7 +45,7 @@ export default function AccountApprovalGate({ userId, email, fullName, children 
   if (data.submitted_at) return shell(
     <div className="space-y-2">
       <h2 className="font-display text-xl font-bold text-foreground">Anfrage wird geprüft</h2>
-      <p className="text-sm text-muted-foreground">Danke! Wir prüfen deine Angaben und schalten deinen Zugang frei. Du bekommst eine E-Mail an {email}, sobald er bereit ist.</p>
+      <p className="text-sm text-muted-foreground">Deine Registrierung ist vorgemerkt und deine E-Mail-Adresse bestätigt. Dein Konto bleibt inaktiv, bis ein Admin deine Angaben geprüft und den Zugang ausdrücklich freigegeben hat. Über die Entscheidung informieren wir dich per E-Mail an {email}.</p>
     </div>,
   );
 
@@ -70,7 +71,7 @@ export default function AccountApprovalGate({ userId, email, fullName, children 
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-2">
         <h2 className="font-display text-xl font-bold text-foreground">Zugang anfragen</h2>
-        <p className="text-sm text-muted-foreground">Neue Konten schalten wir persönlich frei. Bitte sende uns deine Kontakt- und Firmendaten – wir melden uns per E-Mail.</p>
+        <p className="text-sm text-muted-foreground">Deine Registrierung ist zunächst nur eine Vormerkung. Deine E-Mail-Adresse ist bestätigt; bitte sende uns jetzt deine Kontakt- und Firmendaten. Erst nach Prüfung und manueller Admin-Freigabe wird dein Zugang aktiv.</p>
       </div>
       {field('full_name', 'Name')}
       <div className="space-y-1.5"><Label>E-Mail</Label><Input value={email || ''} disabled /></div>

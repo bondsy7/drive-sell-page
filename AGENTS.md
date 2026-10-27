@@ -1,4 +1,5 @@
 Use the existing FunnelLayout and funnel attribution/tracking utilities for new paid landing pages, because consistent consent handling and conversion measurement must be preserved.
+- External registration activation is enforced by account_approvals plus trusted Auth email confirmation; review prerequisites are checked in the approval function and a database trigger, and approval lookup failures must never render protected app content.
 Photo-generator last-used settings and named presets use owner-scoped generation_preferences, with durable asset URLs and scope-filtered pipeline keys; never reuse approved Auto3 automation profiles or persist vehicle evidence, because loading settings must not grant spending or mix vehicle identity.
 Use the locally hosted Dessau font only through `font-display` headings; retain the system sans stack for body text to preserve readability.
 Use `downloadMediaFile` for browser media downloads, because local Blob URLs reliably trigger file saving on desktop and mobile.
