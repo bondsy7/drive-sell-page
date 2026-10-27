@@ -21,7 +21,7 @@ describe('KI-Label Deckkraft', () => {
   });
 
   it('Badge-Komponente (Galerie, Viewer, Banner) rendert mit 40 % Deckkraft', () => {
-    const { container } = render(<AiDisclosureBadge context="modified" as any />);
+    const { container } = render(<AiDisclosureBadge context="banner" />);
     const img = container.querySelector('img');
     expect(img?.getAttribute('class')).toContain('opacity-40');
   });
