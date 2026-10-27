@@ -359,3 +359,8 @@
 
 /* FAQ-Antworten bleiben für Suchmaschinen im DOM, sind aber sichtbar nur bei geöffneter Frage da. */
 [data-faq-answer][data-state="closed"] { display: none; }
+
+[data-offline-blocked] {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
