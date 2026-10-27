@@ -127,6 +127,13 @@
       "when": 1793032047635,
       "tag": "0017_account_approvals",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793085902273,
+      "tag": "0018_enforce_registration_activation_prerequisites",
+      "breakpoints": true
     }
   ]
 }
