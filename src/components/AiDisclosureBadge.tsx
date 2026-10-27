@@ -41,7 +41,7 @@ const AiDisclosureBadge: React.FC<AiDisclosureBadgeProps> = ({
       src={getAiDisclosureLabelVector(context)}
       alt={getAiDisclosureLabelAlt(context)}
       className={cn(
-        "block w-auto object-contain",
+        "block w-auto object-contain opacity-40",
         getAiDisclosureKind(context) === "basic" ? "h-7" : "h-5 sm:h-6",
         imgClassName,
       )}
