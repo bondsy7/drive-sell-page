@@ -1,3 +1,7 @@
+## Registrierung als Vormerkung (27.10.2026)
+- [ ] E-Mail-Verifizierung und manuelle Freigabe für externe Neuregistrierungen verbindlich prüfen; interne/bestehende Konten unverändert.
+- [ ] Vormerkung verständlich anzeigen und Freigaberegeln testen.
+
 ## Gespeicherte Foto- und Pipeline-Einstellungen (26.10.2026)
 - [x] Letzte Foto-Einstellungen, Qualitätsauswahl und Pipeline-Ausgaben nutzerbezogen speichern und beim nächsten Start laden.
 - [x] Benannte Vorlagen für Standorte/Aktionen anlegen, aktualisieren, erneut laden und löschen; vorhandene Generierung und Automatik-Freigaben unverändert.
