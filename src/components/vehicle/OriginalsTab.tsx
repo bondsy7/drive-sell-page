@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { enqueueUpload, listQueued, onQueueChange } from '@/lib/offline-upload-queue';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +26,7 @@ export default function OriginalsTab({ vehicleId }: Props) {
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [pending, setPending] = useState(0);
 
 
   const prefix = user ? `${user.id}/${vehicleId}` : '';
@@ -54,6 +56,16 @@ export default function OriginalsTab({ vehicleId }: Props) {
     },
   });
 
+  useEffect(() => {
+    if (!prefix) return;
+    const load = () => listQueued()
+      .then(items => setPending(items.filter(i => i.path.startsWith(`${prefix}/`)).length))
+      .then(() => qc.invalidateQueries({ queryKey: ['originals', user?.id, vehicleId] }))
+      .catch(() => {});
+    load();
+    return onQueueChange(load);
+  }, [prefix]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const refresh = () => qc.invalidateQueries({ queryKey: ['originals', user?.id, vehicleId] });
   const previewImages = files.filter(f => f.url).map(f => ({ id: f.name, src: f.url, label: f.name }));
 
@@ -62,10 +74,15 @@ export default function OriginalsTab({ vehicleId }: Props) {
     const arr = Array.from(fileList);
     if (arr.length === 0) return;
     setUploading(true);
-    let ok = 0, fail = 0;
+    let ok = 0, fail = 0, queued = 0;
     for (const file of arr) {
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `${prefix}/${Date.now()}-${safe}`;
+      const contentType = file.type || 'image/jpeg';
+      if (!navigator.onLine) {
+        try { await enqueueUpload({ path, blob: file, contentType }); queued++; } catch { fail++; }
+        continue;
+      }
       const { error } = await supabase.storage
         .from('originals')
         .upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
@@ -73,6 +90,7 @@ export default function OriginalsTab({ vehicleId }: Props) {
     }
     setUploading(false);
     if (ok) toast.success(`${ok} Original(e) hochgeladen`);
+    if (queued) toast.info(`${queued} Foto(s) gespeichert – Upload startet automatisch, sobald wieder Internet da ist`);
     if (fail) toast.error(`${fail} Upload(s) fehlgeschlagen`);
     if (inputRef.current) inputRef.current.value = '';
     refresh();
@@ -96,11 +114,16 @@ export default function OriginalsTab({ vehicleId }: Props) {
         <p className="text-sm text-muted-foreground">
           Roh-Fotos vom Fahrzeug-Eingang. Privat – nur du siehst sie.
         </p>
+        <div className="flex items-center gap-3" data-offline-ok>
+        {pending > 0 && (
+          <span className="text-xs text-muted-foreground">{pending} Foto(s) warten auf Upload</span>
+        )}
         <Button onClick={() => inputRef.current?.click()} disabled={uploading} size="sm">
           {uploading
             ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Lade hoch…</>
             : <><Upload className="w-4 h-4 mr-1.5" /> Originale hochladen</>}
         </Button>
+        </div>
         <input
           ref={inputRef}
           type="file"
@@ -123,7 +146,7 @@ export default function OriginalsTab({ vehicleId }: Props) {
             Lade hier die Roh-Fotos vom Fahrzeug-Eingang hoch. Sie bleiben als Referenz für
             spätere Generierungen erhalten.
           </p>
-          <Button onClick={() => inputRef.current?.click()} variant="outline" size="sm">
+          <Button onClick={() => inputRef.current?.click()} variant="outline" size="sm" data-offline-ok>
             <Upload className="w-4 h-4 mr-1.5" />
             Erstes Foto hochladen
           </Button>
