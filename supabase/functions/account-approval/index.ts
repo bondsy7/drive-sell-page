@@ -6,6 +6,7 @@ import { z } from "npm:zod@3.23.8";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
+import { approvalReviewError } from "../_shared/account-approval-policy.ts";
 
 const RECIPIENTS = ["d.bonds@autoactiva.de", "p.erhard@autoactiva.de"];
 const APP_URL = "https://app.autohaus.ai";
@@ -44,8 +45,10 @@ Deno.serve(async (req) => {
   { const b = blockedAccountResponse(req); if (b) return b; }
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const url = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceKey) return json({ error: "not_configured" }, 500);
+  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
   const { data: claimsData, error: claimsError } = await admin.auth.getClaims(token);
   const userId = claimsData?.claims?.sub as string | undefined;
@@ -58,6 +61,8 @@ Deno.serve(async (req) => {
   if ((body as any)?.action === "submit") {
     const parsed = Submit.safeParse(body);
     if (!parsed.success) return json({ error: "invalid_input", fields: parsed.error.flatten().fieldErrors }, 400);
+    const { data: applicant, error: applicantError } = await admin.auth.admin.getUserById(userId);
+    if (applicantError || !applicant.user?.email_confirmed_at) return json({ error: "email_not_verified" }, 403);
     const { data: row } = await admin.from("account_approvals").select("status, submitted_at").eq("user_id", userId).maybeSingle();
     if (!row) return json({ error: "no_approval_needed" }, 409);
     if (row.status !== "pending") return json({ error: "already_decided", status: row.status }, 409);
@@ -86,6 +91,15 @@ Deno.serve(async (req) => {
   const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (!isAdmin) return json({ error: "forbidden" }, 403);
   const { user_id, decision } = parsed.data;
+  if (decision === "approved") {
+    const { data: application, error: applicationError } = await admin.from("account_approvals")
+      .select("submitted_at").eq("user_id", user_id).maybeSingle();
+    if (applicationError) return json({ error: "lookup_failed" }, 500);
+    const { data: target, error: targetError } = await admin.auth.admin.getUserById(user_id);
+    if (targetError) return json({ error: "lookup_failed" }, 500);
+    const prerequisite = approvalReviewError(application, target.user?.email_confirmed_at);
+    if (prerequisite) return json({ error: prerequisite }, 409);
+  }
   const { data: updated, error } = await admin.from("account_approvals")
     .update({ status: decision, decided_at: new Date().toISOString(), decided_by: userId })
     .eq("user_id", user_id).select("email, full_name").maybeSingle();

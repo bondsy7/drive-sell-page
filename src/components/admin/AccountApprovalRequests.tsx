@@ -18,7 +18,7 @@ export default function AccountApprovalRequests() {
 
   const review = async (user_id: string, decision: 'approved' | 'rejected') => {
     const { data: res, error } = await supabase.functions.invoke('account-approval', { body: { action: 'review', user_id, decision } });
-    if (error || !res?.ok) return toast.error('Aktion fehlgeschlagen');
+    if (error || !res?.ok) return toast.error('Freigabe nicht möglich. Die E-Mail muss bestätigt und das Anfrageformular vollständig eingereicht sein.');
     toast.success(decision === 'approved' ? 'Zugang freigegeben' : 'Anfrage abgelehnt');
     qc.invalidateQueries({ queryKey: ['admin-account-approvals'] });
   };
@@ -37,7 +37,7 @@ export default function AccountApprovalRequests() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => review(r.user_id, 'approved')}>Freigeben</Button>
+            <Button size="sm" disabled={!r.submitted_at} onClick={() => review(r.user_id, 'approved')}>Freigeben</Button>
             <Button size="sm" variant="outline" onClick={() => review(r.user_id, 'rejected')}>Ablehnen</Button>
           </div>
         </div>

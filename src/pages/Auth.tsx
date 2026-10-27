@@ -81,10 +81,7 @@ const Auth = () => {
           if (acceptErr) console.warn('[auth] Nachweis konnte nicht gespeichert werden:', acceptErr.message);
         }
 
-        toast.success('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse über den Link in deinem Postfach.');
-        if (plan && plan !== 'free') {
-          toast.info('Nach der Bestätigung kannst du das Paket unter "Preise" buchen.');
-        }
+        toast.success('Registrierung vorgemerkt. Bitte bestätige deine E-Mail-Adresse; dein Zugang wird erst nach Prüfung und manueller Admin-Freigabe aktiv.');
       }
     } catch (err: any) {
       toast.error(customerErrorMessage(err));
@@ -129,8 +126,9 @@ const Auth = () => {
             <BrandLogo className="h-9 mx-auto" />
           </Link>
           <p className="text-sm text-muted-foreground">
-            {isLogin ? 'Melde dich an' : 'Erstelle deinen Account'}
+            {isLogin ? 'Melde dich an' : 'Zugang vormerken'}
           </p>
+          {!isLogin && <p className="text-sm text-muted-foreground">Die Registrierung ist noch kein aktiver Zugang. Bestätige zuerst deine E-Mail-Adresse und sende anschließend deine Kontakt- und Firmendaten. Erst nach Prüfung schaltet ein Admin dein Konto frei. Das gilt auch für Google.</p>}
           {!isLogin && plan && PLAN_LABELS[plan] && (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold">
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -193,7 +191,7 @@ const Auth = () => {
             </div>
           )}
           <Button type="submit" className="w-full" disabled={submitting || (!isLogin && !signupReady)}>
-            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrieren'}
+            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrierung vormerken'}
           </Button>
         </form>
 
