@@ -49,7 +49,8 @@ export default defineConfig(({ mode }) => ({
           {
             urlPattern: ({ url, request }) =>
               request.destination === "image" &&
-              (url.pathname.includes("/storage/v1/object/public/") || url.origin === self.location.origin),
+              (url.pathname.includes("/storage/v1/object/public/") ||
+                url.origin === (globalThis as unknown as { location: { origin: string } }).location.origin),
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "vehicle-images",
