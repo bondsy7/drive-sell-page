@@ -84,12 +84,12 @@ export function getAiDisclosureLabelVector(context: AiDisclosureContext): string
 }
 
 /**
- * Einheitliche Darstellung des Overlay-Labels: bewusst klein, leicht
- * transparent und mit festem Abstand zu Kante/Oben. Über cn() pro Einsatzort
- * überschreibbar.
+ * Einheitliche Darstellung des Overlay-Labels: bewusst klein, mit fester
+ * Deckkraft von 40 % (das Label soll vorhanden, aber nie aufdringlich sein)
+ * und mit festem Abstand zu Kante/Oben. Über cn() pro Einsatzort überschreibbar.
  */
 export const AI_DISCLOSURE_OVERLAY_CLASS =
-  "pointer-events-none absolute right-2 top-2 h-3 w-auto opacity-90 sm:right-3 sm:top-3 sm:h-3.5";
+  "pointer-events-none absolute right-2 top-2 h-3 w-auto opacity-40 sm:right-3 sm:top-3 sm:h-3.5";
 
 export function getAiDisclosureLabelAlt(context: AiDisclosureContext): string {
   return LABEL_ALT[getAiDisclosureKind(context)];
@@ -121,7 +121,7 @@ export function buildAiDisclosureFooterHTML(
 
 /** Offizielles Inline-Label für HTML-Bilder. */
 export function buildAiDisclosureBadgeHTML(context: AiDisclosureContext = "banner"): string {
-  return `<img src="${getAiDisclosureLabelAsset(context)}" alt="${getAiDisclosureLabelAlt(context)}" style="display:block;width:auto;height:24px" />`;
+  return `<img src="${getAiDisclosureLabelAsset(context)}" alt="${getAiDisclosureLabelAlt(context)}" style="display:block;width:auto;height:24px;opacity:.4" />`;
 }
 
 /**
@@ -146,7 +146,7 @@ export function buildAiDisclosureLabelDataUri(context: AiDisclosureContext = "la
 export function buildAiDisclosureImageOverlayHTML(
   context: AiDisclosureContext = "landing",
 ): string {
-  return `<img class="ai-disclosure-badge" src="${buildAiDisclosureLabelDataUri(context)}" alt="${getAiDisclosureLabelAlt(context)}" title="${getAiDisclosureText(context)}" style="position:absolute;top:10px;right:10px;z-index:5;height:22px;width:auto;pointer-events:none" />`;
+  return `<img class="ai-disclosure-badge" src="${buildAiDisclosureLabelDataUri(context)}" alt="${getAiDisclosureLabelAlt(context)}" title="${getAiDisclosureText(context)}" style="position:absolute;top:10px;right:10px;z-index:5;height:22px;width:auto;pointer-events:none;opacity:.4" />`;
 }
 
 /** Bild + Overlay-Label als eigenständiger Wrapper. */
@@ -193,7 +193,10 @@ export async function drawAiDisclosureOnCanvas(
   });
   const targetHeight = Math.max(22, Math.round(Math.min(width, height) * 0.045));
   const targetWidth = targetHeight * (img.naturalWidth / img.naturalHeight);
+  ctx.save();
+  ctx.globalAlpha = 0.4;
   ctx.drawImage(img, width - targetWidth - margin, margin, targetWidth, targetHeight);
+  ctx.restore();
 }
 
 /**
