@@ -142,6 +142,17 @@ export function canUseDekraScene(email?: string | null): boolean {
 /** Generic alias for DEKRA account gating beyond the scene (e.g. explainer video). */
 export const isDekraAccount = canUseDekraScene;
 
+/** Accounts allowed to see the current explainer video (DEKRA accounts + admin accounts). */
+export const EXPLAINER_VIDEO_EMAILS = [
+  ...DEKRA_SCENE_EMAILS,
+  'd.bonds@autoactiva.de',
+  'p.erhard@autoactiva.de',
+] as const;
+
+export function canUseExplainerVideo(email?: string | null): boolean {
+  return !!email && (EXPLAINER_VIDEO_EMAILS as readonly string[]).includes(email.trim().toLowerCase());
+}
+
 /** Scene options visible for the given account (DEKRA scene only for DEKRA accounts). */
 export function getSceneOptionsForUser(email?: string | null) {
   return canUseDekraScene(email) ? SCENE_OPTIONS : SCENE_OPTIONS.filter(s => s.value !== 'dealer-lot-dekra');
