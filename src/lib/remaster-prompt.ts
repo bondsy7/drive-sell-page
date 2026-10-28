@@ -147,6 +147,7 @@ export const EXPLAINER_VIDEO_EMAILS = [
   ...DEKRA_SCENE_EMAILS,
   'd.bonds@autoactiva.de',
   'p.erhard@autoactiva.de',
+  'erik.wakolbinger@dekra.com',
 ] as const;
 
 export function canUseExplainerVideo(email?: string | null): boolean {
