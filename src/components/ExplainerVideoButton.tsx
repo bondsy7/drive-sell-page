@@ -29,7 +29,7 @@ export function ExplainerVideoButton({ title, source }: Props) {
       <Button
         size="sm"
         onClick={() => setOpen(true)}
-        className="gap-1.5 bg-vehicle-green text-background hover:bg-vehicle-green/90"
+        className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
       >
         <Video className="h-4 w-4" />
         Erklärung
