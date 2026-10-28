@@ -1,5 +1,6 @@
 import { isBlockedAccount } from "@/lib/blocked-accounts";
 import { lazy, Suspense } from "react";
+const ExplainerVideoPage = lazy(() => import("./pages/ExplainerVideoPage"));
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -213,6 +214,7 @@ const App = () => (
               <Route path="/referenzen" element={<Referenzen />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/erklaervideo" element={<Suspense fallback={null}><ExplainerVideoPage /></Suspense>} />
               <Route path="/qr-login" element={<QrLogin />} />
               {/* Öffentlicher B2B-Paid-Funnel */}
               <Route path="/autohaus-fahrzeugbilder" element={<AutohausFahrzeugbilder />} />
