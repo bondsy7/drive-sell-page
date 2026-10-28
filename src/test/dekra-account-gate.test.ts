@@ -16,6 +16,7 @@ describe('explainer video access', () => {
     }
     expect(canUseExplainerVideo('d.bonds@autoactiva.de')).toBe(true);
     expect(canUseExplainerVideo('p.erhard@autoactiva.de')).toBe(true);
+    expect(canUseExplainerVideo('erik.wakolbinger@dekra.com')).toBe(true);
   });
 
   it('rejects other accounts and missing emails', () => {
