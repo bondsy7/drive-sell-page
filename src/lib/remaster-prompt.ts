@@ -139,6 +139,9 @@ export function canUseDekraScene(email?: string | null): boolean {
   return !!email && (DEKRA_SCENE_EMAILS as readonly string[]).includes(email.trim().toLowerCase());
 }
 
+/** Generic alias for DEKRA account gating beyond the scene (e.g. explainer video). */
+export const isDekraAccount = canUseDekraScene;
+
 /** Scene options visible for the given account (DEKRA scene only for DEKRA accounts). */
 export function getSceneOptionsForUser(email?: string | null) {
   return canUseDekraScene(email) ? SCENE_OPTIONS : SCENE_OPTIONS.filter(s => s.value !== 'dealer-lot-dekra');
