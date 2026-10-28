@@ -138,7 +138,6 @@ const CaptureSection: React.FC<{
   subtitle?: string;
   badge?: string;
   badgeOk?: boolean;
-  badgeWarn?: boolean;
   collapsible?: boolean;
   defaultOpen?: boolean;
   open?: boolean;
@@ -149,7 +148,6 @@ const CaptureSection: React.FC<{
   subtitle,
   badge,
   badgeOk,
-  badgeWarn,
   collapsible,
   defaultOpen = true,
   open: openProp,
@@ -179,7 +177,7 @@ const CaptureSection: React.FC<{
         {badge && (
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-              badgeOk ? 'bg-green-500/10 text-green-700' : badgeWarn ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'
+              badgeOk ? 'bg-green-500/10 text-green-700' : 'bg-muted text-muted-foreground'
             }`}
           >
             {badge}
@@ -1519,7 +1517,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   </p>
                 )}
                 <div className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-5">
-                  {displaySlots.filter(s => !s.recommended).map((slot) => (
+                  {displaySlots.map((slot) => (
                     <div key={slot.key} className="min-w-0">
                       {renderSlotCard(slot)}
                     </div>
@@ -1612,7 +1610,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 title="Felgen / Reifen"
                 badge={wheelReference?.image ? '1 Foto' : 'Optional'}
                 badgeOk={!!wheelReference?.image}
-                badgeWarn={!wheelReference?.image}
                 collapsible
                 defaultOpen={false}
                 open={isMobile ? undefined : detailsOpen}
@@ -1672,21 +1669,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 title="Weitere Detailaufnahmen"
                 badge={`${detailImages.length} / 10`}
                 badgeOk={detailImages.length > 0}
-                badgeWarn={detailImages.length === 0}
                 collapsible
                 defaultOpen={false}
                 open={isMobile ? undefined : detailsOpen}
                 onOpenChange={isMobile ? undefined : setDetailsOpen}
               >
-                {displaySlots.some(s => s.recommended) && (
-                  <div className="mb-3 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                    {displaySlots.filter(s => s.recommended).map((slot) => (
-                      <div key={slot.key} className="min-w-0">
-                        {renderSlotCard(slot)}
-                      </div>
-                    ))}
-                  </div>
-                )}
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
                     <div key={img} className={`group relative ${isNb21Tier(modelTier) ? 'h-36 w-44' : 'h-14 w-14'} shrink-0 overflow-hidden rounded-md border border-border bg-card`}>

@@ -68,7 +68,6 @@ const SalesAssistant = lazyWithRetry(() => import("./pages/SalesAssistant"));
 const QrLogin = lazyWithRetry(() => import("./pages/QrLogin"));
 const CanvasBannerStudio = lazyWithRetry(() => import("./pages/CanvasBannerStudio"));
 const MusicStudio = lazyWithRetry(() => import("./pages/MusicStudio"));
-const RemasterExplainer = lazyWithRetry(() => import("./pages/RemasterExplainer"));
 
 // B2B Paid-Funnel (öffentlich)
 const AutohausFahrzeugbilder = lazyWithRetry(() => import("./pages/funnel/AutohausFahrzeugbilder"));
@@ -234,7 +233,6 @@ const App = () => (
               <Route path="/cookies" element={<Cookies />} />
               <Route path="/rechtliches" element={<Rechtliches />} />
               <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/erklaerung/remastering" element={<ProtectedRoute><RemasterExplainer /></ProtectedRoute>} />
               <Route path="/generator/canvas-banner-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Banner Studio"><CanvasBannerStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/music-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Music Studio"><MusicStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/:tool" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
