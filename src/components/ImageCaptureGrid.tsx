@@ -43,7 +43,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { RemasterGalleryTarget } from '../../supabase/functions/_shared/remaster-gallery';
 import { useAuth } from '@/hooks/useAuth';
 import { canUseExplainerVideo } from '@/lib/remaster-prompt';
-import { captureSlotFrameClass } from '@/lib/capture-slot-frame';
 import type { VehicleData } from '@/types/vehicle';
 import type {
   ActiveVehicleClassKey,
@@ -1298,7 +1297,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return (
       <div
         key={slot.key}
-        className={`relative group aspect-[4/3] rounded-lg bg-card transition-colors overflow-hidden ${captureSlotFrameClass(slot, !!cap)}`}
+        className={`relative group aspect-[4/3] rounded-lg border bg-card transition-colors hover:border-accent/50 overflow-hidden ${slot.recommended && !cap ? 'border-dashed border-muted-foreground/40' : 'border-solid border-border'}`}
       >
         {slot.recommended && !cap && (
           <span className="pointer-events-none absolute right-1.5 top-1.5 z-10 rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
