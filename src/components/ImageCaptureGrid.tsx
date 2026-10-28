@@ -1417,7 +1417,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             Aufnahmen ergänzen. Optionale Bilder verbessern das Ergebnis.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
+        <div className="flex shrink-0 items-center gap-1">
+          <ExplainerVideoButton title="Erklärung: Fahrzeug aufnehmen" source={EXPLAINER_VIDEOS.fotos} />
+          <Button variant="ghost" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
+        </div>
       </div>
 
       <div className={`mb-3 flex items-center gap-2 rounded-lg px-3 py-2.5 ${coverage.ok && remasterConfig.scene ? 'bg-green-500/10' : 'bg-muted'}`}>
