@@ -26,16 +26,19 @@ export function ExplainerVideoButton({ title, source }: Props) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)} className="gap-1.5">
+      <Button
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="gap-1.5 bg-vehicle-green text-background hover:bg-vehicle-green/90"
+      >
         <Video className="h-4 w-4" />
         Erklärung
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-3 rounded-none border-0 bg-background p-3 pt-12 sm:h-auto sm:max-h-[90vh] sm:w-[min(92vw,1100px)] sm:max-w-[1100px] sm:rounded-lg sm:border sm:p-5 sm:pt-12">
-          <DialogTitle className="font-display text-lg">{title}</DialogTitle>
+        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col rounded-none border-0 bg-background p-0 sm:h-auto sm:max-h-[85vh] sm:w-[min(88vw,1000px)] sm:max-w-[1000px] sm:rounded-lg sm:border-0 sm:shadow-2xl [&>svg:last-child]:top-2 [&>svg:last-child]:right-2">
+          <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">Erklärvideo</DialogDescription>
-          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-md bg-foreground/90">
-            {open && hasVideo ? (
+          {open && hasVideo ? (
               <video
                 controls
                 autoPlay
