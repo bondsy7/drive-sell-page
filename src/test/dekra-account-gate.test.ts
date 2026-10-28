@@ -7,7 +7,7 @@ import {
   getSceneOptionsForUser,
 } from '@/lib/remaster-prompt';
 
-// Erklärvideo: DEKRA-Accounts + d.bonds / p.erhard.
+// Erklärvideo: DEKRA-Accounts + d.bonds / p.erhard / erik.wakolbinger.
 // DEKRA-Showroom: weiterhin ausschließlich die drei DEKRA-Accounts.
 describe('explainer video access', () => {
   it('allows DEKRA accounts and the two admin accounts', () => {
@@ -32,7 +32,7 @@ describe('explainer video access', () => {
   });
 
   it('does not grant the DEKRA scene to the admin accounts', () => {
-    expect(EXPLAINER_VIDEO_EMAILS.length).toBe(DEKRA_SCENE_EMAILS.length + 2);
+    expect(EXPLAINER_VIDEO_EMAILS.length).toBe(DEKRA_SCENE_EMAILS.length + 3);
     expect(isDekraAccount('d.bonds@autoactiva.de')).toBe(false);
     expect(isDekraAccount('p.erhard@autoactiva.de')).toBe(false);
     expect(getSceneOptionsForUser('p.erhard@autoactiva.de').some(o => o.value === 'dealer-lot-dekra')).toBe(false);
