@@ -45,7 +45,7 @@ export function ExplainerVideoButton({ title, source }: Props) {
                 playsInline
                 preload="metadata"
                 poster={source?.poster}
-                className="h-full max-h-[80dvh] w-full object-contain sm:max-h-[75vh]"
+                className="h-[calc(100dvh)] max-h-[100dvh] w-full object-contain sm:max-h-[85vh]"
               >
                 {source?.webm && <source src={source.webm} type="video/webm" />}
                 {source?.mp4 && <source src={source.mp4} type="video/mp4" />}
@@ -56,7 +56,6 @@ export function ExplainerVideoButton({ title, source }: Props) {
                 <p className="text-sm">Das Erklärvideo folgt in Kürze.</p>
               </div>
             )}
-          </div>
         </DialogContent>
       </Dialog>
     </>
