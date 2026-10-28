@@ -117,7 +117,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           )}
         </div>
         {tile.image && (
-          <div className={cn('relative mt-auto h-28 w-full overflow-hidden border-t border-border/70', featured && 'sm:absolute sm:inset-y-0 sm:right-0 sm:h-full sm:w-[46%] sm:border-l sm:border-t-0')}>
+          <div className={cn('relative h-28 w-full self-center overflow-hidden border-t border-border/70', featured && 'sm:absolute sm:inset-y-0 sm:right-0 sm:h-full sm:w-[46%] sm:border-l sm:border-t-0')}>
             <img src={tile.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/15 to-transparent" />
           </div>

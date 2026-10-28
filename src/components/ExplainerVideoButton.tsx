@@ -35,10 +35,10 @@ export function ExplainerVideoButton({ title, source }: Props) {
         Erklärung
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="fixed left-1/2 top-1/2 grid w-screen max-w-none -translate-x-1/2 -translate-y-1/2 gap-0 overflow-hidden rounded-none border-0 bg-background p-0 shadow-2xl sm:w-[min(92vw,calc((100dvh_-_3rem)*16/9))] sm:rounded-lg [&>button:last-child]:right-2 [&>button:last-child]:top-2 [&>button:last-child]:z-10">
+        <DialogContent className="fixed left-1/2 top-1/2 grid w-screen max-w-none -translate-x-1/2 -translate-y-1/2 gap-0 overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none sm:w-[min(92vw,calc((100dvh_-_7rem)*16/9))] [&>button:last-child]:-top-12 [&>button:last-child]:right-2 [&>button:last-child]:z-10 [&>button:last-child]:flex [&>button:last-child]:size-10 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full [&>button:last-child]:bg-background [&>button:last-child]:opacity-100 [&>button:last-child]:shadow-lg sm:[&>button:last-child]:right-0">
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">Erklärvideo</DialogDescription>
-          <div className="aspect-video w-full">
+          <div className="aspect-video w-full overflow-hidden bg-background shadow-2xl sm:rounded-lg">
             {open && hasVideo ? (
               <video
                 controls
