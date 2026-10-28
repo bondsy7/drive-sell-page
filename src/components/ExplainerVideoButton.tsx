@@ -35,29 +35,32 @@ export function ExplainerVideoButton({ title, source }: Props) {
         Erklärung
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col rounded-none border-0 bg-background p-0 sm:h-auto sm:max-h-[85vh] sm:w-[min(88vw,1000px)] sm:max-w-[1000px] sm:rounded-lg sm:border-0 sm:shadow-2xl [&>button:last-child]:right-2 [&>button:last-child]:top-2">
+        <DialogContent className="fixed left-1/2 top-1/2 grid w-screen max-w-none -translate-x-1/2 -translate-y-1/2 gap-0 overflow-hidden rounded-none border-0 bg-background p-0 shadow-2xl sm:w-[min(92vw,calc((100dvh_-_3rem)*16/9))] sm:rounded-lg [&>button:last-child]:right-2 [&>button:last-child]:top-2 [&>button:last-child]:z-10">
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">Erklärvideo</DialogDescription>
-          {open && hasVideo ? (
+          <div className="aspect-video w-full">
+            {open && hasVideo ? (
               <video
                 controls
                 autoPlay
                 playsInline
                 preload="metadata"
                 poster={source?.poster}
-                className="h-[calc(100dvh)] max-h-[100dvh] w-full object-contain sm:max-h-[85vh]"
+                className="h-full w-full bg-background object-contain"
               >
                 {source?.webm && <source src={source.webm} type="video/webm" />}
                 {source?.mp4 && <source src={source.mp4} type="video/mp4" />}
               </video>
             ) : (
-              <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 text-background/80">
+              <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-background/80">
                 <PlayCircle className="h-12 w-12" />
                 <p className="text-sm">Das Erklärvideo folgt in Kürze.</p>
               </div>
             )}
+          </div>
         </DialogContent>
       </Dialog>
+
     </>
   );
 }
