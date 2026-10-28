@@ -42,6 +42,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RemasterGalleryTarget } from '../../supabase/functions/_shared/remaster-gallery';
 import { useAuth } from '@/hooks/useAuth';
+import { isDekraAccount } from '@/lib/remaster-prompt';
 import type { VehicleData } from '@/types/vehicle';
 import type {
   ActiveVehicleClassKey,
@@ -1420,7 +1421,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <ExplainerVideoButton title="Erklärung: Fahrzeug aufnehmen" source={EXPLAINER_VIDEOS.fotos} />
+          {/* Erklärvideo vorerst nur für DEKRA-Accounts (gleiche Freigabeliste wie der DEKRA-Showroom). */}
+          {isDekraAccount(user?.email) && (
+            <ExplainerVideoButton title="Erklärung: Fahrzeug aufnehmen" source={EXPLAINER_VIDEOS.fotos} />
+          )}
           <Button variant="ghost" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
         </div>
       </div>
