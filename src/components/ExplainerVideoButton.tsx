@@ -35,7 +35,7 @@ export function ExplainerVideoButton({ title, source }: Props) {
         Erklärung
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col rounded-none border-0 bg-background p-0 sm:h-auto sm:max-h-[85vh] sm:w-[min(88vw,1000px)] sm:max-w-[1000px] sm:rounded-lg sm:border-0 sm:shadow-2xl [&>svg:last-child]:top-2 [&>svg:last-child]:right-2">
+        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col rounded-none border-0 bg-background p-0 sm:h-auto sm:max-h-[85vh] sm:w-[min(88vw,1000px)] sm:max-w-[1000px] sm:rounded-lg sm:border-0 sm:shadow-2xl [&>button:last-child]:right-2 [&>button:last-child]:top-2">
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">Erklärvideo</DialogDescription>
           {open && hasVideo ? (
