@@ -572,6 +572,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               })}
               onDeleteElement={deleteElement}
               onResizeLogo={(id, height) => setContent(previous => ({ ...previous, logoSizes: { ...previous.logoSizes, [id]: height } }))}
+              onResizeSection={(id, height) => setContent(previous => ({ ...previous, sectionHeights: { ...previous.sectionHeights, [id]: height } }))}
               frameEditing={viewMode === 'edit' && viewport === 'desktop'}
               onFrameChange={(imageId, frame) => setContent(previous => {
                 const next = { ...(previous.imageFrames || {}) };

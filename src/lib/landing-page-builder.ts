@@ -1,4 +1,5 @@
 import { liveInsertIndex } from '@/lib/landing-section-order';
+import { LANDING_SECTION_HEIGHT_CSS, sectionHeightAttributes } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
 import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
@@ -26,6 +27,7 @@ import {
 } from '@/lib/live-inventory';
 
 export interface LandingPageContent {
+  sectionHeights?: Record<string, number>;
   sectionColors?: Record<string, string>;
   logoSizes?: LandingLogoSizes;
   imageFrames?: Record<string, Partial<import('@/lib/landing-image-frame').LandingImageFrame>>;
@@ -280,9 +282,10 @@ export function buildLandingPageHTML(
   const heroHeadline = hero.headline || `${brand} ${model}`;
   const heroSub = hero.subheadline || '';
 
-  const liveBlock = liveInventory && !removed('live-fahrzeuge') ? buildLiveInventorySectionHTML(liveInventory) : '';
+  const sized = (id: string, html: string) => html ? `<div${sectionHeightAttributes(content.sectionHeights?.[id])}>${html}</div>` : '';
+  const liveBlock = liveInventory && !removed('live-fahrzeuge') ? sized('live-fahrzeuge', buildLiveInventorySectionHTML(liveInventory)) : '';
   const renderedSections = sections
-    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, { content, images }));
+    .map((s, idx) => sized(s.id, renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, { content, images })));
   renderedSections.splice(liveInsertIndex({ sections, liveInventoryAfter: content.liveInventoryAfter }), 0, liveBlock);
   const sectionBlocks = renderedSections.join('\n');
 
@@ -359,6 +362,7 @@ export function buildLandingPageHTML(
     }
     ${LANDING_LAYOUT_CSS}
     ${LANDING_LOGO_CSS}
+    ${LANDING_SECTION_HEIGHT_CSS}
   </style>
 </head>
 <body class="lp-layout">
@@ -373,7 +377,7 @@ ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;ba
     </div>
   </header>`}
 
-${removed('hero') ? '' : `  <section style="position:relative;min-height:560px;overflow:hidden;background:${heroBackground}">
+${removed('hero') ? '' : `  <div${sectionHeightAttributes(content.sectionHeights?.hero)}><section style="position:relative;min-height:560px;overflow:hidden;background:${heroBackground}">
     <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)'};min-height:560px" class="lp-content-width lp-hero-grid">
 ${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:${heroBackground};color:${onHero};min-height:420px">
         <div style="max-width:${heroHasImage ? '520px' : 'none'}">
@@ -397,11 +401,11 @@ ${heroHasImage ? (heroFrame ? `      <div class="lp-hero-media" style="position:
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
       </div>`) : ''}
     </div>
-  </section>`}
+  </section></div>`}
 
   ${sectionBlocks}
 
-${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 0">
+${removed('kontakt') ? '' : `  <div${sectionHeightAttributes(content.sectionHeights?.kontakt)}><section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 0">
     <div class="lp-content-width" style="text-align:center">
       ${dealerLogo ? renderToStaticMarkup(createElement(LandingLogo, { id: 'contact.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
       <h2 style="font-size:30px;font-weight:700;margin-bottom:10px">${escapeHtml(dealerName)}</h2>
@@ -412,7 +416,7 @@ ${removed('kontakt') ? '' : `  <section id="kontakt" style="background:var(--lp-
         ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;background:#25d366;color:#fff;border:1px solid #25d366;font-size:14px;font-weight:600">💬 WhatsApp</a>` : ''}
       </div>
     </div>
-  </section>`}
+  </section></div>`}
 
   ${liveInventory && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config), title: liveInventory.config.financeTitle })) : ''}
 
