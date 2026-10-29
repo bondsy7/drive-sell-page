@@ -34,21 +34,18 @@ vi.mock('@/integrations/supabase/client', () => ({
         return {
           eq: () => ({
             order: () => ({
-              limit: () =>
-                Promise.resolve({
-                  data: [
-                    {
-                      id: 'vehicle-1',
-                      brand: 'Volkswagen',
-                      model: 'Golf',
-                      year: 2024,
-                      color: 'Alpinweiß',
-                      title: 'Volkswagen Golf Life',
-                      vin: 'WVGZZZ12345678901',
-                      created_at: VEHICLE_ISO,
-                    },
-                  ],
-                }),
+              limit: () => Promise.resolve({
+                data: [{
+                  id: 'vehicle-1',
+                  brand: 'Volkswagen',
+                  model: 'Golf',
+                  year: 2024,
+                  color: 'Alpinweiß',
+                  title: 'Volkswagen Golf Life',
+                  vin: 'WVGZZZ12345678901',
+                  created_at: VEHICLE_ISO,
+                }],
+              }),
             }),
             single: () => Promise.resolve({ data: null }),
             maybeSingle: () => Promise.resolve({ data: null }),
@@ -67,17 +64,19 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-async function openVehicleList() {
+async function renderWithVehicleList() {
   render(<ManualLandingGenerator onBack={vi.fn()} onComplete={vi.fn()} />);
   const label = await screen.findByText(/Aus bestehendem Fahrzeug übernehmen/);
-  const trigger = label.parentElement?.querySelector('[role="combobox"]');
-  expect(trigger).not.toBeNull();
-  fireEvent.keyDown(trigger as HTMLElement, { key: 'ArrowDown' });
-  return screen.findByRole('option', { name: /Volkswagen Golf Life/ });
+  const trigger = label.parentElement?.querySelector('[role="combobox"]') as HTMLElement;
+  expect(trigger).toBeTruthy();
+  return trigger;
 }
 
 it('shows the vehicle creation date and time next to the vehicle name', async () => {
-  const option = await openVehicleList();
+  const trigger = await renderWithVehicleList();
+  fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+  const option = await screen.findByRole('option', { name: /Volkswagen Golf Life/ });
+
   const local = new Date(VEHICLE_ISO);
   const date = local.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const time = local.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -85,9 +84,12 @@ it('shows the vehicle creation date and time next to the vehicle name', async ()
   expect(option.textContent).toContain('Volkswagen Golf Life');
   expect(option.textContent).toContain(date);
   expect(option.textContent).toContain(time);
+
+  fireEvent.keyDown(option, { key: 'Escape' });
+  await waitFor(() => expect(screen.queryByRole('option')).toBeNull());
 });
 
 it('reads the creation timestamp when loading the vehicle list', async () => {
-  await openVehicleList();
+  await renderWithVehicleList();
   await waitFor(() => expect(selectedColumns.join(' ')).toContain('created_at'));
 });
