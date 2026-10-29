@@ -1,8 +1,19 @@
-import { fireEvent, render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 
 const VEHICLE_ISO = '2026-10-29T13:56:47.000Z';
 const selectedColumns: string[] = [];
+
+// Die echten Auswahllisten von Radix öffnen in der Testumgebung ein Portal-Fenster,
+// das den Testprozess blockiert. Deshalb wird die Auswahl hier als einfaches
+// Container-Element dargestellt – die Inhalte (Name, Datum, Uhrzeit) bleiben prüfbar.
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ children }: any) => <div data-testid="select">{children}</div>,
+  SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
+  SelectItem: ({ children, value }: any) => <div data-testid="option" data-value={value}>{children}</div>,
+  SelectTrigger: ({ children }: any) => <div data-testid="select-trigger">{children}</div>,
+  SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
+}));
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user-1' } }) }));
 vi.mock('@/hooks/useCredits', () => ({ useCredits: () => ({ balance: 999 }) }));
@@ -66,27 +77,21 @@ beforeAll(() => {
 
 async function renderWithVehicleList() {
   render(<ManualLandingGenerator onBack={vi.fn()} onComplete={vi.fn()} />);
-  const label = await screen.findByText(/Aus bestehendem Fahrzeug übernehmen/);
-  const trigger = label.parentElement?.querySelector('[role="combobox"]') as HTMLElement;
-  expect(trigger).toBeTruthy();
-  return trigger;
+  await screen.findByText(/Aus bestehendem Fahrzeug übernehmen/);
+  return screen.findAllByTestId('option');
 }
 
 it('shows the vehicle creation date and time next to the vehicle name', async () => {
-  const trigger = await renderWithVehicleList();
-  fireEvent.keyDown(trigger, { key: 'ArrowDown' });
-  const option = await screen.findByRole('option', { name: /Volkswagen Golf Life/ });
+  const options = await renderWithVehicleList();
+  const vehicle = options.find(o => o.textContent?.includes('Volkswagen Golf Life'));
+  expect(vehicle).toBeTruthy();
 
   const local = new Date(VEHICLE_ISO);
   const date = local.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const time = local.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
-  expect(option.textContent).toContain('Volkswagen Golf Life');
-  expect(option.textContent).toContain(date);
-  expect(option.textContent).toContain(time);
-
-  fireEvent.keyDown(option, { key: 'Escape' });
-  await waitFor(() => expect(screen.queryByRole('option')).toBeNull());
+  expect(vehicle?.textContent).toContain(date);
+  expect(vehicle?.textContent).toContain(time);
 });
 
 it('reads the creation timestamp when loading the vehicle list', async () => {
