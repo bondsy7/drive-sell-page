@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import LandingEditMenu, { LandingEditActionsContext } from '@/components/landing/LandingEditMenu';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   const controlStyle = editorControlStyle(controlOn) as CSSProperties | undefined;
   const parentMenu = useContext(LandingEditActionsContext);
   const [nestedActions, setNestedActions] = useState<ReactNode>(null);
+  const actionContext = useMemo(() => ({ setActions: setNestedActions }), []);
   useEffect(() => {
     if (!parentMenu || onDelete) return;
     parentMenu.setActions(colorControl);
@@ -35,7 +36,7 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   if (parentMenu && !onDelete) return <>{children}</>;
   const Tag = inline ? 'span' : 'div';
   return <Tag className={`lp-element-box${inline ? ' lp-element-inline' : ''}${cover ? ' lp-element-cover' : ''}`} style={controlStyle}>
-    <LandingEditActionsContext.Provider value={{ setActions: setNestedActions }}>{children}</LandingEditActionsContext.Provider>
+    <LandingEditActionsContext.Provider value={actionContext}>{children}</LandingEditActionsContext.Provider>
     <LandingEditMenu label={label?.replace('löschen', 'bearbeiten')}>
       {colorControl}{nestedActions}
       {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
