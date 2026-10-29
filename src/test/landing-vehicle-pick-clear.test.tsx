@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
+import { appendFileSync } from 'node:fs';
+const mark = (m: string) => appendFileSync('/tmp/marks.txt', m + '\n');
 
 const VEHICLE = {
   id: 'vehicle-1',
@@ -79,7 +81,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 
 import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 
-afterEach(() => cleanup());
+afterEach(() => { mark('cleanup'); cleanup(); mark('cleanup-end'); });
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -89,27 +91,26 @@ const priceInput = () => screen.getByPlaceholderText(/ab 299€/);
 const colorInput = () => screen.getByPlaceholderText(/Alpinweiß/);
 
 it('clears the taken-over vehicle data when switching back to manual entry', async () => {
-  console.log('MARK start');
+  mark('start');
   render(<ManualLandingGenerator onBack={vi.fn()} onComplete={vi.fn()} />);
 
-  console.log('MARK rendered');
   // Prefill aus dem gewählten Fahrzeug abwarten.
   await waitFor(() => expect(priceInput().value).toBe('ab 299 €/mtl.'));
   expect(colorInput().value).toBe('Blau');
   expect(screen.getByTestId('brand').value).toBe('Volkswagen');
   expect(screen.getByTestId('model').value).toBe('Caddy');
 
-  console.log('MARK prefilled');
+  mark('prefilled');
   const manualOption = screen
     .getAllByTestId('option')
     .find(o => o.getAttribute('data-value') === '__none');
   expect(manualOption).toBeTruthy();
   fireEvent.click(manualOption as HTMLElement);
 
-  console.log('MARK clicked');
+  mark('clicked');
   await waitFor(() => expect(priceInput().value).toBe(''));
   expect(colorInput().value).toBe('');
   expect(screen.getByTestId('brand').value).toBe('');
   expect(screen.getByTestId('model').value).toBe('');
-  console.log('MARK done');
+  mark('done');
 });
