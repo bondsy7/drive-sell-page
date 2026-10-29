@@ -132,8 +132,6 @@
 .lp-root .lp-edit-trigger { width:36px; height:36px; padding:0; border-radius:50%; background:var(--lp-editor-control-bg); color:var(--lp-editor-control-fg); box-shadow:var(--lp-editor-control-shadow),var(--lp-editor-control-ring); opacity:0; pointer-events:none; }
 .lp-root .lp-edit-trigger:hover { background:var(--lp-editor-control-bg); color:var(--lp-editor-control-fg); }
 .lp-root .lp-section-controls .lp-edit-trigger { width:40px; height:40px; }
-.lp-root .lp-drag-handle { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:40px; height:40px; padding:0; z-index:48; border-radius:50%; cursor:grab; background:var(--lp-editor-control-bg); color:var(--lp-editor-control-fg); box-shadow:var(--lp-editor-control-shadow),var(--lp-editor-control-ring); opacity:0; pointer-events:none; }
-.lp-root .lp-sortable:hover > .lp-drag-handle,.lp-root .lp-sortable:focus-within > .lp-drag-handle { opacity:1; pointer-events:auto; }
 .lp-root .lp-section:hover > .lp-section-controls .lp-edit-trigger,.lp-root .lp-section:focus-within > .lp-section-controls .lp-edit-trigger { opacity:1; pointer-events:auto; }
 .lp-root .lp-element-box { padding-top:38px; }
 .lp-root .lp-element-inline,.lp-root .lp-element-cover { padding-top:0; }
@@ -147,19 +145,15 @@
 .lp-edit-menu .lp-delete-label { font-size:14px; line-height:20px; }
 .lp-edit-menu .lp-delete-icon { width:16px; height:20px; margin-right:8px; }
 .lp-edit-menu .lp-element-delete:hover { background:hsl(var(--accent)); color:hsl(var(--accent-foreground)); }
-@media (hover:none) { .lp-root .lp-edit-trigger,.lp-root .lp-drag-handle { opacity:1; pointer-events:auto; } }
+@media (hover:none) { .lp-root .lp-edit-trigger { opacity:1; pointer-events:auto; } }
 @container lp (max-width:900px) { .lp-root .lp-edit-trigger { opacity:1; pointer-events:auto; } .lp-root .lp-element-box:not(.lp-element-inline):not(.lp-element-cover) { padding-top:46px; } .lp-root .lp-edit-trigger { width:40px; height:40px; } .lp-root .lp-element-inline > .lp-edit-trigger { top:-44px; } }
 .lp-root .lp-resize-editable:has(> .lp-section) { padding-top:56px; }
 .lp-root .lp-resize-editable > .lp-section > .lp-section-controls { top:-46px !important; left:calc(50% + 4px) !important; }
 .lp-root .lp-resize-editable:has(> .lp-section) > .lp-section-resize-top { top:10px; left:calc(50% - 44px); }
-.lp-root .lp-sortable > .lp-section-resize > .lp-section > .lp-section-controls { left:calc(50% + 24px) !important; }
-.lp-root .lp-sortable > .lp-section-resize > .lp-section-resize-top { left:calc(50% - 64px); }
-.lp-root .lp-sortable > .lp-drag-handle { left:calc(50% - 20px); transform:none; }
 .lp-root .lp-resize-editable:has(> .lp-section)::before { content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%); width:100px; height:48px; border-radius:8px; background:hsl(var(--muted)); }
-.lp-root .lp-sortable > .lp-resize-editable:has(> .lp-section)::before { width:144px; }
 .lp-root .lp-resize-editable:has(> .lp-section)::before { opacity:0; transition:opacity 140ms ease; }
 .lp-root .lp-resize-editable:is(:hover,:focus-within):has(> .lp-section)::before { opacity:1; }
-.lp-root .lp-resize-editable:is(:hover,:focus-within):has(> .lp-section) > .lp-section-resize-top,.lp-root .lp-resize-editable:is(:hover,:focus-within) > .lp-section > .lp-section-controls .lp-edit-trigger,.lp-root .lp-sortable:is(:hover,:focus-within) > .lp-drag-handle { opacity:1; pointer-events:auto; }
+.lp-root .lp-resize-editable:is(:hover,:focus-within):has(> .lp-section) > .lp-section-resize-top,.lp-root .lp-resize-editable:is(:hover,:focus-within) > .lp-section > .lp-section-controls .lp-edit-trigger { opacity:1; pointer-events:auto; }
 @media (hover:none) { .lp-root .lp-resize-editable:has(> .lp-section)::before,.lp-root .lp-resize-editable > .lp-section-resize-handle { opacity:1; pointer-events:auto; } }
 .lp-root .lp-element-cover:has(> .lp-section-resize) > .lp-edit-trigger { left:calc(50% + 4px); right:auto; }
 .lp-root .lp-element-cover > .lp-section-resize > .lp-section-resize-top { left:calc(50% - 44px); }
