@@ -17,7 +17,7 @@ import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosur
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import TextColorButton from '@/components/landing/TextColorButton';
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
-import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
+import { editorControlStyle, landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
 import {
   LIVE_INVENTORY_CSS,
@@ -200,8 +200,9 @@ const SectionShell: React.FC<{
   onAddAfter?: () => void;
   children: React.ReactNode;
   bg?: string;
+  surface?: string;
   colorControl?: React.ReactNode;
-}> = ({ id, editable, enabled = true, onMove, onToggle, onDelete, onAddAfter, children, bg, colorControl }) => {
+}> = ({ id, editable, enabled = true, onMove, onToggle, onDelete, onAddAfter, children, bg, surface, colorControl }) => {
   if (!enabled && !editable) return null;
   return (
     <motion.section
@@ -211,7 +212,7 @@ const SectionShell: React.FC<{
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="lp-section"
-      style={{ position: 'relative', background: bg, opacity: enabled ? 1 : 0.4 }}
+      style={{ position: 'relative', background: bg, opacity: enabled ? 1 : 0.4, ...editorControlStyle(surface ?? bg) }}
     >
       {editable && <div className="lp-section-controls">
         <div
@@ -392,7 +393,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const liveAt = liveInsertIndex(content);
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
-      <LandingElementBox editable={editable} cover onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
+      <LandingElementBox editable={editable} cover controlOn="#ffffff" onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
         <LiveVehicleShowcase
           config={liveInventory.config}
           vehicles={liveInventory.vehicles}
@@ -463,7 +464,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       `}</style>
 
       {/* Sticky header */}
-      <LandingElementBox editable={editable} hidden={removed('header')} onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen">
+      <LandingElementBox editable={editable} hidden={removed('header')} controlOn="#ffffff" onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen">
       <header
         style={{
           position: 'sticky',
@@ -714,7 +715,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       {liveAt >= sections.length && liveNode}
 
       {/* Contact */}
-      <LandingElementBox editable={editable} cover hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
+      <LandingElementBox editable={editable} cover controlOn="#ffffff" hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
       <section
         id="kontakt"
         style={{
@@ -853,7 +854,7 @@ const SectionRenderer: React.FC<{
   // CTA band
   if (s.type === 'cta') {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={theme.custom ? bg : undefined}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={theme.custom ? bg : undefined} surface={theme.custom ? bg : '#0b1220'}>
         <div
           className="lp-section-inner"
           style={{
