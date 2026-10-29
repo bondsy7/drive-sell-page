@@ -744,8 +744,11 @@ const SectionRenderer: React.FC<{
   backgroundColor,
   colorControl,
   textColors,
+  buttonColors,
   profileColors,
   onTextColorChange,
+  onButtonColorChange,
+
   removedElements,
   onDeleteElement,
   index,

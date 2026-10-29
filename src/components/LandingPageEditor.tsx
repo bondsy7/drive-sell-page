@@ -42,6 +42,8 @@ import {
 } from '@/lib/landing-credit-costs';
 import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
 import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
+import { buttonColorOverride } from '@/lib/landing-section-colors';
+
 import LandingStatusSelect from '@/components/landing/LandingStatusSelect';
 
 interface LandingPageEditorProps {
@@ -530,7 +532,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {contactFormEnabled && viewMode === 'edit' && <ContactFormWidgetPreview config={contactFormConfig} accent={dealer.secondaryColor} phone={dealer.phone} vehicleLabel={vehicleTitle} />}
+      {contactFormEnabled && viewMode === 'edit' && <ContactFormWidgetPreview config={contactFormConfig} accent={buttonColorOverride(content.buttonColors?.kontakt, dealer.secondaryColor)} phone={dealer.phone} vehicleLabel={vehicleTitle} />}
 
       {/* Canvas */}
       <div className="flex-1 overflow-auto p-4 sm:p-6 flex justify-center">
@@ -568,6 +570,12 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 if (color) textColors[id] = color; else delete textColors[id];
                 return { ...previous, textColors };
               })}
+              onButtonColorChange={(id, color) => setContent(previous => {
+                const buttonColors = { ...previous.buttonColors };
+                if (color) buttonColors[id] = color; else delete buttonColors[id];
+                return { ...previous, buttonColors };
+              })}
+
               onDeleteElement={deleteElement}
               onResizeLogo={(id, height) => setContent(previous => ({ ...previous, logoSizes: { ...previous.logoSizes, [id]: height } }))}
               onResizeSection={(id, height) => setContent(previous => ({ ...previous, sectionHeights: { ...previous.sectionHeights, [id]: height } }))}
