@@ -301,6 +301,7 @@ serve(async (req) => {
 
     // Landingpage erzeugt 1× Content + 6-8× Bilder (Gemini Flash Image).
     // Real-EK ≈ $0.30 → 5 Credits = €1,125 @200er-Pack ≈ +€0,84 Marge.
+    // Muss mit `cost` in src/components/ManualLandingGenerator.tsx übereinstimmen (Text + KI-Bilder inklusive).
     const totalCost = 5;
     const authResult = await authenticateAndDeductCredits(req, totalCost);
     if (authResult instanceof Response) return authResult;

@@ -669,8 +669,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           </div>
 
           <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground">
-            Nach dem Bestätigen werden {cost} Credits verbraucht. Die Generierung dauert einige Minuten
-            und kann nicht rückgängig gemacht werden.
+            Nach dem Bestätigen werden {cost} Credits verbraucht (Texte und KI-Bilder inklusive).
+            Die Generierung dauert einige Minuten und kann nicht rückgängig gemacht werden.
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
