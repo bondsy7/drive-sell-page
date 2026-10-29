@@ -1,3 +1,6 @@
+## Aufgeräumte Landingpage-Bearbeitung (29.10.2026)
+- [ ] Abschnittsaktionen zentral, Elementaktionen im Stift-Menü; Desktop, Mobil und Tablet sowie bestehende Bearbeitung prüfen.
+
 ## Landingpage-Abschnittshöhen (29.10.2026)
 - [x] Obere/untere Ziehgriffe, inhaltsabhängige Mindesthöhe mit 32px Randabstand, Speicherung/Rückgängig und gleiche Vorschau/HTML geprüft; 27 Tests erfolgreich. An Pauls KIA-Seite Vergrößern/Verkleinern, obere Kante, gespeicherten Wert und HTML (894px), Vorschau ohne Griffe und mobile Ansicht ohne Überlauf geprüft; Teständerungen rückgängig, nicht veröffentlicht.
 

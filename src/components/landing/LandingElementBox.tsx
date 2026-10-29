@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import LandingEditMenu, { LandingEditActionsContext } from '@/components/landing/LandingEditMenu';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { editorControlStyle } from '@/lib/landing-theme';
@@ -22,36 +23,22 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   // Control colours are resolved per surface: a white pill on a white header is
   // unreadable, so light surfaces get a dark pill instead.
   const controlStyle = editorControlStyle(controlOn) as CSSProperties | undefined;
+  const parentMenu = useContext(LandingEditActionsContext);
+  const [nestedActions, setNestedActions] = useState<ReactNode>(null);
+  useEffect(() => {
+    if (!parentMenu || onDelete) return;
+    parentMenu.setActions(colorControl);
+    return () => parentMenu.setActions(null);
+  }, [parentMenu, colorControl, onDelete]);
   if (hidden) return null;
   if (!editable || (!onDelete && !colorControl)) return <>{children}</>;
+  if (parentMenu && !onDelete) return <>{children}</>;
   const Tag = inline ? 'span' : 'div';
-  if (inline) {
-    // Inline elements (e.g. CTA buttons) must keep their natural height: the hover
-    // controls float in one row above the element instead of reserving padding.
-    return <Tag className={`lp-element-box lp-element-inline${colorControl ? ' lp-has-color' : ''}${!onDelete ? ' lp-color-only' : ''}`} style={controlStyle}>
-      {children}
-      {(colorControl || onDelete) && (
-        <span className="lp-controls-row"
-          onMouseDown={event => event.preventDefault()}
-          onClick={event => { event.preventDefault(); event.stopPropagation(); }}>
-          {colorControl}
-          {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
-        </span>
-      )}
-    </Tag>;
-  }
-  // Block elements: delete and colour button share one row inside the narrow
-  // strip reserved above the content, so a headline and its text stay close.
-  // Cover boxes (full-width sections) overlay their controls inside the section
-  // instead of reserving space – a transparent padding strip would show as a
-  // white block between sections.
-  return <Tag className={`lp-element-box${cover ? ' lp-element-cover' : ''}`} style={controlStyle}>
-    {children}
-    <span className="lp-controls-row"
-      onMouseDown={event => event.preventDefault()}
-      onClick={event => { event.preventDefault(); event.stopPropagation(); }}>
-      {colorControl}
+  return <Tag className={`lp-element-box${inline ? ' lp-element-inline' : ''}${cover ? ' lp-element-cover' : ''}`} style={controlStyle}>
+    <LandingEditActionsContext.Provider value={{ setActions: setNestedActions }}>{children}</LandingEditActionsContext.Provider>
+    <LandingEditMenu label={label?.replace('löschen', 'bearbeiten')}>
+      {colorControl}{nestedActions}
       {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
-    </span>
+    </LandingEditMenu>
   </Tag>;
 }
