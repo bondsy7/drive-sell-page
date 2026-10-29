@@ -58,7 +58,6 @@ export interface RendererProps {
   onUpdateSection?: (id: string, field: 'headline' | 'content', value: string) => void;
   onReplaceImage?: (sectionId: string) => void;
   onMoveSection?: (id: string, dir: 'up' | 'down') => void;
-  onReorderSection?: (dragId: string, targetId: string, position: 'before' | 'after') => void;
   onToggleSection?: (id: string) => void;
   onDeleteSection?: (id: string) => void;
   onSectionColorChange?: (id: string, color: string | null) => void;
@@ -231,7 +230,6 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onInsertImage,
   onDeleteStackImage,
   onMoveSection,
-  onReorderSection,
   onToggleSection,
   onDeleteSection,
   onSectionColorChange,
