@@ -53,4 +53,8 @@ it('renders the vehicle picker without opening it', async () => {
   const trigger = label.parentElement?.querySelector('[role="combobox"]');
   console.log('TRIGGER:', trigger?.textContent);
   expect(trigger).not.toBeNull();
+  fireEvent.keyDown(trigger as HTMLElement, { key: 'ArrowDown' });
+  const opt = await screen.findByRole('option', { name: /Volkswagen Golf Life/ }, { timeout: 3000 });
+  console.log('OPTION:', JSON.stringify(opt.textContent));
+  expect(opt.textContent).toContain('2026');
 });
