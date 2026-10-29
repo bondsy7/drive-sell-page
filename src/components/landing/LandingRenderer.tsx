@@ -4,7 +4,7 @@ import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicke
 import LandingSectionResize, { LandingSectionSizeContext } from '@/components/landing/LandingSectionResize';
 import LandingHeaderResize from '@/components/landing/LandingHeaderResize';
 import { LANDING_SECTION_HEIGHT_CSS } from '@/lib/landing-section-height';
-import { normalizeSectionColor, sectionColorTheme, textColorOverride } from '@/lib/landing-section-colors';
+import { buttonColorOverride, normalizeSectionColor, sectionColorTheme, textColorOverride } from '@/lib/landing-section-colors';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import LandingLogo, { LogoSizeControl } from '@/components/landing/LandingLogo';
 import ImageFrame from '@/components/landing/LandingImageFrame';
@@ -21,6 +21,8 @@ import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import TextColorButton from '@/components/landing/TextColorButton';
+import ButtonColorButton from '@/components/landing/ButtonColorButton';
+
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { editorControlStyle, landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
@@ -62,6 +64,8 @@ export interface RendererProps {
   onDeleteSection?: (id: string) => void;
   onSectionColorChange?: (id: string, color: string | null) => void;
   onTextColorChange?: (id: string, color: string | null) => void;
+  onButtonColorChange?: (id: string, color: string | null) => void;
+
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
   onResizeSection?: (id: string, height: number) => void;
@@ -234,6 +238,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onDeleteSection,
   onSectionColorChange,
   onTextColorChange,
+  onButtonColorChange,
+
   onDeleteElement,
   onResizeLogo,
   onResizeSection,
@@ -258,6 +264,11 @@ const LandingRenderer: React.FC<RendererProps> = ({
     ? <TextColorButton value={content.textColors?.[id]} colors={profileColors} onChange={color => onTextColorChange(id, color)} />
     : undefined;
   const textOverride = (id: string, fallback: string) => textColorOverride(content.textColors?.[id], fallback);
+  const buttonControl = (id: string) => editable && onButtonColorChange
+    ? <ButtonColorButton value={content.buttonColors?.[id]} colors={profileColors} onChange={color => onButtonColorChange(id, color)} />
+    : undefined;
+  const buttonColor = (id: string, fallback: string) => buttonColorOverride(content.buttonColors?.[id], fallback);
+
 
   const removed = (id: string) => isLandingElementRemoved(content, id);
   const heroHasImage = !removed('hero.image');
@@ -301,6 +312,10 @@ const LandingRenderer: React.FC<RendererProps> = ({
     </SortableSection>
   ) : null;
   const heroCtaText = content.hero?.ctaText || 'Jetzt anfragen';
+  const headerButtonBg = buttonColor('header', primary);
+  const heroCtaBg = buttonColor('hero.ctaText', secondary);
+  const heroWhatsappBg = normalizeSectionColor(content.buttonColors?.['hero.whatsapp']);
+
 
   return (
     <LandingSectionSizeContext.Provider value={{ heights: content.sectionHeights, onResize: onResizeSection }}>
@@ -361,7 +376,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       `}</style>
 
       {/* Sticky header */}
-      <LandingElementBox editable={editable} hidden={removed('header')} controlOn="#ffffff" onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen">
+      <LandingElementBox editable={editable} hidden={removed('header')} controlOn="#ffffff" onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen" colorControl={buttonControl('header')}>
       <LandingHeaderResize editable={editable} surface="#ffffff"
         style={{
           position: 'sticky',
@@ -389,8 +404,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
           <a
             href={`tel:${phone}`}
             style={{
-              background: 'var(--lp-primary)',
-              color: 'var(--lp-primary-on)',
+              background: headerButtonBg,
+              color: readableOn(headerButtonBg),
+
               padding: '10px 20px',
               borderRadius: 10,
               fontSize: 14,
