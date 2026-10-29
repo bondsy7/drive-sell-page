@@ -148,24 +148,12 @@ const Editable: React.FC<{
   );
 };
 
-type DragCtx = {
-  dragging: string | null;
-  dropHint: { id: string; pos: 'before' | 'after' } | null;
-  start: (id: string) => void;
-  hover: (id: string, pos: 'before' | 'after') => void;
-  end: () => void;
-  drop: (id: string, pos: 'before' | 'after') => void;
-};
-
-/** Drag-and-drop wrapper: handle centred on the top edge, drop indicator before/after the hovered section. */
-const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: React.ReactNode }> = ({ id, drag, children }) => {
-  if (!drag) return <>{children}</>;
-  return (
-    <div className="lp-sortable" style={{ position: 'relative' }}>
-      {children}
-    </div>
-  );
-};
+/** Wrapper that keeps sections relatively positioned for the editor controls. */
+const SortableSection: React.FC<{ id: string; children: React.ReactNode }> = ({ children }) => (
+  <div className="lp-sortable" style={{ position: 'relative' }}>
+    {children}
+  </div>
+);
 
 const SectionShell: React.FC<{
   id: string;
@@ -297,15 +285,6 @@ const LandingRenderer: React.FC<RendererProps> = ({
   );
 
   const sections = content.sections || [];
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [dropHint, setDropHint] = useState<{ id: string; pos: 'before' | 'after' } | null>(null);
-  const drag: DragCtx | null = editable && onReorderSection ? {
-    dragging, dropHint,
-    start: (id) => setDragging(id),
-    hover: (id, pos) => setDropHint(h => h?.id === id && h.pos === pos ? h : { id, pos }),
-    end: () => { setDragging(null); setDropHint(null); },
-    drop: (id, pos) => { if (dragging) onReorderSection(dragging, id, pos); setDragging(null); setDropHint(null); },
-  } : null;
   const liveAt = liveInsertIndex(content);
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
