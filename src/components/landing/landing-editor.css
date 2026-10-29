@@ -157,7 +157,10 @@
 .lp-root .lp-sortable > .lp-drag-handle { left:calc(50% - 20px); transform:none; }
 .lp-root .lp-resize-editable:has(> .lp-section)::before { content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%); width:100px; height:48px; border-radius:8px; background:hsl(var(--muted)); }
 .lp-root .lp-sortable > .lp-resize-editable:has(> .lp-section)::before { width:144px; }
-.lp-root .lp-resize-editable:has(> .lp-section) > .lp-section-resize-top,.lp-root .lp-resize-editable > .lp-section > .lp-section-controls .lp-edit-trigger,.lp-root .lp-sortable > .lp-drag-handle { opacity:1; pointer-events:auto; }
+.lp-root .lp-resize-editable:has(> .lp-section)::before { opacity:0; transition:opacity 140ms ease; }
+.lp-root .lp-resize-editable:is(:hover,:focus-within):has(> .lp-section)::before { opacity:1; }
+.lp-root .lp-resize-editable:is(:hover,:focus-within):has(> .lp-section) > .lp-section-resize-top,.lp-root .lp-resize-editable:is(:hover,:focus-within) > .lp-section > .lp-section-controls .lp-edit-trigger,.lp-root .lp-sortable:is(:hover,:focus-within) > .lp-drag-handle { opacity:1; pointer-events:auto; }
+@media (hover:none) { .lp-root .lp-resize-editable:has(> .lp-section)::before,.lp-root .lp-resize-editable > .lp-section-resize-handle { opacity:1; pointer-events:auto; } }
 .lp-root .lp-element-cover:has(> .lp-section-resize) > .lp-edit-trigger { left:calc(50% + 4px); right:auto; }
 .lp-root .lp-element-cover > .lp-section-resize > .lp-section-resize-top { left:calc(50% - 44px); }
 .lp-root .lp-sortable > .lp-element-cover > .lp-edit-trigger { left:calc(50% + 24px); }

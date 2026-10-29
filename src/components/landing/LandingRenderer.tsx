@@ -5,7 +5,7 @@ import LandingSectionResize, { LandingSectionSizeContext } from '@/components/la
 import { LANDING_SECTION_HEIGHT_CSS } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme, textColorOverride } from '@/lib/landing-section-colors';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
-import LandingLogo from '@/components/landing/LandingLogo';
+import LandingLogo, { LogoSizeControl } from '@/components/landing/LandingLogo';
 import ImageFrame from '@/components/landing/LandingImageFrame';
 import ImageStack from '@/components/landing/LandingImageStack';
 import { getImageStack, hasExtraImages } from '@/lib/landing-image-stack';
@@ -425,8 +425,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
       >
         <div className="lp-content-width lp-header-inner">
         <div className="lp-header-logos">
-          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen"><LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} /></LandingElementBox>}
-          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen"><LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} /></LandingElementBox>}
+          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen" colorControl={<LogoSizeControl id="header.brand" alt="Herstellerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} /></LandingElementBox>}
+          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen" colorControl={<LogoSizeControl id="header.dealer" alt="Händlerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} /></LandingElementBox>}
           {!dealerLogo && dealerName && (
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15 }}>{dealerName}</span>
           )}

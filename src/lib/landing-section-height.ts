@@ -22,7 +22,7 @@ export function sectionHeightAttributes(value: unknown): string {
   return height === undefined ? '' : ` class="lp-sized-section" style="--lp-section-height:${height}px"`;
 }
 
-/** No fixed height/overflow: long copy, stacked images and mobile reflow set the floor. */
+/** Images keep their own size; section height never shrinks them. No fixed height/overflow: long copy, stacked images and mobile reflow set the floor. */
 export const LANDING_SECTION_HEIGHT_CSS = `
 .lp-layout .lp-sized-section{position:relative;--lp-section-edge:${SECTION_EDGE_SPACE}px;--lp-section-image-min:${SECTION_MIN_IMAGE_HEIGHT}px}
 .lp-layout .lp-sized-section > section{min-height:0 !important;overflow:visible !important;padding-block:0 !important}
@@ -30,7 +30,5 @@ export const LANDING_SECTION_HEIGHT_CSS = `
 .lp-layout .lp-sized-section > section > .lp-hero-grid{display:grid;align-items:center}
 .lp-layout .lp-sized-section :is(.lp-hero-text,.lp-hero-media){min-height:0 !important}
 .lp-layout .lp-sized-section .lp-hero-media{align-self:center !important}
-.lp-layout .lp-sized-section :is(.lp-image-frame,.lp-split-media .lp-framed,.lp-hero-media .lp-framed){max-height:max(var(--lp-section-image-min),calc(var(--lp-section-height) - 2 * var(--lp-section-edge)))}
-.lp-layout .lp-sized-section .lp-hero-media:not(:has(.lp-image-frame,.lp-framed)){height:max(var(--lp-section-image-min),calc(var(--lp-section-height) - 2 * var(--lp-section-edge)));max-height:none}
 .lp-layout .lp-sized-section > section > .lp-section-controls{position:absolute;inset:0 0 auto;z-index:20}
 `;
