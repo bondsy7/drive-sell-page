@@ -36,3 +36,21 @@ export default function LandingLogo({ id, src, alt, sizes, editable = false, onR
     </div>
   );
 }
+
+/** Size slider for the logo's pencil menu; previews live, commits once for undo. */
+export function LogoSizeControl({ id, alt, sizes, onResize }: { id: LandingLogoId; alt: string; sizes?: LandingLogoSizes; onResize?: (id: LandingLogoId, height: number) => void }) {
+  const height = resolveLandingLogoHeight(sizes, id);
+  const [draft, setDraft] = useState(height);
+  useEffect(() => { setDraft(height); }, [height]);
+  const preview = (value: number) => {
+    document.querySelectorAll<HTMLImageElement>(`[data-logo-id="${id}"] img`).forEach(img => { img.style.height = `${value}px`; });
+  };
+  return (
+    <div className="space-y-3 px-3 py-2" onPointerDown={event => event.stopPropagation()}>
+      <div className="flex items-center justify-between gap-2 text-sm"><span>Logogröße</span><span className="text-muted-foreground">{draft} px</span></div>
+      <Slider aria-label={`${alt} – Logogröße`} min={16} max={160} step={1} value={[draft]}
+        onValueChange={values => { const next = values[0]; if (next !== undefined) { setDraft(next); preview(next); } }}
+        onValueCommit={values => { const next = values[0]; if (next !== undefined) onResize?.(id, next); }} />
+    </div>
+  );
+}
