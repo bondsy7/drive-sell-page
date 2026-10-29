@@ -1,6 +1,6 @@
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { buildLandingPageHTML } from '@/lib/landing-page-builder';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -157,9 +157,31 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     })();
   }, [user]);
 
+  // Merkt, ob gerade manuelle Eingabe statt Fahrzeugübernahme aktiv ist.
+  // Preventet, dass ein später eintreffendes Ergebnis in ein bereits geleertes
+  // manuelles Formular schreibt oder die Übernahme nach dem Zurücksetzen erneut läuft.
+  const manualModeRef = useRef(!vehicleIdParam);
+
+  const clearTakenOverVehicleData = () => {
+    setBrand('');
+    setModel('');
+    setVariant('');
+    setColor('');
+    setPrice('');
+    setPrefilledVehicleId(null);
+    // Nur die aus dem Fahrzeug übernommenen Bilder entfernen, eigene Uploads bleiben.
+    setUploadedImages(prev => prev.filter(img => !img.url || img.file));
+  };
+
   const selectVehicle = (id: string) => {
     const next = new URLSearchParams(searchParams);
-    if (id === '__none') next.delete('vehicle'); else next.set('vehicle', id);
+    manualModeRef.current = id === '__none';
+    if (id === '__none') {
+      next.delete('vehicle');
+      clearTakenOverVehicleData();
+    } else {
+      next.set('vehicle', id);
+    }
     setSearchParams(next, { replace: true });
     setAutoPromptShown(false);
   };
@@ -167,12 +189,15 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   // Prefill vehicle fields from DB whenever the selected vehicle (?vehicle=) changes
   useEffect(() => {
     if (!user || !vehicleIdParam || prefilledVehicleId === vehicleIdParam) return;
+    if (manualModeRef.current) return;
     (async () => {
       const { data: v } = await supabase
         .from('vehicles')
         .select('brand, model, color, vehicle_data')
         .eq('id', vehicleIdParam)
         .maybeSingle();
+      // Zwischenzeitlich auf „manuell" gewechselt -> Ergebnis verwerfen.
+      if (manualModeRef.current) return;
       setPrefilledVehicleId(vehicleIdParam);
       if (!v) return;
       const vd: any = (v as any).vehicle_data || {};
@@ -187,7 +212,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       const f: any = vd.finance || {};
       const rate = f.monthlyRate || f.monthly_rate || vd.monthlyRate;
       const priceVal = inner.price || vd.price || f.price;
-      if (rate) setPrice(`ab ${rate} €/mtl.`);
+      const rateText = String(rate).includes('€') ? String(rate) : `${rate} €`;
+      if (rate) setPrice(`ab ${rateText}/mtl.`);
       else if (priceVal) setPrice(String(priceVal).includes('€') ? String(priceVal) : `${priceVal} €`);
       toast.success('Fahrzeugdaten übernommen', { duration: 1800 });
     })();
