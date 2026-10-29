@@ -606,7 +606,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </Button>
         <div className="flex items-center justify-center gap-1">
           <span className="text-xs text-muted-foreground">
-            Kosten: <strong className="text-accent">{cost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
+            Kosten: <strong className="text-accent">{cost} Credits</strong> (inkl. KI-Bilder) — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
           </span>
         </div>
       </div>
