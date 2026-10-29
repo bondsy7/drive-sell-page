@@ -1,6 +1,6 @@
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { buildLandingPageHTML } from '@/lib/landing-page-builder';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -157,9 +157,37 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     })();
   }, [user]);
 
+  // Hält die gerade gewählte Fahrzeug-Id, damit ein später eintreffendes
+  // Ergebnis nicht mehr in ein bereits geleertes manuelles Formular schreibt.
+  const activeVehicleRef = useRef<string>(vehicleIdParam || '');
+  activeVehicleRef.current = vehicleIdParam || '';
+
+  const clearTakenOverVehicleData = () => {
+    setBrand('');
+    setModel('');
+    setVariant('');
+    setColor('');
+    setPrice('');
+    setPrefilledVehicleId(null);
+    // Nur die aus dem Fahrzeug übernommenen Bilder entfernen, eigene Uploads bleiben.
+    setUploadedImages(prev => {
+      const kept = prev.filter(img => !img.url || img.file);
+      kept.forEach(img => {
+        if (img.file && img.preview.startsWith('blob:')) { /* eigene Uploads behalten */ }
+      });
+      return kept;
+    });
+  };
+
   const selectVehicle = (id: string) => {
     const next = new URLSearchParams(searchParams);
-    if (id === '__none') next.delete('vehicle'); else next.set('vehicle', id);
+    if (id === '__none') {
+      next.delete('vehicle');
+      activeVehicleRef.current = '';
+      clearTakenOverVehicleData();
+    } else {
+      next.set('vehicle', id);
+    }
     setSearchParams(next, { replace: true });
     setAutoPromptShown(false);
   };
@@ -173,6 +201,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         .select('brand, model, color, vehicle_data')
         .eq('id', vehicleIdParam)
         .maybeSingle();
+      // Zwischenzeitlich auf „manuell" oder ein anderes Fahrzeug gewechselt -> verwerfen.
+      if (activeVehicleRef.current !== vehicleIdParam) return;
       setPrefilledVehicleId(vehicleIdParam);
       if (!v) return;
       const vd: any = (v as any).vehicle_data || {};
