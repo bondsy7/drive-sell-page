@@ -6,8 +6,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { normalizeSectionColor } from '@/lib/landing-section-colors';
 
 /** Hover-revealed companion to the delete button: changes the text colour of a text element. */
-export default function TextColorButton({ value, colors, onChange, label = 'Textfarbe ändern' }: {
+export default function TextColorButton({ value, colors, onChange, label = 'Textfarbe ändern', heading = 'Textfarbe', text = 'Textfarbe' }: {
   value?: string; colors: { label: string; value: string }[]; onChange: (color: string | null) => void; label?: string;
+  heading?: string; text?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value || colors[0]?.value || '');
@@ -16,11 +17,12 @@ export default function TextColorButton({ value, colors, onChange, label = 'Text
     <PopoverTrigger asChild>
       <Button type="button" variant="ghost" size="sm" className="lp-element-color" title={label} aria-label={label}>
         <span className="lp-delete-icon"><Palette size={16} aria-hidden="true" /></span>
-        <span className="lp-delete-label">Textfarbe</span>
+        <span className="lp-delete-label">{text}</span>
       </Button>
     </PopoverTrigger>
     <PopoverContent align="end" className="w-64 space-y-3" onOpenAutoFocus={event => event.preventDefault()} onClick={event => event.stopPropagation()}>
-      <p className="text-sm font-semibold">Textfarbe</p>
+      <p className="text-sm font-semibold">{heading}</p>
+
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">Profilfarben</p>
         {colors.length === 0 && <p className="text-xs text-muted-foreground">Keine Profilfarben gespeichert.</p>}

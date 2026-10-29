@@ -16,3 +16,8 @@ export function sectionColorTheme(custom: unknown, bgStyle: string, primary: str
 export function textColorOverride(custom: unknown, fallback: string): string {
   return normalizeSectionColor(custom) || fallback;
 }
+
+/** Stored background colour for a button element, falling back to the page's own button colour. */
+export function buttonColorOverride(custom: unknown, fallback: string): string {
+  return normalizeSectionColor(custom) || fallback;
+}
