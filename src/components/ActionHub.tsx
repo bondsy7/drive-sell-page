@@ -12,6 +12,7 @@ import afterAsset from '@/assets/funnel/after1.webp.asset.json';
 import photoAsset from '@/assets/showroom-glanz.webp.asset.json';
 import marketingAsset from '@/assets/marketing-formate.webp.asset.json';
 import backgroundSwapAsset from '@/assets/hintergrund-1.jpg.asset.json';
+import auto3LogoAsset from '@/assets/auto3-logo.png.asset.json';
 import { useAuto3Config } from '@/hooks/useAuto3Config';
 import GeneratorMaintenanceNotice from '@/components/GeneratorMaintenanceNotice';
 
@@ -43,6 +44,7 @@ interface ActionTile {
   badge?: string;
   cta?: string;
   image?: string;
+  logo?: string;
   disabled?: boolean;
 }
 
@@ -120,6 +122,11 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           <div className={cn('relative h-28 w-full self-center overflow-hidden border-t border-border/70', featured && 'sm:absolute sm:inset-y-0 sm:right-0 sm:h-full sm:w-[46%] sm:border-l sm:border-t-0')}>
             <img src={tile.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/15 to-transparent" />
+          </div>
+        )}
+        {tile.logo && (
+          <div className={cn('relative flex h-20 w-full items-center justify-center self-center border-t border-border/70 px-8 py-4', featured && 'sm:absolute sm:inset-y-0 sm:right-0 sm:h-full sm:w-[46%] sm:border-l sm:border-t-0')}>
+            <img src={tile.logo} alt="" className="max-h-full max-w-[70%] object-contain" />
           </div>
         )}
       </Button>
@@ -211,7 +218,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
             <h2 id="generator-auto3" className="font-display text-xl font-bold text-foreground">Verbundene Fahrzeugquellen</h2>
             <p className="text-xs text-muted-foreground">Bestand übernehmen und Aufbereitung automatisieren</p>
           </div>
-          {renderTool({ id: 'auto3', icon: <CarFront />, title: 'Auto3 Fahrzeugbestand', description: 'Fahrzeuge suchen, Originalbilder übernehmen und OneShot-Aufbereitung mit Ihren freigegebenen Regeln starten.', group: 'verkauf', badge: 'Verbunden', cta: 'Bestand öffnen' }, true)}
+          {renderTool({ id: 'auto3', icon: <CarFront />, title: 'Auto3 Fahrzeugbestand', description: 'Fahrzeuge suchen, Originalbilder übernehmen und OneShot-Aufbereitung mit Ihren freigegebenen Regeln starten.', group: 'verkauf', badge: 'Verbunden', cta: 'Bestand öffnen', logo: auto3LogoAsset.url }, true)}
         </section>
       )}
 
