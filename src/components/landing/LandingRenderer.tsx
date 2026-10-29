@@ -1,4 +1,6 @@
 import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
+import LandingSectionResize, { LandingSectionSizeContext } from '@/components/landing/LandingSectionResize';
+import { LANDING_SECTION_HEIGHT_CSS } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme, textColorOverride } from '@/lib/landing-section-colors';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import LandingLogo from '@/components/landing/LandingLogo';
@@ -60,6 +62,7 @@ export interface RendererProps {
   onTextColorChange?: (id: string, color: string | null) => void;
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
+  onResizeSection?: (id: string, height: number) => void;
   /** Desktop editor only: frame/pan/zoom tools for images. */
   frameEditing?: boolean;
   onFrameChange?: (imageId: string, frame: LandingImageFrame | null) => void;
@@ -205,7 +208,7 @@ const SectionShell: React.FC<{
 }> = ({ id, editable, enabled = true, onMove, onToggle, onDelete, onAddAfter, children, bg, surface, colorControl }) => {
   if (!enabled && !editable) return null;
   return (
-    <motion.section
+    <LandingSectionResize id={id} editable={editable} surface={surface ?? bg}><motion.section
       id={id}
       initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -287,7 +290,7 @@ const SectionShell: React.FC<{
           </button>
         </div>
       )}
-    </motion.section>
+    </motion.section></LandingSectionResize>
   );
 };
 
@@ -335,6 +338,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onTextColorChange,
   onDeleteElement,
   onResizeLogo,
+  onResizeSection,
   frameEditing = false,
   onFrameChange,
   onAddSection,
@@ -394,6 +398,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
       <LandingElementBox editable={editable} cover controlOn="#ffffff" onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
+      <LandingSectionResize id={LIVE_BLOCK_ID} editable={editable}>
         <LiveVehicleShowcase
           config={liveInventory.config}
           vehicles={liveInventory.vehicles}
@@ -402,12 +407,14 @@ const LandingRenderer: React.FC<RendererProps> = ({
           error={liveInventory.error}
           editable={editable}
         />
+      </LandingSectionResize>
       </LandingElementBox>
     </SortableSection>
   ) : null;
   const heroCtaText = content.hero?.ctaText || 'Jetzt anfragen';
 
   return (
+    <LandingSectionSizeContext.Provider value={{ heights: content.sectionHeights, onResize: onResizeSection }}>
     <div className="lp-root lp-layout" style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
       <style>{`
         .lp-root h1,.lp-root h2,.lp-root h3{font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;letter-spacing:-0.01em;color:#0f172a}
@@ -461,6 +468,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         ${LANDING_LAYOUT_CSS}
         ${LANDING_LOGO_CSS}
         ${LANDING_IMAGE_FRAME_CSS}
+        ${LANDING_SECTION_HEIGHT_CSS}
       `}</style>
 
       {/* Sticky header */}
@@ -715,7 +723,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
       {liveAt >= sections.length && liveNode}
 
       {/* Contact */}
+      {!removed('kontakt') && <>
       <LandingElementBox editable={editable} cover controlOn="#ffffff" hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
+      <LandingSectionResize id="kontakt" editable={editable}>
       <section
         id="kontakt"
         style={{
@@ -752,13 +762,15 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>
         </div>
       </section>
-      </LandingElementBox>
+      </LandingSectionResize>
+      </LandingElementBox></>}
 
       {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && !liveInventory.loading && (
         <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} title={liveInventory.config.financeTitle} />
       )}
 
     </div>
+    </LandingSectionSizeContext.Provider>
   );
 };
 
