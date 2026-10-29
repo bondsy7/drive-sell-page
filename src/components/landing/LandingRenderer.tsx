@@ -287,7 +287,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const sections = content.sections || [];
   const liveAt = liveInsertIndex(content);
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
-    <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
+    <SortableSection id={LIVE_BLOCK_ID}>
       <LandingElementBox editable={editable} cover controlOn="#ffffff" onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
       <LandingSectionResize id={LIVE_BLOCK_ID} editable={editable}>
         <LiveVehicleShowcase
@@ -551,7 +551,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       {sections.map((s, idx) => (
         <React.Fragment key={s.id}>
         {idx === liveAt && liveNode}
-        <SortableSection id={s.id} drag={drag}>
+        <SortableSection id={s.id}>
         <SectionRenderer
           key={s.id}
           section={s}
