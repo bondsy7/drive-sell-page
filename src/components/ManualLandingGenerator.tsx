@@ -151,7 +151,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   }, [user, vehicleIdParam, vehicleDataPrefilled, brand, model, variant, color]);
 
   const canGenerate = brand.trim() && model.trim() && pageType;
-  const cost = 3;
+  // Muss mit totalCost in supabase/functions/generate-landing-page/index.ts übereinstimmen (Text + KI-Bilder inklusive).
+  const cost = 5;
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
