@@ -15,7 +15,7 @@ import { LANDING_LOGO_CSS, type LandingLogoId } from '@/lib/landing-logo-size';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { liveInsertIndex, LIVE_BLOCK_ID } from '@/lib/landing-section-order';
 import { motion } from 'framer-motion';
-import { RefreshCw, Sparkles, ArrowUp, ArrowDown, GripHorizontal, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
+import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
@@ -159,34 +159,10 @@ type DragCtx = {
 
 /** Drag-and-drop wrapper: handle centred on the top edge, drop indicator before/after the hovered section. */
 const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: React.ReactNode }> = ({ id, drag, children }) => {
-  const [hovered, setHovered] = useState(false);
   if (!drag) return <>{children}</>;
-  const showHandle = hovered || drag.dragging === id;
-  const posFor = (e: React.DragEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    return e.clientY < r.top + r.height / 2 ? 'before' : 'after';
-  };
-  const hint = drag.dragging && drag.dragging !== id && drag.dropHint?.id === id ? drag.dropHint.pos : null;
-  const line: React.CSSProperties = { position: 'absolute', left: 0, right: 0, height: 4, background: '#174f6b', zIndex: 40, pointerEvents: 'none', borderRadius: 2 };
   return (
-    <div
-      className="lp-sortable"
-      style={{ position: 'relative', opacity: drag.dragging === id ? 0.45 : 1 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onDragOver={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.hover(id, posFor(e)); }}
-      onDrop={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.drop(id, posFor(e)); }}
-    >
-      {hint === 'before' && <div style={{ ...line, top: -2 }} />}
-      <Button
-        type="button" variant="outline" size="icon" draggable
-        className="lp-drag-handle"
-        title="Abschnitt verschieben" aria-label="Abschnitt verschieben"
-        onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); drag.start(id); }}
-        onDragEnd={drag.end}
-      ><GripHorizontal size={16} /></Button>
+    <div className="lp-sortable" style={{ position: 'relative' }}>
       {children}
-      {hint === 'after' && <div style={{ ...line, bottom: -2 }} />}
     </div>
   );
 };
