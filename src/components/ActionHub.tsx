@@ -127,7 +127,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
         )}
         {tile.logo && (
           <div className={cn('relative flex h-20 w-full items-center justify-center self-center border-t border-border/70 px-8 py-4', featured && 'sm:absolute sm:inset-y-0 sm:right-0 sm:h-full sm:w-[46%] sm:border-l sm:border-t-0')}>
-            <img src={tile.logo} alt="" className="max-h-full max-w-[70%] object-contain" />
+            <img src={tile.logo} alt="" className="max-h-[85%] max-w-[60%] object-contain" />
           </div>
         )}
       </Button>
