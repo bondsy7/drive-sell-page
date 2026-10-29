@@ -15,7 +15,7 @@ describe('section resizing commits', () => {
     button.setPointerCapture = vi.fn();
     button.hasPointerCapture = () => false;
     // jsdom has no native PointerEvent; provide real pointer coordinates.
-    const pointer = (target: EventTarget, type: string, y: number) => {
+    const pointer = (target: Element | Window, type: string, y: number) => {
       const event = new Event(type, { bubbles: true });
       Object.assign(event, { pointerId: 1, button: 0, clientY: y });
       fireEvent(target, event);
@@ -37,7 +37,9 @@ describe('section resizing commits', () => {
     if (!button) throw new Error('Missing resize control');
     button.setPointerCapture = vi.fn();
     button.hasPointerCapture = () => false;
-    fireEvent.pointerDown(button, { button: 0 });
+    const start = new Event('pointerdown', { bubbles: true });
+    Object.assign(start, { button: 0, pointerId: 1, clientY: 0 });
+    fireEvent(button, start);
     fireEvent.pointerCancel(window);
     expect(onResize).not.toHaveBeenCalled();
   });
