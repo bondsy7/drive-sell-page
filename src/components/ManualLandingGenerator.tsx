@@ -189,6 +189,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   // Prefill vehicle fields from DB whenever the selected vehicle (?vehicle=) changes
   useEffect(() => {
     if (!user || !vehicleIdParam || prefilledVehicleId === vehicleIdParam) return;
+    // Bereits auf „manuell" gewechselt (Ref geleert) -> keine Daten mehr übernehmen.
+    if (!activeVehicleRef.current) return;
     (async () => {
       const { data: v } = await supabase
         .from('vehicles')

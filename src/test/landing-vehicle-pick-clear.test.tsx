@@ -86,9 +86,15 @@ it('clears the taken-over vehicle data when switching back to manual entry', asy
   // Prefill aus dem gewählten Fahrzeug abwarten.
   await waitFor(() => expect(priceInput().value).toBe('ab 299 €/mtl.'));
   expect(colorInput().value).toBe('Blau');
+  expect(screen.getByText('Volkswagen')).toBeTruthy();
 
-  fireEvent.click(screen.getByTestId('option').querySelector('[data-value="__none"]') as HTMLElement);
+  const manualOption = screen
+    .getAllByTestId('option')
+    .find(o => o.getAttribute('data-value') === '__none');
+  expect(manualOption).toBeTruthy();
+  fireEvent.click(manualOption as HTMLElement);
 
   await waitFor(() => expect(priceInput().value).toBe(''));
   expect(colorInput().value).toBe('');
+  expect(screen.getByText('Marke wählen...')).toBeTruthy();
 });
