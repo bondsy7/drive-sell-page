@@ -1,5 +1,5 @@
 import { liveInsertIndex } from '@/lib/landing-section-order';
-import { LANDING_SECTION_HEIGHT_CSS, sectionHeightAttributes } from '@/lib/landing-section-height';
+import { LANDING_SECTION_HEIGHT_CSS, normalizeSectionHeight, sectionHeightAttributes } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
 import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
@@ -259,6 +259,8 @@ export function buildLandingPageHTML(
   const onHero = readableOn(heroBackground);
   const onSecondary = readableOn(secondary);
   const textColors = content.textColors || {};
+  const headerHeight = normalizeSectionHeight(content.sectionHeights?.header);
+  const headerHeightStyle = headerHeight ? `;min-height:${headerHeight}px` : '';
 
   const removed = (id: string) => isLandingElementRemoved(content, id);
   const heroHasImage = !removed('hero.image');
@@ -366,7 +368,7 @@ export function buildLandingPageHTML(
   </style>
 </head>
 <body class="lp-layout">
-${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0">
+${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0${headerHeightStyle}">
     <div class="lp-content-width lp-header-inner">
     <div class="lp-header-logos">
       ${brandLogoUrl && !removed('header.brand') ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.brand', src: brandLogoUrl, alt: brand, sizes: content.logoSizes })) : ''}

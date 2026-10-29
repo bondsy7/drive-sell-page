@@ -2,6 +2,7 @@ import LandingEditMenu from '@/components/landing/LandingEditMenu';
 import { Button } from '@/components/ui/button';
 import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
 import LandingSectionResize, { LandingSectionSizeContext } from '@/components/landing/LandingSectionResize';
+import LandingHeaderResize from '@/components/landing/LandingHeaderResize';
 import { LANDING_SECTION_HEIGHT_CSS } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme, textColorOverride } from '@/lib/landing-section-colors';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
@@ -408,7 +409,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
       {/* Sticky header */}
       <LandingElementBox editable={editable} hidden={removed('header')} controlOn="#ffffff" onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen">
-      <header
+      <LandingHeaderResize editable={editable} surface="#ffffff"
         style={{
           position: 'sticky',
           top: 0,
@@ -447,7 +448,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </a>
         )}
         </div>
-      </header>
+      </LandingHeaderResize>
       </LandingElementBox>
 
       {/* HERO */}
