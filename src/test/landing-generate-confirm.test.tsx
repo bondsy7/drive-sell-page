@@ -31,6 +31,7 @@ vi.mock('@/integrations/supabase/client', () => ({
     from: () => ({
       select: () => ({
         eq: () => ({
+          order: () => ({ limit: () => Promise.resolve({ data: [] }) }),
           single: () => Promise.resolve({ data: null }),
           maybeSingle: () => Promise.resolve({ data: null }),
         }),
