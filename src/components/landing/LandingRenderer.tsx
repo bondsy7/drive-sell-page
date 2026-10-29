@@ -1,3 +1,5 @@
+import LandingEditMenu from '@/components/landing/LandingEditMenu';
+import { Button } from '@/components/ui/button';
 import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
 import LandingSectionResize, { LandingSectionSizeContext } from '@/components/landing/LandingSectionResize';
 import { LANDING_SECTION_HEIGHT_CSS } from '@/lib/landing-section-height';
@@ -175,18 +177,13 @@ const SortableSection: React.FC<{ id: string; drag: DragCtx | null; children: Re
       onDrop={(e) => { if (!drag.dragging) return; e.preventDefault(); drag.drop(id, posFor(e)); }}
     >
       {hint === 'before' && <div style={{ ...line, top: -2 }} />}
-      <button
-        type="button"
-        draggable
+      <Button
+        type="button" variant="outline" size="icon" draggable
         className="lp-drag-handle"
-        title="Abschnitt verschieben"
-        aria-label="Abschnitt verschieben"
+        title="Abschnitt verschieben" aria-label="Abschnitt verschieben"
         onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); drag.start(id); }}
         onDragEnd={drag.end}
-        style={{ position: 'absolute', top: 10, left: '50%', opacity: showHandle ? 1 : 0, pointerEvents: showHandle ? 'auto' : 'none', transition: 'opacity 140ms ease', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 24, borderRadius: 999, border: 'none', background: 'rgba(15,23,42,0.88)', color: '#fff', cursor: 'grab', boxShadow: '0 2px 8px rgba(0,0,0,.25)' }}
-      >
-        <GripHorizontal size={16} />
-      </button>
+      ><GripHorizontal size={16} /></Button>
       {children}
       {hint === 'after' && <div style={{ ...line, bottom: -2 }} />}
     </div>
@@ -218,78 +215,16 @@ const SectionShell: React.FC<{
       style={{ position: 'relative', background: bg, opacity: enabled ? 1 : 0.4, ...editorControlStyle(surface ?? bg) }}
     >
       {editable && <div className="lp-section-controls">
-        <div
-          className="lp-section-toolbar"
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            display: 'flex',
-            gap: 4,
-            background: 'rgba(15,23,42,0.92)',
-            padding: 4,
-            borderRadius: 8,
-            zIndex: 20,
-            opacity: 0,
-            transition: 'opacity 140ms ease',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <ToolbarButton onClick={() => onMove?.('up')} title="Nach oben"><ArrowUp size={14} /></ToolbarButton>
-          <ToolbarButton onClick={() => onMove?.('down')} title="Nach unten"><ArrowDown size={14} /></ToolbarButton>
-          <ToolbarButton onClick={onToggle} title={enabled ? 'Ausblenden' : 'Einblenden'}>
-            {enabled ? <Eye size={14} /> : <EyeOff size={14} />}
-          </ToolbarButton>
-
-        </div>
-        <div className="lp-section-actions">
-          {onDelete && <ElementDeleteButton onDelete={onDelete} label={id === 'hero' ? 'Header löschen' : 'Abschnitt löschen'} />}
+        <LandingEditMenu label={id === 'hero' ? 'Header bearbeiten' : 'Abschnitt bearbeiten'}>
+          {onMove && <Button variant="ghost" onClick={() => onMove('up')}><ArrowUp size={16} /> Nach oben</Button>}
+          {onMove && <Button variant="ghost" onClick={() => onMove('down')}><ArrowDown size={16} /> Nach unten</Button>}
+          {onToggle && <Button variant="ghost" onClick={onToggle}>{enabled ? <EyeOff size={16} /> : <Eye size={16} />} {enabled ? 'Ausblenden' : 'Einblenden'}</Button>}
           {colorControl}
-        </div>
+          {onAddAfter && <Button variant="ghost" onClick={onAddAfter}><Plus size={16} /> Abschnitt einfügen</Button>}
+          {onDelete && <ElementDeleteButton onDelete={onDelete} label={id === 'hero' ? 'Header löschen' : 'Abschnitt löschen'} />}
+        </LandingEditMenu>
       </div>}
       {children}
-      {editable && onAddAfter && (
-        <div
-          className="lp-section-insert"
-          style={{
-            position: 'relative',
-            height: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            zIndex: 15,
-          }}
-        >
-          <button
-            onClick={onAddAfter}
-            title="Abschnitt einfügen"
-            aria-label="Abschnitt einfügen"
-            style={{
-              position: 'absolute',
-              top: -15,
-              height: 30,
-              padding: '0 12px 0 8px',
-              gap: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-              borderRadius: 999,
-              border: '1px solid rgba(15,23,42,0.15)',
-              background: '#fff',
-              color: '#0f172a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
-              opacity: 0.85,
-              transition: 'opacity 140ms ease',
-            }}
-            className="lp-insert-btn"
-          >
-            <Plus size={14} /> Abschnitt einfügen
-          </button>
-        </div>
-      )}
     </motion.section></LandingSectionResize>
   );
 };

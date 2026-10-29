@@ -10,7 +10,8 @@ describe('section resizing commits', () => {
       <LandingSectionResize id="hero" editable><section>Content</section></LandingSectionResize>
     </LandingSectionSizeContext.Provider>);
     const wrapper = view.container.firstElementChild as HTMLElement;
-    wrapper.getBoundingClientRect = () => ({ height: 600 } as DOMRect);
+    wrapper.style.paddingTop = '56px';
+    wrapper.getBoundingClientRect = () => ({ height: 656 } as DOMRect);
     const button = view.getByRole('button', { name: 'Abschnittshöhe unten ändern' });
     button.setPointerCapture = vi.fn();
     button.hasPointerCapture = () => false;

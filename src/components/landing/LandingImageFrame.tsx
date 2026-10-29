@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { LandingImageInsertContext } from '@/components/landing/LandingImageStack';
 import { RefreshCw, Sparkles, ImageIcon, RotateCcw } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from '@/lib/ai-disclosure';
 import { ElementDeleteButton } from '@/components/landing/LandingElementBox';
+import LandingEditMenu from '@/components/landing/LandingEditMenu';
+import { Button } from '@/components/ui/button';
 import { rgba } from '@/lib/landing-theme';
 import {
   FRAME_MIN_HEIGHT_PX, FRAME_MIN_WIDTH_PCT, FRAME_ZOOM_MAX, FRAME_ZOOM_MIN,
@@ -32,8 +35,9 @@ interface Props {
 const SNAP_SELECTOR = '.lp-editable, a, button, .lp-image-frame, h1, h2, h3, p';
 
 function collectSnapEdges(self: HTMLElement) {
-  const scope = (self.closest('section') as HTMLElement | null) ?? self.parentElement!;
+  const scope = (self.closest('section') as HTMLElement | null) ?? self.parentElement;
   const xs: number[] = []; const ys: number[] = [];
+  if (!scope) return { xs, ys };
   scope.querySelectorAll<HTMLElement>(SNAP_SELECTOR).forEach(el => {
     if (el === self || self.contains(el) || el.contains(self) || el.closest('.lp-section-controls')) return;
     const r = el.getBoundingClientRect();
@@ -47,6 +51,7 @@ export default function LandingImageFrame({
   src, alt, aspect, editable, loading, onReplace, primary, onDelete,
   labelImage = true, rounded = true, frame, frameEditing = false, onFrameChange,
 }: Props) {
+  const insertActions = useContext(LandingImageInsertContext);
   const base = normalizeImageFrame(frame, parseAspect(aspect));
   const [draft, setDraft] = useState<LandingImageFrame>(base);
   const [mode, setMode] = useState<null | 'frame' | 'pan'>(null);
@@ -200,13 +205,13 @@ export default function LandingImageFrame({
         </div>
       )}
       {src && labelImage && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} className={`${AI_DISCLOSURE_OVERLAY_CLASS} z-10`} />}
-      {editable && onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
-
-      {editable && !tools && (
-        <button onClick={onReplace} className="lp-image-overlay" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: 'none', background: 'rgba(15,23,42,0)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: 0, transition: 'opacity 160ms ease, background-color 160ms ease' }}>
-          {loading ? <RefreshCw size={18} className="lp-spin" /> : <><Sparkles size={16} /> Bild ändern</>}
-        </button>
-      )}
+      {editable && <LandingEditMenu label="Bild bearbeiten" className="lp-image-edit-trigger">
+        <Button variant="ghost" onClick={onReplace} disabled={loading}>{loading ? <RefreshCw size={16} className="lp-spin" /> : <Sparkles size={16} />} Bild ändern</Button>
+        {tools && <Button variant="ghost" onClick={() => setMode('pan')}><ImageIcon size={16} /> Ausschnitt bearbeiten</Button>}
+        {tools && framed && <Button variant="ghost" onClick={() => { onFrameChange?.(null); setMode(null); }}><RotateCcw size={16} /> Zurücksetzen</Button>}
+        {insertActions}
+        {onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
+      </LandingEditMenu>}
 
       {tools && (
         <>
@@ -216,16 +221,6 @@ export default function LandingImageFrame({
           {handle('bottom', { left: 14, right: 14, bottom: 0, height: 10 }, 'ns-resize')}
           {handle('corner-left', { left: 0, bottom: 0, width: 14, height: 14 }, 'nesw-resize')}
           {handle('corner-right', { right: 0, bottom: 0, width: 14, height: 14 }, 'nwse-resize')}
-          <div className="lp-frame-toolbar" onPointerDown={e => e.stopPropagation()}>
-            <button type="button" onClick={onReplace} className="lp-frame-btn">
-              {loading ? <RefreshCw size={14} className="lp-spin" /> : <Sparkles size={14} />} Bild ändern
-            </button>
-            {framed && (
-              <button type="button" className="lp-frame-btn" onClick={() => { onFrameChange?.(null); setMode(null); }} title="Rahmen und Ausschnitt zurücksetzen">
-                <RotateCcw size={14} /> Zurücksetzen
-              </button>
-            )}
-          </div>
           {mode === 'pan' && src && (
             <div className="lp-frame-zoom" style={{ zIndex: 40 }} onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
               <span>Zoom</span>

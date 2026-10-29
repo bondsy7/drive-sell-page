@@ -1,3 +1,6 @@
+## Aufgeräumte Landingpage-Bearbeitung (29.10.2026)
+- [x] Abschnittsaktionen in zentraler Reihe, Element-/Bildaktionen im Stift-Menü, verschachtelte Textfarbe und Bild-Einfügen gebündelt; Desktop, Tablet, mobile Vorschau und echte 390px Handybreite geprüft. Farbwahl, Löschen/Rückgängig am Anfragebutton und Menüs ohne Browserfehler geprüft, Ausgangsinhalt erhalten; 20 Tests grün, nicht veröffentlicht.
+
 ## Landingpage-Abschnittshöhen (29.10.2026)
 - [x] Obere/untere Ziehgriffe, inhaltsabhängige Mindesthöhe mit 32px Randabstand, Speicherung/Rückgängig und gleiche Vorschau/HTML geprüft; 27 Tests erfolgreich. An Pauls KIA-Seite Vergrößern/Verkleinern, obere Kante, gespeicherten Wert und HTML (894px), Vorschau ohne Griffe und mobile Ansicht ohne Überlauf geprüft; Teständerungen rückgängig, nicht veröffentlicht.
 
