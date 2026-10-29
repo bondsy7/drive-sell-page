@@ -40,14 +40,52 @@ export function rgba(hex: string, alpha: number): string {
   return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
 }
 
-/** Text colour with enough contrast on the given background. */
-export function readableOn(hex: string): string {
+/** Relative luminance of a colour (0 dark … 1 light); -1 for unparsable input. */
+function luminanceOf(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return '#ffffff';
+  if (!rgb) return -1;
   const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((v) => {
     const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
   });
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.55 ? '#0f172a' : '#ffffff';
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** True when a surface is light enough that controls on it need a dark fill. */
+export function isLightSurface(hex: string): boolean {
+  return luminanceOf(hex) > 0.55;
+}
+
+/** Text colour with enough contrast on the given background. */
+export function readableOn(hex: string): string {
+  return isLightSurface(hex) ? '#0f172a' : '#ffffff';
+}
+
+export interface EditorControlColors {
+  background: string;
+  foreground: string;
+}
+
+/**
+ * Fill and label colours for the floating editor controls (delete pill, colour
+ * buttons). On light surfaces such as a white header the pill turns dark, so it
+ * never disappears into the page behind it.
+ */
+export function editorControlColors(surface: string): EditorControlColors {
+  return isLightSurface(surface)
+    ? { background: '#0f172a', foreground: '#ffffff' }
+    : { background: '#ffffff', foreground: '#0f172a' };
+}
+
+/**
+ * CSS custom properties recolouring the editor controls of a subtree. Returns
+ * undefined for unknown surfaces so the inherited default stays in place.
+ */
+export function editorControlStyle(surface?: string): Record<string, string> | undefined {
+  if (!surface || !HEX.test(surface)) return undefined;
+  const colors = editorControlColors(surface);
+  return {
+    '--lp-editor-control-bg': colors.background,
+    '--lp-editor-control-fg': colors.foreground,
+  };
 }

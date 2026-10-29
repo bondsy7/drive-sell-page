@@ -189,6 +189,7 @@
     --lp-editor-control-bg: #fff;
     --lp-editor-control-fg: #212121;
     --lp-editor-control-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+    --lp-editor-control-ring: 0 0 0 1px rgb(148 163 184 / 0.75);
 
     --vehicle-white: 0 0% 100%;
     --vehicle-black: 210 24% 16%;
