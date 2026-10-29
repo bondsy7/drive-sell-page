@@ -17,8 +17,8 @@ export function ElementDeleteButton({ onDelete, label = 'Element löschen', on }
   </Button>;
 }
 
-export default function LandingElementBox({ children, editable, onDelete, hidden = false, inline = false, cover = false, label, colorControl, controlOn }: {
-  children: ReactNode; editable: boolean; onDelete?: () => void; hidden?: boolean; inline?: boolean; cover?: boolean; label?: string; colorControl?: ReactNode; controlOn?: string;
+export default function LandingElementBox({ children, editable, onDelete, hidden = false, inline = false, cover = false, label, colorControl, controlOn, menuSide }: {
+  children: ReactNode; editable: boolean; onDelete?: () => void; hidden?: boolean; inline?: boolean; cover?: boolean; label?: string; colorControl?: ReactNode; controlOn?: string; menuSide?: 'top' | 'right' | 'bottom' | 'left';
 }) {
   // Control colours are resolved per surface: a white pill on a white header is
   // unreadable, so light surfaces get a dark pill instead.
@@ -37,7 +37,7 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
   const Tag = inline ? 'span' : 'div';
   return <Tag className={`lp-element-box${inline ? ' lp-element-inline' : ''}${cover ? ' lp-element-cover' : ''}`} style={controlStyle}>
     <LandingEditActionsContext.Provider value={actionContext}>{children}</LandingEditActionsContext.Provider>
-    <LandingEditMenu label={label?.replace('löschen', 'bearbeiten')}>
+    <LandingEditMenu label={label?.replace('löschen', 'bearbeiten')} side={menuSide}>
       {colorControl}{nestedActions}
       {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
     </LandingEditMenu>
