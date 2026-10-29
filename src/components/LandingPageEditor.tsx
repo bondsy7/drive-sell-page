@@ -1,4 +1,3 @@
-import { reorderSections } from '@/lib/landing-section-order';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -557,7 +556,6 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               }}
               onDeleteStackImage={deleteStackImage}
               onMoveSection={moveSection}
-              onReorderSection={(dragId, targetId, position) => setContent(prev => ({ ...prev, ...reorderSections(prev, dragId, targetId, position) }))}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
               onSectionColorChange={(id, color) => setContent(previous => {
