@@ -425,8 +425,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
       >
         <div className="lp-content-width lp-header-inner">
         <div className="lp-header-logos">
-          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen" colorControl={<LogoSizeControl id="header.brand" alt="Herstellerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} /></LandingElementBox>}
-          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen" colorControl={<LogoSizeControl id="header.dealer" alt="Händlerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} /></LandingElementBox>}
+          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline menuSide="right" onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen" colorControl={<LogoSizeControl id="header.brand" alt="Herstellerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} /></LandingElementBox>}
+          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline menuSide="right" onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen" colorControl={<LogoSizeControl id="header.dealer" alt="Händlerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} /></LandingElementBox>}
           {!dealerLogo && dealerName && (
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15 }}>{dealerName}</span>
           )}
