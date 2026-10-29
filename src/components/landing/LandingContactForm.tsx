@@ -61,7 +61,7 @@ export const ContactFormConfigDialog: React.FC<{
 };
 
 /** Editor-only stand-in for the floating "Jetzt anfragen" widget of the published page. */
-export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConfig; accent?: string; phone?: string }> = ({ config, accent, phone }) => {
+export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConfig; accent?: string; phone?: string; vehicleLabel?: string }> = ({ config, accent, phone, vehicleLabel }) => {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   // Same colour the page's own buttons use, so the widget never stands out.
@@ -84,7 +84,7 @@ export const ContactFormWidgetPreview: React.FC<{ config: LandingContactFormConf
             <DialogDescription className="sr-only">{config.intro || 'Anfrage zum Fahrzeug'}</DialogDescription>
           </DialogHeader>
           <form onSubmit={event => { event.preventDefault(); setSubmitted(true); }}>
-            <LandingInquiryFields phone={phone} />
+            <LandingInquiryFields phone={phone} vehicleLabel={vehicleLabel} />
             {submitted && <p role="status" className="text-xs mt-3">Vorschau – es wurde keine Anfrage gesendet.</p>}
           </form>
         </DialogContent>

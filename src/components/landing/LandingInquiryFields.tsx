@@ -29,13 +29,23 @@ export const LANDING_INQUIRY_CSS = `
 
 export const DEFAULT_INQUIRY_MESSAGE = 'Hallo,\nich interessiere mich für das angebotene Fahrzeug und bitte um weitere Informationen.\nMit freundlichen Grüßen';
 
+/**
+ * Pre-filled enquiry text. When the page was created for a known make and model,
+ * the vehicle is named automatically so the dealer receives a specific request.
+ */
+export function inquiryMessage(vehicleLabel?: string): string {
+  const name = (vehicleLabel || '').trim();
+  if (!name) return DEFAULT_INQUIRY_MESSAGE;
+  return `Hallo,\nich interessiere mich für das angebotene Fahrzeug ${name} und bitte um weitere Informationen.\nMit freundlichen Grüßen`;
+}
+
 export function inquiryPhoneHref(phone?: string): string | undefined {
   const cleaned = (phone || '').replace(/[^+\d]/g, '');
   return /^\+?\d{3,20}$/.test(cleaned) ? `tel:${cleaned}` : undefined;
 }
 
 /** Shared fields keep the editor and exported landingpage form identical. */
-export default function LandingInquiryFields({ phone, privacyUrl = '/datenschutz/' }: { phone?: string; privacyUrl?: string }) {
+export default function LandingInquiryFields({ phone, privacyUrl = '/datenschutz/', vehicleLabel }: { phone?: string; privacyUrl?: string; vehicleLabel?: string }) {
   const phoneHref = inquiryPhoneHref(phone);
   return <>
     <div className="lp-inquiry-fields">
@@ -43,7 +53,7 @@ export default function LandingInquiryFields({ phone, privacyUrl = '/datenschutz
       <div className="lp-inquiry-field"><Label htmlFor="lead-last-name">Nachname*</Label><Input id="lead-last-name" name="lastName" autoComplete="family-name" required maxLength={100} /></div>
       <div className="lp-inquiry-field"><Label htmlFor="lead-email">E-Mail-Adresse*</Label><Input id="lead-email" name="email" type="email" autoComplete="email" required maxLength={255} /></div>
       <div className="lp-inquiry-field"><Label htmlFor="lead-phone">Telefonnummer *</Label><Input id="lead-phone" name="phone" type="tel" autoComplete="tel" required maxLength={50} pattern="[+0-9() /.-]{3,50}" /></div>
-      <div className="lp-inquiry-field"><Label htmlFor="lead-message">Ihre Nachricht (optional)</Label><Textarea id="lead-message" name="message" defaultValue={DEFAULT_INQUIRY_MESSAGE} maxLength={3000} rows={8} /></div>
+      <div className="lp-inquiry-field"><Label htmlFor="lead-message">Ihre Nachricht (optional)</Label><Textarea id="lead-message" name="message" defaultValue={inquiryMessage(vehicleLabel)} maxLength={3000} rows={8} /></div>
     </div>
     <div className="lp-inquiry-consents">
       <label className="lp-inquiry-consent"><input type="checkbox" name="privacyConsent" required /><span><strong>Datenschutz</strong>Ja, ich habe die <a href={privacyUrl} target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> gelesen und stimme diesen zu.</span></label>

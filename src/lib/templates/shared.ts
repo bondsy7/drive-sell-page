@@ -486,7 +486,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
         ${formIntro && !options.inventoryStyle ? `<p style="font-size:13px;color:#6b7a8d;white-space:pre-line">${formIntro}</p>` : ''}
       </div>
       <form id="leadForm" onsubmit="return submitLead(event)">
-        ${options.inventoryStyle ? renderToStaticMarkup(createElement(LandingInquiryFields, { phone: options.phone })) : `<div style="display:flex;flex-direction:column;gap:12px">
+        ${options.inventoryStyle ? renderToStaticMarkup(createElement(LandingInquiryFields, { phone: options.phone, vehicleLabel: options.vehicleTitle })) : `<div style="display:flex;flex-direction:column;gap:12px">
           <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
