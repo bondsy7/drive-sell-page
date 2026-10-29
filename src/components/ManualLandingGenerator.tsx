@@ -212,7 +212,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       const f: any = vd.finance || {};
       const rate = f.monthlyRate || f.monthly_rate || vd.monthlyRate;
       const priceVal = inner.price || vd.price || f.price;
-      if (rate) setPrice(`ab ${rate} €/mtl.`);
+      const rateText = String(rate).includes('€') ? String(rate) : `${rate} €`;
+      if (rate) setPrice(`ab ${rateText}/mtl.`);
       else if (priceVal) setPrice(String(priceVal).includes('€') ? String(priceVal) : `${priceVal} €`);
       toast.success('Fahrzeugdaten übernommen', { duration: 1800 });
     })();
