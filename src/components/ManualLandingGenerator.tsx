@@ -452,7 +452,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
               <SelectTrigger><SelectValue placeholder="Fahrzeug wählen…" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">Kein Fahrzeug – manuell eingeben</SelectItem>
-                {myVehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+                {myVehicles.map(v => (
+                  <SelectItem key={v.id} value={v.id}>
+                    <span className="flex w-full items-baseline justify-between gap-4">
+                      <span className="truncate">{v.label}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{formatVehicleCreatedAt(v.createdAt)}</span>
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
