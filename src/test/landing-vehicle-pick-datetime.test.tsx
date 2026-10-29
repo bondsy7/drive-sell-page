@@ -69,8 +69,8 @@ beforeAll(() => {
 
 async function openVehicleList() {
   render(<ManualLandingGenerator onBack={vi.fn()} onComplete={vi.fn()} />);
-  const placeholder = await screen.findByText('Fahrzeug wählen…');
-  const trigger = placeholder.closest('[role="combobox"]');
+  const label = await screen.findByText(/Aus bestehendem Fahrzeug übernehmen/);
+  const trigger = label.parentElement?.querySelector('[role="combobox"]');
   expect(trigger).not.toBeNull();
   fireEvent.keyDown(trigger as HTMLElement, { key: 'ArrowDown' });
   return screen.findByRole('option', { name: /Volkswagen Golf Life/ });
