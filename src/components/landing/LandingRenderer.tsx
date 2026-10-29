@@ -208,7 +208,7 @@ const SectionShell: React.FC<{
 }> = ({ id, editable, enabled = true, onMove, onToggle, onDelete, onAddAfter, children, bg, surface, colorControl }) => {
   if (!enabled && !editable) return null;
   return (
-    <LandingSectionResize id={id} editable={editable}><motion.section
+    <LandingSectionResize id={id} editable={editable} surface={surface ?? bg}><motion.section
       id={id}
       initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}

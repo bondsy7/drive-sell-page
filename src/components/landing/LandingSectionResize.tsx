@@ -9,8 +9,8 @@ export const LandingSectionSizeContext = createContext<{
   onResize?: (id: string, height: number) => void;
 }>({});
 
-export default function LandingSectionResize({ id, editable, children }: {
-  id: string; editable: boolean; children: React.ReactNode;
+export default function LandingSectionResize({ id, editable, children, surface }: {
+  id: string; editable: boolean; children: React.ReactNode; surface?: string;
 }) {
   const { heights, onResize } = useContext(LandingSectionSizeContext);
   const saved = normalizeSectionHeight(heights?.[id]);
@@ -60,7 +60,7 @@ export default function LandingSectionResize({ id, editable, children }: {
     window.addEventListener('pointercancel', cancel);
   };
 
-  return <div ref={ref} className={`lp-section-resize${height !== undefined ? ' lp-sized-section' : ''}${draft !== undefined ? ' lp-resizing' : ''}`} style={{ ...editorControlStyle(), ...sectionHeightVars(height) } as React.CSSProperties}>
+  return <div ref={ref} className={`lp-section-resize${height !== undefined ? ' lp-sized-section' : ''}${draft !== undefined ? ' lp-resizing' : ''}`} style={{ ...editorControlStyle(surface), ...sectionHeightVars(height) } as React.CSSProperties}>
     {children}
     {editable && onResize && (['top', 'bottom'] as const).map(edge => <Button
       key={edge} type="button" variant="ghost" size="icon"

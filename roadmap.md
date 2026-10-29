@@ -1,5 +1,5 @@
 ## Landingpage-Abschnittshöhen (29.10.2026)
-- [ ] Obere/untere Ziehgriffe, inhaltsabhängige Mindesthöhe mit Randabstand, Speicherung/Rückgängig und gleiche Vorschau/HTML prüfen.
+- [x] Obere/untere Ziehgriffe, inhaltsabhängige Mindesthöhe mit 32px Randabstand, Speicherung/Rückgängig und gleiche Vorschau/HTML geprüft; 27 Tests erfolgreich. An Pauls KIA-Seite Vergrößern/Verkleinern, obere Kante, gespeicherten Wert und HTML (894px), Vorschau ohne Griffe und mobile Ansicht ohne Überlauf geprüft; Teständerungen rückgängig, nicht veröffentlicht.
 
 ## Registrierung als Vormerkung (27.10.2026)
 - [x] E-Mail-Verifizierung und manuelle Freigabe für externe Neuregistrierungen verbindlich prüfen; interne/bestehende Konten unverändert. Automatische E-Mail-Bestätigung ist laut gehosteten Einstellungen deaktiviert.
