@@ -210,7 +210,7 @@ export default function LandingImageFrame({
         {tools && src && (
           <div className="lp-menu-zoom" onPointerDown={e => e.stopPropagation()}>
             <span>Zoom</span>
-            <Slider aria-label="Bild im Rahmen vergrößern" min={FRAME_ZOOM_MIN} max={FRAME_ZOOM_MAX} step={0.05} value={[draft.zoom]}
+            <Slider className="min-w-0 flex-1" aria-label="Bild im Rahmen vergrößern" min={FRAME_ZOOM_MIN} max={FRAME_ZOOM_MAX} step={0.05} value={[draft.zoom]}
               onValueChange={v => { const z = v[0]; if (z !== undefined) setDraft(d => ({ ...d, zoom: z })); }}
               onValueCommit={v => { const z = v[0]; if (z !== undefined) onFrameChange?.({ ...draft, zoom: z }); }} />
             <span>{Math.round(draft.zoom * 100)} %</span>
