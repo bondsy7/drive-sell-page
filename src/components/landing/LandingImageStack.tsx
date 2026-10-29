@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { createContext } from 'react';
 import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { STACK_GAP_PX, STACK_MAIN } from '@/lib/landing-image-stack';
+
+export const LandingImageInsertContext = createContext<React.ReactNode>(null);
 
 interface Props {
   entries: string[];
@@ -18,22 +21,21 @@ export default function LandingImageStack({ entries, main, editable, onInsert, r
     .filter(i => i.node);
   if (!items.length) return null;
   const btn = (anchor: string, pos: 'before' | 'after') => editable && onInsert ? (
-    <button
+    <Button variant="ghost"
       type="button"
-      className={`lp-stack-insert lp-stack-insert-${pos}`}
       onPointerDown={e => e.stopPropagation()}
       onClick={e => { e.stopPropagation(); onInsert(anchor, pos); }}
     >
-      <Plus size={13} /> Bild einfügen
-    </button>
+      <Plus size={16} /> Bild {pos === 'before' ? 'darüber' : 'darunter'} einfügen
+    </Button>
   ) : null;
   return (
     <div className="lp-image-stack" style={{ display: 'flex', flexDirection: 'column', gap: STACK_GAP_PX }}>
       {items.map(i => (
         <div key={i.key} className="lp-stack-item" style={{ position: 'relative' }}>
-          {btn(i.key, 'before')}
-          {i.node}
-          {btn(i.key, 'after')}
+          <LandingImageInsertContext.Provider value={<>{btn(i.key, 'before')}{btn(i.key, 'after')}</>}>
+            {i.node}
+          </LandingImageInsertContext.Provider>
         </div>
       ))}
     </div>

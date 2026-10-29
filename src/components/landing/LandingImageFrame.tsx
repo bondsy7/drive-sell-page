@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { LandingImageInsertContext } from '@/components/landing/LandingImageStack';
 import { RefreshCw, Sparkles, ImageIcon, RotateCcw } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from '@/lib/ai-disclosure';
@@ -49,6 +50,7 @@ export default function LandingImageFrame({
   src, alt, aspect, editable, loading, onReplace, primary, onDelete,
   labelImage = true, rounded = true, frame, frameEditing = false, onFrameChange,
 }: Props) {
+  const insertActions = useContext(LandingImageInsertContext);
   const base = normalizeImageFrame(frame, parseAspect(aspect));
   const [draft, setDraft] = useState<LandingImageFrame>(base);
   const [mode, setMode] = useState<null | 'frame' | 'pan'>(null);
@@ -206,6 +208,7 @@ export default function LandingImageFrame({
         <Button variant="ghost" onClick={onReplace} disabled={loading}>{loading ? <RefreshCw size={16} className="lp-spin" /> : <Sparkles size={16} />} Bild ändern</Button>
         {tools && <Button variant="ghost" onClick={() => setMode('pan')}><ImageIcon size={16} /> Ausschnitt bearbeiten</Button>}
         {tools && framed && <Button variant="ghost" onClick={() => { onFrameChange?.(null); setMode(null); }}><RotateCcw size={16} /> Zurücksetzen</Button>}
+        {insertActions}
         {onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
       </LandingEditMenu>}
 
