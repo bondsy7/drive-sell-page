@@ -207,6 +207,15 @@ export default function LandingImageFrame({
       {src && labelImage && <img src={getAiDisclosureLabelVector('landing')} alt={getAiDisclosureLabelAlt('landing')} className={`${AI_DISCLOSURE_OVERLAY_CLASS} z-10`} />}
       {editable && <LandingEditMenu label="Bild bearbeiten" className="lp-image-edit-trigger">
         <Button variant="ghost" onClick={onReplace} disabled={loading}>{loading ? <RefreshCw size={16} className="lp-spin" /> : <Sparkles size={16} />} Bild ändern</Button>
+        {tools && src && (
+          <div className="lp-menu-zoom" onPointerDown={e => e.stopPropagation()}>
+            <span>Zoom</span>
+            <Slider className="min-w-0 flex-1" aria-label="Bild im Rahmen vergrößern" min={FRAME_ZOOM_MIN} max={FRAME_ZOOM_MAX} step={0.05} value={[draft.zoom]}
+              onValueChange={v => { const z = v[0]; if (z !== undefined) setDraft(d => ({ ...d, zoom: z })); }}
+              onValueCommit={v => { const z = v[0]; if (z !== undefined) onFrameChange?.({ ...draft, zoom: z }); }} />
+            <span>{Math.round(draft.zoom * 100)} %</span>
+          </div>
+        )}
         {tools && <Button variant="ghost" onClick={() => setMode('pan')}><ImageIcon size={16} /> Ausschnitt bearbeiten</Button>}
         {tools && framed && <Button variant="ghost" onClick={() => { onFrameChange?.(null); setMode(null); }}><RotateCcw size={16} /> Zurücksetzen</Button>}
         {insertActions}
@@ -221,15 +230,6 @@ export default function LandingImageFrame({
           {handle('bottom', { left: 14, right: 14, bottom: 0, height: 10 }, 'ns-resize')}
           {handle('corner-left', { left: 0, bottom: 0, width: 14, height: 14 }, 'nesw-resize')}
           {handle('corner-right', { right: 0, bottom: 0, width: 14, height: 14 }, 'nwse-resize')}
-          {mode === 'pan' && src && (
-            <div className="lp-frame-zoom" style={{ zIndex: 40 }} onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-              <span>Zoom</span>
-              <Slider aria-label="Bild im Rahmen vergrößern" min={FRAME_ZOOM_MIN} max={FRAME_ZOOM_MAX} step={0.05} value={[draft.zoom]}
-                onValueChange={v => { const z = v[0]; if (z !== undefined) setDraft(d => ({ ...d, zoom: z })); }}
-                onValueCommit={v => { const z = v[0]; if (z !== undefined) onFrameChange?.({ ...draft, zoom: z }); }} />
-              <span>{Math.round(draft.zoom * 100)} %</span>
-            </div>
-          )}
         </>
       )}
 
