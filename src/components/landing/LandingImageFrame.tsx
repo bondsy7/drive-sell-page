@@ -35,8 +35,9 @@ interface Props {
 const SNAP_SELECTOR = '.lp-editable, a, button, .lp-image-frame, h1, h2, h3, p';
 
 function collectSnapEdges(self: HTMLElement) {
-  const scope = (self.closest('section') as HTMLElement | null) ?? self.parentElement!;
+  const scope = (self.closest('section') as HTMLElement | null) ?? self.parentElement;
   const xs: number[] = []; const ys: number[] = [];
+  if (!scope) return { xs, ys };
   scope.querySelectorAll<HTMLElement>(SNAP_SELECTOR).forEach(el => {
     if (el === self || self.contains(el) || el.contains(self) || el.closest('.lp-section-controls')) return;
     const r = el.getBoundingClientRect();

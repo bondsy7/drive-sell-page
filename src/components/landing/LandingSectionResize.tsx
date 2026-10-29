@@ -26,7 +26,8 @@ export default function LandingSectionResize({ id, editable, children, surface }
     event.stopPropagation();
     cleanup.current?.();
     const node = ref.current;
-    const startHeight = node.getBoundingClientRect().height;
+    const chromeSpace = parseFloat(getComputedStyle(node).paddingTop) || 0;
+    const startHeight = node.getBoundingClientRect().height - chromeSpace;
     const y = event.clientY;
     const pointerId = event.pointerId;
     const target = event.currentTarget;
@@ -50,7 +51,7 @@ export default function LandingSectionResize({ id, editable, children, surface }
       if (e.pointerId !== pointerId) return;
       clear();
       // Persist only once, and keep the natural content floor in the saved height.
-      if (moved) onResize(id, Math.round(node.getBoundingClientRect().height));
+      if (moved) onResize(id, Math.round(node.getBoundingClientRect().height - chromeSpace));
       setDraft(undefined);
     };
     const cancel = () => { clear(); setDraft(undefined); };
@@ -71,7 +72,7 @@ export default function LandingSectionResize({ id, editable, children, surface }
       onKeyDown={e => {
         if (!['ArrowUp', 'ArrowDown'].includes(e.key) || !ref.current) return;
         e.preventDefault();
-        const current = ref.current.getBoundingClientRect().height;
+        const current = ref.current.getBoundingClientRect().height - (parseFloat(getComputedStyle(ref.current).paddingTop) || 0);
         onResize(id, resizeSectionHeight(current, e.key === 'ArrowDown' ? 16 : -16, edge));
       }}
     ><ChevronsUpDown size={16} /></Button>)}
