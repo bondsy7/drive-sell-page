@@ -151,7 +151,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   }, [user, vehicleIdParam, vehicleDataPrefilled, brand, model, variant, color]);
 
   const canGenerate = brand.trim() && model.trim() && pageType;
-  const cost = 3;
+  // Muss mit totalCost in supabase/functions/generate-landing-page/index.ts übereinstimmen (Text + KI-Bilder inklusive).
+  const cost = 5;
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -605,7 +606,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </Button>
         <div className="flex items-center justify-center gap-1">
           <span className="text-xs text-muted-foreground">
-            Kosten: <strong className="text-accent">{cost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
+            Kosten: <strong className="text-accent">{cost} Credits</strong> (inkl. KI-Bilder) — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
           </span>
         </div>
       </div>
@@ -668,8 +669,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           </div>
 
           <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground">
-            Nach dem Bestätigen werden {cost} Credits verbraucht. Die Generierung dauert einige Minuten
-            und kann nicht rückgängig gemacht werden.
+            Nach dem Bestätigen werden {cost} Credits verbraucht (Texte und KI-Bilder inklusive).
+            Die Generierung dauert einige Minuten und kann nicht rückgängig gemacht werden.
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
