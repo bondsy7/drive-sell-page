@@ -170,13 +170,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     setPrice('');
     setPrefilledVehicleId(null);
     // Nur die aus dem Fahrzeug übernommenen Bilder entfernen, eigene Uploads bleiben.
-    setUploadedImages(prev => {
-      const kept = prev.filter(img => !img.url || img.file);
-      kept.forEach(img => {
-        if (img.file && img.preview.startsWith('blob:')) { /* eigene Uploads behalten */ }
-      });
-      return kept;
-    });
+    setUploadedImages(prev => prev.filter(img => !img.url || img.file));
   };
 
   const selectVehicle = (id: string) => {
