@@ -129,16 +129,19 @@
 /* Unified editing chrome: one central section row, one pencil per element.
    Menus are portalled to avoid clipping at canvas edges on small screens. */
 .lp-root .lp-section-controls { position:absolute !important; top:10px !important; left:calc(50% + 26px) !important; right:auto !important; bottom:auto !important; width:40px; z-index:47; min-height:0; padding:0; display:block; }
-.lp-root .lp-edit-trigger { width:36px; height:36px; padding:0; border-radius:50%; background:var(--lp-editor-control-bg); color:var(--lp-editor-control-fg); box-shadow:var(--lp-editor-control-shadow),var(--lp-editor-control-ring); opacity:0; pointer-events:none; }
+.lp-root .lp-edit-trigger { position:relative; width:36px; height:36px; padding:0; border-radius:50%; background:var(--lp-editor-control-bg); color:var(--lp-editor-control-fg); box-shadow:var(--lp-editor-control-shadow),var(--lp-editor-control-ring); opacity:0; pointer-events:none; transition:opacity 140ms ease 260ms; }
+.lp-root .lp-edit-trigger::after { content:''; position:absolute; inset:-10px; }
 .lp-root .lp-edit-trigger:hover { background:var(--lp-editor-control-bg); color:var(--lp-editor-control-fg); }
 .lp-root .lp-section-controls .lp-edit-trigger { width:40px; height:40px; }
 .lp-root .lp-section:hover > .lp-section-controls .lp-edit-trigger,.lp-root .lp-section:focus-within > .lp-section-controls .lp-edit-trigger { opacity:1; pointer-events:auto; }
 .lp-root .lp-element-box { padding-top:38px; }
+/* Unsichtbare Zone um Elemente: der Stift erscheint schon, wenn die Maus in der Nähe ist */
+.lp-root .lp-element-box:not(.lp-element-inline)::before { content:''; position:absolute; inset:-16px; }
 .lp-root .lp-element-inline,.lp-root .lp-element-cover { padding-top:0; }
 .lp-root .lp-element-box > .lp-edit-trigger { position:absolute; top:0; right:0; z-index:36; }
 .lp-root .lp-element-inline > .lp-edit-trigger { top:-40px; }
 .lp-root .lp-element-cover > .lp-edit-trigger { top:10px; right:12px; }
-.lp-root .lp-element-box:hover > .lp-edit-trigger,.lp-root .lp-element-box:focus-within > .lp-edit-trigger,.lp-root .lp-image-frame:hover > .lp-edit-trigger,.lp-root .lp-image-frame:focus-within > .lp-edit-trigger,.lp-root .lp-edit-trigger[data-state="open"] { opacity:1; pointer-events:auto; }
+.lp-root .lp-element-box:hover > .lp-edit-trigger,.lp-root .lp-element-box:focus-within > .lp-edit-trigger,.lp-root .lp-image-frame:hover > .lp-edit-trigger,.lp-root .lp-image-frame:focus-within > .lp-edit-trigger,.lp-root .lp-edit-trigger[data-state="open"],.lp-root .lp-edit-trigger:hover { opacity:1; pointer-events:auto; transition-delay:0ms; }
 .lp-root .lp-image-edit-trigger { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:44; }
 .lp-edit-menu button { justify-content:flex-start; min-height:44px; width:100%; height:auto; white-space:normal; text-align:left; }
 .lp-edit-menu :is(.lp-element-delete,.lp-element-color,.lp-section-color-button) { position:static; opacity:1; pointer-events:auto; max-width:100%; padding:8px 12px; border-radius:4px; background:transparent; color:inherit; box-shadow:none; }
