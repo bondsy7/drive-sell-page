@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from '@testing-library/react';
+import { fireEvent, render, screen, cleanup } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 const VEHICLE_ISO = '2026-10-29T13:56:47.000Z';
