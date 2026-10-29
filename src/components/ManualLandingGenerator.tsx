@@ -70,7 +70,8 @@ interface ManualLandingGeneratorProps {
 const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack, onComplete }) => {
   const { user } = useAuth();
   const { balance } = useCredits();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [myVehicles, setMyVehicles] = useState<{ id: string; label: string }[]>([]);
   const vehicleIdParam = searchParams.get('vehicle');
   // Auto-loaded dealer profile
   const [dealerProfile, setDealerProfile] = useState<any>(null);
@@ -106,7 +107,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [autoPromptShown, setAutoPromptShown] = useState(false);
   const { data: vehicleAssets } = useVehicleAssets(vehicleIdParam);
-  const [vehicleDataPrefilled, setVehicleDataPrefilled] = useState(false);
+  const [prefilledVehicleId, setPrefilledVehicleId] = useState<string | null>(null);
 
   // Auto-open picker when vehicle has existing assets and no images uploaded yet
   useEffect(() => {
@@ -130,25 +131,58 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     })();
   }, [user]);
 
-  // Auto-prefill vehicle fields from DB when ?vehicle= is provided
+  // Load own vehicles for the "Aus bestehendem Fahrzeug" picker
   useEffect(() => {
-    if (!user || !vehicleIdParam || vehicleDataPrefilled) return;
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('vehicles')
+        .select('id, brand, model, year, color, title, vin')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(200);
+      setMyVehicles((data || []).map((v: any) => ({
+        id: v.id,
+        label: v.title || [v.brand, v.model, v.year, v.color].filter(Boolean).join(' ') || (v.vin ? `FIN …${String(v.vin).slice(-6)}` : 'Fahrzeug'),
+      })));
+    })();
+  }, [user]);
+
+  const selectVehicle = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === '__none') next.delete('vehicle'); else next.set('vehicle', id);
+    setSearchParams(next, { replace: true });
+    setAutoPromptShown(false);
+  };
+
+  // Prefill vehicle fields from DB whenever the selected vehicle (?vehicle=) changes
+  useEffect(() => {
+    if (!user || !vehicleIdParam || prefilledVehicleId === vehicleIdParam) return;
     (async () => {
       const { data: v } = await supabase
         .from('vehicles')
         .select('brand, model, color, vehicle_data')
         .eq('id', vehicleIdParam)
         .maybeSingle();
+      setPrefilledVehicleId(vehicleIdParam);
       if (!v) return;
-      const inner: any = ((v as any).vehicle_data || {}).vehicle || {};
-      if (!brand && (v.brand || inner.brand)) setBrand(v.brand || inner.brand);
-      if (!model && (v.model || inner.model)) setModel(v.model || inner.model);
-      if (!variant && inner.variant) setVariant(inner.variant);
-      if (!color && (v.color || inner.color)) setColor(v.color || inner.color);
-      setVehicleDataPrefilled(true);
+      const vd: any = (v as any).vehicle_data || {};
+      const inner: any = vd.vehicle || {};
+      const b = v.brand || inner.brand; const m = v.model || inner.model;
+      const varnt = inner.variant || inner.trim || inner.version;
+      const c = v.color || inner.color;
+      if (b) setBrand(b);
+      if (m) setModel(m);
+      setVariant(varnt || '');
+      setColor(c || '');
+      const f: any = vd.finance || {};
+      const rate = f.monthlyRate || f.monthly_rate || vd.monthlyRate;
+      const priceVal = inner.price || vd.price || f.price;
+      if (rate) setPrice(`ab ${rate} €/mtl.`);
+      else if (priceVal) setPrice(String(priceVal).includes('€') ? String(priceVal) : `${priceVal} €`);
       toast.success('Fahrzeugdaten übernommen', { duration: 1800 });
     })();
-  }, [user, vehicleIdParam, vehicleDataPrefilled, brand, model, variant, color]);
+  }, [user, vehicleIdParam, prefilledVehicleId]);
 
   const canGenerate = brand.trim() && model.trim() && pageType;
   // Muss mit totalCost in supabase/functions/generate-landing-page/index.ts übereinstimmen (Text + KI-Bilder inklusive).
@@ -401,6 +435,19 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold">1</span>
           Fahrzeug & Angebot
         </div>
+
+        {myVehicles.length > 0 && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Aus bestehendem Fahrzeug übernehmen (optional)</label>
+            <Select value={vehicleIdParam || '__none'} onValueChange={selectVehicle} disabled={loading}>
+              <SelectTrigger><SelectValue placeholder="Fahrzeug wählen…" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">Kein Fahrzeug – manuell eingeben</SelectItem>
+                {myVehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <VehicleBrandModelPicker
           brand={brand}
