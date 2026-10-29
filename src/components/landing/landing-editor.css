@@ -149,3 +149,12 @@
 .lp-edit-menu .lp-element-delete:hover { background:hsl(var(--accent)); color:hsl(var(--accent-foreground)); }
 @media (hover:none) { .lp-root .lp-edit-trigger,.lp-root .lp-drag-handle { opacity:1; pointer-events:auto; } }
 @container lp (max-width:900px) { .lp-root .lp-edit-trigger { opacity:1; pointer-events:auto; } .lp-root .lp-element-box:not(.lp-element-inline):not(.lp-element-cover) { padding-top:46px; } .lp-root .lp-edit-trigger { width:40px; height:40px; } .lp-root .lp-element-inline > .lp-edit-trigger { top:-44px; } }
+.lp-root .lp-resize-editable:has(> .lp-section) { padding-top:56px; }
+.lp-root .lp-resize-editable > .lp-section > .lp-section-controls { top:-46px !important; left:calc(50% + 4px) !important; }
+.lp-root .lp-resize-editable:has(> .lp-section) > .lp-section-resize-top { top:10px; left:calc(50% - 44px); }
+.lp-root .lp-sortable > .lp-section-resize > .lp-section > .lp-section-controls { left:calc(50% + 24px) !important; }
+.lp-root .lp-sortable > .lp-section-resize > .lp-section-resize-top { left:calc(50% - 64px); }
+.lp-root .lp-sortable > .lp-drag-handle { left:calc(50% - 20px); transform:none; }
+.lp-root .lp-resize-editable:has(> .lp-section)::before { content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%); width:100px; height:48px; border-radius:8px; background:hsl(var(--muted)); }
+.lp-root .lp-sortable > .lp-resize-editable:has(> .lp-section)::before { width:144px; }
+.lp-root .lp-resize-editable:has(> .lp-section) > .lp-section-resize-top,.lp-root .lp-resize-editable > .lp-section > .lp-section-controls .lp-edit-trigger,.lp-root .lp-sortable > .lp-drag-handle { opacity:1; pointer-events:auto; }

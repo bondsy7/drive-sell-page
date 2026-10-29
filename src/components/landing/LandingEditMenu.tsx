@@ -15,7 +15,7 @@ export default function LandingEditMenu({ label = 'Element bearbeiten', children
       <Button type="button" variant="outline" size="icon" className={`lp-edit-trigger ${className}`}
         title={label} aria-label={label}
         onPointerDown={e => e.stopPropagation()}
-        onClick={e => { e.stopPropagation(); setOpen(value => !value); }}>
+        onClick={e => e.stopPropagation()}>
         <Pencil size={16} />
       </Button>
     </PopoverTrigger>

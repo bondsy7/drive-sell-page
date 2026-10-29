@@ -60,7 +60,7 @@ export default function LandingSectionResize({ id, editable, children, surface }
     window.addEventListener('pointercancel', cancel);
   };
 
-  return <div ref={ref} className={`lp-section-resize${height !== undefined ? ' lp-sized-section' : ''}${draft !== undefined ? ' lp-resizing' : ''}`} style={{ ...editorControlStyle(surface), ...sectionHeightVars(height) } as React.CSSProperties}>
+  return <div ref={ref} className={`lp-section-resize${editable ? ' lp-resize-editable' : ''}${height !== undefined ? ' lp-sized-section' : ''}${draft !== undefined ? ' lp-resizing' : ''}`} style={{ ...editorControlStyle(surface), ...sectionHeightVars(height) } as React.CSSProperties}>
     {children}
     {editable && onResize && (['top', 'bottom'] as const).map(edge => <Button
       key={edge} type="button" variant="ghost" size="icon"
