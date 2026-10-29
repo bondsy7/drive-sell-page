@@ -157,10 +157,10 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     })();
   }, [user]);
 
-  // Hält die gerade gewählte Fahrzeug-Id, damit ein später eintreffendes
-  // Ergebnis nicht mehr in ein bereits geleertes manuelles Formular schreibt.
-  const activeVehicleRef = useRef<string>(vehicleIdParam || '');
-  activeVehicleRef.current = vehicleIdParam || '';
+  // Merkt, ob gerade manuelle Eingabe statt Fahrzeugübernahme aktiv ist.
+  // Preventet, dass ein später eintreffendes Ergebnis in ein bereits geleertes
+  // manuelles Formular schreibt oder die Übernahme nach dem Zurücksetzen erneut läuft.
+  const manualModeRef = useRef(!vehicleIdParam);
 
   const clearTakenOverVehicleData = () => {
     setBrand('');
@@ -175,9 +175,9 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
   const selectVehicle = (id: string) => {
     const next = new URLSearchParams(searchParams);
+    manualModeRef.current = id === '__none';
     if (id === '__none') {
       next.delete('vehicle');
-      activeVehicleRef.current = '';
       clearTakenOverVehicleData();
     } else {
       next.set('vehicle', id);
@@ -189,16 +189,15 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   // Prefill vehicle fields from DB whenever the selected vehicle (?vehicle=) changes
   useEffect(() => {
     if (!user || !vehicleIdParam || prefilledVehicleId === vehicleIdParam) return;
-    // Bereits auf „manuell" gewechselt (Ref geleert) -> keine Daten mehr übernehmen.
-    if (!activeVehicleRef.current) return;
+    if (manualModeRef.current) return;
     (async () => {
       const { data: v } = await supabase
         .from('vehicles')
         .select('brand, model, color, vehicle_data')
         .eq('id', vehicleIdParam)
         .maybeSingle();
-      // Zwischenzeitlich auf „manuell" oder ein anderes Fahrzeug gewechselt -> verwerfen.
-      if (activeVehicleRef.current !== vehicleIdParam) return;
+      // Zwischenzeitlich auf „manuell" gewechselt -> Ergebnis verwerfen.
+      if (manualModeRef.current) return;
       setPrefilledVehicleId(vehicleIdParam);
       if (!v) return;
       const vd: any = (v as any).vehicle_data || {};

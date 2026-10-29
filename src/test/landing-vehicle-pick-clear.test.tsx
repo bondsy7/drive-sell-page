@@ -38,6 +38,14 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@/hooks/useVehicleAssets', () => ({ useVehicleAssets: () => ({ data: null }) }));
 vi.mock('@/lib/vehicle-utils', () => ({ ensureVehicleAuto: async () => 'vehicle-1' }));
 vi.mock('@/components/VehicleAssetPicker', () => ({ default: () => null }));
+vi.mock('@/components/VehicleBrandModelPicker', () => ({
+  default: ({ brand, model, onBrandChange, onModelChange }: any) => (
+    <div>
+      <input data-testid="brand" value={brand} onChange={e => onBrandChange(e.target.value)} />
+      <input data-testid="model" value={model} onChange={e => onModelChange(e.target.value)} />
+    </div>
+  ),
+}));
 vi.mock('@/components/landing/LiveVehiclesBlock', async () => {
   const real = await import('@/lib/live-inventory');
   return { DEFAULT_LIVE_INVENTORY: real.DEFAULT_LIVE_INVENTORY, default: () => null };
