@@ -40,12 +40,18 @@ export default function LandingElementBox({ children, editable, onDelete, hidden
       )}
     </Tag>;
   }
+  // Block elements: delete and colour button share one row inside the narrow
+  // strip reserved above the content, so a headline and its text stay close.
   // Cover boxes (full-width sections) overlay their controls inside the section
-  // instead of reserving space above it – a transparent padding strip would show
-  // the page background as a white block between sections.
-  return <Tag className={`lp-element-box${cover ? ' lp-element-cover' : ''}${colorControl ? ' lp-has-color' : ''}`} style={controlStyle}>
+  // instead of reserving space – a transparent padding strip would show as a
+  // white block between sections.
+  return <Tag className={`lp-element-box${cover ? ' lp-element-cover' : ''}`} style={controlStyle}>
     {children}
-    {colorControl}
-    {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
+    <span className="lp-controls-row"
+      onMouseDown={event => event.preventDefault()}
+      onClick={event => { event.preventDefault(); event.stopPropagation(); }}>
+      {colorControl}
+      {onDelete && <ElementDeleteButton onDelete={onDelete} label={label} />}
+    </span>
   </Tag>;
 }
