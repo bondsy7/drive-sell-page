@@ -36,6 +36,9 @@ export interface LandingPageContent {
   imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
   removedElements?: string[];
   textColors?: Record<string, string>;
+  /** Background colour per button element, keyed by the same stable element ids as textColors. */
+  buttonColors?: Record<string, string>;
+
   /** Section id after which the live inventory block renders; '@start' = first, unset = after all sections. */
   liveInventoryAfter?: string;
   meta: { title: string; description: string; h1: string };
@@ -111,7 +114,9 @@ function renderSection(
   labelImage = true,
   frames: LandingPageContent['imageFrames'] = undefined,
   textColors: Record<string, string> = {},
+  buttonColors: Record<string, string> = {},
   stackCtx?: { content: LandingPageContent; images: Record<string, string> },
+
 ): string {
   if (s.enabled === false) return '';
   const removed = (field: string) => removedElements.includes(`${s.id}.${field}`);
@@ -139,14 +144,17 @@ function renderSection(
   const contentColor = normalizeSectionColor(textColors[`${s.id}.content`]);
 
   if (s.type === 'cta') {
+    const phoneBg = normalizeSectionColor(buttonColors[`${s.id}.phone`]);
+    const waBg = normalizeSectionColor(buttonColors[`${s.id}.whatsapp`]);
     return `<section style="background:${theme.custom ? bg : `linear-gradient(135deg,${primary},#0b1220)`};color:${theme.custom ? textColor : '#fff'};padding:88px 0;text-align:center">
   <div class="lp-content-width">
     ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:${headlineColor || (theme.custom ? textColor : '#fff')}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px${contentColor ? `;color:${contentColor}` : ''}">${s.content || ''}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
-      ${phone && !removed('phone') ? `<a href="tel:${phone}" style="background:${secondary};color:${onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
-      ${whatsapp && !removed('whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:#25d366;color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
+      ${phone && !removed('phone') ? `<a href="tel:${phone}" style="background:${phoneBg || secondary};color:${phoneBg ? readableOn(phoneBg) : onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
+      ${whatsapp && !removed('whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:${waBg || '#25d366'};color:${waBg ? readableOn(waBg) : '#fff'};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
     </div>
+
   </div>
 </section>`;
   }
@@ -259,7 +267,12 @@ export function buildLandingPageHTML(
   const onHero = readableOn(heroBackground);
   const onSecondary = readableOn(secondary);
   const textColors = content.textColors || {};
+  const buttonColors = content.buttonColors || {};
+  const headerButtonBg = normalizeSectionColor(buttonColors.header);
+  const heroCtaBg = normalizeSectionColor(buttonColors['hero.ctaText']);
+  const heroWhatsappBg = normalizeSectionColor(buttonColors['hero.whatsapp']);
   const headerHeight = normalizeSectionHeight(content.sectionHeights?.header);
+
   const headerHeightStyle = headerHeight ? `;min-height:${headerHeight}px` : '';
 
   const removed = (id: string) => isLandingElementRemoved(content, id);
@@ -287,7 +300,7 @@ export function buildLandingPageHTML(
   const sized = (id: string, html: string) => html ? `<div${sectionHeightAttributes(content.sectionHeights?.[id])}>${html}</div>` : '';
   const liveBlock = liveInventory && !removed('live-fahrzeuge') ? sized('live-fahrzeuge', buildLiveInventorySectionHTML(liveInventory)) : '';
   const renderedSections = sections
-    .map((s, idx) => sized(s.id, renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, { content, images })));
+    .map((s, idx) => sized(s.id, renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, content.buttonColors || {}, { content, images })));
   renderedSections.splice(liveInsertIndex({ sections, liveInventoryAfter: content.liveInventoryAfter }), 0, liveBlock);
   const sectionBlocks = renderedSections.join('\n');
 
@@ -301,7 +314,7 @@ export function buildLandingPageHTML(
         currentCategory: contactForm.pageType || '',
         heading: contactForm.heading,
         intro: contactForm.intro,
-        accent: secondary,
+        accent: normalizeSectionColor(buttonColors.kontakt) || secondary,
         inventoryStyle: true,
         phone: dealer.phone,
       })
@@ -375,7 +388,7 @@ ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;ba
       ${dealerLogo && !removed('header.dealer') ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
       ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
-    ${phone ? `<a href="tel:${phone}" style="background:var(--lp-primary);color:var(--lp-primary-on);padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
+    ${phone ? `<a href="tel:${phone}" style="background:${headerButtonBg || 'var(--lp-primary)'};color:${headerButtonBg ? readableOn(headerButtonBg) : 'var(--lp-primary-on)'};padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
     </div>
   </header>`}
 
@@ -387,8 +400,9 @@ ${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-
 ${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${normalizeSectionColor(textColors['hero.headline']) || onHero}">${escapeHtml(heroHeadline)}</h1>`}
 ${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:${normalizeSectionColor(textColors['hero.subheadline']) || rgba(onHero, 0.85)};margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${secondary};color:${normalizeSectionColor(textColors['hero.ctaText']) || onSecondary};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
-            ${whatsapp && !removed('hero.whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:${rgba(onHero, 0.1)};color:${onHero};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${rgba(onHero, 0.2)}">💬 WhatsApp</a>` : ''}
+${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${heroCtaBg || secondary};color:${normalizeSectionColor(textColors['hero.ctaText']) || (heroCtaBg ? readableOn(heroCtaBg) : onSecondary)};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
+            ${whatsapp && !removed('hero.whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:${heroWhatsappBg || rgba(onHero, 0.1)};color:${heroWhatsappBg ? readableOn(heroWhatsappBg) : onHero};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${heroWhatsappBg ? rgba(readableOn(heroWhatsappBg), 0.2) : rgba(onHero, 0.2)}">💬 WhatsApp</a>` : ''}
+
           </div>
         </div>
       </div>
