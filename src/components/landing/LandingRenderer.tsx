@@ -498,8 +498,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    background: secondary,
-                    color: onSecondary,
+                    background: heroCtaBg,
+                    color: readableOn(heroCtaBg),
+
                     padding: '14px 28px',
                     borderRadius: 12,
                     fontWeight: 600,
@@ -511,27 +512,29 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     editable={editable}
                     value={heroCtaText}
                     onChange={(v) => onUpdateHero?.('ctaText', v)}
-                    colorControl={textControl('hero.ctaText')}
-                    style={{ color: textOverride('hero.ctaText', onSecondary) }}
+                    colorControl={<>{textControl('hero.ctaText')}{buttonControl('hero.ctaText')}</>}
+                    style={{ color: textOverride('hero.ctaText', readableOn(heroCtaBg)) }}
+
                     placeholder="CTA-Text"
                   />
                 </a>
                 </LandingElementBox>
                 {whatsapp && !removed('hero.whatsapp') && (
-                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} label="WhatsApp-Button löschen" inline><a
+                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} label="WhatsApp-Button löschen" inline colorControl={buttonControl('hero.whatsapp')}><a
                     href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      background: rgba(onHero, 0.1),
-                      color: onHero,
+                      background: heroWhatsappBg || rgba(onHero, 0.1),
+                      color: heroWhatsappBg ? readableOn(heroWhatsappBg) : onHero,
                       padding: '14px 28px',
                       borderRadius: 12,
                       fontWeight: 600,
                       fontSize: 15,
-                      border: `1px solid ${rgba(onHero, 0.2)}`,
+                      border: `1px solid ${heroWhatsappBg ? rgba(readableOn(heroWhatsappBg), 0.2) : rgba(onHero, 0.2)}`,
+
                     }}
                   >
                     💬 WhatsApp
@@ -572,8 +575,11 @@ const LandingRenderer: React.FC<RendererProps> = ({
           backgroundColor={content.sectionColors?.[s.id]}
           colorControl={colorControl(s.id)}
           textColors={content.textColors}
+          buttonColors={content.buttonColors}
           profileColors={profileColors}
           onTextColorChange={onTextColorChange}
+          onButtonColorChange={onButtonColorChange}
+
           index={idx}
           image={images[s.id]}
           labelImage={shouldLabelLandingImage(content, s.id, images[s.id])}
@@ -629,7 +635,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
       {/* Contact */}
       {!removed('kontakt') && <>
-      <LandingElementBox editable={editable} cover controlOn="#ffffff" hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
+      <LandingElementBox editable={editable} cover controlOn="#ffffff" hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen" colorControl={buttonControl('kontakt')}>
       <LandingSectionResize id="kontakt" editable={editable}>
       <section
         id="kontakt"
@@ -700,8 +706,11 @@ const SectionRenderer: React.FC<{
   backgroundColor?: string;
   colorControl?: React.ReactNode;
   textColors?: Record<string, string>;
+  buttonColors?: Record<string, string>;
   profileColors?: { label: string; value: string }[];
   onTextColorChange?: (id: string, color: string | null) => void;
+  onButtonColorChange?: (id: string, color: string | null) => void;
+
   index: number;
   image?: string;
   labelImage: boolean;
@@ -766,6 +775,11 @@ const SectionRenderer: React.FC<{
     : undefined;
   const textOverride = (field: string, fallback: string) => textColorOverride(textColors?.[`${s.id}.${field}`], fallback);
   const textOverrideOptional = (field: string) => normalizeSectionColor(textColors?.[`${s.id}.${field}`]);
+  const buttonControl = (field: string) => editable && onButtonColorChange
+    ? <ButtonColorButton value={buttonColors?.[`${s.id}.${field}`]} colors={profileColors || []} onChange={color => onButtonColorChange(`${s.id}.${field}`, color)} />
+    : undefined;
+  const buttonBg = (field: string, fallback: string) => buttonColorOverride(buttonColors?.[`${s.id}.${field}`], fallback);
+
   const enabled = (s as any).enabled !== false;
 
   // CTA band
@@ -806,16 +820,17 @@ const SectionRenderer: React.FC<{
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {phone && !removed('phone') && (
-                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} label="Telefonbutton löschen" inline><a href={`tel:${phone}`} style={{ background: secondary, color: onSecondary, padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} label="Telefonbutton löschen" inline colorControl={buttonControl('phone')}><a href={`tel:${phone}`} style={{ background: buttonBg('phone', secondary), color: readableOn(buttonBg('phone', secondary)), padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
                   📞 Anrufen
                 </a></LandingElementBox>
               )}
               {whatsapp && !removed('whatsapp') && (
-                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} label="WhatsApp-Button löschen" inline><a
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} label="WhatsApp-Button löschen" inline colorControl={buttonControl('whatsapp')}><a
                   href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener"
-                  style={{ background: '#25d366', color: '#fff', padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}
+                  style={{ background: buttonBg('whatsapp', '#25d366'), color: readableOn(buttonBg('whatsapp', '#25d366')), padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}
+
                 >
                   💬 WhatsApp
                 </a></LandingElementBox>
