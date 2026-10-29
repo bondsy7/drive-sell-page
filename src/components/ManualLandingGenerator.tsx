@@ -67,11 +67,19 @@ interface ManualLandingGeneratorProps {
   onComplete: (projectId: string) => void;
 }
 
+// Anlegezeitpunkt für die Fahrzeugauswahl: Datum und Uhrzeit in deutscher Schreibweise.
+const formatVehicleCreatedAt = (iso: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}, ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack, onComplete }) => {
   const { user } = useAuth();
   const { balance } = useCredits();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [myVehicles, setMyVehicles] = useState<{ id: string; label: string }[]>([]);
+  const [myVehicles, setMyVehicles] = useState<{ id: string; label: string; createdAt: string | null }[]>([]);
   const vehicleIdParam = searchParams.get('vehicle');
   // Auto-loaded dealer profile
   const [dealerProfile, setDealerProfile] = useState<any>(null);
