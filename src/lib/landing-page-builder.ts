@@ -365,8 +365,8 @@ export function buildLandingPageHTML(
 ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0">
     <div class="lp-content-width lp-header-inner">
     <div class="lp-header-logos">
-      ${brandLogoUrl ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.brand', src: brandLogoUrl, alt: brand, sizes: content.logoSizes })) : ''}
-      ${dealerLogo ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
+      ${brandLogoUrl && !removed('header.brand') ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.brand', src: brandLogoUrl, alt: brand, sizes: content.logoSizes })) : ''}
+      ${dealerLogo && !removed('header.dealer') ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
       ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
     ${phone ? `<a href="tel:${phone}" style="background:var(--lp-primary);color:var(--lp-primary-on);padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}

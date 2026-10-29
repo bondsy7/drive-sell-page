@@ -481,8 +481,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
       >
         <div className="lp-content-width lp-header-inner">
         <div className="lp-header-logos">
-          {brandLogoUrl && <LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} />}
-          {dealerLogo && <LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} />}
+          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen"><LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} /></LandingElementBox>}
+          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen"><LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} editable={editable} onResize={onResizeLogo} /></LandingElementBox>}
           {!dealerLogo && dealerName && (
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15 }}>{dealerName}</span>
           )}
