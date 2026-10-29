@@ -151,6 +151,11 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
           'sm:flex-row sm:items-center',
         )}
       >
+        {tile.image && (
+          <div className="relative h-40 w-full shrink-0 overflow-hidden border-b border-highlight-border sm:order-last sm:h-auto sm:w-2/5 sm:self-stretch sm:border-b-0 sm:border-l">
+            <img src={tile.image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+          </div>
+        )}
         <div className="flex items-start gap-4 p-5 sm:p-6">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground [&>svg]:size-5">
             {tile.icon}
