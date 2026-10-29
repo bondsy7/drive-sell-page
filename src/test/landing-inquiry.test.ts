@@ -1,5 +1,10 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
-import { inquiryPhoneHref } from '@/components/landing/LandingInquiryFields';
+import LandingInquiryFields, {
+  DEFAULT_INQUIRY_MESSAGE, inquiryMessage, inquiryPhoneHref,
+} from '@/components/landing/LandingInquiryFields';
+import { buildContactFormHTML } from '@/lib/templates/shared';
 
 describe('landing inquiry phone target', () => {
   it('uses the dealer telephone number without formatting characters', () => {
