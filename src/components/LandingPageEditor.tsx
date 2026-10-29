@@ -557,7 +557,6 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               }}
               onDeleteStackImage={deleteStackImage}
               onMoveSection={moveSection}
-              onReorderSection={(dragId, targetId, position) => setContent(prev => ({ ...prev, ...reorderSections(prev, dragId, targetId, position) }))}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
               onSectionColorChange={(id, color) => setContent(previous => {
