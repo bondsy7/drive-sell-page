@@ -397,8 +397,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const liveAt = liveInsertIndex(content);
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID} drag={drag}>
-      <LandingSectionResize id={LIVE_BLOCK_ID} editable={editable}>
       <LandingElementBox editable={editable} cover controlOn="#ffffff" onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
+      <LandingSectionResize id={LIVE_BLOCK_ID} editable={editable}>
         <LiveVehicleShowcase
           config={liveInventory.config}
           vehicles={liveInventory.vehicles}
@@ -407,8 +407,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
           error={liveInventory.error}
           editable={editable}
         />
-      </LandingElementBox>
       </LandingSectionResize>
+      </LandingElementBox>
     </SortableSection>
   ) : null;
   const heroCtaText = content.hero?.ctaText || 'Jetzt anfragen';
@@ -723,8 +723,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
       {liveAt >= sections.length && liveNode}
 
       {/* Contact */}
-      {!removed('kontakt') && <LandingSectionResize id="kontakt" editable={editable}>
+      {!removed('kontakt') && <>
       <LandingElementBox editable={editable} cover controlOn="#ffffff" hidden={removed('kontakt')} onDelete={() => onDeleteElement?.('kontakt')} label="Kontaktbereich löschen">
+      <LandingSectionResize id="kontakt" editable={editable}>
       <section
         id="kontakt"
         style={{
@@ -761,8 +762,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>
         </div>
       </section>
-      </LandingElementBox>
-      </LandingSectionResize>}
+      </LandingSectionResize>
+      </LandingElementBox></>}
 
       {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && !liveInventory.loading && (
         <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} title={liveInventory.config.financeTitle} />

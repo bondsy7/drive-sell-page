@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { normalizeSectionHeight, resizeSectionHeight, sectionHeightVars } from '@/lib/landing-section-height';
+import { editorControlStyle } from '@/lib/landing-theme';
 
 export const LandingSectionSizeContext = createContext<{
   heights?: Record<string, number>;
@@ -59,7 +60,7 @@ export default function LandingSectionResize({ id, editable, children }: {
     window.addEventListener('pointercancel', cancel);
   };
 
-  return <div ref={ref} className={`lp-section-resize${height !== undefined ? ' lp-sized-section' : ''}${draft !== undefined ? ' lp-resizing' : ''}`} style={sectionHeightVars(height) as React.CSSProperties}>
+  return <div ref={ref} className={`lp-section-resize${height !== undefined ? ' lp-sized-section' : ''}${draft !== undefined ? ' lp-resizing' : ''}`} style={{ ...editorControlStyle(), ...sectionHeightVars(height) } as React.CSSProperties}>
     {children}
     {editable && onResize && (['top', 'bottom'] as const).map(edge => <Button
       key={edge} type="button" variant="ghost" size="icon"
