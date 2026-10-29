@@ -137,13 +137,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     (async () => {
       const { data } = await supabase
         .from('vehicles')
-        .select('id, brand, model, year, color, title, vin')
+        .select('id, brand, model, year, color, title, vin, created_at')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(200);
       setMyVehicles((data || []).map((v: any) => ({
         id: v.id,
         label: v.title || [v.brand, v.model, v.year, v.color].filter(Boolean).join(' ') || (v.vin ? `FIN …${String(v.vin).slice(-6)}` : 'Fahrzeug'),
+        createdAt: v.created_at || null,
       })));
     })();
   }, [user]);
