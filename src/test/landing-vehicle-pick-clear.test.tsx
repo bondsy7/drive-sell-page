@@ -89,22 +89,27 @@ const priceInput = () => screen.getByPlaceholderText(/ab 299€/);
 const colorInput = () => screen.getByPlaceholderText(/Alpinweiß/);
 
 it('clears the taken-over vehicle data when switching back to manual entry', async () => {
+  console.log('MARK start');
   render(<ManualLandingGenerator onBack={vi.fn()} onComplete={vi.fn()} />);
 
+  console.log('MARK rendered');
   // Prefill aus dem gewählten Fahrzeug abwarten.
   await waitFor(() => expect(priceInput().value).toBe('ab 299 €/mtl.'));
   expect(colorInput().value).toBe('Blau');
   expect(screen.getByTestId('brand').value).toBe('Volkswagen');
   expect(screen.getByTestId('model').value).toBe('Caddy');
 
+  console.log('MARK prefilled');
   const manualOption = screen
     .getAllByTestId('option')
     .find(o => o.getAttribute('data-value') === '__none');
   expect(manualOption).toBeTruthy();
   fireEvent.click(manualOption as HTMLElement);
 
+  console.log('MARK clicked');
   await waitFor(() => expect(priceInput().value).toBe(''));
   expect(colorInput().value).toBe('');
   expect(screen.getByTestId('brand').value).toBe('');
   expect(screen.getByTestId('model').value).toBe('');
+  console.log('MARK done');
 });
