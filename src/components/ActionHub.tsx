@@ -12,6 +12,7 @@ import afterAsset from '@/assets/funnel/after1.webp.asset.json';
 import photoAsset from '@/assets/showroom-glanz.webp.asset.json';
 import marketingAsset from '@/assets/marketing-formate.webp.asset.json';
 import backgroundSwapAsset from '@/assets/hintergrund-1.jpg.asset.json';
+import auto3LogoAsset from '@/assets/auto3-logo.png.asset.json';
 import { useAuto3Config } from '@/hooks/useAuto3Config';
 import GeneratorMaintenanceNotice from '@/components/GeneratorMaintenanceNotice';
 
@@ -43,6 +44,7 @@ interface ActionTile {
   badge?: string;
   cta?: string;
   image?: string;
+  logo?: string;
   disabled?: boolean;
 }
 
