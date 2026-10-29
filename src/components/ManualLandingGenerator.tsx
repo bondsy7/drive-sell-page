@@ -67,11 +67,19 @@ interface ManualLandingGeneratorProps {
   onComplete: (projectId: string) => void;
 }
 
+// Anlegezeitpunkt für die Fahrzeugauswahl: Datum und Uhrzeit in deutscher Schreibweise.
+const formatVehicleCreatedAt = (iso: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}, ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack, onComplete }) => {
   const { user } = useAuth();
   const { balance } = useCredits();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [myVehicles, setMyVehicles] = useState<{ id: string; label: string }[]>([]);
+  const [myVehicles, setMyVehicles] = useState<{ id: string; label: string; createdAt: string | null }[]>([]);
   const vehicleIdParam = searchParams.get('vehicle');
   // Auto-loaded dealer profile
   const [dealerProfile, setDealerProfile] = useState<any>(null);
@@ -137,13 +145,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     (async () => {
       const { data } = await supabase
         .from('vehicles')
-        .select('id, brand, model, year, color, title, vin')
+        .select('id, brand, model, year, color, title, vin, created_at')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(200);
       setMyVehicles((data || []).map((v: any) => ({
         id: v.id,
         label: v.title || [v.brand, v.model, v.year, v.color].filter(Boolean).join(' ') || (v.vin ? `FIN …${String(v.vin).slice(-6)}` : 'Fahrzeug'),
+        createdAt: v.created_at || null,
       })));
     })();
   }, [user]);
@@ -443,7 +452,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
               <SelectTrigger><SelectValue placeholder="Fahrzeug wählen…" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">Kein Fahrzeug – manuell eingeben</SelectItem>
-                {myVehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+                {myVehicles.map(v => (
+                  <SelectItem key={v.id} value={v.id}>
+                    <span className="flex w-full items-baseline justify-between gap-4">
+                      <span className="truncate">{v.label}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{formatVehicleCreatedAt(v.createdAt)}</span>
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
