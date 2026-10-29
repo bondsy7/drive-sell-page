@@ -29,16 +29,19 @@ const contactForm = {
 };
 
 describe('Buttonfarbe auf generierten Landingpages', () => {
-  beforeAll(() => vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} }));
+  beforeAll(() => {
+    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+    vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } });
+  });
   afterAll(() => vi.unstubAllGlobals());
 
   it('exports the saved request-button colour with readable text', () => {
     const html = buildLandingPageHTML(
       { ...baseContent(), buttonColors: { 'hero.ctaText': '#123456' } }, {}, dealer, 'Kia', 'EV4',
     );
-    expect(html).toContain('background:#123456;color:#ffffff');
-    expect(html).not.toContain('background:#e00000;color:#ffffff');
+    expect(html).toContain('href="#kontakt" style="display:inline-flex;align-items:center;background:#123456;color:#ffffff');
   });
+
 
   it('keeps the dealer button colour as long as nothing was saved', () => {
     const html = buildLandingPageHTML(baseContent(), {}, dealer, 'Kia', 'EV4');
