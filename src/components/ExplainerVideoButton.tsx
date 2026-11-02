@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PlayCircle, Video } from "lucide-react";
+import { ExplainerVideoPlayer } from "@/components/ExplainerVideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
@@ -38,19 +39,9 @@ export function ExplainerVideoButton({ title, source }: Props) {
         <DialogContent className="fixed left-1/2 top-1/2 grid w-screen max-w-none -translate-x-1/2 -translate-y-1/2 gap-0 overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none sm:w-[min(92vw,calc((100dvh_-_7rem)*16/9))] [&>button:last-child]:-top-12 [&>button:last-child]:right-2 [&>button:last-child]:z-10 [&>button:last-child]:flex [&>button:last-child]:size-10 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full [&>button:last-child]:bg-background [&>button:last-child]:opacity-100 [&>button:last-child]:shadow-lg sm:[&>button:last-child]:right-0">
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">Erklärvideo</DialogDescription>
-          <div className="aspect-video w-full overflow-hidden bg-background shadow-2xl sm:rounded-lg">
+          <div className="w-full overflow-hidden bg-background shadow-2xl sm:rounded-lg">
             {open && hasVideo ? (
-              <video
-                controls
-                autoPlay
-                playsInline
-                preload="metadata"
-                poster={source?.poster}
-                className="h-full w-full bg-background object-contain"
-              >
-                {source?.webm && <source src={source.webm} type="video/webm" />}
-                {source?.mp4 && <source src={source.mp4} type="video/mp4" />}
-              </video>
+              <ExplainerVideoPlayer source={source!} autoPlay className="block h-full w-full bg-background object-contain" />
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-background/80">
                 <PlayCircle className="h-12 w-12" />
