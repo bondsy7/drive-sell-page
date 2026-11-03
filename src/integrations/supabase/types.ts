@@ -1851,6 +1851,7 @@ export type Database = {
           image_base64: string
           image_url: string | null
           perspective: string | null
+          pipeline_run_at: string | null
           project_id: string | null
           sort_order: number | null
           user_id: string
@@ -1864,6 +1865,7 @@ export type Database = {
           image_base64: string
           image_url?: string | null
           perspective?: string | null
+          pipeline_run_at?: string | null
           project_id?: string | null
           sort_order?: number | null
           user_id: string
@@ -1877,6 +1879,7 @@ export type Database = {
           image_base64?: string
           image_url?: string | null
           perspective?: string | null
+          pipeline_run_at?: string | null
           project_id?: string | null
           sort_order?: number | null
           user_id?: string
