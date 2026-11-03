@@ -98,7 +98,7 @@ export default function VehicleView() {
     enabled: !!id && !!vehicle,
     queryFn: async (): Promise<ProjectImage[]> => {
       const { data } = await supabase.from('project_images')
-        .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at')
+        .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at, pipeline_run_at')
         .eq('vehicle_id', id!)
         .order('created_at', { ascending: false });
       const unique = new Map<string, ProjectImage>();
