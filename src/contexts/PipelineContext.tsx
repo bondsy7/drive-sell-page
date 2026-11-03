@@ -747,6 +747,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [fetchUrlToBase64]);
 
   const startPipeline = useCallback((cfg: PipelineConfig): boolean => {
+    cfg = { ...cfg, galleryRunAt: cfg.galleryRunAt || currentGalleryRun() };
     if (isNb21Tier(cfg.modelTier) && cfg.promptVersion === 'nb21-v3') {
       if (!cfg.lightingProfile || checkV3Preflight(cfg.selectedJobs, cfg.evidenceSources ?? [], cfg.lightingProfile).some(r => !r.ready)) {
         toast.error('V3: Fehlende Originalbelege zuordnen oder betroffene Ansichten abwählen.'); return false;
@@ -1037,7 +1038,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${r.label}`,
           sort_order: sortOrder,
           gallery_folder: folderName,
-          pipeline_run_at: (CFGVAR.galleryRunAt || currentGalleryRun()),
+          pipeline_run_at: (cfg.galleryRunAt || currentGalleryRun()),
           ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: r.key, ...v3ContextMetadata(cfg, r.key), ...buildRegenerationContext({ ...v3ContextMetadata(cfg, r.key), remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, vehicleDescription: cfg.vehicleDescription, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         savedUrls.push(url);
@@ -1336,7 +1337,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
               gallery_folder: folderName,
-          pipeline_run_at: (CFGVAR.galleryRunAt || currentGalleryRun()),
+          pipeline_run_at: (config.galleryRunAt || currentGalleryRun()),
               ...(isNb21Tier(config.modelTier) ? { generation_context: { jobKey: job.key, ...v3ContextMetadata(config, job.key), ...buildRegenerationContext({ ...v3ContextMetadata(config, job.key), remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
             }]);
           }
@@ -1377,7 +1378,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
               gallery_folder: folderName,
-          pipeline_run_at: (CFGVAR.galleryRunAt || currentGalleryRun()),
+          pipeline_run_at: (config.galleryRunAt || currentGalleryRun()),
               ...(isNb21Tier(config.modelTier) ? { generation_context: { jobKey: job.key, ...v3ContextMetadata(config, job.key), ...buildRegenerationContext({ ...v3ContextMetadata(config, job.key), remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
             }]);
           }
@@ -1501,7 +1502,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${task.job.labelDe} (Wiederholung)`,
           sort_order: 900 + task.promptIndex,
           gallery_folder: folderName,
-          pipeline_run_at: (CFGVAR.galleryRunAt || currentGalleryRun()),
+          pipeline_run_at: (cfg.galleryRunAt || currentGalleryRun()),
           ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: task.job.key, ...v3ContextMetadata(cfg, task.job.key), ...buildRegenerationContext({ ...v3ContextMetadata(cfg, task.job.key), remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });
