@@ -4,6 +4,7 @@ import { type ProjectImage, getImageSrc } from './types';
 import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 import AiDisclosureBadge from '@/components/AiDisclosureBadge';
 import { withAiDisclosureAlt } from '@/lib/ai-disclosure';
+import { galleryRunKey, formatGalleryRunDate } from '@/lib/gallery-run';
 
 
 /* ── Fixed sort order for images within a gallery folder ── */
@@ -160,7 +161,7 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
                   {folderImages.map((img, idxInFolder) => {
                     return (
                       <div key={img.id} className="bg-muted rounded-lg overflow-hidden group relative">
-                        <div className="cursor-pointer" onClick={() => onLightbox(folder, idxInFolder)}>
+                        <div className="cursor-pointer" onClick={() => onLightbox(key, idxInFolder)}>
                           <div className="aspect-video relative">
                             <img src={getImageSrc(img)} alt={withAiDisclosureAlt(img.perspective || 'Fahrzeugbild')} className="w-full h-full object-cover" />
                             <AiDisclosureBadge overlay imgClassName="h-[19px] sm:h-[19px]" />
@@ -213,16 +214,16 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
       <AlertDialog open={!!confirmDeleteFolder} onOpenChange={() => setConfirmDeleteFolder(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ordner löschen?</AlertDialogTitle>
+            <AlertDialogTitle>Lauf löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Der Ordner „{confirmDeleteFolder?.folder}" mit {confirmDeleteFolder?.count} Bild{(confirmDeleteFolder?.count ?? 0) !== 1 ? 'ern' : ''} wird unwiderruflich gelöscht. Möchtest du fortfahren?
+              Der Lauf „{confirmDeleteFolder?.folder}" mit {confirmDeleteFolder?.count} Bild{(confirmDeleteFolder?.count ?? 0) !== 1 ? 'ern' : ''} wird unwiderruflich gelöscht. Möchtest du fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { if (confirmDeleteFolder) deleteFolder.mutate(confirmDeleteFolder.folder); setConfirmDeleteFolder(null); }}
+              onClick={() => { if (confirmDeleteFolder) deleteFolder.mutate(confirmDeleteFolder.ids); setConfirmDeleteFolder(null); }}
             >
               Ordner löschen
             </AlertDialogAction>
