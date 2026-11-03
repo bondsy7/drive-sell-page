@@ -22,6 +22,7 @@ import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, getOwnedVehicleId, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import { buildRegenerationContext, saveRegenerationContext } from '@/lib/regeneration-context';
 import { useQueryClient } from '@tanstack/react-query';
+import { currentGalleryRun, galleryRunSegment } from '@/lib/gallery-run';
 import { checkPipelineStart, markPipelineStarted, markPipelineFinished } from '@/lib/pipeline-start-guard';
 import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode, type GenerationStage } from '@/lib/generation-log';
 
@@ -114,6 +115,8 @@ export interface PipelineConfig {
   userId: string;
   detectedBrand: string | null;
   totalImages: number;
+  /** Startzeit des Galerie-Laufs; Retries/Neu-Generierungen bleiben darin. */
+  galleryRunAt?: string;
 }
 
 function v3ContextMetadata(cfg: PipelineConfig, jobKey?: string): Record<string, unknown> {
@@ -744,6 +747,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [fetchUrlToBase64]);
 
   const startPipeline = useCallback((cfg: PipelineConfig): boolean => {
+    cfg = { ...cfg, galleryRunAt: cfg.galleryRunAt || currentGalleryRun() };
     if (isNb21Tier(cfg.modelTier) && cfg.promptVersion === 'nb21-v3') {
       if (!cfg.lightingProfile || checkV3Preflight(cfg.selectedJobs, cfg.evidenceSources ?? [], cfg.lightingProfile).some(r => !r.ready)) {
         toast.error('V3: Fehlende Originalbelege zuordnen oder betroffene Ansichten abwählen.'); return false;
@@ -955,7 +959,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
        * geschlossen wird. */
       const folderName = getGalleryFolderName(cfg.vin);
       setGalleryFolder(folderName);
-      const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
+      const storagePath = `${cfg.projectId ? cfg.projectId : `gallery/${folderName}`}/${galleryRunSegment(cfg.galleryRunAt || currentGalleryRun())}`;
 
       let resolvedVehicleId = await getOwnedVehicleId(cfg.userId, cfg.vehicleId);
       if (!resolvedVehicleId) {
@@ -1034,6 +1038,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${r.label}`,
           sort_order: sortOrder,
           gallery_folder: folderName,
+          pipeline_run_at: (cfg.galleryRunAt || currentGalleryRun()),
           ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: r.key, ...v3ContextMetadata(cfg, r.key), ...buildRegenerationContext({ ...v3ContextMetadata(cfg, r.key), remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, vehicleDescription: cfg.vehicleDescription, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         savedUrls.push(url);
@@ -1323,7 +1328,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setJobs(prev => ({ ...prev, [jobKey]: { status: 'done', results: jobResults, error: jobError } }));
       try {
         const folderName = getGalleryFolderName(config.vin);
-        const storagePath = config.projectId ? config.projectId : `gallery/${folderName}`;
+        const storagePath = `${config.projectId ? config.projectId : `gallery/${folderName}`}/${galleryRunSegment(config.galleryRunAt || currentGalleryRun())}`;
         for (let i = 0; i < jobResults.length; i++) {
           const url = await uploadImageToStorage(jobResults[i], config.userId, `${storagePath}/${jobKey}_retry_${i}.png`);
           if (url) {
@@ -1332,6 +1337,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
               gallery_folder: folderName,
+          pipeline_run_at: (config.galleryRunAt || currentGalleryRun()),
               ...(isNb21Tier(config.modelTier) ? { generation_context: { jobKey: job.key, ...v3ContextMetadata(config, job.key), ...buildRegenerationContext({ ...v3ContextMetadata(config, job.key), remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
             }]);
           }
@@ -1364,7 +1370,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         toast.success('Bild erfolgreich neu generiert.');
         try {
           const folderName = getGalleryFolderName(config.vin);
-          const storagePath = config.projectId ? config.projectId : `gallery/${folderName}`;
+          const storagePath = `${config.projectId ? config.projectId : `gallery/${folderName}`}/${galleryRunSegment(config.galleryRunAt || currentGalleryRun())}`;
           const url = await uploadImageToStorage(result.base64, config.userId, `${storagePath}/${resultImg.jobKey}_regen_${resultImg.promptIndex}.png`);
           if (url) {
             await insertGalleryRowsChecked([{
@@ -1372,6 +1378,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
               gallery_folder: folderName,
+          pipeline_run_at: (config.galleryRunAt || currentGalleryRun()),
               ...(isNb21Tier(config.modelTier) ? { generation_context: { jobKey: job.key, ...v3ContextMetadata(config, job.key), ...buildRegenerationContext({ ...v3ContextMetadata(config, job.key), remasterConfig: config.remasterConfig, classContext: config.classContext, modelTier: config.modelTier, promptVersion: config.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: config.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
             }]);
           }
@@ -1412,7 +1419,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setRetryProgress({ current: 0, total: tasks.length });
 
     const folderName = galleryFolder || getGalleryFolderName(cfg.vin);
-    const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
+    const storagePath = `${cfg.projectId ? cfg.projectId : `gallery/${folderName}`}/${galleryRunSegment(cfg.galleryRunAt || currentGalleryRun())}`;
     let recovered = 0;
     let stillFailing = 0;
 
@@ -1495,6 +1502,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           perspective: `Pipeline: ${task.job.labelDe} (Wiederholung)`,
           sort_order: 900 + task.promptIndex,
           gallery_folder: folderName,
+          pipeline_run_at: (cfg.galleryRunAt || currentGalleryRun()),
           ...(isNb21Tier(cfg.modelTier) ? { generation_context: { jobKey: task.job.key, ...v3ContextMetadata(cfg, task.job.key), ...buildRegenerationContext({ ...v3ContextMetadata(cfg, task.job.key), remasterConfig: cfg.remasterConfig, classContext: cfg.classContext, modelTier: cfg.modelTier, promptVersion: cfg.promptVersion ?? NB21_PROMPT_VERSION, referenceSources: cfg.evidenceSources?.filter(s => s.assetId).map(({ image, fileUri, openAIFile, ...safe }) => safe) }) } } : {}),
         }]);
         queryClient.invalidateQueries({ queryKey: ['gallery'] });

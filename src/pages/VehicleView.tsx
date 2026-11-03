@@ -33,6 +33,7 @@ import WebsiteStatusLine from '@/components/vehicle/WebsiteStatusLine';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import GalleryLightbox from '@/components/GalleryLightbox';
+import { galleryRunKey } from '@/lib/gallery-run';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
 import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
 import EditVehicleDialog from '@/components/vehicle/EditVehicleDialog';
@@ -97,7 +98,7 @@ export default function VehicleView() {
     enabled: !!id && !!vehicle,
     queryFn: async (): Promise<ProjectImage[]> => {
       const { data } = await supabase.from('project_images')
-        .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at')
+        .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at, pipeline_run_at')
         .eq('vehicle_id', id!)
         .order('created_at', { ascending: false });
       const unique = new Map<string, ProjectImage>();
@@ -447,7 +448,7 @@ export default function VehicleView() {
         vehicleId={id}
         images={
           (lightboxFolder
-            ? images.filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
+            ? images.filter(img => galleryRunKey(img as any) === lightboxFolder)
             : [...images]
           )
             .sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective))

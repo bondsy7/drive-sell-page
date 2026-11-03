@@ -351,8 +351,9 @@ export function useDeleteGalleryImage() {
 export function useDeleteGalleryFolder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (folder: string) => {
-      const { error } = await supabase.from('project_images').delete().eq('gallery_folder', folder);
+    mutationFn: async (target: string | string[]) => {
+      const q = supabase.from('project_images').delete();
+      const { error } = Array.isArray(target) ? await q.in('id', target) : await q.eq('gallery_folder', target);
       if (error) throw error;
     },
     onSuccess: () => {

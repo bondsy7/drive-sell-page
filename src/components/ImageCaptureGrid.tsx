@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { beginGalleryRun } from '@/lib/gallery-run';
 import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon, ChevronDown, ChevronRight, Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExplainerVideoButton } from '@/components/ExplainerVideoButton';
@@ -288,6 +289,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const { getCost } = useCredits();
   const queryClient = useQueryClient();
   const galleryFolderRef = useRef<string | null>(null);
+  // Jeder neu geöffnete Erstellungsprozess ist ein eigener Galerie-Lauf.
+  const galleryRunAtRef = useRef<string>('');
+  if (!galleryRunAtRef.current) galleryRunAtRef.current = beginGalleryRun();
   const galleryTargetsRef = useRef<Record<string, RemasterGalleryTarget>>({});
   const archivedOriginalsRef = useRef(new Set<string>());
   const remasterCost = getCost('image_remaster', modelTier || 'premium');
@@ -819,6 +823,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       id: crypto.randomUUID(), vehicleId: targetVehicleId, projectId,
       folder: galleryFolderRef.current, slotKey: slot.key, perspective: slot.label,
       sortOrder: vehicleSlots.findIndex(s => s.key === slot.key),
+      pipelineRunAt: galleryRunAtRef.current,
     };
     galleryTargetsRef.current[slot.key] = target;
     const sources = [

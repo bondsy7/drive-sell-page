@@ -1,4 +1,5 @@
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
+import { currentGalleryRun, galleryRunSegment } from '@/lib/gallery-run';
 import { REFERENCE_ONLY_SLOT_KEYS } from '@/config/profiles/car-profile';
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -318,6 +319,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     if (!user || inputImages.length === 0 || inputImagesSavedRef.current) return;
     inputImagesSavedRef.current = true;
     const folderName = getGalleryFolderName(vin);
+    const runAt = currentGalleryRun();
     try {
       const slots = resolveCaptureSlots(getVehicleClassProfile(classContext?.vehicleClass || 'car'), classContext);
       const perspectives = remasterPerspectives(slots, referenceRoles || slots.filter(s => !s.isVin && !s.referenceOnly).map(s => s.key));
@@ -326,6 +328,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         .select('perspective')
         .eq('user_id', user.id)
         .eq('gallery_folder', folderName)
+        .eq('pipeline_run_at', runAt)
         .in('perspective', perspectives.slice(0, inputImages.length));
       const existingPerspectives = new Set((existing || []).map(row => row.perspective));
       // Empfohlene Rundgang-Referenzen sind reine Eingaben: nie in die Galerie.
@@ -336,8 +339,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       const rows = [];
       for (const item of pending) {
         const storageName = projectId
-          ? `${projectId}/remaster_${item.index}.png`
-          : `gallery/${folderName}/remaster_${item.index}.png`;
+          ? `${projectId}/${galleryRunSegment(runAt)}/remaster_${item.index}.png`
+          : `gallery/${folderName}/${galleryRunSegment(runAt)}/remaster_${item.index}.png`;
         const url = await uploadImageToStorage(item.image, user.id, storageName);
         if (url) rows.push({
           project_id: projectId || null,
@@ -348,6 +351,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           perspective: item.perspective,
           sort_order: item.index,
           gallery_folder: folderName,
+          pipeline_run_at: runAt,
         });
       }
       if (rows.length > 0) {
@@ -401,6 +405,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     }
 
     const started = pipeline.startPipeline({
+      galleryRunAt: currentGalleryRun(),
       workflowKey,
       evidenceSources: isV2 ? assignedEvidence : evidenceSources,
       promptVersion: modelTier === 'nb21' ? selectedVersion : undefined,

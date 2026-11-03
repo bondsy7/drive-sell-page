@@ -20,6 +20,7 @@
 // Bestehende Komponenten (BannerGenerator, ImageCaptureGrid, /generator/fotos)
 // bleiben unangetastet — wir orchestrieren nur.
 
+import { beginGalleryRun } from '@/lib/gallery-run';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   ArrowLeft, ScanSearch, Loader2, Upload, X, ChevronRight, Zap, Image as ImageIcon,
@@ -933,6 +934,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       .join(' ');
 
     pipelineCtx.startPipeline({
+      galleryRunAt: beginGalleryRun(),
       workflowKey: createPipelineWorkflowKey({
         vehicleId: savedVehicleId,
         vin,
