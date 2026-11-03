@@ -7,6 +7,8 @@ export interface RemasterGalleryTarget {
   slotKey: string;
   perspective: string;
   sortOrder: number;
+  /** Startzeit des Galerie-Laufs (ISO); fehlt sie, ordnet die DB zu. */
+  pipelineRunAt?: string | null;
 }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validateGalleryTarget(value: unknown): RemasterGalleryTarget {
@@ -17,7 +19,8 @@ export function validateGalleryTarget(value: unknown): RemasterGalleryTarget {
     || typeof t.folder !== 'string' || !t.folder || t.folder.length > 150
     || typeof t.slotKey !== 'string' || !/^[a-z0-9-]{1,80}$/.test(t.slotKey)
     || typeof t.perspective !== 'string' || !t.perspective || t.perspective.length > 150
-    || !Number.isInteger(t.sortOrder) || Number(t.sortOrder) < 0) {
+    || !Number.isInteger(t.sortOrder) || Number(t.sortOrder) < 0
+    || (t.pipelineRunAt != null && (typeof t.pipelineRunAt !== 'string' || Number.isNaN(Date.parse(t.pipelineRunAt))))) {
     throw new Error('Ungültiges Speicherziel für das Remasterbild.');
   }
   return t as RemasterGalleryTarget;
@@ -43,6 +46,7 @@ export async function persistRemasterGallery(client: any, userId: string, target
     id: target.id, user_id: userId, vehicle_id: target.vehicleId,
     project_id: target.projectId || null, image_url: url.publicUrl, image_base64: '',
     gallery_folder: target.folder, perspective: target.perspective, sort_order: target.sortOrder,
+    ...(target.pipelineRunAt ? { pipeline_run_at: target.pipelineRunAt } : {}),
   }, { onConflict: 'id' });
   if (error) throw new Error('Remasterbild konnte nicht in der Galerie gesichert werden.');
   return { id: target.id, imageUrl: url.publicUrl };
