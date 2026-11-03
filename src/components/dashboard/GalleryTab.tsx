@@ -62,10 +62,7 @@ interface Props {
 }
 
 export default function GalleryTab({ images, onLightbox, highlightFolder }: Props) {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
-    if (highlightFolder) return new Set([highlightFolder]);
-    return new Set(images.map(i => i.gallery_folder || 'Ohne Ordner'));
-  });
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const highlightRef = useRef<HTMLDivElement>(null);
 
   // Scroll to highlighted folder on mount
@@ -76,7 +73,7 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
   }, [highlightFolder]);
 
   const [confirmDeleteImage, setConfirmDeleteImage] = useState<string | null>(null);
-  const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<{ folder: string; count: number } | null>(null);
+  const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<{ folder: string; count: number; ids: string[] } | null>(null);
 
   const deleteImage = useDeleteGalleryImage();
   const deleteFolder = useDeleteGalleryFolder();
@@ -84,29 +81,37 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
   const groupedGallery = useMemo(() => {
     const groups: Record<string, ProjectImage[]> = {};
     for (const img of images) {
-      const folder = img.gallery_folder || 'Ohne Ordner';
-      if (!groups[folder]) groups[folder] = [];
-      groups[folder].push(img);
+      const key = galleryRunKey(img);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(img);
     }
-    // Sort images within each folder by fixed perspective order
     for (const key of Object.keys(groups)) {
       groups[key].sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective));
     }
-    // Sort folders by newest image first
+    const runTime = (k: string) => {
+      const g = groups[k];
+      const run = g[0].pipeline_run_at;
+      return run ? new Date(run).getTime() : Math.max(...g.map(i => new Date(i.created_at || 0).getTime()));
+    };
     const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (a === 'Ohne Ordner') return 1;
-      if (b === 'Ohne Ordner') return -1;
-      const latestA = Math.max(...groups[a].map(i => new Date(i.created_at || 0).getTime()));
-      const latestB = Math.max(...groups[b].map(i => new Date(i.created_at || 0).getTime()));
-      return latestB - latestA;
+      const fa = groups[a][0].gallery_folder || 'Ohne Ordner';
+      const fb = groups[b][0].gallery_folder || 'Ohne Ordner';
+      if (fa === 'Ohne Ordner' && fb !== 'Ohne Ordner') return 1;
+      if (fb === 'Ohne Ordner' && fa !== 'Ohne Ordner') return -1;
+      return runTime(b) - runTime(a);
     });
-    return sortedKeys.map(key => ({ folder: key, images: groups[key] }));
+    return sortedKeys.map(key => ({
+      key,
+      folder: groups[key][0].gallery_folder || 'Ohne Ordner',
+      runLabel: formatGalleryRunDate(groups[key][0].pipeline_run_at),
+      images: groups[key],
+    }));
   }, [images]);
 
-  const toggleFolder = (folder: string) => {
-    setExpandedFolders(prev => {
+  const toggleFolder = (key: string) => {
+    setCollapsed(prev => {
       const next = new Set(prev);
-      if (next.has(folder)) next.delete(folder); else next.add(folder);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -120,28 +125,32 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
     );
   }
 
+  let highlighted = false;
   return (
     <>
       <div className="space-y-4">
-        {groupedGallery.map(({ folder, images: folderImages }) => {
-          const isExpanded = expandedFolders.has(folder);
+        {groupedGallery.map(({ key, folder, runLabel, images: folderImages }) => {
+          const isExpanded = !collapsed.has(key) && (!highlightFolder || folder === highlightFolder);
           const isVin = folder !== 'Ohne Ordner' && !folder.startsWith('NO_VIN');
+          const isHighlight = folder === highlightFolder && !highlighted;
+          if (isHighlight) highlighted = true;
           return (
-            <div key={folder} ref={folder === highlightFolder ? highlightRef : undefined} className={`bg-card rounded-xl border overflow-hidden ${folder === highlightFolder ? 'border-accent ring-2 ring-accent/20' : 'border-border'}`}>
+            <div key={key} ref={isHighlight ? highlightRef : undefined} className={`bg-card rounded-xl border overflow-hidden ${isHighlight ? 'border-accent ring-2 ring-accent/20' : 'border-border'}`}>
               <div className="flex items-center">
                 <button
-                  onClick={() => toggleFolder(folder)}
-                  className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                  onClick={() => toggleFolder(key)}
+                  className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left min-w-0"
                 >
                   {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                   <FolderOpen className="w-4 h-4 text-accent shrink-0" />
-                  <span className={`font-display font-semibold text-sm ${isVin ? 'font-mono' : ''}`}>{folder}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">{folderImages.length} Bild{folderImages.length !== 1 ? 'er' : ''}</span>
+                  <span className={`font-display font-semibold text-sm truncate ${isVin ? 'font-mono' : ''}`}>{folder}</span>
+                  {runLabel && <span className="text-xs sm:text-sm text-muted-foreground shrink-0">{runLabel}</span>}
+                  <span className="text-xs text-muted-foreground ml-auto shrink-0">{folderImages.length} Bild{folderImages.length !== 1 ? 'er' : ''}</span>
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteFolder({ folder, count: folderImages.length }); }}
+                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteFolder({ folder: runLabel ? `${folder} – ${runLabel}` : folder, count: folderImages.length, ids: folderImages.map(i => i.id) }); }}
                   className="p-3 text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                  title="Ordner löschen"
+                  title="Lauf löschen"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

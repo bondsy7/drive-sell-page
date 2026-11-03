@@ -18,6 +18,7 @@ export interface ProjectImage {
   perspective: string | null;
   gallery_folder: string | null;
   created_at: string;
+  pipeline_run_at?: string | null;
 }
 
 export interface Lead {
