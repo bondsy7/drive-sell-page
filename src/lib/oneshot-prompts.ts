@@ -13,6 +13,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
 4. STRIP OLD BRANDING: REMOVE every dealer logo, watermark, sticker, price tag, license-plate frame, lettering, web URL, phone number, and any overlaid text or graphic that came from the original photograph. The body, windows, ground and background must be CLEAN of any foreign text or logo.
 5. KEEP ONLY THE PROVIDED LOGOS: Only the manufacturer/dealer logos that are explicitly provided as reference images (if any) may appear – nowhere else.
 6. PHOTOREALISM: Output must look like a high-end automotive studio photograph, not a composite.
+7. FULL SURFACE RE-RENDER (no source reflections): Use the source photo ONLY as identity evidence (body shape, paint colour/finish, wheels, lights, trim, equipment). Do NOT copy its pixels on paint, glass, chrome or rims. Re-render every reflective surface from scratch for the new showroom. Mirrored buildings, windows, facades, sky, clouds, trees, street, parked cars, people or the photographer visible in the source paint or glass are capture artefacts and MUST be completely removed. Windows show only the clean vehicle interior plus showroom reflections. Every reflection on the car must be traceable to an object or light inside the new showroom.
 </HERO_INTEGRATION_LOCK>`;
 
 // Hero-only: amplify ceiling LED + softbox highlights ABOVE the global lighting lock.
@@ -26,7 +27,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 5. WET-LOOK PAINT (subtle): Paint must read as freshly detailed — deep gloss, micro-clearcoat sheen, no haze, no dust. Metallic flake should sparkle faintly under the highlights.
 6. GROUND INTERACTION: Strong-but-soft contact shadow under the tires; faint mirror reflection of the lower body on a polished floor (only if the showroom floor is reflective). Ambient occlusion in wheel wells and under sills.
 7. LIGHT-SOURCE TRACEABILITY: A viewer must be able to point at the highlights and say "the light came from there." Direction, color temperature and intensity of every highlight must be internally consistent.
-8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims.
+8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims. In particular: no mirrored building windows on the hood, no facade or sky reflections in the windshield or side windows. If in doubt, regenerate the surface as clean showroom-lit paint/glass.
 </HERO_LIGHTING_BOOST>`;
 
 /** Full OneShot hero (master) prompt: master context + MASTER_IMAGE perspective + hero locks. */
