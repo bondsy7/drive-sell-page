@@ -27,7 +27,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 5. WET-LOOK PAINT (subtle): Paint must read as freshly detailed — deep gloss, micro-clearcoat sheen, no haze, no dust. Metallic flake should sparkle faintly under the highlights.
 6. GROUND INTERACTION: Strong-but-soft contact shadow under the tires; faint mirror reflection of the lower body on a polished floor (only if the showroom floor is reflective). Ambient occlusion in wheel wells and under sills.
 7. LIGHT-SOURCE TRACEABILITY: A viewer must be able to point at the highlights and say "the light came from there." Direction, color temperature and intensity of every highlight must be internally consistent.
-8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims.
+8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims. In particular: no mirrored building windows on the hood, no facade or sky reflections in the windshield or side windows. If in doubt, regenerate the surface as clean showroom-lit paint/glass.
 </HERO_LIGHTING_BOOST>`;
 
 /** Full OneShot hero (master) prompt: master context + MASTER_IMAGE perspective + hero locks. */
