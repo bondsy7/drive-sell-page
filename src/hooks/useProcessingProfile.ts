@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchPromptOverrides } from '@/lib/remaster-prompt';
 import {
   compileJobPlan, normalizeSettings, planTotal, settingsHash,
-  type AutomationMode, type Datasheet, type ProcessingSettings,
+  type AutomationMode, type Datasheet, type ProcessingSettings, type RunOptions,
 } from '@/lib/auto3-processing';
 
 export interface ProcessingProfile {
@@ -39,6 +39,7 @@ export async function startAuto3Job(args: {
   vehicleId: string; settings: ProcessingSettings;
   getCost?: (action: string, tier: string) => number;
   getLogoForMake?: (make: string) => string | null | undefined;
+  runOptions?: RunOptions;
 }) {
   const [{ data: job }, { data: prep }] = await Promise.all([
     supabase.from('auto3_processing_jobs').select('id, datasheet').eq('vehicle_id', args.vehicleId).maybeSingle(),
@@ -51,7 +52,7 @@ export async function startAuto3Job(args: {
     settings: args.settings, datasheet, overrides,
     analysis: Array.isArray(prep?.analysis) ? (prep!.analysis as never) : [],
     manufacturerLogoUrl: datasheet.brand ? args.getLogoForMake?.(datasheet.brand) || null : null,
-    getCost: args.getCost,
+    getCost: args.getCost, runOptions: args.runOptions,
   });
   const { data, error } = await supabase.functions.invoke('auto3-processing-job', { body: { action: 'start', vehicleId: args.vehicleId, plan } });
   if (error || data?.error) throw new Error(data?.error || 'Start fehlgeschlagen');

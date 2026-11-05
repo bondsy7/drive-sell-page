@@ -8,6 +8,16 @@ import { composeOneShotHeroPrompt, buildBannerPrompt } from '@/lib/oneshot-promp
 import { DEFAULT_FORM, ONESHOT_BANNER_FORMATS, type BannerFormatId, type MarketingForm } from '@/components/oneshot/oneshot-types';
 import { selectInteriorReference, type MasterCandidate } from '../../supabase/functions/_shared/auto3-master';
 import { resolveRemasterCost } from '../../supabase/functions/_shared/remaster-cost';
+import { buildThemeBlock, type SeasonalThemeId } from '@/lib/seasonal-themes';
+
+/** Choices made per start, not stored in the approved profile. */
+export interface RunOptions { scope: 'all' | 'hero'; theme: SeasonalThemeId; customTheme?: string }
+
+/** Hero-only drops perspectives, banners and video so only the title image is generated and billed. */
+export function applyRunOptions(s: ProcessingSettings, o?: RunOptions): ProcessingSettings {
+  if (o?.scope !== 'hero') return s;
+  return { ...s, perspectiveKeys: [], bannerEnabled: false, socialSet: false, videoEnabled: false };
+}
 
 export type AutomationMode = 'off' | 'prepare' | 'full';
 export type ModelTierOption = 'schnell' | 'qualitaet' | 'premium';
@@ -172,8 +182,11 @@ export function compileJobPlan(args: {
   overrides: Record<string, string>;
   manufacturerLogoUrl?: string | null;
   getCost?: (action: string, tier: string) => number;
+  /** Per-run choice: only the title image, and/or a seasonal theme on top of the scene. */
+  runOptions?: RunOptions;
 }): CompiledPlan {
-  const s = normalizeSettings(args.settings);
+  const s = applyRunOptions(normalizeSettings(args.settings), args.runOptions);
+  const themeBlock = buildThemeBlock(args.runOptions?.theme, args.runOptions?.customTheme);
   const d = args.datasheet;
   const cost = estimateJobCost(s, args.getCost);
   const vehicleLabel = [d.brand, d.model, d.variant].filter(Boolean).join(' ');
@@ -190,7 +203,7 @@ export function compileJobPlan(args: {
   const heroPrompt = composeOneShotHeroPrompt(
     buildMasterPrompt(config, vehicleLabel, undefined, args.overrides),
     injectLogoPlaceholder(master.prompt, hasLogo),
-  );
+  ) + themeBlock;
 
   // Perspectives: identical composition to PipelineContext (master context + task lock + perspective)
   const jobs = applyPromptOverrides(ONESHOT_PERSPECTIVE_JOBS.filter((j) => s.perspectiveKeys.includes(j.key)), args.overrides);
@@ -205,7 +218,7 @@ export function compileJobPlan(args: {
       perspectives.push({
         key: i === 0 ? job.key : `${job.key}_${i + 1}`,
         label: i === 0 ? job.labelDe : `${job.labelDe} ${i + 1}`,
-        prompt: `${base}\n\n${lock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${injectLogoPlaceholder(p, hasLogo)}`,
+        prompt: `${base}${interior ? '' : themeBlock}\n\n${lock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${injectLogoPlaceholder(p, hasLogo)}`,
         cost: cost.perImage, interior, referenceFile,
       });
     });
@@ -215,7 +228,7 @@ export function compileJobPlan(args: {
   const bannerUnit = cost.banners ? Math.round(cost.bannerCost / cost.banners) : 0;
   const banners = effectiveBannerFormats(s).map((id) => {
     const fmt = ONESHOT_BANNER_FORMATS.find((f) => f.id === id)!;
-    return { formatId: id, label: fmt.label, w: fmt.w, h: fmt.h, prompt: buildBannerPrompt(form, fmt), cost: bannerUnit };
+    return { formatId: id, label: fmt.label, w: fmt.w, h: fmt.h, prompt: buildBannerPrompt(form, fmt) + themeBlock, cost: bannerUnit };
   });
 
   return {
