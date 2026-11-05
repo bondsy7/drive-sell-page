@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useProcessingProfile, prepareAuto3Job, startAuto3Job, retryAuto3Job } from '@/hooks/useProcessingProfile';
-import { DATASHEET_LABELS, formatDatasheetValue, RUNNING_STATUSES, estimateJobCost, jobStatusLabel, type Datasheet, type JobRow } from '@/lib/auto3-processing';
+import { SEASONAL_THEMES, type SeasonalThemeId } from '@/lib/seasonal-themes';
+import { applyRunOptions, DATASHEET_LABELS, formatDatasheetValue, RUNNING_STATUSES, estimateJobCost, jobStatusLabel, type Datasheet, type JobRow } from '@/lib/auto3-processing';
 
 export const auto3JobQueryKey = (vehicleId: string) => ['auto3-job', vehicleId];
 
@@ -26,6 +27,10 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
   const lastStatus = useRef<string | null>(null);
+  const [scope, setScope] = useState<'all' | 'hero'>('all');
+  const [theme, setTheme] = useState<SeasonalThemeId>('none');
+  const [customTheme, setCustomTheme] = useState('');
+  const runOptions = { scope, theme, customTheme };
 
   const { data } = useQuery({
     queryKey: auto3JobQueryKey(vehicleId),
@@ -68,14 +73,15 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
   };
 
   const settings = prof?.profile?.settings;
-  const cost = settings ? estimateJobCost(settings, getCost) : null;
+  const cost = settings ? estimateJobCost(applyRunOptions(settings, runOptions), getCost) : null;
   const running = !!job && RUNNING_STATUSES.includes(job.status);
   const canStart = !!job && ['master_selected', 'ready_for_review'].includes(job.status);
   const sheet = Object.entries(job?.datasheet || {}) as [keyof Datasheet, string][];
 
   const start = () => act('start', async () => {
     if (!settings || !prof?.approved) throw new Error('Bitte im Profil das Fahrzeug-Aufbereitungsprofil speichern und freigeben.');
-    const r = await startAuto3Job({ vehicleId, settings, getCost, getLogoForMake });
+    if (theme === 'custom' && !customTheme.trim()) throw new Error('Bitte das eigene Thema beschreiben.');
+    const r = await startAuto3Job({ vehicleId, settings, getCost, getLogoForMake, runOptions });
     if (r.status === 'paused') toast.warning('Pausiert – nicht genügend Credits.'); else toast.success(`Aufbereitung läuft im Hintergrund (${r.total} Credits).`);
   });
 
@@ -125,12 +131,31 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
         </div>
       )}
 
+      {canStart && !running && (
+        <div className="grid gap-2 rounded border border-border bg-background p-2 sm:grid-cols-2">
+          <label className="text-xs font-medium">Umfang
+            <select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={scope} onChange={(e) => setScope(e.target.value as 'all' | 'hero')}>
+              <option value="all">Alle Bilder laut Profil</option>
+              <option value="hero">Nur Titelbild</option>
+            </select>
+          </label>
+          <label className="text-xs font-medium">Thema / Aktion (zusätzlich zum Showroom)
+            <select className="mt-1 w-full rounded border border-border bg-background p-1.5 text-sm" value={theme} onChange={(e) => setTheme(e.target.value as SeasonalThemeId)}>
+              {SEASONAL_THEMES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </label>
+          {theme === 'custom' && (
+            <input className="rounded border border-border bg-background p-1.5 text-sm sm:col-span-2" maxLength={500} placeholder="z. B. Dekoration zum Sommerfest mit bunten Lampions" value={customTheme} onChange={(e) => setCustomTheme(e.target.value)} />
+          )}
+        </div>
+      )}
+
       {job && !running && (
         <div className="flex flex-wrap items-center gap-2">
           {canStart && (
             <Button size="sm" onClick={start} disabled={!!busy || !prof?.approved}>
               {busy === 'start' ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Zap className="w-4 h-4 mr-1.5" />}
-              Jetzt automatisch aufbereiten{cost ? ` (${cost.total} Credits)` : ''}
+              {scope === 'hero' ? 'Titelbild erstellen' : 'Jetzt automatisch aufbereiten'}{cost ? ` (${cost.total} Credits)` : ''}
             </Button>
           )}
           {(job.status === 'paused' || job.status === 'failed') && (
