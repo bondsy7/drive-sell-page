@@ -256,7 +256,7 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
     const item = next.item;
     await update(sb, job.id, { status: "generating_banner", progress_label: `Banner: ${item.label}` });
     const heroUrl = await urlDataUrl(steps.hero.url);
-    const r = await callGenerator("generate-banner", { prompt: item.prompt, imageBase64: heroUrl, modelTier: plan.modelTier, width: item.w, height: item.h }, job.user_id);
+    const r = await callGenerator("generate-banner", { prompt: item.prompt, imageBase64: heroUrl, modelTier: plan.modelTier === "flare" ? "neu" : plan.modelTier, width: item.w, height: item.h }, job.user_id);
     if (r.status !== 200 || !r.data?.imageBase64) return void (await fail(r.status === 200 ? 502 : r.status, r.data?.error || "Banner fehlgeschlagen"));
     const path = `${job.user_id}/${job.vehicle_id}/${Date.now()}-oneshot-${item.formatId}.png`;
     const { error } = await sb.storage.from("banners").upload(path, b64ToBytes(r.data.imageBase64), { contentType: "image/png" });
