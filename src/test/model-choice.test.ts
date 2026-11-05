@@ -29,7 +29,7 @@ describe('full model access exception (nur d.bonds@autoactiva.de)', () => {
   });
   it('Testaccount sieht alle unterstützten Remaster-Tiers', () => {
     expect(getSelectableModelTiers('image_remaster', BONDS).map((t) => t.id))
-      .toEqual(['schnell', 'qualitaet', 'premium', 'flare', 'turbo', 'ultra', 'neu', 'sunburst']);
+      .toEqual(['schnell', 'qualitaet', 'premium', 'flare', 'turbo', 'ultra', 'neu', 'sunburst', 'nb21']);
   });
   it('Testaccount sieht bei Bildgenerierung/Banner nur die dort unterstützten Tiers', () => {
     expect(getSelectableModelTiers('image_generate', BONDS).map((t) => t.id))
@@ -46,9 +46,10 @@ describe('full model access exception (nur d.bonds@autoactiva.de)', () => {
     expect(resolveSelectableModelTier('schnell', BONDS)).toBe('schnell');
     expect(resolveSelectableModelTier('ultra', 'edin.ljevo@wirsindjacobs.de')).toBe('premium');
   });
-  it('nb21 bleibt auch für den Testaccount kein Dropdown-Tier (eigener Wire-Pfad)', () => {
-    expect(resolveSelectableModelTier('nb21', BONDS)).toBe('premium');
-    expect(getSelectableModelTiers('image_remaster', BONDS).some((t) => t.id === 'nb21')).toBe(false);
+  it('nb21 ist nur für den Testaccount wählbar und nur beim Remastering', () => {
+    expect(resolveSelectableModelTier('nb21', BONDS)).toBe('nb21');
+    expect(resolveSelectableModelTier('nb21', 'jemand@example.com')).toBe('premium');
+    expect(getSelectableModelTiers('image_generate', BONDS).some((t) => t.id === 'nb21')).toBe(false);
   });
   it('Banner-unsupported Tiers fallen für den Testaccount auf Premium zurück', () => {
     expect(resolveSelectableModelTier('flare', BONDS, 'image_generate')).toBe('premium');
