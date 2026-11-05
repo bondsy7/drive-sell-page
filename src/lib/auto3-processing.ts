@@ -20,7 +20,7 @@ export function applyRunOptions(s: ProcessingSettings, o?: RunOptions): Processi
 }
 
 export type AutomationMode = 'off' | 'prepare' | 'full';
-export type ModelTierOption = 'schnell' | 'qualitaet' | 'premium';
+export type ModelTierOption = 'schnell' | 'qualitaet' | 'premium' | 'flare' | 'neu';
 
 export interface ProcessingSettings {
   scene: string;
@@ -77,10 +77,17 @@ export const MODEL_TIER_OPTIONS: { value: ModelTierOption; label: string }[] = [
   { value: 'schnell', label: 'Schnell' },
   { value: 'qualitaet', label: 'Qualität (Standard)' },
   { value: 'premium', label: 'Premium' },
+  { value: 'flare', label: 'Advanced (GPT Image 2.5 Flare)' },
+  { value: 'neu', label: 'Neu (GPT Image 2)' },
 ];
 
+/** Banner generator has no Flare engine; Flare banners use the OpenAI "neu" tier (same engine family, no Gemini fallback). */
+export function bannerTierFor(tier: string): string {
+  return tier === 'flare' ? 'neu' : tier;
+}
+
 /** Same defaults the generators charge when admin_settings has no override. */
-const BANNER_COST: Record<string, number> = { schnell: 3, qualitaet: 5, premium: 8 };
+const BANNER_COST: Record<string, number> = { schnell: 3, qualitaet: 5, premium: 8, neu: 8 };
 export const VIDEO_COST = 17;
 
 export function normalizeSettings(raw: unknown): ProcessingSettings {
@@ -88,6 +95,7 @@ export function normalizeSettings(raw: unknown): ProcessingSettings {
   const validKeys = new Set(ONESHOT_PERSPECTIVE_JOBS.map((j) => j.key));
   s.perspectiveKeys = (s.perspectiveKeys || []).filter((k) => validKeys.has(k));
   if (!['keep', 'remove', 'blur'].includes(s.licensePlate)) s.licensePlate = 'remove';
+  if (!MODEL_TIER_OPTIONS.some((o) => o.value === s.modelTier)) s.modelTier = 'qualitaet';
   const validFormats = new Set(ONESHOT_BANNER_FORMATS.map((f) => f.id as string));
   s.bannerFormats = (s.bannerFormats || []).filter((f) => validFormats.has(f));
   return s;
@@ -114,7 +122,7 @@ export function estimateJobCost(s: ProcessingSettings, getCost?: (action: string
   const jobs = ONESHOT_PERSPECTIVE_JOBS.filter((j) => s.perspectiveKeys.includes(j.key));
   const images = 1 + jobs.reduce((n, j) => n + outputCount(j), 0);
   const banners = effectiveBannerFormats(s).length;
-  const bannerCost = banners * (BANNER_COST[s.modelTier] ?? 5);
+  const bannerCost = banners * (BANNER_COST[bannerTierFor(s.modelTier)] ?? 5);
   const video = s.videoEnabled ? VIDEO_COST : 0;
   return { images, imageCost: images * perImage, banners, bannerCost, video, total: images * perImage + bannerCost + video, perImage };
 }
