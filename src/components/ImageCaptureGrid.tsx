@@ -19,7 +19,7 @@ import { Dialog as BrandDialog, DialogContent as BrandDialogContent, DialogHeade
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
-import { isNb21Tier } from '@/prompts/nb21';
+import { isNb21Tier, buildNb21RemasterPrompt } from '@/prompts/nb21';
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
 import { archiveV2Original } from '@/lib/nb21-v2-originals';
 import { invokeNb21V2, v2ConfigSources } from '@/lib/nb21-v2-invoke';
@@ -295,6 +295,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const galleryTargetsRef = useRef<Record<string, RemasterGalleryTarget>>({});
   const archivedOriginalsRef = useRef(new Set<string>());
   const remasterCost = getCost('image_remaster', modelTier || 'premium');
+  // NB 2.1 Testpfad: V1 (historischer Prompt) oder V2 (Evidenz-Manifest).
+  const [nb21Version, setNb21Version] = useState<'nb21-v1' | 'nb21-v2'>(NB21_CURRENT_VERSION as 'nb21-v2');
+  const isNb21V1 = isNb21Tier(modelTier) && nb21Version === 'nb21-v1';
   const pipeline = usePipeline();
   const [showPipeline, setShowPipeline] = useState(false);
 
@@ -841,7 +844,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
     await saveRegenerationContext(targetVehicleId, buildRegenerationContext({
       remasterConfig, classContext, vehicleDescription, modelTier,
-      ...(isNb21Tier(modelTier) ? { promptVersion: NB21_CURRENT_VERSION, referenceSources: Object.entries(originalAssetIdsRef.current).map(([image, assetId]) => ({ sourceId: assetId, assetId, sourceType: originalSourceMetadataRef.current[image]?.sourceType ?? 'original' as const, sourceRole: originalSourceMetadataRef.current[image]?.sourceRole ?? 'unassigned-detail' })) } : {}),
+      ...(isNb21Tier(modelTier) ? { promptVersion: nb21Version, referenceSources: Object.entries(originalAssetIdsRef.current).map(([image, assetId]) => ({ sourceId: assetId, assetId, sourceType: originalSourceMetadataRef.current[image]?.sourceType ?? 'original' as const, sourceRole: originalSourceMetadataRef.current[image]?.sourceRole ?? 'unassigned-detail' })) } : {}),
     }));
     return target;
   };
@@ -949,10 +952,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const slotConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features };
       // Build per-slot prompt with perspective-specific instructions
       // Nano Banana 2.1: getrennter Prompt-Pfad, alle anderen Tiers unverändert.
-      const useNb21 = isNb21Tier(modelTier);
+      const useNb21 = isNb21Tier(modelTier) && !isNb21V1;
       let dynamicPrompt: string;
       if (useNb21) {
         dynamicPrompt = ''; // V2 prompt is built only after deterministic evidence selection.
+      } else if (isNb21V1) {
+        dynamicPrompt = buildNb21RemasterPrompt({ config: slotConfig, slotKey: slot.key, vehicleDescription, classContext, references: nb21RemasterRefs(slot.key, !!slotWheelRef) });
       } else {
         dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
         if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
@@ -974,7 +979,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             vehicleDescription,
             modelTier: modelTier || 'premium',
             dynamicPrompt,
-            ...(useNb21 ? { promptVersion: NB21_CURRENT_VERSION } : {}),
+            ...(isNb21V1 ? { promptVersion: 'nb21-v1' } : {}),
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
             customPlateImageBase64: remasterConfig.licensePlate === 'custom' ? remasterConfig.customPlateImageBase64 || null : null,
             dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
@@ -1049,10 +1054,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const resolvedWheelRef = await resolveWheelReference(slotIsInterior ? null : captures[slotKey].base64);
       const slotWheelRef = !slotIsInterior && resolvedWheelRef?.image ? resolvedWheelRef : null;
       const retryConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef, equipmentFeatures: latestVehicleDataRef.current?.vehicle?.features };
-      const useNb21 = isNb21Tier(modelTier);
+      const useNb21 = isNb21Tier(modelTier) && !isNb21V1;
       let dynamicPrompt: string;
       if (useNb21) {
         dynamicPrompt = ''; // V2 prompt is built only after deterministic evidence selection.
+      } else if (isNb21V1) {
+        dynamicPrompt = buildNb21RemasterPrompt({ config: retryConfig, slotKey: slotKey, vehicleDescription, classContext, references: nb21RemasterRefs(slotKey, !!slotWheelRef) });
       } else {
         dynamicPrompt = buildMasterPrompt(retryConfig, vehicleDescription, slotKey, overrides, classContext);
         if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
@@ -1070,7 +1077,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         vehicleDescription,
         modelTier: modelTier || 'premium',
         dynamicPrompt,
-        ...(useNb21 ? { promptVersion: NB21_CURRENT_VERSION } : {}),
+        ...(isNb21V1 ? { promptVersion: 'nb21-v1' } : {}),
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.licensePlate === 'custom' ? remasterConfig.customPlateImageBase64 || null : null,
         dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
@@ -1226,7 +1233,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           const file = detailAnalysis.results[image]?.file;
           return { sourceId: `detail:${i}`, image, sourceType: 'original' as const, sourceRole: effectiveDetailRoles[image] || 'unassigned-detail', assetId: originalAssetIdsRef.current[image], fileUri: file ? { uri: file.fileId, mimeType: file.mimeType } : undefined };
         }), v2ConfigSources(remasterConfig, wheelReference?.image, { manufacturer: cachedMfgLogoRef.current, dealer: cachedDealerLogoRef.current }).map(s => ({ ...s, assetId: originalAssetIdsRef.current[s.image] })))}
-        promptVersion={isNb21Tier(modelTier) ? NB21_CURRENT_VERSION : undefined}
+        promptVersion={isNb21Tier(modelTier) ? nb21Version : undefined}
         inputImages={allCapturedBase64}
         referenceRoles={allCapturedRoles}
         savedInputIds={vehicleSlots.filter(s => captures[s.key]).map(s => captures[s.key].savedImageId)}
@@ -1856,6 +1863,15 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               <Button variant="outline" size="sm" className="w-full" onClick={() => setSwitchFreistellerOpen(true)}>
                 <Scissors className="w-4 h-4 mr-1" /> Wechsel zum Freisteller
               </Button>
+            )}
+            {isNb21Tier(modelTier) && (
+              <label className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>NB 2.1 Version</span>
+                <select aria-label="NB 2.1 Version" className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground" value={nb21Version} disabled={isProcessing} onChange={e => setNb21Version(e.target.value as 'nb21-v1' | 'nb21-v2')}>
+                  <option value="nb21-v1">V1 (historisch)</option>
+                  <option value="nb21-v2">V2</option>
+                </select>
+              </label>
             )}
             <div className="flex items-center justify-between gap-3 text-[10px] leading-snug text-muted-foreground">
               <span>{remasterCost} Credits je Remasterbild</span>
