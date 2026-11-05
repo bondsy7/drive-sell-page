@@ -172,8 +172,11 @@ export function compileJobPlan(args: {
   overrides: Record<string, string>;
   manufacturerLogoUrl?: string | null;
   getCost?: (action: string, tier: string) => number;
+  /** Per-run choice: only the title image, and/or a seasonal theme on top of the scene. */
+  runOptions?: RunOptions;
 }): CompiledPlan {
-  const s = normalizeSettings(args.settings);
+  const s = applyRunOptions(normalizeSettings(args.settings), args.runOptions);
+  const themeBlock = buildThemeBlock(args.runOptions?.theme, args.runOptions?.customTheme);
   const d = args.datasheet;
   const cost = estimateJobCost(s, args.getCost);
   const vehicleLabel = [d.brand, d.model, d.variant].filter(Boolean).join(' ');
