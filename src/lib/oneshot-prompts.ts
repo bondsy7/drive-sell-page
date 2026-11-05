@@ -13,6 +13,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
 4. STRIP OLD BRANDING: REMOVE every dealer logo, watermark, sticker, price tag, license-plate frame, lettering, web URL, phone number, and any overlaid text or graphic that came from the original photograph. The body, windows, ground and background must be CLEAN of any foreign text or logo.
 5. KEEP ONLY THE PROVIDED LOGOS: Only the manufacturer/dealer logos that are explicitly provided as reference images (if any) may appear – nowhere else.
 6. PHOTOREALISM: Output must look like a high-end automotive studio photograph, not a composite.
+7. FULL SURFACE RE-RENDER (no source reflections): Use the source photo ONLY as identity evidence (body shape, paint colour/finish, wheels, lights, trim, equipment). Do NOT copy its pixels on paint, glass, chrome or rims. Re-render every reflective surface from scratch for the new showroom. Mirrored buildings, windows, facades, sky, clouds, trees, street, parked cars, people or the photographer visible in the source paint or glass are capture artefacts and MUST be completely removed. Windows show only the clean vehicle interior plus showroom reflections. Every reflection on the car must be traceable to an object or light inside the new showroom.
 </HERO_INTEGRATION_LOCK>`;
 
 // Hero-only: amplify ceiling LED + softbox highlights ABOVE the global lighting lock.
