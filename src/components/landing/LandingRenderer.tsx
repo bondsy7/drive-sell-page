@@ -297,6 +297,12 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const liveAt = liveInsertIndex(content);
   const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID}>
+      {editable && <div className="lp-section-controls">
+        <LandingEditMenu label="Live-Fahrzeuge bearbeiten">
+          <Button variant="ghost" onClick={() => onMoveSection?.(LIVE_BLOCK_ID, 'up')}><ArrowUp size={16} /> Nach oben</Button>
+          <Button variant="ghost" onClick={() => onMoveSection?.(LIVE_BLOCK_ID, 'down')}><ArrowDown size={16} /> Nach unten</Button>
+        </LandingEditMenu>
+      </div>}
       <LandingElementBox editable={editable} cover controlOn="#ffffff" onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen">
       <LandingSectionResize id={LIVE_BLOCK_ID} editable={editable}>
         <LiveVehicleShowcase
