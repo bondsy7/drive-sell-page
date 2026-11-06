@@ -585,6 +585,11 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 if (color) buttonColors[id] = color; else delete buttonColors[id];
                 return { ...previous, buttonColors };
               })}
+              onButtonLinkChange={(id, link) => setContent(previous => {
+                const buttonLinks = { ...previous.buttonLinks };
+                if (link) buttonLinks[id] = link; else delete buttonLinks[id];
+                return { ...previous, buttonLinks };
+              })}
 
               onDeleteElement={deleteElement}
               onResizeLogo={(id, height) => setContent(previous => ({ ...previous, logoSizes: { ...previous.logoSizes, [id]: height } }))}
