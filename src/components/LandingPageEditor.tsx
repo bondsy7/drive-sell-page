@@ -20,6 +20,7 @@ import {
   type LandingPageDealer,
   type LandingPageContactForm,
 } from '@/lib/landing-page-builder';
+import { liveInsertIndex, LIVE_BLOCK_ID, LIVE_AT_START } from '@/lib/landing-section-order';
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
@@ -214,13 +215,17 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
   const moveSection = useCallback((id: string, dir: 'up' | 'down') => {
     setContent(prev => {
-      const idx = prev.sections.findIndex(s => s.id === id);
-      if (idx < 0) return prev;
+      const ids = prev.sections.map(s => s.id);
+      ids.splice(liveInsertIndex(prev), 0, LIVE_BLOCK_ID);
+      const idx = ids.indexOf(id);
       const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= prev.sections.length) return prev;
-      const next = [...prev.sections];
-      [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
-      return { ...prev, sections: next };
+      if (idx < 0 || swapIdx < 0 || swapIdx >= ids.length) return prev;
+      [ids[idx], ids[swapIdx]] = [ids[swapIdx], ids[idx]];
+      const byId = new Map(prev.sections.map(s => [s.id, s]));
+      const sections = ids.filter(i => i !== LIVE_BLOCK_ID).map(i => byId.get(i)!);
+      const li = ids.indexOf(LIVE_BLOCK_ID);
+      const liveInventoryAfter = li === ids.length - 1 ? undefined : li === 0 ? LIVE_AT_START : ids[li - 1];
+      return { ...prev, sections, liveInventoryAfter };
     });
   }, []);
 
