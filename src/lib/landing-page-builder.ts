@@ -1,6 +1,7 @@
 import { liveInsertIndex } from '@/lib/landing-section-order';
 import { LANDING_SECTION_HEIGHT_CSS, normalizeSectionHeight, sectionHeightAttributes } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
+import { landingImageAlt } from '@/lib/landing-image-alt';
 import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
 import { LANDING_LOGO_CSS, type LandingLogoSizes } from '@/lib/landing-logo-size';
@@ -115,7 +116,7 @@ function renderSection(
   frames: LandingPageContent['imageFrames'] = undefined,
   textColors: Record<string, string> = {},
   buttonColors: Record<string, string> = {},
-  stackCtx?: { content: LandingPageContent; images: Record<string, string> },
+  stackCtx?: { content: LandingPageContent; images: Record<string, string>; vehicleName?: string },
 
 ): string {
   if (s.enabled === false) return '';
@@ -123,7 +124,8 @@ function renderSection(
   const stackEntries = stackCtx ? getImageStack(stackCtx.content, s.id) : [STACK_MAIN];
   const hasExtra = !!stackCtx && hasExtraImages(stackCtx.content, stackCtx.images, s.id);
   const stackHtml = (aspect: number, aspectCss: string, mainBlankAllowed: boolean) => {
-    const blocks = stackEntries.map(entry => {
+    const blocks = stackEntries.map((entry, stackIdx) => {
+      const altText = landingImageAlt(stackCtx?.vehicleName || '', s.headline, stackIdx);
       const isMain = entry === STACK_MAIN;
       if (isMain && removed('image')) return '';
       const url = isMain ? image : stackCtx?.images[entry];
@@ -131,7 +133,7 @@ function renderSection(
       const key = stackImageKey(s.id, entry);
       const fr = frames?.[key] ? normalizeImageFrame(frames[key], aspect) : null;
       const lbl = isMain ? labelImage : (stackCtx ? shouldLabelLandingImage(stackCtx.content, key, url) : true);
-      return `<div class="${fr ? 'lp-framed' : ''}" style="position:relative;${fr ? frameOuterCss(fr) : aspectCss};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${url && lbl ? buildAiDisclosureImageOverlayHTML("landing") : ''}${url ? `<img src="${url}" alt="${escapeHtml(lbl ? withAiDisclosureAlt(s.headline) : s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block${fr ? ';' + frameImageCss(fr) : ''}" loading="lazy" decoding="async"/>` : ''}</div>`;
+      return `<div class="${fr ? 'lp-framed' : ''}" style="position:relative;${fr ? frameOuterCss(fr) : aspectCss};border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${url && lbl ? buildAiDisclosureImageOverlayHTML("landing") : ''}${url ? `<img src="${url}" alt="${escapeHtml(lbl ? withAiDisclosureAlt(altText) : altText)}" style="width:100%;height:100%;object-fit:cover;display:block${fr ? ';' + frameImageCss(fr) : ''}" loading="lazy" decoding="async"/>` : ''}</div>`;
     }).filter(Boolean);
     return blocks.length ? `<div style="display:flex;flex-direction:column;gap:${STACK_GAP_PX}px">${blocks.join('')}</div>` : '';
   };
@@ -300,7 +302,7 @@ export function buildLandingPageHTML(
   const sized = (id: string, html: string) => html ? `<div${sectionHeightAttributes(content.sectionHeights?.[id])}>${html}</div>` : '';
   const liveBlock = liveInventory && !removed('live-fahrzeuge') ? sized('live-fahrzeuge', buildLiveInventorySectionHTML(liveInventory)) : '';
   const renderedSections = sections
-    .map((s, idx) => sized(s.id, renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, content.buttonColors || {}, { content, images })));
+    .map((s, idx) => sized(s.id, renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp, content.removedElements, shouldLabelLandingImage(content, s.id, images[s.id]), content.imageFrames, content.textColors || {}, content.buttonColors || {}, { content, images, vehicleName: `${brand} ${model}` })));
   renderedSections.splice(liveInsertIndex({ sections, liveInventoryAfter: content.liveInventoryAfter }), 0, liveBlock);
   const sectionBlocks = renderedSections.join('\n');
 
