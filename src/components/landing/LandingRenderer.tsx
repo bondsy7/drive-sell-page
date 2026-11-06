@@ -1,3 +1,4 @@
+import { landingImageAlt } from '@/lib/landing-image-alt';
 import LandingEditMenu from '@/components/landing/LandingEditMenu';
 import { Button } from '@/components/ui/button';
 import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
@@ -608,6 +609,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           onFrameChange={(f) => onFrameChange?.(s.id, f)}
           onAddAfter={onAddSection ? () => onAddSection(s.id) : undefined}
           hasExtra={hasExtraImages(content, images, s.id)}
+          vehicleName={`${brand} ${model}`}
           stack={(aspect, main) => (
             <ImageStack
               entries={getImageStack(content, s.id)}
@@ -618,7 +620,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 <ImageFrame
                   src={images[key]}
                   labelImage={shouldLabelLandingImage(content, key, images[key])}
-                  alt={s.headline}
+                  alt={landingImageAlt(`${brand} ${model}`, s.headline, Math.max(1, getImageStack(content, s.id).indexOf(key)))}
                   aspect={aspect}
                   editable={editable}
                   loading={imageLoading === key}
@@ -739,9 +741,11 @@ const SectionRenderer: React.FC<{
   onFrameChange?: (f: LandingImageFrame | null) => void;
   onAddAfter?: () => void;
   hasExtra?: boolean;
+  vehicleName?: string;
   stack: (aspect: string, main: React.ReactNode | null) => React.ReactNode;
 }> = ({
   hasExtra,
+  vehicleName = '',
   stack,
   frame,
   frameEditing,
@@ -904,7 +908,7 @@ const SectionRenderer: React.FC<{
             {stack('16 / 9', removed('image') ? null : (<ImageFrame
               src={image}
                 labelImage={labelImage}
-              alt={s.headline}
+              alt={landingImageAlt(vehicleName, s.headline)}
               aspect="16 / 9"
               editable={editable}
               loading={imageLoading}
@@ -956,7 +960,7 @@ const SectionRenderer: React.FC<{
               {stack('4 / 3', removed('image') ? null : (<ImageFrame
                 src={image}
                 labelImage={labelImage}
-                alt={s.headline}
+                alt={landingImageAlt(vehicleName, s.headline)}
                 aspect="4 / 3"
                 editable={editable}
                 loading={imageLoading}
@@ -997,7 +1001,7 @@ const SectionRenderer: React.FC<{
               {stack('4 / 3', removed('image') ? null : (<ImageFrame
                 src={image}
                 labelImage={labelImage}
-                alt={s.headline}
+                alt={landingImageAlt(vehicleName, s.headline)}
                 aspect="4 / 3"
                 editable={editable}
                 loading={imageLoading}
