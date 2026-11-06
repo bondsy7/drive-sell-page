@@ -40,8 +40,12 @@ export function useVehicleMakes() {
       try {
         const res = await fetch('/data/vehicle-makes-models.json');
         const data = await res.json();
-        const carClass = data.classes?.find((c: any) => c.key === 'Car');
-        const allMakes: VehicleMake[] = (carClass?.makes || []).filter(
+        // Car plus Motorbike/Trike class (e.g. Can-Am) share one make list.
+        const classMakes = (data.classes || [])
+          .filter((c: any) => c.key === 'Car' || c.key === 'Motorbike')
+          .flatMap((c: any) => c.makes || [])
+          .sort((a: any, b: any) => a.key.localeCompare(b.key, 'de'));
+        const allMakes: VehicleMake[] = classMakes.filter(
           (m: any) => m.key !== 'ANDERE'
         );
         cachedMakes = allMakes;
