@@ -8,8 +8,9 @@ const DEV = "https://dev-api.autoversus.de";
 
 function candidates(): string[] {
   const configured = (Deno.env.get("AUTO3_API_BASE") || "").replace(/\/$/, "");
-  const list = [PROD, DEV];
-  if (configured && !list.includes(configured)) list.unshift(configured);
+  const list = [PROD];
+  if (configured && configured !== PROD && configured !== DEV) list.push(configured);
+  list.push(DEV);
   return list;
 }
 
