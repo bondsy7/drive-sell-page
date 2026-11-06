@@ -27,6 +27,7 @@ import SceneGallery, { type SceneTileOption } from '@/components/capture/SceneGa
 import OptionCards, { type CardOption } from '@/components/capture/OptionCards';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { useRememberRemasterConfig } from '@/hooks/useGenerationPreferences';
+import { pickManufacturerLogo } from '@/lib/manufacturer-logo-match';
 
 interface RemasterOptionsProps {
   rememberSettings?: boolean;
@@ -171,7 +172,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       return dynamicLogos.find(l => l.name.toLowerCase().includes(brandNorm) || brandNorm.includes(l.name.toLowerCase()));
     };
 
-    const match = findLogo();
+    void findLogo;
+    const match = pickManufacturerLogo(dynamicLogos, selectedBrand);
     if (match) {
       console.log(`[RemasterOptions] Auto-resolved logo for "${selectedBrand}": ${match.name} → ${match.url}`);
       ensureLogoCachedAsPng(match.url).then(b64 => {
