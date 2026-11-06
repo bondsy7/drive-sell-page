@@ -496,7 +496,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       {viewMode === 'edit' && (
         <div className="px-4 py-2 border-b bg-background/60 backdrop-blur text-xs text-muted-foreground flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span>Klicke direkt in Texte, um sie zu bearbeiten. Bilder werden per Hover ausgetauscht.</span>
+          <span>Klicke auf ein Element, um es im Werkzeugkasten oben links zu bearbeiten.</span>
         </div>
       )}
 
