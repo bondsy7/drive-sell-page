@@ -18,7 +18,8 @@ import VehicleBrandPicker from '@/components/VehicleBrandPicker';
 import { Dialog as BrandDialog, DialogContent as BrandDialogContent, DialogHeader as BrandDialogHeader, DialogTitle as BrandDialogTitle } from '@/components/ui/dialog';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
+import { pickManufacturerLogo } from '@/lib/manufacturer-logo-match';
+import { type RemasterConfig, fetchManufacturerLogos, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import { isNb21Tier, buildNb21RemasterPrompt } from '@/prompts/nb21';
 import { NB21_CURRENT_VERSION, type V2Reference } from '@/prompts/nb21/v2';
 import { archiveV2Original } from '@/lib/nb21-v2-originals';
@@ -334,6 +335,27 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const { ready: preferencesReady } = useRememberRemasterConfig(remasterConfig, setRemasterConfig);
+  // Herstellerlogo immer aus der aktuellen Fahrzeugmarke auflösen (exakter Dateiname),
+  // unabhängig davon, ob „Optionale Bildgestaltung" aufgeklappt ist.
+  const logoBrand = vehicleData?.vehicle?.brand || '';
+  useEffect(() => {
+    if (!preferencesReady || !remasterConfig.showManufacturerLogo || !logoBrand) return;
+    let cancelled = false;
+    fetchManufacturerLogos().then(logos => {
+      const match = pickManufacturerLogo(logos, logoBrand);
+      if (cancelled) return;
+      if (!match) {
+        setRemasterConfig(c => (c.manufacturerLogoUrl || c.manufacturerLogoBase64) ? { ...c, manufacturerLogoUrl: null, manufacturerLogoBase64: null } : c);
+        return;
+      }
+      if (remasterConfig.manufacturerLogoUrl === match.url && remasterConfig.manufacturerLogoBase64) return;
+      ensureLogoCachedAsPng(match.url).then(b64 => {
+        if (!cancelled) setRemasterConfig(c => ({ ...c, manufacturerLogoUrl: match.url, manufacturerLogoBase64: b64 }));
+      }).catch(() => {});
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferencesReady, remasterConfig.showManufacturerLogo, logoBrand, remasterConfig.manufacturerLogoUrl]);
   const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
   const [brandEditOpen, setBrandEditOpen] = useState(false);
   const [detailImages, setDetailImages] = useState<string[]>([]);
