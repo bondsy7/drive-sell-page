@@ -337,7 +337,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   return (
     <LandingToolboxProvider enabled={editable}>
     <LandingSectionSizeContext.Provider value={{ heights: content.sectionHeights, onResize: onResizeSection }}>
-    <div className={`lp-root lp-layout${editable ? ' lp-toolbox-mode' : ''}`" style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
+    <div className={`lp-root lp-layout${editable ? ' lp-toolbox-mode' : ''}`} style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
       <style>{`
         .lp-root h1,.lp-root h2,.lp-root h3{font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;letter-spacing:-0.01em;color:#0f172a}
         .lp-root p{line-height:1.7}
