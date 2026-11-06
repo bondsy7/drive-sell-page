@@ -596,6 +596,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           profileColors={profileColors}
           onTextColorChange={onTextColorChange}
           onButtonColorChange={onButtonColorChange}
+          onButtonLinkChange={onButtonLinkChange}
 
           index={idx}
           image={images[s.id]}
