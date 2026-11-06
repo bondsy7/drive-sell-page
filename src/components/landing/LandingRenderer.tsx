@@ -23,6 +23,8 @@ import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosur
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
 import TextColorButton from '@/components/landing/TextColorButton';
 import ButtonColorButton from '@/components/landing/ButtonColorButton';
+import ButtonLinkButton from '@/components/landing/ButtonLinkButton';
+import { resolveButtonLink } from '@/lib/landing-button-links';
 
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
 import { editorControlStyle, landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
@@ -66,6 +68,7 @@ export interface RendererProps {
   onSectionColorChange?: (id: string, color: string | null) => void;
   onTextColorChange?: (id: string, color: string | null) => void;
   onButtonColorChange?: (id: string, color: string | null) => void;
+  onButtonLinkChange?: (id: string, link: string | null) => void;
 
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
@@ -240,6 +243,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onSectionColorChange,
   onTextColorChange,
   onButtonColorChange,
+  onButtonLinkChange,
 
   onDeleteElement,
   onResizeLogo,
@@ -268,6 +272,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const buttonControl = (id: string) => editable && onButtonColorChange
     ? <ButtonColorButton value={content.buttonColors?.[id]} colors={profileColors} onChange={color => onButtonColorChange(id, color)} />
     : undefined;
+  const linkControl = (id: string, fallbackLabel: string) => editable && onButtonLinkChange
+    ? <ButtonLinkButton value={content.buttonLinks?.[id]} fallbackLabel={fallbackLabel} onChange={link => onButtonLinkChange(id, link)} />
+    : null;
+  const linkProps = (id: string, fallback: string) => {
+    const { href, external } = resolveButtonLink(content.buttonLinks?.[id], fallback);
+    return external ? { href, target: '_blank', rel: 'noopener' } : { href };
+  };
   const buttonColor = (id: string, fallback: string) => buttonColorOverride(content.buttonColors?.[id], fallback);
 
 
@@ -501,7 +512,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <LandingElementBox editable={editable} hidden={removed('hero.ctaText')} onDelete={() => onDeleteElement?.('hero.ctaText')} label="Anfragebutton löschen" inline>
                 <a
-                  href="#kontakt"
+                  {...linkProps('hero.ctaText', '#kontakt')}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -519,7 +530,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                     editable={editable}
                     value={heroCtaText}
                     onChange={(v) => onUpdateHero?.('ctaText', v)}
-                    colorControl={<>{textControl('hero.ctaText')}{buttonControl('hero.ctaText')}</>}
+                    colorControl={<>{textControl('hero.ctaText')}{buttonControl('hero.ctaText')}{linkControl('hero.ctaText', 'Kontaktformular')}</>}
                     style={{ color: textOverride('hero.ctaText', readableOn(heroCtaBg)) }}
 
                     placeholder="CTA-Text"
@@ -527,10 +538,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 </a>
                 </LandingElementBox>
                 {whatsapp && !removed('hero.whatsapp') && (
-                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} label="WhatsApp-Button löschen" inline colorControl={buttonControl('hero.whatsapp')}><a
-                    href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener"
+                  <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('hero.whatsapp')} label="WhatsApp-Button löschen" inline colorControl={<>{buttonControl('hero.whatsapp')}{linkControl('hero.whatsapp', 'WhatsApp')}</>}><a
+                    {...linkProps('hero.whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -583,9 +592,11 @@ const LandingRenderer: React.FC<RendererProps> = ({
           colorControl={colorControl(s.id)}
           textColors={content.textColors}
           buttonColors={content.buttonColors}
+          buttonLinks={content.buttonLinks}
           profileColors={profileColors}
           onTextColorChange={onTextColorChange}
           onButtonColorChange={onButtonColorChange}
+          onButtonLinkChange={onButtonLinkChange}
 
           index={idx}
           image={images[s.id]}
@@ -715,9 +726,11 @@ const SectionRenderer: React.FC<{
   colorControl?: React.ReactNode;
   textColors?: Record<string, string>;
   buttonColors?: Record<string, string>;
+  buttonLinks?: Record<string, string>;
   profileColors?: { label: string; value: string }[];
   onTextColorChange?: (id: string, color: string | null) => void;
   onButtonColorChange?: (id: string, color: string | null) => void;
+  onButtonLinkChange?: (id: string, link: string | null) => void;
 
   index: number;
   image?: string;
@@ -755,9 +768,11 @@ const SectionRenderer: React.FC<{
   colorControl,
   textColors,
   buttonColors,
+  buttonLinks,
   profileColors,
   onTextColorChange,
   onButtonColorChange,
+  onButtonLinkChange,
 
   removedElements,
   onDeleteElement,
@@ -791,6 +806,13 @@ const SectionRenderer: React.FC<{
   const buttonControl = (field: string) => editable && onButtonColorChange
     ? <ButtonColorButton value={buttonColors?.[`${s.id}.${field}`]} colors={profileColors || []} onChange={color => onButtonColorChange(`${s.id}.${field}`, color)} />
     : undefined;
+  const linkControl = (field: string, fallbackLabel: string) => editable && onButtonLinkChange
+    ? <ButtonLinkButton value={buttonLinks?.[`${s.id}.${field}`]} fallbackLabel={fallbackLabel} onChange={link => onButtonLinkChange(`${s.id}.${field}`, link)} />
+    : null;
+  const linkProps = (field: string, fallback: string) => {
+    const { href, external } = resolveButtonLink(buttonLinks?.[`${s.id}.${field}`], fallback);
+    return external ? { href, target: '_blank', rel: 'noopener' } : { href };
+  };
   const buttonBg = (field: string, fallback: string) => buttonColorOverride(buttonColors?.[`${s.id}.${field}`], fallback);
 
   const enabled = (s as any).enabled !== false;
@@ -833,15 +855,13 @@ const SectionRenderer: React.FC<{
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {phone && !removed('phone') && (
-                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} label="Telefonbutton löschen" inline colorControl={buttonControl('phone')}><a href={`tel:${phone}`} style={{ background: buttonBg('phone', secondary), color: readableOn(buttonBg('phone', secondary)), padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('phone')} label="Telefonbutton löschen" inline colorControl={<>{buttonControl('phone')}{linkControl('phone', 'Anrufen')}</>}><a {...linkProps('phone', `tel:${phone}`)} style={{ background: buttonBg('phone', secondary), color: readableOn(buttonBg('phone', secondary)), padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}>
                   📞 Anrufen
                 </a></LandingElementBox>
               )}
               {whatsapp && !removed('whatsapp') && (
-                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} label="WhatsApp-Button löschen" inline colorControl={buttonControl('whatsapp')}><a
-                  href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noopener"
+                <LandingElementBox editable={editable} onDelete={() => onDeleteElement?.('whatsapp')} label="WhatsApp-Button löschen" inline colorControl={<>{buttonControl('whatsapp')}{linkControl('whatsapp', 'WhatsApp')}</>}><a
+                  {...linkProps('whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)}
                   style={{ background: buttonBg('whatsapp', '#25d366'), color: readableOn(buttonBg('whatsapp', '#25d366')), padding: '14px 28px', borderRadius: 12, fontWeight: 600 }}
 
                 >

@@ -1,6 +1,7 @@
 import { liveInsertIndex } from '@/lib/landing-section-order';
 import { LANDING_SECTION_HEIGHT_CSS, normalizeSectionHeight, sectionHeightAttributes } from '@/lib/landing-section-height';
 import { normalizeSectionColor, sectionColorTheme } from '@/lib/landing-section-colors';
+import { resolveButtonLink } from '@/lib/landing-button-links';
 import { landingImageAlt } from '@/lib/landing-image-alt';
 import { getImageStack, hasExtraImages, STACK_GAP_PX, STACK_MAIN, stackImageKey } from '@/lib/landing-image-stack';
 import { LANDING_LAYOUT_CSS } from '@/lib/landing-layout';
@@ -39,6 +40,7 @@ export interface LandingPageContent {
   textColors?: Record<string, string>;
   /** Background colour per button element, keyed by the same stable element ids as textColors. */
   buttonColors?: Record<string, string>;
+  buttonLinks?: Record<string, string>;
 
   /** Section id after which the live inventory block renders; '@start' = first, unset = after all sections. */
   liveInventoryAfter?: string;
@@ -138,6 +140,10 @@ function renderSection(
     return blocks.length ? `<div style="display:flex;flex-direction:column;gap:${STACK_GAP_PX}px">${blocks.join('')}</div>` : '';
   };
 
+  const linkAttr = (field: string, fallback: string) => {
+    const { href, external } = resolveButtonLink(stackCtx?.content.buttonLinks?.[`${s.id}.${field}`], fallback);
+    return `href="${escapeHtml(href)}"${external ? ' target="_blank" rel="noopener"' : ''}`;
+  };
   const theme = sectionColorTheme(stackCtx?.content.sectionColors?.[s.id], s.bgStyle, primary);
   const bg = theme.background;
   const textColor = theme.foreground;
@@ -153,8 +159,8 @@ function renderSection(
     ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:${headlineColor || (theme.custom ? textColor : '#fff')}">${escapeHtml(s.headline)}</h2>`}
     ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px${contentColor ? `;color:${contentColor}` : ''}">${s.content || ''}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
-      ${phone && !removed('phone') ? `<a href="tel:${phone}" style="background:${phoneBg || secondary};color:${phoneBg ? readableOn(phoneBg) : onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
-      ${whatsapp && !removed('whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:${waBg || '#25d366'};color:${waBg ? readableOn(waBg) : '#fff'};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
+      ${phone && !removed('phone') ? `<a ${linkAttr('phone', `tel:${phone}`)} style="background:${phoneBg || secondary};color:${phoneBg ? readableOn(phoneBg) : onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
+      ${whatsapp && !removed('whatsapp') ? `<a ${linkAttr('whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)} style="background:${waBg || '#25d366'};color:${waBg ? readableOn(waBg) : '#fff'};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
     </div>
 
   </div>
@@ -272,6 +278,10 @@ export function buildLandingPageHTML(
   const buttonColors = content.buttonColors || {};
   const headerButtonBg = normalizeSectionColor(buttonColors.header);
   const heroCtaBg = normalizeSectionColor(buttonColors['hero.ctaText']);
+  const heroLinkAttr = (id: string, fallback: string) => {
+    const { href, external } = resolveButtonLink(content.buttonLinks?.[id], fallback);
+    return `href="${escapeHtml(href)}"${external ? ' target="_blank" rel="noopener"' : ''}`;
+  };
   const heroWhatsappBg = normalizeSectionColor(buttonColors['hero.whatsapp']);
   const headerHeight = normalizeSectionHeight(content.sectionHeights?.header);
 
@@ -402,8 +412,8 @@ ${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-
 ${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${normalizeSectionColor(textColors['hero.headline']) || onHero}">${escapeHtml(heroHeadline)}</h1>`}
 ${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:${normalizeSectionColor(textColors['hero.subheadline']) || rgba(onHero, 0.85)};margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-${removed('hero.ctaText') ? '' : `            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${heroCtaBg || secondary};color:${normalizeSectionColor(textColors['hero.ctaText']) || (heroCtaBg ? readableOn(heroCtaBg) : onSecondary)};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
-            ${whatsapp && !removed('hero.whatsapp') ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:${heroWhatsappBg || rgba(onHero, 0.1)};color:${heroWhatsappBg ? readableOn(heroWhatsappBg) : onHero};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${heroWhatsappBg ? rgba(readableOn(heroWhatsappBg), 0.2) : rgba(onHero, 0.2)}">💬 WhatsApp</a>` : ''}
+${removed('hero.ctaText') ? '' : `            <a ${heroLinkAttr('hero.ctaText', '#kontakt')} style="display:inline-flex;align-items:center;background:${heroCtaBg || secondary};color:${normalizeSectionColor(textColors['hero.ctaText']) || (heroCtaBg ? readableOn(heroCtaBg) : onSecondary)};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
+            ${whatsapp && !removed('hero.whatsapp') ? `<a ${heroLinkAttr('hero.whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)} style="display:inline-flex;align-items:center;background:${heroWhatsappBg || rgba(onHero, 0.1)};color:${heroWhatsappBg ? readableOn(heroWhatsappBg) : onHero};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${heroWhatsappBg ? rgba(readableOn(heroWhatsappBg), 0.2) : rgba(onHero, 0.2)}">💬 WhatsApp</a>` : ''}
 
           </div>
         </div>
