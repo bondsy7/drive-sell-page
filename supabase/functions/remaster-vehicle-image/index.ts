@@ -1091,7 +1091,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 6. CONSISTENCY: The SAME logo in the SAME position on the SAME hall must appear in EVERY generated image / perspective for this vehicle.
 7. SOURCE OF TRUTH: This asset OVERRIDES any DEKRA-like logo, text or banner the model might otherwise invent. Use ONLY this image.
 </SCENE_ASSET_DEKRA_LOGO>` });
-      { const _p: any = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 }, serverStatic: true }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
+      { const _p: any = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
       console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
     }
 
@@ -1258,7 +1258,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
           }
           contentImages.push({ type: 'input_image', image_url: `data:${realMime};base64,${raw}`, detail });
           usedLabels.push(m.label);
-          if (part.serverStatic) serverStaticCount++; else base64Count++;
+          if (m.label.startsWith('DEKRA LOGO')) serverStaticCount++; else base64Count++;
           continue;
         }
         // Gemini file_uri must never be re-materialized for OpenAI.
