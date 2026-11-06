@@ -176,3 +176,18 @@
   .lp-root .lp-element-box:hover > .lp-edit-trigger,.lp-root .lp-element-box:focus-within > .lp-edit-trigger,.lp-root .lp-image-frame:hover > .lp-edit-trigger,.lp-root .lp-image-frame:focus-within > .lp-edit-trigger,.lp-root .lp-edit-trigger[data-state="open"],.lp-root .lp-edit-trigger:hover,.lp-root .lp-section:hover > .lp-section-controls .lp-edit-trigger,.lp-root .lp-section:focus-within > .lp-section-controls .lp-edit-trigger,.lp-root .lp-resize-editable:is(:hover,:focus-within) > .lp-section > .lp-section-controls .lp-edit-trigger { opacity:1 !important; visibility:visible; transition:opacity 120ms ease 0ms, visibility 0s linear 0ms !important; }
   .lp-root .lp-edit-trigger::after { inset:-16px; }
 }
+
+/* Floating toolbox (edit mode only) */
+.lp-root.lp-toolbox-mode .lp-element-box { padding-top:0 !important; }
+.lp-root.lp-toolbox-mode .lp-element-box,.lp-root.lp-toolbox-mode .lp-image-frame { cursor:pointer; }
+.lp-root .lp-tool-selected { outline:2px solid hsl(var(--primary)); outline-offset:3px; border-radius:4px; }
+.lp-toolbox { position:fixed; z-index:60; width:264px; max-width:calc(100vw - 16px); background:hsl(var(--popover)); color:hsl(var(--popover-foreground)); border:1px solid hsl(var(--border)); border-radius:10px; box-shadow:0 10px 30px -10px hsl(var(--foreground) / .35); font-family:ui-sans-serif,system-ui,sans-serif; }
+.lp-toolbox-head { display:flex; align-items:center; gap:6px; padding:8px 8px 8px 10px; cursor:grab; user-select:none; touch-action:none; border-bottom:1px solid hsl(var(--border)); font-size:12px; font-weight:600; }
+.lp-toolbox-head:active { cursor:grabbing; }
+.lp-toolbox-grip { color:hsl(var(--muted-foreground)); }
+.lp-toolbox-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lp-toolbox-toggle { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:6px; }
+.lp-toolbox-toggle:hover { background:hsl(var(--accent)); }
+.lp-toolbox-body { padding:8px; max-height:min(70vh,560px); overflow:auto; }
+.lp-toolbox-body[hidden] { display:none; }
+.lp-toolbox-empty { padding:6px 4px; font-size:12px; line-height:1.5; color:hsl(var(--muted-foreground)); }
