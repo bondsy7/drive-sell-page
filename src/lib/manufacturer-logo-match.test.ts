@@ -19,3 +19,11 @@ describe('pickManufacturerLogo', () => {
     expect(pickManufacturerLogo(logos.filter(l => l.name !== 'bmw'), 'BMW')?.url).toBe('m');
   });
 });
+
+import { isOutdoorScene } from './remaster-prompt';
+describe('isOutdoorScene', () => {
+  it('DEKRA lot is outdoor, showroom is not', () => {
+    expect(isOutdoorScene('dealer-lot-dekra')).toBe(true);
+    expect(isOutdoorScene('showroom-1')).toBe(false);
+  });
+});
