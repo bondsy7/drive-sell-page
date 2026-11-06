@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { analyzeVehicleOriginals } from "../_shared/auto3-analysis.ts";
 
-const AUTO3_BASE = (Deno.env.get("AUTO3_API_BASE") || "https://dev-api.autoversus.de").replace(/\/$/, "");
+import { auto3Fetch, resolveAuto3Host } from "../_shared/auto3-host.ts";
 const LEGACY_AUTO3_X_BASEURL = Deno.env.get("AUTO3_X_BASEURL") || "https://schmitt.indicar.de";
 const SOURCE = "auto3";
 const MODULE = "website-publishing";
@@ -13,14 +13,7 @@ const MODULE = "website-publishing";
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-async function auto3Get(path: string, tenantUrl: string) {
-  const res = await fetch(`${AUTO3_BASE}${path}`, {
-    method: "GET",
-    headers: { Accept: "application/json", "X-BASEURL": tenantUrl },
-  });
-  if (!res.ok) { await res.text(); throw new Error(`Auto3 ${res.status}`); }
-  return res.json();
-}
+const auto3Get = (path: string, tenantUrl: string) => auto3Fetch(path, tenantUrl);
 
 // deno-lint-ignore no-explicit-any
 type Raw = Record<string, any>;
@@ -258,6 +251,8 @@ Deno.serve(async (req) => {
     if (action === "verify_connection") {
       const tenantUrl = normalizeTenantUrl(body?.tenantUrl);
       if (!tenantUrl) return json({ error: "Bitte eine gültige HTTPS-Händler-URL eingeben." }, 400);
+      // Reconnecting always re-resolves the host so the live source is used immediately.
+      await resolveAuto3Host(tenantUrl, { fresh: true }).catch(() => null);
       const result = await auto3Get("/v1/vehicle/vehicle/buy?page=0&pageSize=1&includeImages=false", tenantUrl);
       const total = Number(result?.totalElements);
       if (!Number.isFinite(total)) return json({ error: "Auto3 hat keine gültige Bestandsantwort geliefert." }, 502);

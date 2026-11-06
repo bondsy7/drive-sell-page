@@ -21,7 +21,7 @@ const API_VERSION = "1.0";
 const MAX_LIST = 1000;
 const DELETED_RETENTION_DAYS = 90;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const AUTO3_BASE = (Deno.env.get("AUTO3_API_BASE") || "https://dev-api.autoversus.de").replace(/\/$/, "");
+import { auto3Fetch } from "../_shared/auto3-host.ts";
 const LEGACY_AUTO3_X_BASEURL = Deno.env.get("AUTO3_X_BASEURL") || "https://schmitt.indicar.de";
 
 const json = (body: unknown, status = 200) =>
@@ -173,11 +173,7 @@ function normalizeTenant(v: unknown): string | null {
   } catch { return null; }
 }
 
-async function auto3Get(path: string, tenant: string) {
-  const res = await fetch(`${AUTO3_BASE}${path}`, { headers: { Accept: "application/json", "X-BASEURL": tenant } });
-  if (!res.ok) { await res.text(); throw new Error(`Auto3 ${res.status}`); }
-  return res.json();
-}
+const auto3Get = (path: string, tenant: string) => auto3Fetch(path, tenant);
 
 async function fetchAll(tenant: string): Promise<Row[]> {
   const first = await auto3Get(`/v1/vehicle/vehicle/buy?page=0&pageSize=100&includeImages=true`, tenant);

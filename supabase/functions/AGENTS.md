@@ -3,3 +3,4 @@
 - Capture calls opt into `_shared/remaster-gallery.ts`: validate ownership before charging and save each image with the user-scoped client before response; failed delivery refunds through the existing handler, because paid results must survive a closed browser.
 - Browser and remaster billing share `_shared/remaster-cost.ts`, with exact-tier configured costs and identical fallbacks, because missing test-tier prices must not silently inherit the Schnell price.
 - Vehicle-image credit floors are tier-aware through `_shared/image-credit-floor.ts`; OneShot estimates reuse the remaster resolver, so configured image prices are not overridden by hidden minimums.
+- Auto3 reads resolve the host per tenant via `_shared/auto3-host.ts` (production api.auto3.de first, staging only if the tenant is missing there), because the dealer website shows production stock and listing/import must use the same vehicle IDs.
