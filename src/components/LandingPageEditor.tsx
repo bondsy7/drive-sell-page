@@ -8,8 +8,9 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus, Car, Undo2,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, MessageSquare, Images, Monitor, Smartphone, Tablet, Plus, Car, Undo2, Link2,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import LandingRenderer from '@/components/landing/LandingRenderer';
 import {
@@ -130,6 +131,10 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);
   const [pickFromGallery, setPickFromGallery] = useState(false);
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkPreviewOk, setLinkPreviewOk] = useState<boolean | null>(null);
+  const validLink = /^https?:\/\/\S+$/i.test(linkUrl.trim());
   const [addAfterId, setAddAfterId] = useState<string | null | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<string | null>(null);
   const [vehicleTitle] = useState(`${brand} ${model}`);
@@ -595,7 +600,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       </div>
 
       {/* Image Replace Dialog */}
-      <Dialog open={!!imageDialogSection} onOpenChange={open => !open && !imageLoading && setImageDialogSection(null)}>
+      <Dialog open={!!imageDialogSection} onOpenChange={open => { if (!open && !imageLoading) { setImageDialogSection(null); setLinkMode(false); setLinkUrl(''); setLinkPreviewOk(null); } }}>
         <DialogContent className={pickFromGallery ? "sm:max-w-2xl" : "sm:max-w-md"}>
           <DialogHeader>
             <DialogTitle>{imageDialogSection && isStackImageId(imageDialogSection) && !images[imageDialogSection] ? 'Bild einfügen' : 'Bild ändern'}</DialogTitle>
@@ -620,7 +625,49 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                     }}
                   />
                 </div>
+              ) : linkMode ? (
+                <div className="space-y-3">
+                  <button onClick={() => setLinkMode(false)} className="text-xs text-muted-foreground hover:text-foreground">← Zurück</button>
+                  <Input
+                    autoFocus
+                    placeholder="https://ihre-website.de/fahrzeug.jpg"
+                    value={linkUrl}
+                    onChange={e => { setLinkUrl(e.target.value); setLinkPreviewOk(null); }}
+                  />
+                  {validLink && (
+                    <img
+                      src={linkUrl.trim()}
+                      alt="Vorschau"
+                      className="w-full max-h-56 object-contain rounded-md border border-border bg-muted"
+                      onLoad={() => setLinkPreviewOk(true)}
+                      onError={() => setLinkPreviewOk(false)}
+                    />
+                  )}
+                  {linkPreviewOk === false && <p className="text-xs text-destructive">Unter diesem Link wurde kein Bild gefunden.</p>}
+                  <p className="text-xs text-muted-foreground">{LANDING_UPLOAD_DISCLOSURE_NOTICE}</p>
+                  <Button
+                    className="w-full"
+                    disabled={!validLink || linkPreviewOk !== true}
+                    onClick={() => {
+                      if (imageDialogSection) replaceImage(imageDialogSection, linkUrl.trim(), 'upload');
+                      setLinkMode(false); setLinkUrl(''); setLinkPreviewOk(null);
+                      setImageDialogSection(null);
+                      toast.success('Bild per Link übernommen');
+                    }}
+                  >Bild übernehmen</Button>
+                </div>
               ) : (<>
+              <button
+                onClick={() => setLinkMode(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 transition-colors text-left"
+              >
+                <Link2 className="w-5 h-5 text-muted-foreground shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Per Link einsetzen</p>
+                  <p className="text-xs text-muted-foreground">Bild-Adresse von Ihrer Website verwenden</p>
+                </div>
+                <CreditBadge credits={0} />
+              </button>
               <button
                 onClick={() => setPickFromGallery(true)}
                 className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 transition-colors text-left"
