@@ -136,7 +136,7 @@
 .lp-root .lp-section:hover > .lp-section-controls .lp-edit-trigger,.lp-root .lp-section:focus-within > .lp-section-controls .lp-edit-trigger { opacity:1; pointer-events:auto; }
 .lp-root .lp-element-box { padding-top:38px; }
 /* Unsichtbare Zone um Elemente: der Stift erscheint schon, wenn die Maus in der Nähe ist */
-.lp-root .lp-element-box:not(.lp-element-inline)::before { content:''; position:absolute; inset:-16px; }
+.lp-root .lp-element-box:not(.lp-element-inline)::before { content:''; position:absolute; inset:-16px; pointer-events:none; z-index:-1; }
 .lp-root .lp-element-inline,.lp-root .lp-element-cover { padding-top:0; }
 .lp-root .lp-element-box > .lp-edit-trigger { position:absolute; top:0; right:0; z-index:36; }
 .lp-root .lp-element-inline > .lp-edit-trigger { top:-40px; }
