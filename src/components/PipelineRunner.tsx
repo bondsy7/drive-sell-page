@@ -31,6 +31,7 @@ import {
   applyPromptOverrides,
 } from '@/lib/pipeline-jobs';
 import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
+import { pickManufacturerLogo } from '@/lib/manufacturer-logo-match';
 import { describeGenerationError } from '@/lib/generation-log';
 import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
@@ -260,18 +261,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       return;
     }
     fetchManufacturerLogos().then(logos => {
-      const brandLower = detectedBrand.toLowerCase().replace(/[-_\s]+/g, '');
-      const LOGO_ALIASES: Record<string, string[]> = {
-        volkswagen: ['vw'], vw: ['volkswagen'],
-        mercedesbenz: ['mercedes', 'mb'], mercedes: ['mercedesbenz', 'mb'],
-        bmw: ['bayerischemotorenwerke'],
-      };
-      const aliases = LOGO_ALIASES[brandLower] || [];
-      const allKeys = [brandLower, ...aliases];
-      const match = logos.find(l => {
-        const ln = l.name.toLowerCase().replace(/[-_\s]+/g, '');
-        return allKeys.some(k => ln === k || ln.includes(k) || k.includes(ln));
-      });
+      const match = pickManufacturerLogo(logos, detectedBrand);
       if (match) {
         console.log(`[Pipeline] Manufacturer logo found for "${detectedBrand}": ${match.name} → ${match.url}`);
         setResolvedManufacturerLogoUrl(match.url);

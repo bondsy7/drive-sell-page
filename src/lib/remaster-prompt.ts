@@ -132,6 +132,21 @@ export const SCENE_OPTIONS = [
   { value: 'dealer-lot-dekra', label: 'Fahrzeugplatz – DEKRA', preview: dealerLotDekraPreview.url, group: 'outdoor' as const },
 ] as const;
 
+/** Outdoor scenes have no showroom wall; logos may only sit on existing background facades. */
+export function isOutdoorScene(scene?: string | null): boolean {
+  return SCENE_OPTIONS.some(s => s.value === scene && s.group === 'outdoor');
+}
+
+export const OUTDOOR_BRANDING_LOCK = `<OUTDOOR_BRANDING_LOCK>
+OUTDOOR SCENE – BRANDING PLACEMENT OVERRIDE (overrides every "rear wall" / "frosted-glass panel" instruction above):
+1. This scene is OUTDOORS. There is NO showroom wall, NO room and NO ceiling.
+2. NEVER add a canopy, roof overhang, ceiling, recessed spotlights, room corner, free-standing wall, partition, pillar, billboard, totem or glass panel to host a logo.
+3. Selected logos may ONLY be mounted flat on the facade of a building that already belongs to the scene background, in proportion to that building, lit by the same daylight.
+4. If the scene already carries a mandatory scene logo (e.g. the DEKRA logo on the hall facade), that logo keeps its position and priority; place selected logos beside it on the same facade without overlapping, or omit them if no facade space is visible in this perspective.
+5. If no background building facade is visible in this perspective, OMIT the selected logos entirely rather than inventing architecture.
+6. The scene geometry (ground, buildings, trees, sky) must stay identical to the scene description in every image.
+</OUTDOOR_BRANDING_LOCK>`;
+
 /** Accounts allowed to select the "Fahrzeugplatz – DEKRA" scene. */
 export const DEKRA_SCENE_EMAILS = ['dekra@autohaus.ai', 'dekra2@autohaus.ai', 'dekra3@autohaus.ai'] as const;
 
@@ -433,6 +448,7 @@ ${REFERENCE_TRUTH_PROTOCOL}
 - NEVER place it on a licence plate and never replace it with the licence-plate graphic. FORBIDDEN: redesign, recolor, simplify. IMMUTABLE ASSET.`);
     }
     parts.push(`<CRITICAL_ASSET_INTEGRATION>\n${logoLines.join('\n\n')}\n</CRITICAL_ASSET_INTEGRATION>`);
+    if (isOutdoorScene(config.scene)) parts.push(OUTDOOR_BRANDING_LOCK);
   } else {
     parts.push(`<NO_LOGO_INSTRUCTION>
 Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
