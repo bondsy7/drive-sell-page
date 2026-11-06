@@ -1,5 +1,6 @@
 import { landingImageAlt } from '@/lib/landing-image-alt';
 import LandingEditMenu from '@/components/landing/LandingEditMenu';
+import { LandingToolboxProvider } from '@/components/landing/LandingToolbox';
 import { Button } from '@/components/ui/button';
 import SectionBackgroundPicker from '@/components/landing/SectionBackgroundPicker';
 import LandingSectionResize, { LandingSectionSizeContext } from '@/components/landing/LandingSectionResize';
@@ -187,7 +188,7 @@ const SectionShell: React.FC<{
       style={{ position: 'relative', background: bg, opacity: enabled ? 1 : 0.4, ...editorControlStyle(surface ?? bg) }}
     >
       {editable && <div className="lp-section-controls">
-        <LandingEditMenu label={id === 'hero' ? 'Header bearbeiten' : 'Abschnitt bearbeiten'}>
+        <LandingEditMenu section label={id === 'hero' ? 'Header bearbeiten' : 'Abschnitt bearbeiten'}>
           {onMove && <Button variant="ghost" onClick={() => onMove('up')}><ArrowUp size={16} /> Nach oben</Button>}
           {onMove && <Button variant="ghost" onClick={() => onMove('down')}><ArrowDown size={16} /> Nach unten</Button>}
           {onToggle && <Button variant="ghost" onClick={onToggle}>{enabled ? <EyeOff size={16} /> : <Eye size={16} />} {enabled ? 'Ausblenden' : 'Einblenden'}</Button>}
@@ -334,8 +335,9 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
 
   return (
+    <LandingToolboxProvider enabled={editable}>
     <LandingSectionSizeContext.Provider value={{ heights: content.sectionHeights, onResize: onResizeSection }}>
-    <div className="lp-root lp-layout" style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
+    <div className={`lp-root lp-layout${editable ? ' lp-toolbox-mode' : ''}`} style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
       <style>{`
         .lp-root h1,.lp-root h2,.lp-root h3{font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;letter-spacing:-0.01em;color:#0f172a}
         .lp-root p{line-height:1.7}
@@ -699,6 +701,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
     </div>
     </LandingSectionSizeContext.Provider>
+    </LandingToolboxProvider>
   );
 };
 
