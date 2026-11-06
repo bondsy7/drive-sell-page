@@ -143,7 +143,7 @@ OUTDOOR SCENE – BRANDING PLACEMENT OVERRIDE (overrides every "rear wall" / "fr
 2. NEVER add a canopy, roof overhang, ceiling, recessed spotlights, room corner, free-standing wall, partition, pillar, billboard, totem or glass panel to host a logo.
 3. Selected logos may ONLY be mounted flat on the facade of a building that already belongs to the scene background, in proportion to that building, lit by the same daylight.
 4. If the scene already carries a mandatory scene logo (e.g. the DEKRA logo on the hall facade), that logo keeps its position and priority; place selected logos beside it on the same facade without overlapping, or omit them if no facade space is visible in this perspective.
-5. If no background building facade is visible in this perspective, OMIT the selected logos entirely rather than inventing architecture.
+5. ONLY if no clear building facade / exterior wall / suitable existing flat surface is visible (e.g. forest, mountains, beach, desert): integrate the selected logo NATURALLY into an element that already exists in the scene, matching its material, lighting and perspective – e.g. carved into the bark of a background tree (forest), engraved/chiselled into a rock face (mountains), drawn in the sand (beach), weathered relief on a rock (desert). Keep it subtle, in the background, never on or overlapping the vehicle, never as a sign, panel or new object. If a facade or wall IS visible, rule 3 applies and this rule does not.
 6. The scene geometry (ground, buildings, trees, sky) must stay identical to the scene description in every image.
 </OUTDOOR_BRANDING_LOCK>`;
 

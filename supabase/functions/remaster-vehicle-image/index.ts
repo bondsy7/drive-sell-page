@@ -1076,7 +1076,7 @@ Before returning: (1) every visible license plate on the vehicle shows the LICEN
     // ── Outdoor scenes: logos only on existing background facades, never invented walls ──
     if (hasAnyLogo && prompt.includes('OUTDOOR_BRANDING_LOCK')) {
       parts.push({ text: `<OUTDOOR_BRANDING_FINAL>
-FINAL OVERRIDE FOR ALL LOGO_REFERENCE BLOCKS: This is an OUTDOOR scene. Ignore every "rear wall" and "frosted-glass panel" placement. Do NOT build a canopy, ceiling, spotlights, room, free-standing wall, panel or sign to host a logo. Mount selected logos only flat on an existing background building facade of the scene (never overlapping a mandatory scene logo), otherwise omit them.
+FINAL OVERRIDE FOR ALL LOGO_REFERENCE BLOCKS: This is an OUTDOOR scene. Ignore every "rear wall" and "frosted-glass panel" placement. Do NOT build a canopy, ceiling, spotlights, room, free-standing wall, panel or sign to host a logo. Mount selected logos only flat on an existing background building facade of the scene (never overlapping a mandatory scene logo). ONLY if no facade/exterior wall/flat surface exists (forest, mountains, beach, desert): integrate the logo naturally into an existing scene element with its material and light – carved into a background tree's bark, engraved into a rock face, etc. – subtle, in the background, never on the vehicle, never as a new sign or object.
 </OUTDOOR_BRANDING_FINAL>` });
       console.log('[remaster] Outdoor branding lock applied');
     }
