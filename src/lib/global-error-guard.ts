@@ -41,7 +41,7 @@ export function installGlobalErrorGuard(): void {
     const msg = extractMessage(event.reason);
     if (isTransientProviderErrorMessage(msg) && !isCreditErrorMessage(msg)) {
       event.preventDefault();
-      toast.error('Der KI-Dienst ist gerade gestört. Es wurden keine Credits abgezogen – bitte in einer Minute erneut versuchen.', { duration: 8000 });
+      toast.error('Der KI-Dienst ist gerade gestört. Bitte in einer Minute erneut versuchen.', { duration: 8000 });
       return;
     }
     if (!isCreditErrorMessage(msg)) return;
