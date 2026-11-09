@@ -531,7 +531,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
 
         const form = new FormData();
         form.append("model", model);
-        form.append("image", blob, "vehicle.png");
+        form.append("image[]", blob, "vehicle.png");
 
         let logoPromptAddition = "";
         const logoInline = await toInlineData(logoBase64, "image/png");
@@ -540,7 +540,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
           const logoBytes = new Uint8Array(logoBinaryStr.length);
           for (let j = 0; j < logoBinaryStr.length; j++) logoBytes[j] = logoBinaryStr.charCodeAt(j);
           const logoBlob = new Blob([logoBytes], { type: logoInline.mimeType });
-          form.append("image", logoBlob, "logo.png");
+          form.append("image[]", logoBlob, "logo.png");
           logoPromptAddition = "\n\nLOGO LOCK (MANDATORY): A second image is provided — this is the OFFICIAL CURRENT manufacturer logo. Reproduce it 1:1 pixel-faithfully (same shape, proportions, colors, flat modern design). DO NOT use any logo from memory/training data — those are OUTDATED. FORBIDDEN: old/historical/legacy/vintage/chrome/3D/gradient versions (no old chrome VW logo, no old 3D BMW roundel, no old gradient Mercedes star, no old chrome Audi rings, no pre-2019 brand marks). Place prominently (corner or near headline), no rotation, no distortion, no extra effects.";
         }
         
@@ -549,7 +549,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
           const ds = atob(dealerInline.data);
           const db = new Uint8Array(ds.length);
           for (let j = 0; j < ds.length; j++) db[j] = ds.charCodeAt(j);
-          form.append("image", new Blob([db], { type: dealerInline.mimeType }), "dealer-logo.png");
+          form.append("image[]", new Blob([db], { type: dealerInline.mimeType }), "dealer-logo.png");
           logoPromptAddition += "\n\nDEALER LOGO: The LAST provided image is the dealer's (seller's) logo, not the manufacturer logo. Reproduce it 1:1 in the dealer footer zone; never redraw, recolor or merge it.";
         }
 
