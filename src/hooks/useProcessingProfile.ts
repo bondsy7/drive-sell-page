@@ -48,7 +48,16 @@ export async function startAuto3Job(args: {
   if (!job) throw new Error('Job ist noch nicht vorbereitet.');
   const datasheet = (job.datasheet || {}) as Datasheet;
   const overrides = await fetchPromptOverrides();
+  let profileShowroomUrl: string | null = null;
+  if (args.settings.scene === 'custom-showroom') {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: prof } = await supabase.from('profiles').select('custom_showroom_url').eq('id', user.id).maybeSingle();
+      profileShowroomUrl = (prof as { custom_showroom_url?: string | null } | null)?.custom_showroom_url || null;
+    }
+  }
   const plan = compileJobPlan({
+    profileShowroomUrl,
     settings: args.settings, datasheet, overrides,
     analysis: Array.isArray(prep?.analysis) ? (prep!.analysis as never) : [],
     manufacturerLogoUrl: datasheet.brand ? args.getLogoForMake?.(datasheet.brand) || null : null,

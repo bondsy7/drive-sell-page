@@ -26,11 +26,25 @@ function extractMessage(reason: unknown): string {
   return typeof maybe === 'string' ? maybe : String(reason);
 }
 
+const PROVIDER_ERROR_PATTERN = /edge function returned (5\d\d|429)|gemini (5\d\d|429)|openai (5\d\d|429)/i;
+
+/** True, wenn ein vorübergehender KI-/Serverfehler (5xx/429) gemeldet wird. */
+export function isTransientProviderErrorMessage(message: unknown): boolean {
+  if (message == null) return false;
+  return PROVIDER_ERROR_PATTERN.test(String(message));
+}
+
 /** Einmalig beim App-Start aufrufen (main.tsx). */
 export function installGlobalErrorGuard(): void {
   if (typeof window === 'undefined') return;
   window.addEventListener('unhandledrejection', (event) => {
-    if (!isCreditErrorMessage(extractMessage(event.reason))) return;
+    const msg = extractMessage(event.reason);
+    if (isTransientProviderErrorMessage(msg) && !isCreditErrorMessage(msg)) {
+      event.preventDefault();
+      toast.error('Der KI-Dienst ist gerade gestört. Bitte in einer Minute erneut versuchen.', { duration: 8000 });
+      return;
+    }
+    if (!isCreditErrorMessage(msg)) return;
     event.preventDefault();
     toast.error('Nicht genug Credits. Bitte Credits aufladen und danach erneut starten.', {
       duration: 8000,
