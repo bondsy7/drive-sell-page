@@ -80,6 +80,8 @@ export interface RendererProps {
   /** Insert a new image block above/below an existing one in a section. */
   onInsertImage?: (sectionId: string, anchor: string, pos: 'before' | 'after') => void;
   onDeleteStackImage?: (imageId: string) => void;
+  /** Move an image block into the neighbouring section. */
+  onMoveImageToSection?: (fromSection: string, entry: string, toSection: string, at: 'start' | 'end') => void;
   onAddSection?: (afterId: string | null) => void;
   imageLoading?: string | null;
   liveInventory?: LiveInventoryView | null;
@@ -238,6 +240,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onReplaceImage,
   onInsertImage,
   onDeleteStackImage,
+  onMoveImageToSection,
   onMoveSection,
   onToggleSection,
   onDeleteSection,
@@ -643,7 +646,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
                   onFrameChange={(f) => onFrameChange?.(key, f)}
                 />
               )}
-              hasImage={(key) => !!images[key]}
+              hasImage={(key) => !!images[key === '@main' ? s.id : key]}
+              canMoveUp={idx > 0}
+              canMoveDown={idx < sections.length - 1}
+              onMoveToSection={onMoveImageToSection ? (key, dir) => {
+                const target = sections[dir === 'up' ? idx - 1 : idx + 1];
+                if (target) onMoveImageToSection(s.id, key, target.id, dir === 'up' ? 'end' : 'start');
+              } : undefined}
             />
           )}
         />

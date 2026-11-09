@@ -34,7 +34,7 @@ import {
 import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 import { useLandingEditorHistory } from '@/hooks/useLandingEditorHistory';
 import { removeLandingElement } from '@/lib/landing-element-editing';
-import { insertStackImage, isStackImageId, newStackImageId, removeStackImage, sectionOfImageId } from '@/lib/landing-image-stack';
+import { insertStackImage, isStackImageId, newStackImageId, removeStackImage, sectionOfImageId, moveStackImageToSection } from '@/lib/landing-image-stack';
 import { replaceLandingImage, LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
 import { useCredits } from '@/hooks/useCredits';
@@ -123,6 +123,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     }
     return next;
   }), [change]);
+  const moveImageToSection = useCallback((from: string, entry: string, to: string, at: 'start' | 'end') => change(state => moveStackImageToSection(state, from, entry, to, at)), [change]);
   const deleteStackImage = useCallback((id: string) => change(state => removeStackImage(state, id)), [change]);
   const setLiveInventory = useCallback((value: React.SetStateAction<LiveInventoryConfig>) => updateEditor('liveInventory', value), [updateEditor]);
   const setContactFormEnabled = useCallback((value: React.SetStateAction<boolean>) => updateEditor('contactFormEnabled', value), [updateEditor]);
@@ -567,6 +568,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 setImageDialogSection(id);
               }}
               onDeleteStackImage={deleteStackImage}
+              onMoveImageToSection={moveImageToSection}
               onMoveSection={moveSection}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
