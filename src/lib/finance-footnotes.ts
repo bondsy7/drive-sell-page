@@ -47,6 +47,8 @@ interface Resolved {
 export function resolveVehicleFinance(v: LiveVehicle, config: LiveInventoryConfig): Resolved {
   const jacobs = config.cardDesign?.preset === 'jacobs';
   const profileBank = config.financeBank?.trim() || '';
+  // No bank chosen in the live-inventory settings → no rates, no bank text, regardless of Auto3 data.
+  if (!profileBank) return { rate: null, missing: [] };
   if (v.monthlyRate) {
     const f = v.financing || null;
     const bank = f?.bank || profileBank;

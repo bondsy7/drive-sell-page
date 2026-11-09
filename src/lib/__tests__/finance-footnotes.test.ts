@@ -26,6 +26,10 @@ describe('finance footnotes', () => {
   it('no bank selected → example rate hidden, bank reported missing', () => {
     const noBank = { ...cfg, financeBank: '' };
     expect(buildFinanceFootnotes([v('a', 37890)], noBank)).toEqual([]);
-    expect(findFinanceGaps([v('a', 37890)], noBank)[0].missing).toEqual(['Bank']);
+    expect(findFinanceGaps([v('a', 37890)], noBank)).toEqual([]);
+  });
+  it('no bank selected → Auto3 rate and bank also hidden', () => {
+    const noBank = { ...cfg, financeBank: '' };
+    expect(buildFinanceFootnotes([v('a', 30000, 259, full)], noBank)).toEqual([]);
   });
 });
