@@ -14,7 +14,8 @@ export const LANDING_LAYOUT_CSS = `
 .lp-layout .lp-content-width :is(h1,h2,h3,p){overflow-wrap:anywhere}
 .lp-layout :is(.lp-body-html,.lp-content-width) :is(ul,ol){padding-left:1.4em !important;list-style-position:outside}
 .lp-layout .lp-body-html.lp-contact-plain{text-align:center}
-.lp-layout .lp-body-html.lp-contact-plain :is(ul,ol){list-style:none;padding-left:0 !important}
+.lp-layout .lp-body-html.lp-contact-plain :is(ul,ol,li){list-style:none !important;padding-left:0 !important}
+.lp-layout .lp-body-html.lp-contact-plain li::marker{content:"" !important}
 .lp-layout .lp-header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px}
 @media(max-width:900px){
  .lp-layout{--lp-content-max:100%;--lp-content-gutter:20px;--lp-column-gap:28px}

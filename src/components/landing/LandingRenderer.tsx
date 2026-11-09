@@ -827,8 +827,8 @@ const SectionRenderer: React.FC<{
   const buttonBg = (field: string, fallback: string) => buttonColorOverride(buttonColors?.[`${s.id}.${field}`], fallback);
 
   const enabled = (s as any).enabled !== false;
-  const bodyContent = plainContactContent(s.headline, s.content);
-  const bodyClass = contactBodyClass(s.headline);
+  const bodyContent = plainContactContent(s.headline, s.content, s.type, s.id);
+  const bodyClass = contactBodyClass(s.headline, s.type, s.id);
 
   // CTA band
   if (s.type === 'cta') {

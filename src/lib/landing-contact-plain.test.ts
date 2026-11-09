@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { isContactSection, plainContactContent, contactBodyClass } from './landing-contact-plain';
 
 describe('isContactSection', () => {
+  it('erkennt den Kontaktbereich auch ohne Kontakt in der Überschrift', () => {
+    expect(isContactSection('Jetzt den SKODA Peaq erleben im Autohaus Jacobs', 'cta')).toBe(true);
+    expect(isContactSection('Besuchen Sie uns', 'text', 'kontakt')).toBe(true);
+    expect(isContactSection('Ausstattung', 'text', 'features')).toBe(false);
+  });
   it('erkennt Kontakt-Überschriften', () => {
     expect(isContactSection('Kontakt')).toBe(true);
     expect(isContactSection('Ihr Kontakt zu uns')).toBe(true);
@@ -16,6 +21,10 @@ describe('isContactSection', () => {
 });
 
 describe('plainContactContent', () => {
+  it('entfernt die Listen im Kontaktbereich aus dem Screenshot', () => {
+    const html = '<ul><li>Autohaus Jacobs</li><li>Musterstraße 123, 12345 Musterstadt</li><li>E-Mail: ???</li><li>Website: www.wir-sind-jacobs.de/</li></ul>';
+    expect(plainContactContent('Jetzt den SKODA Peaq erleben im Autohaus Jacobs', html, 'cta')).toBe('<p>Autohaus Jacobs</p><p>Musterstraße 123, 12345 Musterstadt</p><p>E-Mail: ???</p><p>Website: www.wir-sind-jacobs.de/</p>');
+  });
   it('wandelt Listen im Kontakt-Abschnitt in Absätze um', () => {
     const html = '<p>Rufen Sie uns an:</p><ul><li>Telefon: 0123</li><li>Mail: a@b.de</li></ul>';
     const out = plainContactContent('Kontakt', html);
