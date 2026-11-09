@@ -1,4 +1,5 @@
 import { landingImageAlt } from '@/lib/landing-image-alt';
+import { contactBodyClass, plainContactContent } from '@/lib/landing-contact-plain';
 import LandingEditMenu from '@/components/landing/LandingEditMenu';
 import { LandingToolboxProvider } from '@/components/landing/LandingToolbox';
 import { Button } from '@/components/ui/button';
@@ -826,6 +827,8 @@ const SectionRenderer: React.FC<{
   const buttonBg = (field: string, fallback: string) => buttonColorOverride(buttonColors?.[`${s.id}.${field}`], fallback);
 
   const enabled = (s as any).enabled !== false;
+  const bodyContent = plainContactContent(s.headline, s.content);
+  const bodyClass = contactBodyClass(s.headline);
 
   // CTA band
   if (s.type === 'cta') {
@@ -855,12 +858,12 @@ const SectionRenderer: React.FC<{
               as="div"
               html
               editable={editable}
-              value={s.content}
+              value={bodyContent}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
               colorControl={textControl('content')}
               placeholder="Text…"
-              className="lp-body-html"
+              className={bodyClass}
               style={{ fontSize: 17, opacity: 0.9, marginBottom: 32, ...(textOverrideOptional('content') ? { color: textOverrideOptional('content') } : {}) }}
             />
             <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -906,12 +909,12 @@ const SectionRenderer: React.FC<{
             as="div"
             html
             editable={editable}
-            value={s.content}
+            value={bodyContent}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
             colorControl={textControl('content')}
             placeholder="Inhalt eingeben…"
-            className="lp-body-html"
+            className={bodyClass}
             style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
           />
         </div>
@@ -954,11 +957,11 @@ const SectionRenderer: React.FC<{
             as="div"
             html
             editable={editable}
-            value={s.content}
+            value={bodyContent}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
             colorControl={textControl('content')}
-            className="lp-body-html"
+            className={bodyClass}
             style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
           />
         </div>
@@ -1018,11 +1021,11 @@ const SectionRenderer: React.FC<{
               as="div"
               html
               editable={editable}
-              value={s.content}
+              value={bodyContent}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
               colorControl={textControl('content')}
-              className="lp-body-html"
+              className={bodyClass}
               style={{ fontSize: 16, color: textOverride('content', bodyColor), lineHeight: 1.75 }}
             />
           </div>}
