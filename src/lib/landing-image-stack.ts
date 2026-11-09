@@ -60,3 +60,33 @@ export function removeStackImage<T extends { content: LandingPageContent; images
 export function hasExtraImages(content: LandingPageContent, images: Record<string, string>, sectionId: string): boolean {
   return getImageStack(content, sectionId).some(e => e !== STACK_MAIN && !!images[e]);
 }
+
+/**
+ * Move one image block (main or inserted) into another section. The image is
+ * re-keyed under the target section so URL, frame and provenance travel with it.
+ * 'end' appends (moving up), 'start' prepends (moving down).
+ */
+export function moveStackImageToSection<T extends { content: LandingPageContent; images: Record<string, string> }>(
+  state: T, fromSection: string, entry: string, toSection: string, at: 'start' | 'end', newId = newStackImageId(toSection),
+): T {
+  const key = stackImageKey(fromSection, entry);
+  const url = state.images[key];
+  if (!url || fromSection === toSection) return state;
+  const images = { ...state.images }; delete images[key]; images[newId] = url;
+  const imageFrames = { ...(state.content.imageFrames || {}) };
+  const imageSources = { ...(state.content.imageSources || {}) };
+  if (imageFrames[key]) imageFrames[newId] = imageFrames[key];
+  if (imageSources[key]) imageSources[newId] = imageSources[key];
+  delete imageFrames[key]; delete imageSources[key];
+  const fromStack = getImageStack(state.content, fromSection).filter(e => e !== entry);
+  const toStack = [...getImageStack(state.content, toSection)];
+  if (at === 'start') toStack.unshift(newId); else toStack.push(newId);
+  return {
+    ...state,
+    images,
+    content: {
+      ...state.content, imageFrames, imageSources,
+      imageStacks: { ...(state.content.imageStacks || {}), [fromSection]: fromStack, [toSection]: toStack },
+    },
+  };
+}

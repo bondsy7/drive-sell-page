@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, ArrowUpToLine, ArrowDownToLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { STACK_GAP_PX, STACK_MAIN } from '@/lib/landing-image-stack';
 
@@ -12,10 +12,13 @@ interface Props {
   onInsert?: (anchor: string, pos: 'before' | 'after') => void;
   renderExtra: (key: string) => React.ReactNode;
   hasImage: (key: string) => boolean;
+  onMoveToSection?: (key: string, dir: 'up' | 'down') => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 /** Vertically stacked image blocks with a fixed minimum gap, so blocks never touch or overlap. */
-export default function LandingImageStack({ entries, main, editable, onInsert, renderExtra, hasImage }: Props) {
+export default function LandingImageStack({ entries, main, editable, onInsert, renderExtra, hasImage, onMoveToSection, canMoveUp, canMoveDown }: Props) {
   const items = entries
     .map(e => ({ key: e, node: e === STACK_MAIN ? main : hasImage(e) ? renderExtra(e) : null }))
     .filter(i => i.node);
@@ -29,11 +32,20 @@ export default function LandingImageStack({ entries, main, editable, onInsert, r
       <Plus size={16} /> Bild {pos === 'before' ? 'darüber' : 'darunter'} einfügen
     </Button>
   ) : null;
+  const mv = (key: string, dir: 'up' | 'down') => editable && onMoveToSection && hasImage(key) && (dir === 'up' ? canMoveUp : canMoveDown) ? (
+    <Button variant="ghost"
+      type="button"
+      onPointerDown={e => e.stopPropagation()}
+      onClick={e => { e.stopPropagation(); onMoveToSection(key, dir); }}
+    >
+      {dir === 'up' ? <ArrowUpToLine size={16} /> : <ArrowDownToLine size={16} />} In Sektion {dir === 'up' ? 'darüber' : 'darunter'}
+    </Button>
+  ) : null;
   return (
     <div className="lp-image-stack" style={{ display: 'flex', flexDirection: 'column', gap: STACK_GAP_PX }}>
       {items.map(i => (
         <div key={i.key} className="lp-stack-item" style={{ position: 'relative' }}>
-          <LandingImageInsertContext.Provider value={<>{btn(i.key, 'before')}{btn(i.key, 'after')}</>}>
+          <LandingImageInsertContext.Provider value={<>{btn(i.key, 'before')}{btn(i.key, 'after')}{mv(i.key, 'up')}{mv(i.key, 'down')}</>}>
             {i.node}
           </LandingImageInsertContext.Provider>
         </div>
