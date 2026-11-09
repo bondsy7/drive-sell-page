@@ -17,3 +17,13 @@ describe('isCreditErrorMessage', () => {
     expect(isCreditErrorMessage(undefined)).toBe(false);
   });
 });
+
+import { isTransientProviderErrorMessage } from '@/lib/global-error-guard';
+describe('transient provider errors', () => {
+  it('Gemini 500 is caught', () => {
+    expect(isTransientProviderErrorMessage('Edge function returned 500: Error, {"error":"Gemini 500: Internal"}')).toBe(true);
+  });
+  it('400 is not', () => {
+    expect(isTransientProviderErrorMessage('Edge function returned 400: bad')).toBe(false);
+  });
+});
