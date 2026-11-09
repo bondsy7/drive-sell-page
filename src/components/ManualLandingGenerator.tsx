@@ -1,7 +1,7 @@
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { buildLandingPageHTML } from '@/lib/landing-page-builder';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
+import { landingGenerationCost, normalizeImageLink, type LandingImageFill } from '@/lib/landing-generation-cost';
 import { toast } from 'sonner';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import { Progress } from '@/components/ui/progress';
@@ -103,7 +104,9 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const [liveInventory, setLiveInventory] = useState<LiveInventoryConfig>(DEFAULT_LIVE_INVENTORY);
   
   // Image uploads (max 5) – preview can be a blob URL (file) or remote URL (vehicle asset)
-  const [uploadedImages, setUploadedImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<{ file?: File; preview: string; url?: string; link?: string }[]>([]);
+  const [linkInput, setLinkInput] = useState('');
+  const [imageFill, setImageFill] = useState<LandingImageFill>('fill');
 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
@@ -221,7 +224,20 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
   const canGenerate = brand.trim() && model.trim() && pageType;
   // Muss mit totalCost in supabase/functions/generate-landing-page/index.ts übereinstimmen (Text + KI-Bilder inklusive).
-  const cost = 5;
+  const cost = landingGenerationCost(uploadedImages.length, imageFill);
+
+  const handleAddLinks = () => {
+    const parts = linkInput.split(/[\s,]+/).filter(Boolean);
+    const valid = parts.map(normalizeImageLink).filter((u): u is string => !!u);
+    if (!valid.length) { toast.error('Bitte gültige Bildlinks (https://…) einfügen.'); return; }
+    if (valid.length < parts.length) toast.warning('Ungültige Links wurden übersprungen.');
+    const free = 5 - uploadedImages.length;
+    if (valid.length > free) toast.error('Maximal 5 eigene Bilder insgesamt');
+    const add = valid.slice(0, Math.max(0, free)).map(link => ({ preview: link, link }));
+    // Verlinkte Bilder werden zuerst verwendet.
+    setUploadedImages(prev => [...prev.filter(i => i.link), ...add, ...prev.filter(i => !i.link)]);
+    setLinkInput('');
+  };
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -302,7 +318,9 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       setProgress('Bilder werden vorbereitet...');
       setProgressPercent(15);
       const uploadedBase64: string[] = [];
+      const imageLinks = uploadedImages.filter(i => i.link).map(i => i.link as string);
       for (const img of uploadedImages) {
+        if (img.link) continue;
         if (img.file) {
           uploadedBase64.push(await fileToBase64(img.file));
         } else if (img.url) {
@@ -328,6 +346,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           additionalInfo: highlights,
           dealer,
           uploadedImages: uploadedBase64,
+          imageLinks,
+          imageFill,
           vehicleId: effectiveVehicleId,
         },
       });
@@ -362,7 +382,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             type: 'landing-page',
             brand, model, variant,
             pageType, targetAudience: targetAudience === 'alle' ? '' : targetAudience, tone, imageStyle, color, price,
-            pageContent: data.pageContent,
+            pageContent: { ...data.pageContent, ...(data.imageSources ? { imageSources: data.imageSources } : {}) },
             imageMap: data.imageMap || {},
             dealer,
             brandLogoUrl: data.brandLogoUrl || '',
@@ -409,7 +429,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           }
           const map = (data.imageMap || {}) as Record<string, string>;
           const generatedEntries = Object.entries(map).filter(([, url]) =>
-            typeof url === 'string' && url.startsWith('http') && !uploadedImages.some(u => u.url === url)
+            typeof url === 'string' && url.startsWith('http') && !uploadedImages.some(u => u.url === url || u.link === url) && !(data.ownImageUrls || []).includes(url)
           );
           if (generatedEntries.length > 0) {
             const rows = generatedEntries.map(([key, url], i) => ({
@@ -427,7 +447,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         } catch (e) { console.warn('Gallery save failed:', e); }
 
         setProgressPercent(100);
-        toast.success(`Landing Page erstellt! ${data.imageCount || 0} Bilder generiert.`);
+        toast.success(`Landing Page erstellt! ${data.imageCount || 0} Bilder eingesetzt.`);
         onComplete(project.id);
       } else {
         toast.error('Keine HTML-Daten erhalten.');
@@ -648,7 +668,12 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           <div className="flex flex-wrap gap-2">
             {uploadedImages.map((img, idx) => (
               <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
-                <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                <img src={img.preview} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                {img.link && (
+                  <span className="absolute bottom-0 inset-x-0 bg-foreground/70 text-background text-[9px] text-center py-0.5 flex items-center justify-center gap-0.5">
+                    <LinkIcon className="w-2.5 h-2.5" /> Link
+                  </span>
+                )}
                 <button
                   onClick={() => removeImage(idx)}
                   className="absolute top-0.5 right-0.5 w-5 h-5 bg-foreground/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -664,8 +689,54 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
               </label>
             )}
           </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <LinkIcon className="w-3.5 h-3.5" /> Bilder per Link einfügen
+              <span className="text-muted-foreground/60">(mehrere durch Leerzeichen oder Zeilenumbruch trennen)</span>
+            </label>
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="https://www.ihre-website.de/bilder/fahrzeug-1.jpg"
+                value={linkInput}
+                onChange={e => setLinkInput(e.target.value)}
+                disabled={loading || uploadedImages.length >= 5}
+                rows={2}
+                className="text-xs"
+              />
+              <Button type="button" variant="outline" onClick={handleAddLinks} disabled={loading || !linkInput.trim() || uploadedImages.length >= 5}>
+                Hinzufügen
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Verlinkte Bilder werden zuerst verwendet und bleiben im HTML/Plugin als Originallink erhalten.</p>
+          </div>
+
+          {uploadedImages.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Restliche Bilder</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {([
+                  { v: 'fill', title: 'Mit KI auffüllen', desc: 'Fehlende Bilder werden KI-generiert', c: landingGenerationCost(uploadedImages.length, 'fill') },
+                  { v: 'own_only', title: 'Nur meine Bilder', desc: 'Keine KI-Bilder – Abschnitte ohne Bild bleiben bildlos', c: landingGenerationCost(uploadedImages.length, 'own_only') },
+                ] as const).map(o => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => setImageFill(o.v)}
+                    disabled={loading}
+                    className={`text-left rounded-lg border px-3 py-2 text-xs transition-colors ${imageFill === o.v ? 'border-accent bg-accent/10' : 'border-border hover:bg-muted/50'}`}
+                  >
+                    <span className="flex items-center justify-between font-semibold text-foreground">
+                      {o.title}<span className="text-accent">{o.c} Credits</span>
+                    </span>
+                    <span className="text-muted-foreground">{o.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <p className="text-xs text-muted-foreground">{LANDING_UPLOAD_DISCLOSURE_NOTICE}</p>
-          <p className="text-[10px] text-muted-foreground">Eigene Bilder werden priorisiert, fehlende werden KI-generiert. Tipp: Motor, Innenraum, Heck etc. hochladen für passende Section-Bilder.</p>
+          <p className="text-[10px] text-muted-foreground">Eigene Bilder werden priorisiert. Tipp: Motor, Innenraum, Heck etc. hochladen für passende Section-Bilder.</p>
         </div>
       </div>
 
@@ -695,7 +766,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </Button>
         <div className="flex items-center justify-center gap-1">
           <span className="text-xs text-muted-foreground">
-            Kosten: <strong className="text-accent">{cost} Credits</strong> (inkl. KI-Bilder) — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
+            Kosten: <strong className="text-accent">{cost} Credits</strong> ({uploadedImages.length === 0 ? 'inkl. KI-Bilder' : imageFill === 'own_only' ? 'nur eigene Bilder' : 'eigene Bilder + KI-Auffüllung'}) — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
           </span>
         </div>
       </div>
@@ -740,7 +811,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
               {
                 label: 'Eigene Bilder',
                 value: uploadedImages.length
-                  ? `${uploadedImages.length} übernommen`
+                  ? `${uploadedImages.length} übernommen${imageFill === 'own_only' ? ' – keine KI-Bilder' : ' – Rest KI-generiert'}`
                   : 'keine – Bilder werden KI-generiert',
               },
               {
@@ -758,7 +829,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           </div>
 
           <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground">
-            Nach dem Bestätigen werden {cost} Credits verbraucht (Texte und KI-Bilder inklusive).
+            Nach dem Bestätigen werden {cost} Credits verbraucht ({uploadedImages.length === 0 ? 'Texte und KI-Bilder inklusive' : imageFill === 'own_only' ? 'Texte, ohne KI-Bilder' : 'Texte und KI-Auffüllung inklusive'}).
             Die Generierung dauert einige Minuten und kann nicht rückgängig gemacht werden.
           </div>
 
