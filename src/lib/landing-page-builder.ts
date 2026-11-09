@@ -243,12 +243,19 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
     ? `<div class="${config.layout === 'grid' ? 'lp-live-grid' : 'lp-live-track'}">${vehicles.map(card).join('\n')}</div>`
     : '<div class="lp-live-empty">Derzeit keine passenden Fahrzeuge verfügbar.</div>';
 
+  // Slider arrows: same behaviour as the editor (scroll by 80 % of the visible track).
+  const arrow = (dir: -1 | 1, label: string, path: string) =>
+    `<button type="button" aria-label="${label}" title="${label}" onclick="var t=this.closest('.lp-live-inner').querySelector('.lp-live-track');if(t)t.scrollBy({left:${dir}*Math.round(t.clientWidth*0.8),behavior:'smooth'})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg></button>`;
+  const nav = config.layout === 'slider' && vehicles.length > 1
+    ? `<div class="lp-live-nav">${arrow(-1, 'Zurück', 'M19 12H5M12 19l-7-7 7-7')}${arrow(1, 'Weiter', 'M5 12h14M12 5l7 7-7 7')}</div>`
+    : '';
+
   // The rule travels with the page so an external site can re-resolve the live stock.
   const rule = escapeHtml(JSON.stringify({ ...config, selectedIds: config.selectedIds ?? [] }));
 
   return `<section id="live-fahrzeuge" class="${config.cardDesign?.preset === 'jacobs' ? 'lp-live-jacobs' : ''}" style="background:var(--lp-tint);border-top:1px solid var(--lp-border)" data-live-inventory="${rule}">
   <div class="lp-live-inner">
-    <div class="lp-live-head"><h2 class="lp-live-title">${escapeHtml(config.title || 'Aktuelle Fahrzeuge aus unserem Bestand')}</h2></div>
+    <div class="lp-live-head"><h2 class="lp-live-title">${escapeHtml(config.title || 'Aktuelle Fahrzeuge aus unserem Bestand')}</h2>${nav}</div>
     ${inner}
   </div>
 </section>`;
