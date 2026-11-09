@@ -56,13 +56,15 @@ export async function startAuto3Job(args: {
       profileShowroomUrl = (prof as { custom_showroom_url?: string | null } | null)?.custom_showroom_url || null;
     }
   }
-  const plan = compileJobPlan({
+  const dealer = await resolveDealerBranding();
+  const compiled = compileJobPlan({
     profileShowroomUrl,
     settings: args.settings, datasheet, overrides,
     analysis: Array.isArray(prep?.analysis) ? (prep!.analysis as never) : [],
     manufacturerLogoUrl: datasheet.brand ? args.getLogoForMake?.(datasheet.brand) || null : null,
     getCost: args.getCost, runOptions: args.runOptions,
   });
+  const plan = { ...compiled, dealer };
   const { data, error } = await supabase.functions.invoke('auto3-processing-job', { body: { action: 'start', vehicleId: args.vehicleId, plan } });
   if (error || data?.error) throw new Error(data?.error || 'Start fehlgeschlagen');
   return { ...data, total: planTotal(plan) } as { status: string; pause_reason?: string; total: number };
@@ -78,4 +80,33 @@ export async function retryAuto3Job(vehicleId: string) {
   const { data, error } = await supabase.functions.invoke('auto3-processing-job', { body: { action: 'retry', vehicleId } });
   if (error || data?.error) throw new Error(data?.error || 'Fortsetzen fehlgeschlagen');
   return data;
+}
+
+/**
+ * Dealer name + raster logo for banners. Image models cannot read SVG, so the profile
+ * logo is rasterised once in the browser and stored as PNG next to the dealer's files.
+ */
+async function resolveDealerBranding(): Promise<{ name: string | null; logoUrl: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { name: null, logoUrl: null };
+  const { data: prof } = await supabase.from('profiles').select('company_name, logo_url').eq('id', user.id).maybeSingle();
+  const name = (prof?.company_name || '').trim() || null;
+  const src = prof?.logo_url || null;
+  if (!src) return { name, logoUrl: null };
+  if (!/\.svg(\?|$)/i.test(src)) return { name, logoUrl: src };
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('logo')); img.src = src; });
+    const w0 = img.naturalWidth || 600, h0 = img.naturalHeight || 200;
+    const scale = 1200 / Math.max(w0, h0);
+    const c = document.createElement('canvas');
+    c.width = Math.round(w0 * scale); c.height = Math.round(h0 * scale);
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'));
+    const path = `${user.id}/dealer-branding/logo.png`;
+    const { error } = await supabase.storage.from('vehicle-images').upload(path, blob, { contentType: 'image/png', upsert: true });
+    if (error) return { name, logoUrl: null };
+    return { name, logoUrl: `${supabase.storage.from('vehicle-images').getPublicUrl(path).data.publicUrl}?v=${Date.now()}` };
+  } catch { return { name, logoUrl: null }; }
 }

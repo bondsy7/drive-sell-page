@@ -99,6 +99,15 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
       ? prev.filter((p) => p.assetId !== assetId).map((p, i) => ({ ...p, sortOrder: i }))
       : [...prev, { assetId, url, sortOrder: prev.length }]);
   };
+  // AI galleries without a selection would silently fall back to nothing – preselect all AI images.
+  const chooseGallery = (mode: GalleryMode) => {
+    setGalleryMode(mode);
+    if (items.length === 0 && aiAssets.length > 0) {
+      setItems(aiAssets.map((a, i) => ({ assetId: a.id, url: a.url, sortOrder: i })));
+      if (!coverId) { setCoverId(aiAssets[0].id); }
+      toast.info(`${aiAssets.length} AI-Bilder ausgewählt – Klick auf ein Bild entfernt es wieder.`);
+    }
+  };
   const move = (idx: number, dir: -1 | 1) => setItems((prev) => {
     const arr = [...prev].sort((a, b) => a.sortOrder - b.sortOrder);
     const j = idx + dir;
@@ -217,8 +226,8 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
           <h4 className="font-medium text-sm mb-2">Galerie</h4>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant={galleryMode === 'auto3' ? 'default' : 'outline'} onClick={() => setGalleryMode('auto3')}>Auto3 unverändert</Button>
-            <Button size="sm" variant={galleryMode === 'append' ? 'default' : 'outline'} onClick={() => setGalleryMode('append')}>AI + Auto3</Button>
-            <Button size="sm" variant={galleryMode === 'replace' ? 'default' : 'outline'} onClick={() => setGalleryMode('replace')}>Nur AI</Button>
+            <Button size="sm" variant={galleryMode === 'append' ? 'default' : 'outline'} onClick={() => chooseGallery('append')}>AI + Auto3</Button>
+            <Button size="sm" variant={galleryMode === 'replace' ? 'default' : 'outline'} onClick={() => chooseGallery('replace')}>Nur AI</Button>
           </div>
         </div>
 
@@ -273,7 +282,7 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
           </div>
           <div className="grid grid-cols-4 gap-1.5 content-start">
             {previewGallery.slice(0, 12).map((u, i) => <img key={`${u}-${i}`} src={u} alt="" className="aspect-[4/3] w-full object-cover rounded" />)}
-            {previewGallery.length === 0 && <p className="col-span-4 text-xs text-muted-foreground">Galerie aus Auto3 (unverändert).</p>}
+            {previewGallery.length === 0 && <p className="col-span-4 text-xs text-muted-foreground">{galleryMode === 'auto3' ? 'Galerie aus Auto3 (unverändert).' : 'Noch keine AI-Bilder ausgewählt – bitte oben Bilder anklicken.'}</p>}
           </div>
         </div>
       </section>

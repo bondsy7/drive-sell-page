@@ -193,7 +193,7 @@ serve(async (req) => {
 
   try {
     currentStage = "parse_body";
-    const { prompt, imageBase64, logoBase64, modelTier, width, height, vehicleFileRef, logoFileRef } = await req.json();
+    const { prompt, imageBase64, logoBase64, modelTier, width, height, vehicleFileRef, logoFileRef, dealerName, dealerLogoBase64 } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
@@ -222,7 +222,7 @@ serve(async (req) => {
 
     let resultImage: string | null = null;
     const maxRetries = 0;
-    const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
+    const lockedPrompt = `${prompt}${dealerBlock(dealerName, !!dealerLogoBase64)}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
       currentStage = "gemini_call";
@@ -234,7 +234,7 @@ serve(async (req) => {
       for (const geminiModel of geminiModels) {
         try {
           usedModel = geminiModel;
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log, vehicleFileRef, logoFileRef);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log, vehicleFileRef, logoFileRef, dealerLogoBase64 || null);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -245,7 +245,7 @@ serve(async (req) => {
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
       currentStage = "openai_call";
-      resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
+      resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries, dealerLogoBase64 || null);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
@@ -327,7 +327,7 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
 }
 
 interface FileRef { fileUri: string; mimeType: string }
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger, vehicleFileRef?: FileRef | null, logoFileRef?: FileRef | null): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger, vehicleFileRef?: FileRef | null, logoFileRef?: FileRef | null, dealerLogoBase64: string | null = null): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
   log?.info("gemini.prep", "preparing request", { model });
@@ -422,6 +422,14 @@ The logo image follows now:` });
     }
   }
 
+  if (dealerLogoBase64) {
+    const dealerInline = await toInlineData(dealerLogoBase64, "image/png");
+    if (dealerInline) {
+      parts.push({ text: "DEALER LOGO (seller, NOT the manufacturer): reproduce this provided dealer logo 1:1 in the dealer footer zone described in the prompt. Do not redraw, recolor or merge it with the manufacturer logo. The dealer logo image follows now:" });
+      parts.push({ inlineData: dealerInline });
+    }
+  }
+
   // D) Activate native aspectRatio control on gemini-3* preview models via imageConfig.
   // The vehicle reference itself stays raw to avoid picture-in-picture artifacts.
   const canUseNativeAspectField = GEMINI_SUPPORTED_RATIOS.some(r => r.label === aspectLabel);
@@ -499,7 +507,7 @@ The logo image follows now:` });
   return null;
 }
 
-async function generateOpenAI(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
+async function generateOpenAI(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number, dealerLogoBase64: string | null = null): Promise<string | null> {
   const apiKey = await getSecret("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
@@ -536,6 +544,15 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
           logoPromptAddition = "\n\nLOGO LOCK (MANDATORY): A second image is provided — this is the OFFICIAL CURRENT manufacturer logo. Reproduce it 1:1 pixel-faithfully (same shape, proportions, colors, flat modern design). DO NOT use any logo from memory/training data — those are OUTDATED. FORBIDDEN: old/historical/legacy/vintage/chrome/3D/gradient versions (no old chrome VW logo, no old 3D BMW roundel, no old gradient Mercedes star, no old chrome Audi rings, no pre-2019 brand marks). Place prominently (corner or near headline), no rotation, no distortion, no extra effects.";
         }
         
+        const dealerInline = await toInlineData(dealerLogoBase64, "image/png");
+        if (dealerInline) {
+          const ds = atob(dealerInline.data);
+          const db = new Uint8Array(ds.length);
+          for (let j = 0; j < ds.length; j++) db[j] = ds.charCodeAt(j);
+          form.append("image", new Blob([db], { type: dealerInline.mimeType }), "dealer-logo.png");
+          logoPromptAddition += "\n\nDEALER LOGO: The LAST provided image is the dealer's (seller's) logo, not the manufacturer logo. Reproduce it 1:1 in the dealer footer zone; never redraw, recolor or merge it.";
+        }
+
         form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and all reflections to match the NEW scene only.${logoPromptAddition}`);
         form.append("n", "1");
         form.append("size", size);
@@ -591,4 +608,11 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
     }
   }
   return null;
+}
+
+/** Dealer identity: viewers must see where the vehicle can be bought. */
+function dealerBlock(name: unknown, hasLogo: boolean): string {
+  const n = typeof name === "string" ? name.trim().slice(0, 80) : "";
+  if (!n && !hasLogo) return "";
+  return `\n\nDEALER FOOTER (MANDATORY): Add a clean, legible dealer identification so viewers know where to buy the vehicle.${hasLogo ? " Use the provided DEALER LOGO image exactly as supplied." : ""}${n ? ` Show the dealer name exactly as "${n}" (spelling, capitalisation and characters unchanged).` : ""} Place it in the lower area of the canvas (e.g. bottom left, opposite the manufacturer logo), well inside the safe area, never covering the vehicle, price, headline or the mandatory consumption/CO₂ text. The manufacturer logo, if present, stays separate. Do not invent addresses, phone numbers or URLs.`;
 }
