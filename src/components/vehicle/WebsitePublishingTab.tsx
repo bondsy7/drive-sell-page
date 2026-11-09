@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  AUTO3_SOURCE, DEFAULT_TARGET, buildAuto3JobDraft, buildSnapshot, importExternalVehicle, selectAuto3JobImages, isPublishableUrl, isRealVin, publicationStatusLabel, formatLiveStatus, hasUnpublishedChanges,
+  AUTO3_SOURCE, DEFAULT_TARGET, buildAuto3JobDraft, buildSnapshot, importExternalVehicle, selectAuto3JobImages, latestAuto3JobId, isPublishableUrl, isRealVin, publicationStatusLabel, formatLiveStatus, hasUnpublishedChanges,
   type CoverMode, type GalleryMode, type PublicationItem, type WebsitePublication,
 } from '@/lib/website-publishing';
 
@@ -65,15 +65,17 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
   const auto3Images = vehicle.external_images || [];
 
   // „Für Auto Schmitt vorbereiten“: prefill the draft once from a finished OneShot run. Nothing is saved or published.
-  const jobImages = useMemo(() => (prepareJobId ? selectAuto3JobImages(aiAssets, vehicle.id, prepareJobId) : []), [aiAssets, vehicle.id, prepareJobId]);
+  // Without an explicit ?prepare link, a vehicle that has never been drafted still gets the newest finished run preselected.
+  const effectiveJobId = prepareJobId || (!isLoading && !pub ? latestAuto3JobId(aiAssets, vehicle.id) : null);
+  const jobImages = useMemo(() => (effectiveJobId ? selectAuto3JobImages(aiAssets, vehicle.id, effectiveJobId) : []), [aiAssets, vehicle.id, effectiveJobId]);
   const [prefilled, setPrefilled] = useState(false);
   useEffect(() => {
-    if (prefilled || isLoading || !prepareJobId || jobImages.length === 0) return;
+    if (prefilled || isLoading || !effectiveJobId || jobImages.length === 0) return;
     const d = buildAuto3JobDraft(jobImages);
     setCoverMode(d.coverMode); setGalleryMode(d.galleryMode); setCoverId(d.coverId); setItems(d.items);
     setPrefilled(true);
     toast.info(`${jobImages.length} Fahrzeugbilder vorbelegt – noch nicht veröffentlicht. Bitte prüfen und dann „Änderungen veröffentlichen“.`);
-  }, [prefilled, isLoading, prepareJobId, jobImages]);
+  }, [prefilled, isLoading, effectiveJobId, jobImages]);
   const coverUrl = aiAssets.find((a) => a.id === coverId)?.url || items.find((i) => i.assetId === coverId)?.url || null;
 
   // Import form

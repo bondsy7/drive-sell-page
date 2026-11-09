@@ -192,11 +192,18 @@ const ONESHOT_ORDER = [
 /** Vehicle images from one Auto3 OneShot run (stored under auto3-jobs/<vehicle>/<job>/<slot>.png). */
 export function selectAuto3JobImages<T extends GalleryAssetLike>(assets: T[], vehicleId: string, jobId: string): T[] {
   const marker = `/auto3-jobs/${vehicleId}/${jobId}/`;
-  const slot = (u: string) => (u.split(marker)[1] || '').split(/[?#]/)[0].replace(/\.(png|jpe?g|webp)$/i, '');
+  const slot = (u: string) => ((u.split(marker)[1] || '').split(/[?#]/)[0].split('/').pop() || '').replace(/\.(png|jpe?g|webp)$/i, '');
   const rank = (u: string) => { const i = ONESHOT_ORDER.indexOf(slot(u)); return i < 0 ? ONESHOT_ORDER.length : i; };
   return assets
     .filter((a) => isPublishableUrl(a.url) && a.url.includes(marker) && /\.(png|jpe?g|webp)(\?|$)/i.test(a.url))
     .sort((a, b) => rank(a.url) - rank(b.url));
+}
+
+/** Newest Auto3 job id found in gallery URLs (assets are newest-first or carry created_at). */
+export function latestAuto3JobId(assets: GalleryAssetLike[], vehicleId: string): string | null {
+  const re = new RegExp(`/auto3-jobs/${vehicleId}/([0-9a-f-]{36})/`);
+  for (const a of assets) { const m = a.url.match(re); if (m) return m[1]; }
+  return null;
 }
 
 /** Default draft for a finished Auto3 OneShot run: AI cover + "Nur AI" gallery. Never publishes. */
