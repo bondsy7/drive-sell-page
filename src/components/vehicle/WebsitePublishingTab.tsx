@@ -76,7 +76,11 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
     setPrefilled(true);
     toast.info(`${jobImages.length} Fahrzeugbilder vorbelegt – noch nicht veröffentlicht. Bitte prüfen und dann „Änderungen veröffentlichen“.`);
   }, [prefilled, isLoading, effectiveJobId, jobImages]);
-  const coverUrl = aiAssets.find((a) => a.id === coverId)?.url || items.find((i) => i.assetId === coverId)?.url || null;
+  // AI cover without an explicit star falls back to the master image (then first selected / first AI image).
+  const masterAsset = aiAssets.find((a) => /\/master\.(png|jpe?g|webp)(\?|$)/i.test(a.url));
+  const defaultCoverId = masterAsset?.id || [...items].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.assetId || aiAssets[0]?.id || null;
+  const effectiveCoverId = coverId && (aiAssets.some((a) => a.id === coverId) || items.some((i) => i.assetId === coverId)) ? coverId : defaultCoverId;
+  const coverUrl = aiAssets.find((a) => a.id === effectiveCoverId)?.url || items.find((i) => i.assetId === effectiveCoverId)?.url || null;
 
   // Import form
   const [extId, setExtId] = useState(vehicle.external_vehicle_id || '');
@@ -127,7 +131,7 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
     const row: Record<string, unknown> = {
       user_id: user.id, vehicle_id: vehicle.id, target, source_system: AUTO3_SOURCE,
       external_vehicle_id: vehicle.external_vehicle_id, cover_mode: cm, gallery_mode: gm,
-      cover_asset_id: coverId, draft_items: items,
+      cover_asset_id: cm === 'ai' ? effectiveCoverId : coverId, draft_items: items,
     };
     const action = opts.status === 'disabled' ? 'disable' : opts.publish ? (cm === 'auto3' && gm === 'auto3' ? 'revert_auto3' : 'publish') : 'save_draft';
     row.last_action = action; row.last_action_at = new Date().toISOString(); row.last_error = null;
@@ -218,7 +222,7 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
           <h4 className="font-medium text-sm mb-2">Cover</h4>
           <div className="flex gap-2">
             <Button size="sm" variant={coverMode === 'auto3' ? 'default' : 'outline'} onClick={() => setCoverMode('auto3')}>Auto3-Titelbild</Button>
-            <Button size="sm" variant={coverMode === 'ai' ? 'default' : 'outline'} onClick={() => setCoverMode('ai')}>AI-Bild</Button>
+            <Button size="sm" variant={coverMode === 'ai' ? 'default' : 'outline'} onClick={() => { setCoverMode('ai'); if (!coverId && defaultCoverId) setCoverId(defaultCoverId); }}>AI-Bild</Button>
             {prepareJobId && jobImages.length > 0 && (
               <Button size="sm" variant="ghost" onClick={() => { setCoverMode('ai'); setGalleryMode('auto3'); }}>Nur Cover</Button>
             )}
@@ -241,7 +245,7 @@ export default function WebsitePublishingTab({ vehicle, prepareJobId }: { vehicl
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {aiAssets.map((a) => {
                 const selected = items.some((i) => i.assetId === a.id);
-                const isCover = coverId === a.id;
+                const isCover = coverMode === 'ai' && effectiveCoverId === a.id;
                 return (
                   <div key={a.id} className={`relative rounded-md overflow-hidden border-2 ${selected ? 'border-accent' : 'border-transparent'}`}>
                     <button type="button" onClick={() => toggle(a.id, a.url)} className="block w-full">

@@ -211,7 +211,7 @@ export function buildAuto3JobDraft(images: GalleryAssetLike[]) {
   return {
     coverMode: 'ai' as CoverMode,
     galleryMode: 'replace' as GalleryMode,
-    coverId: images[0]?.id ?? null,
+    coverId: (images.find((a) => /\/master\.(png|jpe?g|webp)(\?|$)/i.test(a.url)) ?? images[0])?.id ?? null,
     items: images.map((a, i) => ({ assetId: a.id, url: a.url, sortOrder: i })) as PublicationItem[],
   };
 }
