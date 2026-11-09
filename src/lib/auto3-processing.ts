@@ -1,3 +1,4 @@
+import { showroomUrlForScene } from './regeneration-context';
 // Auto3 → OneShot background processing: dealer profile, datasheet mapping and plan compilation.
 // The plan is compiled from the SAME prompt builders the manual OneShot/Pipeline flows use and is
 // executed server-side by the auto3-processing-job orchestrator.
@@ -174,6 +175,8 @@ export interface CompiledPlan {
   vehicleDescription: string;
   modelTier: string;
   manufacturerLogoUrl: string | null;
+  /** Target scene reference image (relative app path or absolute URL); sent with hero + exterior steps. */
+  showroomUrl?: string | null;
   galleryFolder: string;
   hero: { prompt: string; cost: number };
   perspectives: { key: string; label: string; prompt: string; cost: number; interior: boolean; referenceFile: string | null }[];
@@ -189,6 +192,8 @@ export function compileJobPlan(args: {
   analysis: MasterCandidate[];
   overrides: Record<string, string>;
   manufacturerLogoUrl?: string | null;
+  /** Dealer's own showroom image, used when scene is 'custom-showroom'. */
+  profileShowroomUrl?: string | null;
   getCost?: (action: string, tier: string) => number;
   /** Per-run choice: only the title image, and/or a seasonal theme on top of the scene. */
   runOptions?: RunOptions;
@@ -241,6 +246,7 @@ export function compileJobPlan(args: {
 
   return {
     vehicleDescription, modelTier: s.modelTier, manufacturerLogoUrl: logoUrl,
+    showroomUrl: showroomUrlForScene(s.scene, args.profileShowroomUrl ?? null),
     galleryFolder: `OneShot Auto3 – ${vehicleLabel || 'Fahrzeug'}`,
     hero: { prompt: heroPrompt, cost: cost.perImage },
     perspectives, banners,

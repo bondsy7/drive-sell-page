@@ -91,6 +91,8 @@ async function originalDataUrl(sb: SupabaseClient, job: Job, file: string) {
   return toDataUrl(data);
 }
 
+const APP_ORIGIN = "https://app.autohaus.ai";
+
 async function urlDataUrl(url: string) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Bild nicht ladbar (${r.status})`);
@@ -218,7 +220,14 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
   };
 
   const masterUrl = await originalDataUrl(sb, job, job.master_file);
-  const vehicleCtx = { vehicleDescription: plan.vehicleDescription, modelTier: plan.modelTier, manufacturerLogoUrl: plan.manufacturerLogoUrl || null };
+  // Target scene image: the manual OneShot sends it with every remaster call; without it the
+  // model only gets scene text and drifts into a generic white showroom.
+  let showroomB64: string | null = null;
+  if (plan.showroomUrl && (next.kind === "hero" || (next.kind === "perspective" && !next.item.interior))) {
+    const abs = /^https?:/.test(plan.showroomUrl) ? plan.showroomUrl : `${APP_ORIGIN}${plan.showroomUrl}`;
+    try { showroomB64 = await urlDataUrl(abs); } catch (e) { console.error(`[auto3-processing-job] showroom ref failed ${abs}`, e); }
+  }
+  const vehicleCtx = { vehicleDescription: plan.vehicleDescription, modelTier: plan.modelTier, manufacturerLogoUrl: plan.manufacturerLogoUrl || null, ...(showroomB64 ? { customShowroomBase64: showroomB64 } : {}) };
 
   if (next.kind === "hero") {
     await update(sb, job.id, { status: "oneshot_processing", progress_label: "OneShot-Masterbild wird erstellt", started_at: job.started_at || new Date().toISOString() });
