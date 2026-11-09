@@ -31,6 +31,8 @@ interface PlanItem { key: string; label: string; prompt: string; cost: number; i
 interface BannerItem { formatId: string; label: string; w: number; h: number; prompt: string; cost: number }
 interface Plan {
   vehicleDescription: string; modelTier: string; manufacturerLogoUrl?: string | null;
+  showroomUrl?: string | null; galleryFolder?: string;
+  dealer?: { name?: string | null; logoUrl?: string | null } | null;
   hero: { prompt: string; cost: number };
   perspectives: PlanItem[];
   banners: BannerItem[];
@@ -105,7 +107,9 @@ function b64ToBytes(b64: string) {
 }
 
 async function saveGalleryImage(sb: SupabaseClient, job: Job, b64: string, name: string, perspective: string, sort: number) {
-  const path = `${job.user_id}/auto3-jobs/${job.vehicle_id}/${job.id}/${name}.png`;
+  // Run segment: a restarted job must never overwrite (and thereby silently replace) an earlier run.
+  const runSeg = job.steps?.runId ? `${job.id}/${job.steps.runId}` : job.id;
+  const path = `${job.user_id}/auto3-jobs/${job.vehicle_id}/${runSeg}/${name}.png`;
   const { error } = await sb.storage.from("vehicle-images").upload(path, b64ToBytes(b64), { contentType: "image/png", upsert: true });
   if (error) throw new Error(`Speichern fehlgeschlagen: ${error.message}`);
   const url = sb.storage.from("vehicle-images").getPublicUrl(path).data.publicUrl;
@@ -115,6 +119,7 @@ async function saveGalleryImage(sb: SupabaseClient, job: Job, b64: string, name:
     perspective, sort_order: sort, gallery_folder: folder,
   });
   if (insErr && insErr.code !== "23505") throw new Error(`Galerie-Eintrag fehlgeschlagen: ${insErr.message}`);
+  if (insErr) console.warn(`[auto3-processing-job] gallery row already existed job=${job.id} name=${name}`);
   const { data: v } = await sb.from("vehicles").select("cover_image_url").eq("id", job.vehicle_id).maybeSingle();
   if (v && !v.cover_image_url) await sb.from("vehicles").update({ cover_image_url: url }).eq("id", job.vehicle_id);
   return url;
@@ -166,6 +171,50 @@ function progressOf(job: Job, steps: any) {
   return { progress_done: done, progress_total: total };
 }
 
+// Scene reference resolved server-side from the approved profile, so a stale browser plan
+// (without showroomUrl) can never fall back to a generic white showroom.
+async function serverShowroomUrl(sb: SupabaseClient, userId: string, settings: any): Promise<string | null> {
+  const scene = typeof settings?.scene === "string" ? settings.scene : "";
+  if (scene === "custom-showroom") {
+    const { data } = await sb.from("profiles").select("custom_showroom_url").eq("id", userId).maybeSingle();
+    return (data as any)?.custom_showroom_url || null;
+  }
+  if (!/^showroom-\d+$/.test(scene)) return null;
+  const url = `${APP_ORIGIN}/images/showrooms/${scene}.jpg`;
+  try { const h = await fetch(url, { method: "HEAD" }); return h.ok && /image/.test(h.headers.get("content-type") || "") ? url : null; } catch { return null; }
+}
+
+async function dealerBranding(sb: SupabaseClient, userId: string, plan: Plan): Promise<{ name: string | null; logoB64: string | null }> {
+  let name = plan.dealer?.name || null;
+  let logo = plan.dealer?.logoUrl || null;
+  if (!name || !logo) {
+    const { data } = await sb.from("profiles").select("company_name, logo_url").eq("id", userId).maybeSingle();
+    name ||= (data?.company_name || "").trim() || null;
+    if (!logo && data?.logo_url && !/\.svg(\?|$)/i.test(data.logo_url)) logo = data.logo_url;
+  }
+  let logoB64: string | null = null;
+  if (logo) { try { logoB64 = await urlDataUrl(logo); } catch (e) { console.error("[auto3-processing-job] dealer logo failed", e); } }
+  return { name, logoB64 };
+}
+
+// Every finished image must have a gallery row (publishing reads the gallery).
+async function reconcileGallery(sb: SupabaseClient, job: Job, plan: Plan, steps: any) {
+  const folder = plan.galleryFolder || `OneShot Auto3 – ${plan.vehicleDescription || "Fahrzeug"}`;
+  const want: { url: string; perspective: string; sort: number }[] = [];
+  if (steps.hero?.url) want.push({ url: steps.hero.url, perspective: "OneShot: Master-Bild", sort: 0 });
+  plan.perspectives.forEach((p, i) => { const u = steps.perspectives?.[p.key]?.url; if (u) want.push({ url: u, perspective: `OneShot: ${p.label}`, sort: i + 1 }); });
+  if (!want.length) return;
+  const { data: have } = await sb.from("project_images").select("image_url").eq("vehicle_id", job.vehicle_id).in("image_url", want.map((w) => w.url));
+  const present = new Set((have || []).map((h: any) => h.image_url));
+  const missing = want.filter((w) => !present.has(w.url));
+  if (!missing.length) return;
+  console.warn(`[auto3-processing-job] reconcile job=${job.id} missing=${missing.length}`);
+  await sb.from("project_images").insert(missing.map((m) => ({
+    vehicle_id: job.vehicle_id, user_id: job.user_id, project_id: null, image_url: m.url, image_base64: "",
+    perspective: m.perspective, sort_order: m.sort, gallery_folder: folder,
+  })));
+}
+
 // ── One step per tick ──
 async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
   const nowIso = new Date().toISOString();
@@ -179,10 +228,12 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
   if (!(await hasModule(sb, job.user_id))) { await release({ status: "paused", pause_reason: "module", error: "Auto3-Modul ist für dieses Konto nicht mehr freigeschaltet." }); return { paused: true }; }
   const plan: Plan = job.plan;
   if (!plan) { await release({ status: "failed", error: "Kein Aufbereitungsplan vorhanden." }); return { failed: true }; }
-  const { data: profile } = await sb.from("vehicle_processing_profiles").select("approved_at, approved_max_credits_per_job").eq("user_id", job.user_id).maybeSingle();
+  const { data: profile } = await sb.from("vehicle_processing_profiles").select("approved_at, approved_max_credits_per_job, settings").eq("user_id", job.user_id).maybeSingle();
   const cap = profile?.approved_at ? (profile.approved_max_credits_per_job ?? 0) : 0;
   const steps = structuredClone(job.steps || {});
   steps.perspectives ||= {}; steps.banners ||= {};
+  steps.runId ||= Date.now().toString(36);
+  job.steps = steps;
 
   // Determine next step
   type Next = { kind: "hero" } | { kind: "perspective"; item: PlanItem } | { kind: "banner"; item: BannerItem } | { kind: "video" } | { kind: "done" };
@@ -197,6 +248,7 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
   }
 
   if (next.kind === "done") {
+    await reconcileGallery(sb, job, plan, steps);
     await release({ status: "ready_for_review", finished_at: new Date().toISOString(), progress_label: "Fertig – Ergebnisse prüfen", ...progressOf(job, steps), pause_reason: null, error: null });
     return { done: true };
   }
@@ -223,8 +275,9 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
   // Target scene image: the manual OneShot sends it with every remaster call; without it the
   // model only gets scene text and drifts into a generic white showroom.
   let showroomB64: string | null = null;
-  if (plan.showroomUrl && (next.kind === "hero" || (next.kind === "perspective" && !next.item.interior))) {
-    const abs = /^https?:/.test(plan.showroomUrl) ? plan.showroomUrl : `${APP_ORIGIN}${plan.showroomUrl}`;
+  const showroomUrl = plan.showroomUrl || await serverShowroomUrl(sb, job.user_id, profile?.settings);
+  if (showroomUrl && (next.kind === "hero" || (next.kind === "perspective" && !next.item.interior))) {
+    const abs = /^https?:/.test(showroomUrl) ? showroomUrl : `${APP_ORIGIN}${showroomUrl}`;
     try { showroomB64 = await urlDataUrl(abs); } catch (e) { console.error(`[auto3-processing-job] showroom ref failed ${abs}`, e); }
   }
   const vehicleCtx = { vehicleDescription: plan.vehicleDescription, modelTier: plan.modelTier, manufacturerLogoUrl: plan.manufacturerLogoUrl || null, ...(showroomB64 ? { customShowroomBase64: showroomB64 } : {}) };
@@ -265,7 +318,8 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
     const item = next.item;
     await update(sb, job.id, { status: "generating_banner", progress_label: `Banner: ${item.label}` });
     const heroUrl = await urlDataUrl(steps.hero.url);
-    const r = await callGenerator("generate-banner", { prompt: item.prompt, imageBase64: heroUrl, modelTier: plan.modelTier === "flare" ? "neu" : plan.modelTier, width: item.w, height: item.h }, job.user_id);
+    const dealer = await dealerBranding(sb, job.user_id, plan);
+    const r = await callGenerator("generate-banner", { prompt: item.prompt, imageBase64: heroUrl, dealerName: dealer.name, dealerLogoBase64: dealer.logoB64, modelTier: plan.modelTier === "flare" ? "neu" : plan.modelTier, width: item.w, height: item.h }, job.user_id);
     if (r.status !== 200 || !r.data?.imageBase64) return void (await fail(r.status === 200 ? 502 : r.status, r.data?.error || "Banner fehlgeschlagen"));
     const path = `${job.user_id}/${job.vehicle_id}/${Date.now()}-oneshot-${item.formatId}.png`;
     const { error } = await sb.storage.from("banners").upload(path, b64ToBytes(r.data.imageBase64), { contentType: "image/png" });
