@@ -15,6 +15,7 @@ import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
 import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
 import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
+import { contactBodyClass, plainContactContent } from '@/lib/landing-contact-plain';
 import { LANDING_IMAGE_FRAME_CSS, frameImageCss, frameOuterCss, normalizeImageFrame, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import { buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
@@ -150,6 +151,8 @@ function renderSection(
   const bodyColor = theme.body;
   const headlineColor = normalizeSectionColor(textColors[`${s.id}.headline`]);
   const contentColor = normalizeSectionColor(textColors[`${s.id}.content`]);
+  const bodyContent = plainContactContent(s.headline, s.content);
+  const bodyClass = contactBodyClass(s.headline);
 
   if (s.type === 'cta') {
     const phoneBg = normalizeSectionColor(buttonColors[`${s.id}.phone`]);
@@ -157,7 +160,7 @@ function renderSection(
     return `<section style="background:${theme.custom ? bg : `linear-gradient(135deg,${primary},#0b1220)`};color:${theme.custom ? textColor : '#fff'};padding:88px 0;text-align:center">
   <div class="lp-content-width">
     ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:${headlineColor || (theme.custom ? textColor : '#fff')}">${escapeHtml(s.headline)}</h2>`}
-    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px${contentColor ? `;color:${contentColor}` : ''}">${s.content || ''}</div>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:17px;opacity:0.9;margin-bottom:32px${contentColor ? `;color:${contentColor}` : ''}">${bodyContent}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
       ${phone && !removed('phone') ? `<a ${linkAttr('phone', `tel:${phone}`)} style="background:${phoneBg || secondary};color:${phoneBg ? readableOn(phoneBg) : onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
       ${whatsapp && !removed('whatsapp') ? `<a ${linkAttr('whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)} style="background:${waBg || '#25d366'};color:${waBg ? readableOn(waBg) : '#fff'};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
@@ -173,7 +176,7 @@ function renderSection(
     return `<section style="background:${bg}">
   <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${headlineColor || textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${s.content || ''}</div>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${bodyContent}</div>`}
   </div>
 </section>`;
   }
@@ -183,7 +186,7 @@ function renderSection(
   <div class="lp-content-width" style="padding:96px 32px">
     ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${headlineColor || textColor}">${escapeHtml(s.headline)}</h2>`}
     ${(() => { const h = stackHtml(16 / 9, 'aspect-ratio:16/9', false); return h ? `<div style="margin-bottom:28px">${h}</div>` : ''; })()}
-    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${s.content || ''}</div>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${bodyContent}</div>`}
   </div>
 </section>`;
   }
@@ -193,7 +196,7 @@ function renderSection(
   const imgHtml = `<div class="lp-split-media">${stackHtml(4 / 3, 'aspect-ratio:4/3', true)}</div>`;
   const textHtml = removed('headline') && removed('content') ? '' : `<div>
     ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${headlineColor || textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${removed('content') ? '' : `<div class="lp-body-html" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${s.content || ''}</div>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${bodyContent}</div>`}
   </div>`;
 
   return `<section style="background:${bg}">

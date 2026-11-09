@@ -351,6 +351,7 @@ HELPFUL CONTENT RICHTLINIEN:
 - Nutze Vergleiche und Praxisbeispiele
 - FAQ: Echte Fragen die Kunden stellen
 - Verwende <ul><li> für Aufzählungen und <h3> für Zwischenüberschriften
+- AUSNAHME Kontakt: Ein Abschnitt mit der Überschrift "Kontakt" enthält KEINE Listen (<ul>/<ol>/<li>) – nur reiner Fließtext in <p>-Absätzen
 - Content MUSS LANG und DETAILLIERT sein – mindestens 150 Wörter pro Section
 
 BILD-PROMPT REGELN (KRITISCH):
