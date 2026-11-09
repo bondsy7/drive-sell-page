@@ -15,6 +15,7 @@ import JacobsVehicleCard from '@/components/landing/JacobsVehicleCard';
 import FinanceFootnotes from '@/components/landing/FinanceFootnotes';
 import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
+import { contactBodyClass, plainContactContent } from '@/lib/landing-contact-plain';
 import { LANDING_IMAGE_FRAME_CSS, frameImageCss, frameOuterCss, normalizeImageFrame, type LandingImageFrame } from '@/lib/landing-image-frame';
 import { landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import { buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
