@@ -288,7 +288,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { brand, model, pageType, additionalInfo, dealer, variant, color, price, targetAudience, tone, imageStyle, uploadedImages, vehicleId } = body;
+    const { brand, model, pageType, additionalInfo, dealer, variant, color, price, targetAudience, tone, imageStyle, uploadedImages, vehicleId, imageLinks, imageFill } = body;
 
     if (!brand || !model || !pageType) {
       return new Response(JSON.stringify({ error: "brand, model und pageType sind erforderlich" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -302,7 +302,13 @@ serve(async (req) => {
     // Landingpage erzeugt 1× Content + 6-8× Bilder (Gemini Flash Image).
     // Real-EK ≈ $0.30 → 5 Credits = €1,125 @200er-Pack ≈ +€0,84 Marge.
     // Muss mit `cost` in src/components/ManualLandingGenerator.tsx übereinstimmen (Text + KI-Bilder inklusive).
-    const totalCost = 5;
+    // Preis: nur KI 5 · eigene Bilder + KI-Auffüllung 3 · nur eigene Bilder 1 (= src/lib/landing-generation-cost.ts).
+    const safeLinks: string[] = (Array.isArray(imageLinks) ? imageLinks : [])
+      .map((v: unknown) => { try { const u = new URL(String(v).trim()); return /^https?:$/.test(u.protocol) ? u.toString() : null; } catch { return null; } })
+      .filter((v: string | null): v is string => !!v).slice(0, 5);
+    const ownCount = safeLinks.length + (Array.isArray(uploadedImages) ? uploadedImages.length : 0);
+    const ownOnly = imageFill === "own_only" && ownCount > 0;
+    const totalCost = ownCount <= 0 ? 5 : ownOnly ? 1 : 3;
     const authResult = await authenticateAndDeductCredits(req, totalCost);
     if (authResult instanceof Response) return authResult;
 
@@ -315,7 +321,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     // Upload user images
-    const userImageUrls: string[] = [];
+    // Verlinkte Bilder zuerst; sie bleiben als Originallink erhalten.
+    const userImageUrls: string[] = [...safeLinks];
     if (uploadedImages && Array.isArray(uploadedImages)) {
       for (let i = 0; i < uploadedImages.length; i++) {
         const url = await uploadUserImage(supabase, uploadedImages[i], authResult.userId, i);
@@ -396,7 +403,7 @@ Antworte AUSSCHLIESSLICH als JSON:
 
 Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.
 Alterniere bgStyle für visuellen Rhythmus: white → light → dark → accent → white...
-${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUSST für JEDE visuelle Section einen imagePrompt generieren!` : ''}`;
+${!ownCount ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUSST für JEDE visuelle Section einen imagePrompt generieren!` : ''}`;
 
     const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}${variantInfo}${colorInfo}\n${additionalInfo ? `Zusätzliche Informationen / Highlights: ${additionalInfo}` : ""}`;
 
@@ -474,8 +481,8 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
     let userImgIdx = 0;
 
     if (userImageUrls.length > 0) {
-      // Skip hero for user images (hero should always be AI-generated for 3:1 ratio)
-      const nonHeroPrompts = imagePrompts.filter(p => !p.isHero);
+      // Mit KI-Auffüllung bleibt der Hero KI-generiert (3:1); bei "nur eigene Bilder" bekommt er das erste eigene Bild.
+      const nonHeroPrompts = ownOnly ? imagePrompts : imagePrompts.filter(p => !p.isHero);
       for (let i = 0; i < nonHeroPrompts.length && userImgIdx < userImageUrls.length; i++) {
         imageResults[nonHeroPrompts[i].key] = userImageUrls[userImgIdx];
         userImgIdx++;
@@ -483,7 +490,9 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
     }
 
     // Generate remaining images
-    const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
+    const remainingPrompts = ownOnly ? [] : imagePrompts.filter(p => !imageResults[p.key]);
+    const imageSources: Record<string, { kind: "upload" | "ai"; url: string }> = {};
+    for (const [k, u] of Object.entries(imageResults)) imageSources[k] = { kind: "upload", url: u };
     console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
 
     // Generate images in batches of 2 (to avoid rate limits)
@@ -507,6 +516,7 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
       for (const r of results) {
         if (r.status === "fulfilled" && r.value.url) {
           imageResults[r.value.key] = r.value.url;
+          imageSources[r.value.key] = { kind: "ai", url: r.value.url };
         }
       }
       // Small delay between batches to avoid rate limits
@@ -523,7 +533,7 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
     });
 
     return new Response(
-      JSON.stringify({ html, pageContent, imageMap: imageResults, brandLogoUrl, imageCount: Object.keys(imageResults).length }),
+      JSON.stringify({ html, pageContent, imageMap: imageResults, imageSources, ownImageUrls: userImageUrls, brandLogoUrl, imageCount: Object.keys(imageResults).length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
