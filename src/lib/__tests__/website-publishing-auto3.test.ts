@@ -24,3 +24,13 @@ describe('Auto3 OneShot → Website draft', () => {
     expect(() => buildSnapshot({ coverMode: 'ai', galleryMode: 'replace', coverUrl: assets[4].url, items: [] })).toThrow();
   });
 });
+
+import { selectAuto3JobImages as _sel } from '../website-publishing';
+describe('Auto3 job images with run segment', () => {
+  it('sorts master first even when URLs contain a run folder', () => {
+    const v = 'bb68bac9-9485-498b-a210-2167f3c2b518', j = '0b34c16f-915c-4ef5-8fdc-dd0cb54d94c7';
+    const u = (s: string) => `https://x.supabase.co/storage/v1/object/public/vehicle-images/u/auto3-jobs/${v}/${j}/mw9f0yij/${s}.png`;
+    const out = _sel([{ id: 'b', url: u('ext_rear') }, { id: 'a', url: u('master') }] as never, v, j);
+    expect(out[0].id).toBe('a');
+  });
+});
