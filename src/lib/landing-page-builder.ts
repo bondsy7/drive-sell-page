@@ -151,8 +151,8 @@ function renderSection(
   const bodyColor = theme.body;
   const headlineColor = normalizeSectionColor(textColors[`${s.id}.headline`]);
   const contentColor = normalizeSectionColor(textColors[`${s.id}.content`]);
-  const bodyContent = plainContactContent(s.headline, s.content);
-  const bodyClass = contactBodyClass(s.headline);
+  const bodyContent = plainContactContent(s.headline, s.content, s.type, s.id);
+  const bodyClass = contactBodyClass(s.headline, s.type, s.id);
 
   if (s.type === 'cta') {
     const phoneBg = normalizeSectionColor(buttonColors[`${s.id}.phone`]);
