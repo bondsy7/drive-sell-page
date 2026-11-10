@@ -6,9 +6,10 @@ interface Props {
   brand: string;
   onBrandChange: (brand: string) => void;
   placeholder?: string;
+  className?: string;
 }
 
-const VehicleBrandPicker: React.FC<Props> = ({ brand, onBrandChange, placeholder = 'Marke wählen...' }) => {
+const VehicleBrandPicker: React.FC<Props> = ({ brand, onBrandChange, placeholder = 'Marke wählen...', className }) => {
   const { loading, getLogoForMake, filterMakes } = useVehicleMakes();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -37,7 +38,7 @@ const VehicleBrandPicker: React.FC<Props> = ({ brand, onBrandChange, placeholder
   return (
     <div ref={ref} className="relative">
       <div
-        className="flex items-center gap-2 h-9 w-full rounded-md border border-input bg-background px-3 cursor-pointer hover:border-accent transition-colors"
+        className={cn("flex items-center gap-2 h-9 w-full rounded-md border border-input bg-background px-3 cursor-pointer hover:border-accent transition-colors", className)}
         onClick={() => { setOpen(true); setQuery(''); }}
       >
         {logoUrl ? (
