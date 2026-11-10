@@ -5,30 +5,56 @@
  */
 import { isContactSection } from '@/lib/landing-contact-plain';
 
-export interface BrandContact { id: string; brand: string; name: string; email: string; phone: string }
+export interface BrandContact { id: string; brand: string; brands: string[]; name: string; email: string; phone: string }
 
 export function normalizeBrand(b: string | null | undefined): string {
   return (b || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+/** Markenliste eines Kontakts: neue Mehrfachauswahl, sonst einzelner Markenwert. */
+export function normalizeBrandList(brands: unknown, legacyBrand?: unknown): string[] {
+  const raw = Array.isArray(brands)
+    ? brands.map(b => String(b || ''))
+    : String(legacyBrand || '').split(',');
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const value = item.trim().slice(0, 60);
+    const key = normalizeBrand(value);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+}
+
 export function readBrandContacts(ciSettings: unknown): BrandContact[] {
   const list = (ciSettings as any)?.brandContacts;
   if (!Array.isArray(list)) return [];
-  return list.filter(c => c && typeof c === 'object').map((c: any) => ({
-    id: String(c.id || crypto.randomUUID()), brand: String(c.brand || ''), name: String(c.name || ''),
-    email: String(c.email || ''), phone: String(c.phone || ''),
-  }));
+  return list.filter(c => c && typeof c === 'object').map((c: any) => {
+    const brands = normalizeBrandList(c.brands, c.brand);
+    return {
+      id: String(c.id || crypto.randomUUID()), brand: brands.join(', ') || String(c.brand || ''), brands,
+      name: String(c.name || ''), email: String(c.email || ''), phone: String(c.phone || ''),
+    };
+  });
 }
 
 export function contactsForBrand(contacts: BrandContact[], brand: string): BrandContact[] {
   const key = normalizeBrand(brand);
   if (!key) return [];
-  return contacts.filter(c => normalizeBrand(c.brand) === key && (c.name.trim() || c.email.trim() || c.phone.trim()));
+  return contacts.filter(c =>
+    (c.brands?.length ? c.brands.some(b => normalizeBrand(b) === key) : normalizeBrand(c.brand) === key)
+    && (c.name.trim() || c.email.trim() || c.phone.trim()));
 }
 
 export function contactBrands(contacts: BrandContact[]): string[] {
   const seen = new Map<string, string>();
-  for (const c of contacts) { const k = normalizeBrand(c.brand); if (k && !seen.has(k)) seen.set(k, c.brand.trim()); }
+  for (const c of contacts) {
+    for (const b of (c.brands?.length ? c.brands : [c.brand])) {
+      const k = normalizeBrand(b); if (k && !seen.has(k)) seen.set(k, b.trim());
+    }
+  }
   return [...seen.values()];
 }
 
