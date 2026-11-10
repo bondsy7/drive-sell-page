@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, ChevronRight, Car } from 'lucide-react';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { cn } from '@/lib/utils';
 
 interface Props {
   brand: string;
