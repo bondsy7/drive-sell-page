@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import VehicleBrandPicker from '@/components/VehicleBrandPicker';
 import { BrandContact, readBrandContacts } from '@/lib/brand-contacts';
 
 export default function BrandContactsSection() {
@@ -47,7 +48,7 @@ export default function BrandContactsSection() {
       {contacts.length === 0 && <p className="text-sm text-muted-foreground">Noch keine Ansprechpartner hinterlegt.</p>}
       {contacts.map(c => (
         <div key={c.id} className="grid sm:grid-cols-[1fr_1.2fr_1.4fr_1.2fr_auto] gap-3 items-end rounded-lg border border-border p-3">
-          <div className="space-y-1.5"><Label>Marke</Label><Input value={c.brand} onChange={e => patch(c.id, 'brand', e.target.value)} placeholder="z. B. KIA" /></div>
+          <div className="space-y-1.5"><Label>Marke</Label><VehicleBrandPicker brand={c.brand} onBrandChange={b => patch(c.id, 'brand', b)} placeholder="Marke wählen..." className="h-10" /></div>
           <div className="space-y-1.5"><Label>Name</Label><Input value={c.name} onChange={e => patch(c.id, 'name', e.target.value)} placeholder="Max Mustermann" /></div>
           <div className="space-y-1.5"><Label>E-Mail</Label><Input type="email" value={c.email} onChange={e => patch(c.id, 'email', e.target.value)} placeholder="max@autohaus.de" /></div>
           <div className="space-y-1.5"><Label>Telefon</Label><Input value={c.phone} onChange={e => patch(c.id, 'phone', e.target.value)} placeholder="+49 …" /></div>
