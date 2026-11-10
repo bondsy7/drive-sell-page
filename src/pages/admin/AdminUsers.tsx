@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown, Trash2, XCircle, Settings2, QrCode } from 'lucide-react';
+import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown, Trash2, XCircle, Settings2, QrCode, KeyRound } from 'lucide-react';
 import UserModuleDialog from '@/components/admin/UserModuleDialog';
+import SetPasswordDialog from '@/components/admin/SetPasswordDialog';
 import AccountApprovalRequests from '@/components/admin/AccountApprovalRequests';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -69,6 +70,7 @@ export default function AdminUsers() {
   const [adjusting, setAdjusting] = useState<string | null>(null);
   const [adjustAmount, setAdjustAmount] = useState('');
   const [moduleDialogUser, setModuleDialogUser] = useState<{ id: string; email: string } | null>(null);
+  const [passwordUser, setPasswordUser] = useState<{ id: string; email: string } | null>(null);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -403,6 +405,10 @@ export default function AdminUsers() {
                         <QrCode className="w-3.5 h-3.5" />
                       </Button>
 
+                      <Button size="sm" variant="outline" className="h-7 px-1.5" title="Neues Passwort setzen" onClick={() => setPasswordUser({ id: u.id, email: u.email || '' })}>
+                        <KeyRound className="w-3.5 h-3.5" />
+                      </Button>
+
                       <Button size="sm" variant="outline" className="h-7 px-1.5" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
                         <Settings2 className="w-3.5 h-3.5" />
                       </Button>
@@ -435,6 +441,15 @@ export default function AdminUsers() {
         </table>
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Keine Nutzer gefunden</p>}
       </div>
+
+      {passwordUser && (
+        <SetPasswordDialog
+          userId={passwordUser.id}
+          userEmail={passwordUser.email}
+          open={!!passwordUser}
+          onOpenChange={(open) => { if (!open) setPasswordUser(null); }}
+        />
+      )}
 
       {moduleDialogUser && (
         <UserModuleDialog
