@@ -1,3 +1,4 @@
+import { readBrandContacts, contactsForBrand, contactBrands, injectBrandContacts } from '@/lib/brand-contacts';
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { buildLandingPageHTML } from '@/lib/landing-page-builder';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
@@ -88,6 +90,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   
   // Step 1: Vehicle & Offer
   const [brand, setBrand] = useState('');
+  const [contactBrand, setContactBrand] = useState('__auto');
   const [model, setModel] = useState('');
   const [variant, setVariant] = useState('');
   const [color, setColor] = useState('');
@@ -374,6 +377,9 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         setProgress('Seite wird gespeichert...');
         setProgressPercent(90);
 
+        const brandContacts = readBrandContacts(dealerProfile?.ci_settings);
+        const chosenContacts = contactBrand === '__none' ? [] : contactsForBrand(brandContacts, contactBrand === '__auto' ? brand : contactBrand);
+        if (chosenContacts.length) data.pageContent = injectBrandContacts(data.pageContent, chosenContacts);
         const { data: project, error: saveError } = await supabase.from('projects').insert({
           user_id: user.id,
           vehicle_id: effectiveVehicleId,
@@ -741,6 +747,25 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       </div>
 
       {/* Step 3: Live-Fahrzeuge */}
+      {(() => {
+        const all = readBrandContacts(dealerProfile?.ci_settings);
+        const brands = contactBrands(all);
+        const auto = contactsForBrand(all, brand);
+        return (
+          <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+            <Label>Ansprechpartner im Kontakt-Abschnitt</Label>
+            <Select value={contactBrand} onValueChange={setContactBrand} disabled={loading}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__auto">Automatisch nach Marke{brand ? ` (${brand}: ${auto.length})` : ''}</SelectItem>
+                <SelectItem value="__none">Keine Ansprechpartner</SelectItem>
+                {brands.map(b => <SelectItem key={b} value={b}>{b} ({contactsForBrand(all, b).length})</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{brands.length ? 'Die Ansprechpartner der gewählten Marke werden unten im Kontakt-Abschnitt eingesetzt.' : 'Noch keine Ansprechpartner hinterlegt – im Profil unter „Kontakt" → „Ansprechpartner" anlegen.'}</p>
+          </div>
+        );
+      })()}
       <LiveVehiclesBlock value={liveInventory} onChange={setLiveInventory} disabled={loading} suggestedBrand={brand} />
 
       {/* Generate Button */}

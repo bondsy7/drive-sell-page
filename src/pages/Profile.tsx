@@ -14,6 +14,7 @@ import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, Fi
 import AppHeader from '@/components/AppHeader';
 import SocialCredentialsSection from '@/components/profile/SocialCredentialsSection';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
+import BrandContactsSection from '@/components/profile/BrandContactsSection';
 import Auto3ConnectionCard from '@/components/profile/Auto3ConnectionCard';
 import { toast } from 'sonner';
 
@@ -482,6 +483,10 @@ const Profile = () => {
                   <Input value={profile.website} onChange={e => update('website', e.target.value)} placeholder="https://www.autohaus-mustermann.de" />
                 </div>
               </div>
+            </Section>
+
+            <Section icon={<Phone className="w-4 h-4" />} title="Ansprechpartner">
+              <BrandContactsSection />
             </Section>
 
             <Section icon={<Share2 className="w-4 h-4" />} title="Social Media">
