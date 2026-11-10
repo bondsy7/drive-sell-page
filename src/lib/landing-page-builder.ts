@@ -296,7 +296,7 @@ export function buildLandingPageHTML(
   const headerBg = normalizeSectionColor(content.sectionColors?.header);
   const headerLogoLink = (id: string, html: string) => {
     const { href, external } = resolveButtonLink(content.buttonLinks?.[id], '');
-    return href ? `<a href="${escapeAttr(href)}"${external ? ' target="_blank" rel="noopener"' : ''} style="display:inline-flex">${html}</a>` : html;
+    return href ? `<a href="${escapeHtml(href)}"${external ? ' target="_blank" rel="noopener"' : ''} style="display:inline-flex">${html}</a>` : html;
   };
   const headerHeight = normalizeSectionHeight(content.sectionHeights?.header);
 
