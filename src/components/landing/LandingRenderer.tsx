@@ -284,6 +284,15 @@ const LandingRenderer: React.FC<RendererProps> = ({
     const { href, external } = resolveButtonLink(content.buttonLinks?.[id], fallback);
     return external ? { href, target: '_blank', rel: 'noopener' } : { href };
   };
+  const linkControlTitled = (id: string, fallbackLabel: string, heading: string) => editable && onButtonLinkChange
+    ? <ButtonLinkButton value={content.buttonLinks?.[id]} fallbackLabel={fallbackLabel} heading={heading} onChange={link => onButtonLinkChange(id, link)} />
+    : null;
+  const logoLink = (id: string, node: React.ReactNode) => {
+    const { href, external } = resolveButtonLink(content.buttonLinks?.[id], '');
+    if (!href) return node;
+    return <a href={href} {...(external ? { target: '_blank', rel: 'noopener' } : {})} onClick={editable ? e => e.preventDefault() : undefined} style={{ display: 'inline-flex' }}>{node}</a>;
+  };
+  const headerBackground = normalizeSectionColor(content.sectionColors?.header);
   const buttonColor = (id: string, fallback: string) => buttonColorOverride(content.buttonColors?.[id], fallback);
 
 
@@ -398,13 +407,14 @@ const LandingRenderer: React.FC<RendererProps> = ({
       `}</style>
 
       {/* Sticky header */}
-      <LandingElementBox editable={editable} hidden={removed('header')} controlOn="#ffffff" onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen" colorControl={buttonControl('header')}>
+      <LandingElementBox editable={editable} hidden={removed('header')} controlOn="#ffffff" onDelete={() => onDeleteElement?.('header')} label="Kopfzeile löschen" colorControl={editable ? <>{colorControl('header')}{phone && onButtonColorChange && <ButtonColorButton value={content.buttonColors?.header} colors={profileColors} onChange={color => onButtonColorChange('header', color)} label="Farbe „Jetzt anfragen“-Button" />}</> : undefined}>
       <LandingHeaderResize editable={editable} surface="#ffffff"
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          background: 'rgba(255,255,255,0.92)',
+          background: headerBackground || 'rgba(255,255,255,0.92)',
+          color: headerBackground ? readableOn(headerBackground) : undefined,
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--lp-border)',
           padding: '14px 0',
@@ -416,8 +426,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
       >
         <div className="lp-content-width lp-header-inner">
         <div className="lp-header-logos">
-          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline menuSide="right" onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen" colorControl={<LogoSizeControl id="header.brand" alt="Herstellerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} /></LandingElementBox>}
-          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline menuSide="right" onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen" colorControl={<LogoSizeControl id="header.dealer" alt="Händlerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />}><LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} /></LandingElementBox>}
+          {brandLogoUrl && !removed('header.brand') && <LandingElementBox editable={editable} inline menuSide="right" onDelete={() => onDeleteElement?.('header.brand')} label="Herstellerlogo löschen" colorControl={<><LogoSizeControl id="header.brand" alt="Herstellerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />{linkControlTitled('header.brand', 'Kein Link', 'Herstellerlogo-Link')}</>}>{logoLink('header.brand', <LandingLogo id="header.brand" src={brandLogoUrl} alt={brand} sizes={content.logoSizes} />)}</LandingElementBox>}
+          {dealerLogo && !removed('header.dealer') && <LandingElementBox editable={editable} inline menuSide="right" onDelete={() => onDeleteElement?.('header.dealer')} label="Händlerlogo löschen" colorControl={<><LogoSizeControl id="header.dealer" alt="Händlerlogo" sizes={content.logoSizes} onResize={onResizeLogo} />{linkControlTitled('header.dealer', 'Kein Link', 'Händlerlogo-Link')}</>}>{logoLink('header.dealer', <LandingLogo id="header.dealer" src={dealerLogo} alt={dealerName} sizes={content.logoSizes} />)}</LandingElementBox>}
           {!dealerLogo && dealerName && (
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15 }}>{dealerName}</span>
           )}
