@@ -6,8 +6,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { normalizeButtonLink } from '@/lib/landing-button-links';
 
 /** Pencil-menu action that sets the link target of a landing page button. */
-export default function ButtonLinkButton({ value, fallbackLabel, onChange }: {
-  value?: string; fallbackLabel: string; onChange: (link: string | null) => void;
+export default function ButtonLinkButton({ value, fallbackLabel, onChange, heading = 'Button-Link' }: {
+  value?: string; fallbackLabel: string; onChange: (link: string | null) => void; heading?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value || '');
@@ -20,7 +20,7 @@ export default function ButtonLinkButton({ value, fallbackLabel, onChange }: {
       </Button>
     </PopoverTrigger>
     <PopoverContent align="end" className="w-72 space-y-3" onOpenAutoFocus={event => event.preventDefault()} onClick={event => event.stopPropagation()}>
-      <p className="text-sm font-semibold">Button-Link</p>
+      <p className="text-sm font-semibold">{heading}</p>
       <Input value={draft} onChange={event => setDraft(event.target.value)} placeholder="https://… , #kontakt, tel:…, mailto:…" aria-label="Link-Adresse" />
       <p className="text-xs text-muted-foreground">
         {draft.trim() && !normalized ? 'Ungültiger Link.' : `Leer lassen für Standard: ${fallbackLabel}`}

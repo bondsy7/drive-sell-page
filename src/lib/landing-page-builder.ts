@@ -293,6 +293,11 @@ export function buildLandingPageHTML(
     return `href="${escapeHtml(href)}"${external ? ' target="_blank" rel="noopener"' : ''}`;
   };
   const heroWhatsappBg = normalizeSectionColor(buttonColors['hero.whatsapp']);
+  const headerBg = normalizeSectionColor(content.sectionColors?.header);
+  const headerLogoLink = (id: string, html: string) => {
+    const { href, external } = resolveButtonLink(content.buttonLinks?.[id], '');
+    return href ? `<a href="${escapeAttr(href)}"${external ? ' target="_blank" rel="noopener"' : ''} style="display:inline-flex">${html}</a>` : html;
+  };
   const headerHeight = normalizeSectionHeight(content.sectionHeights?.header);
 
   const headerHeightStyle = headerHeight ? `;min-height:${headerHeight}px` : '';
@@ -403,11 +408,11 @@ export function buildLandingPageHTML(
   </style>
 </head>
 <body class="lp-layout">
-${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0${headerHeightStyle}">
+${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;background:${headerBg || 'rgba(255,255,255,0.92)'}${headerBg ? `;color:${readableOn(headerBg)}` : ''};backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 0${headerHeightStyle}">
     <div class="lp-content-width lp-header-inner">
     <div class="lp-header-logos">
-      ${brandLogoUrl && !removed('header.brand') ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.brand', src: brandLogoUrl, alt: brand, sizes: content.logoSizes })) : ''}
-      ${dealerLogo && !removed('header.dealer') ? renderToStaticMarkup(createElement(LandingLogo, { id: 'header.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes })) : ''}
+      ${brandLogoUrl && !removed('header.brand') ? headerLogoLink('header.brand', renderToStaticMarkup(createElement(LandingLogo, { id: 'header.brand', src: brandLogoUrl, alt: brand, sizes: content.logoSizes }))) : ''}
+      ${dealerLogo && !removed('header.dealer') ? headerLogoLink('header.dealer', renderToStaticMarkup(createElement(LandingLogo, { id: 'header.dealer', src: dealerLogo, alt: dealerName, sizes: content.logoSizes }))) : ''}
       ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
     ${phone ? `<a href="tel:${phone}" style="background:${headerButtonBg || 'var(--lp-primary)'};color:${headerButtonBg ? readableOn(headerButtonBg) : 'var(--lp-primary-on)'};padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
