@@ -56,7 +56,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
     .gallery-main img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
     .thumbs{display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:4px}
     .thumb{width:96px;height:72px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer;border:2px solid transparent;transition:.2s}
-    .thumb:hover{border-color:var(--accent)}
+    .thumb:hover,.thumb.active{border-color:var(--accent)}
     .title-block{margin-top:24px}
     .title-block h1{font-size:28px;font-weight:700;color:var(--dark)}
     .title-block .variant{font-size:14px;color:#666;margin-top:4px}
@@ -115,7 +115,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
         <div class="gallery-main">
           ${imageBase64 ? `<span style="position:relative;display:block"><img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}" />${buildAiDisclosureImageOverlayHTML("landing")}</span>` : `<div style="padding:120px;text-align:center;color:#aaa">Kein Bild</div>`}
         </div>
-        ${allImages.length > 1 ? `<div class="thumbs">${allImages.map(img => `<img class="thumb" src="${img}" alt="${withAiDisclosureAlt('')}" />`).join('')}</div>` : galleryHTML}
+        ${allImages.length > 1 ? `<div class="thumbs">${allImages.map((img, i) => `<img class="thumb${i === 0 ? ' active' : ''}" src="${img}" alt="${withAiDisclosureAlt(`Bild ${i + 1}`)}" onclick="var m=document.getElementById('mainImg');if(m){m.src=this.src;}var t=this.parentNode.querySelectorAll('.thumb');for(var k=0;k<t.length;k++){t[k].classList.remove('active');}this.classList.add('active');" />`).join('')}</div>` : galleryHTML}
 
         <div class="title-block">
           ${customerTypeBadgeHTML(data)}
