@@ -1,3 +1,4 @@
+import { CREDIT_WARNING, needsCreditWarning } from '@/lib/bank-legal-template';
 import React, { useState } from 'react';
 import {
   Accordion,
