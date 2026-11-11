@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import type { TemplateEditorProps } from './types';
+import AddImageFab from './AddImageFab';
 
 const PRESETS: Array<{ label: string; accent: string; dark: string }> = [
   { label: 'Auto3 Rot', accent: '#e30613', dark: '#111111' },
@@ -26,7 +27,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   updateVehicle, updateFinance, updateDealer, updateConsumption,
   updatePower, updateFuelType, onDataChange,
   addFeature, updateFeature, removeFeature,
-  dealerBanks = [],
+  dealerBanks = [], onAddImages,
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [toolbarOpen, setToolbarOpen] = useState(true);
@@ -185,6 +186,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
           <div>
             {/* Gallery */}
             <div className="relative rounded-2xl overflow-hidden bg-[#f4f4f4]">
+              <AddImageFab onClick={onAddImages} />
               {mainImage ? (
                 <img src={mainImage} alt="" className="w-full aspect-[16/10] object-cover block" />
               ) : (

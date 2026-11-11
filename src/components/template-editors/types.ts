@@ -25,4 +25,6 @@ export interface TemplateEditorProps {
   removeFeature: (index: number) => void;
   vinLookup: any;
   dealerBanks?: DealerBank[];
+  /** Öffnet den Dialog zum Hinzufügen weiterer Bilder (nur generierte PDF-Angebotsseiten). */
+  onAddImages?: () => void;
 }

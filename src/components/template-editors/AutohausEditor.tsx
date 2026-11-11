@@ -28,6 +28,7 @@ import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle, calculateLeasingFactor } from '@/lib/templates/shared';
 import { parsePrice, formatPrice } from '@/lib/finance-utils';
 import type { TemplateEditorProps } from './types';
+import AddImageFab from './AddImageFab';
 
 /* ─── small helpers ─── */
 const ConsumptionRow: React.FC<{
@@ -85,7 +86,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
   updatePower, updateFuelType, onDataChange,
   recalculateRate, calculateCosts, costCalculating, costMissingFields,
   addFeature, updateFeature, removeFeature, vinLookup,
-  dealerBanks = [],
+  dealerBanks = [], onAddImages,
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const cat = category.toLowerCase();
@@ -109,6 +110,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
 
             {allImages.length > 0 ? (
               <div className="relative bg-muted/30">
+              <AddImageFab onClick={onAddImages} />
                 <img
                   src={allImages[selectedImage] || allImages[0]}
                   alt={`${data.vehicle.brand} ${data.vehicle.model}`}
