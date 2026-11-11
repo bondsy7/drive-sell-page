@@ -503,12 +503,11 @@ const LandingRenderer: React.FC<RendererProps> = ({
               justifyContent: 'center',
               padding: '80px 56px',
               background: heroBgMode ? 'transparent' : heroBackground,
-              pointerEvents: 'auto',
               color: onHero,
               minHeight: 420,
             }}
           >
-            <div style={{ maxWidth: heroBgMode ? 600 : heroHasImage ? 520 : undefined }}>
+            <div style={{ maxWidth: heroBgMode ? 600 : heroHasImage ? 520 : undefined, pointerEvents: 'auto' }}>
               <LandingElementBox editable={editable} hidden={removed('hero.brand')} onDelete={() => onDeleteElement?.('hero.brand')} label="Marke löschen" inline>
               <div
                 style={{

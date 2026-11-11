@@ -572,6 +572,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               onMoveSection={moveSection}
               onToggleSection={toggleSection}
               onDeleteSection={deleteSection}
+              onHeroImageModeChange={(mode) => setContent(previous => ({ ...previous, heroImageMode: mode }))}
               onSectionColorChange={(id, color) => setContent(previous => {
                 const sectionColors = { ...previous.sectionColors };
                 if (color) sectionColors[id] = color; else delete sectionColors[id];
