@@ -92,6 +92,42 @@ const REQUIRED: Record<"leasing" | "financing", [string, string][]> = {
   leasing: [["fahrzeugpreis", "Fahrzeugpreis"], ["laufzeit", "Laufzeit"], ["monatsrate", "Monatsrate"], ["fahrleistung", "Jährliche Fahrleistung"], ["gesamtbetrag", "Gesamtbetrag"]],
 };
 
+export function buildLegalNotice(vd: any) {
+  const dealer = (vd?.dealer as Record<string, any>) || {};
+  const category = clean(vd?.category).toLowerCase();
+  const isLeasing = category.includes("leasing");
+  const isFinancing = category.includes("finanzierung") || category.includes("kredit");
+
+  let type: "leasing" | "financing" | "default" | null = null;
+  let text = "";
+  let bank = "";
+  if (isLeasing && dealer.leasingLegalText) {
+    type = "leasing";
+    text = clean(dealer.leasingLegalText);
+    bank = clean(dealer.leasingBank);
+  } else if (isFinancing && dealer.financingLegalText) {
+    type = "financing";
+    text = clean(dealer.financingLegalText);
+    bank = clean(dealer.financingBank);
+  } else if (dealer.defaultLegalText) {
+    type = "default";
+    text = clean(dealer.defaultLegalText);
+  }
+  if (!text && !bank) return null;
+  const status = financingStatus(vd);
+  return {
+    rawText: text,
+    warning: status.creditWarning,
+    showFinanceText: type === "default" || status.showRate,
+    label: "Bankangaben / Pflichthinweise",
+    type,
+    bank: bank || null,
+    text: resolveBankPlaceholders(text, vd, bank),
+    // Jeder ausgegebene Banktext gehört zur Fußnote 1 – unabhängig von der Angebotsart.
+    footnoteMarker: "1",
+  };
+}
+
 export function financingStatus(vd: any) {
   const type = offerType(vd);
   const dealer = vd?.dealer || {};

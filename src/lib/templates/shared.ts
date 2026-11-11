@@ -378,9 +378,8 @@ export function buildLegalTextHTML(data: VehicleData): string {
     ? `<div style="font-size:14px;font-weight:800;margin-bottom:10px;color:#1a2332">${CREDIT_WARNING}</div>` : '';
   if (!legalText && !bankInfo) return warning ? `<div class="legal-text" style="margin-top:24px;padding:20px;background:#ffffff;border-radius:12px;border:1px solid #e8eaee">${warning}</div>` : '';
 
-  // Fußnoten-"1" nur bei Leasing/Finanzierung – bei reinem Kaufpreis-Angebot entfällt sie.
-  const isBuy = !category.includes('leasing') && !category.includes('finanzierung') && !category.includes('kredit');
-  const supMarker = isBuy ? '' : `<sup style="font-size:9px;vertical-align:super">1</sup> `;
+  // Jeder ausgegebene Banktext wird einheitlich mit der hochgestellten Fußnote 1 eingeleitet.
+  const supMarker = `<sup style="font-size:9px;vertical-align:super">1</sup> `;
 
   return `<div class="legal-text" style="margin-top:24px;padding:20px;background:#ffffff;border-radius:12px;border:1px solid #e8eaee">
     <div style="font-size:12px;font-weight:700;margin-bottom:8px">Bankangaben / Pflichthinweise</div>
