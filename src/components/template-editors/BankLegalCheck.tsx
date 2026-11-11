@@ -7,7 +7,12 @@ interface Props { text: string; bankName: string; banks: ProfileBank[]; data: Ve
 
 export function BankLegalCheck({ text, bankName, banks, data, editVersion }: Props) {
   const [showNotice, setShowNotice] = useState(false);
-  useEffect(() => { if (editVersion > 0) setShowNotice(true); }, [editVersion]);
+  // Show after the user pauses editing, so the notice does not flicker on each keystroke.
+  useEffect(() => {
+    if (editVersion <= 0) return;
+    const t = setTimeout(() => setShowNotice(true), 800);
+    return () => clearTimeout(t);
+  }, [editVersion]);
   const items = checkBankLegal(text, bankName, banks, data);
   return (
     <div className="mt-3 space-y-2">
