@@ -16,6 +16,11 @@ export const LANDING_LAYOUT_CSS = `
 .lp-layout .lp-body-html.lp-contact-plain{text-align:center}
 .lp-layout .lp-body-html.lp-contact-plain :is(ul,ol,li){list-style:none !important;padding-left:0 !important}
 .lp-layout .lp-body-html.lp-contact-plain li::marker{content:"" !important}
+.lp-layout .lp-body-html .lp-contact-person{display:flex !important;flex-wrap:nowrap;align-items:center;justify-content:center;gap:24px;width:auto !important;max-width:560px !important;margin:20px auto !important;text-align:left}
+.lp-layout .lp-body-html .lp-contact-person img{width:140px !important;height:140px !important;object-fit:cover;border-radius:12px;flex:0 0 140px;margin:0 !important}
+.lp-layout .lp-body-html .lp-contact-person p{width:auto !important;flex:0 1 auto;min-width:0;margin:0 !important;text-align:left !important}
+@media(max-width:600px){.lp-layout .lp-body-html .lp-contact-person{flex-direction:column;gap:12px;text-align:center}.lp-layout .lp-body-html .lp-contact-person p{text-align:center !important}}
+@container lp (max-width:600px){.lp-layout .lp-body-html .lp-contact-person{flex-direction:column;gap:12px;text-align:center}.lp-layout .lp-body-html .lp-contact-person p{text-align:center !important}}
 .lp-layout .lp-header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px}
 @media(max-width:900px){
  .lp-layout{--lp-content-max:100%;--lp-content-gutter:20px;--lp-column-gap:28px}
