@@ -5,7 +5,7 @@
  */
 import { isContactSection } from '@/lib/landing-contact-plain';
 
-export interface BrandContact { id: string; brand: string; brands: string[]; name: string; email: string; phone: string }
+export interface BrandContact { id: string; brand: string; brands: string[]; name: string; email: string; phone: string; imageUrl?: string }
 
 export function normalizeBrand(b: string | null | undefined): string {
   return (b || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -28,6 +28,12 @@ export function normalizeBrandList(brands: unknown, legacyBrand?: unknown): stri
   return out;
 }
 
+/** Nur http(s)-Bildlinks zulassen. */
+export function safeImageUrl(u: unknown): string {
+  const v = String(u || '').trim();
+  return /^https?:\/\/[^\s"'<>]+$/i.test(v) ? v.slice(0, 1000) : '';
+}
+
 export function readBrandContacts(ciSettings: unknown): BrandContact[] {
   const list = (ciSettings as any)?.brandContacts;
   if (!Array.isArray(list)) return [];
@@ -35,7 +41,7 @@ export function readBrandContacts(ciSettings: unknown): BrandContact[] {
     const brands = normalizeBrandList(c.brands, c.brand);
     return {
       id: String(c.id || crypto.randomUUID()), brand: brands.join(', ') || String(c.brand || ''), brands,
-      name: String(c.name || ''), email: String(c.email || ''), phone: String(c.phone || ''),
+      name: String(c.name || ''), email: String(c.email || ''), phone: String(c.phone || ''), imageUrl: safeImageUrl(c.imageUrl),
     };
   });
 }
@@ -66,9 +72,12 @@ export function brandContactsHtml(contacts: BrandContact[]): string {
     const lines = [c.name.trim() ? `<strong>${esc(c.name.trim())}</strong>` : ''];
     if (c.phone.trim()) lines.push(`Telefon: <a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${esc(c.phone.trim())}</a>`);
     if (c.email.trim()) lines.push(`E-Mail: <a href="mailto:${esc(c.email.trim())}">${esc(c.email.trim())}</a>`);
-    return `<p>${lines.filter(Boolean).join('<br>')}</p>`;
+    const img = safeImageUrl(c.imageUrl);
+    const info = `<p style="margin:0;text-align:left">${lines.filter(Boolean).join('<br>')}</p>`;
+    if (!img) return `<p>${lines.filter(Boolean).join('<br>')}</p>`;
+    return `<span style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:20px;margin:16px 0;text-align:left"><img src="${esc(img)}" alt="${esc(c.name.trim() ? `Ansprechpartner ${c.name.trim()}` : 'Ansprechpartner')}" loading="lazy" decoding="async" style="width:140px;height:140px;object-fit:cover;border-radius:12px;flex:0 0 auto;margin:0">${info}</span>`;
   });
-  return `<div data-brand-contacts="1"><p><strong>${contacts.length > 1 ? 'Ihre Ansprechpartner' : 'Ihr Ansprechpartner'}</strong></p>${blocks.join('')}</div>`;
+  return `<div data-brand-contacts="1"><p><strong>${contacts.length > 1 ? 'Ihre Ansprechpartner' : 'Ihr Ansprechpartner'}</strong></p>${blocks.join('')}</div><!--/brand-contacts-->`;
 }
 
 /** Hängt die Ansprechpartner an den (letzten) Kontakt-Abschnitt an. */
@@ -77,6 +86,6 @@ export function injectBrandContacts<T extends { sections?: { id: string; type: s
   if (!html || !page?.sections?.length) return page;
   const idx = [...page.sections].map((s, i) => [s, i] as const).reverse().find(([s]) => isContactSection(s.headline, s.type, s.id))?.[1];
   if (idx === undefined) return page;
-  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div>/, '')}${html}` } : s);
+  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div>(?:<!--\/brand-contacts-->)?/, '')}${html}` } : s);
   return { ...page, sections };
 }
