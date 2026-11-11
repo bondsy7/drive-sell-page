@@ -1,5 +1,6 @@
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildEnvkv, financingStatus, resolveBankPlaceholders } from "../_shared/offer-compliance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -155,11 +156,16 @@ Deno.serve(async (req) => {
       text = String(dealer.defaultLegalText || '');
     }
     if (!text && !bank) return null;
+    const status = financingStatus(vd);
     return {
+      // Shortcodes resolved server-side; rawText keeps the profile template.
+      rawText: text,
+      warning: status.creditWarning,
+      showFinanceText: type === 'default' || status.showRate,
       label: 'Bankangaben / Pflichthinweise',
       type,
       bank: bank || null,
-      text,               // Zeilenumbrüche (\n) bleiben erhalten — nicht kürzen.
+      text: resolveBankPlaceholders(text, vd, bank),               // Zeilenumbrüche (\n) bleiben erhalten — nicht kürzen.
       footnoteMarker: (isLeasing || isFinancing) ? '1' : null,
     };
   };
@@ -210,6 +216,8 @@ Deno.serve(async (req) => {
           ...m,
           internalNumber: (m.vehicle_data?.vehicle?.internalNumber || null),
           legalNotice: computeLegalNotice(m.vehicle_data),
+          financingStatus: financingStatus(m.vehicle_data),
+          envkv: buildEnvkv(m.vehicle_data),
         };
       });
 
@@ -281,6 +289,8 @@ Deno.serve(async (req) => {
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
           legalNotice: computeLegalNotice(merged.vehicle_data),
+          financingStatus: financingStatus(merged.vehicle_data),
+          envkv: buildEnvkv(merged.vehicle_data),
           main_image_url: merged.main_image_url,
           images: (images || []).map((img: any) => ({
             id: img.id,
