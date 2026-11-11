@@ -1,6 +1,6 @@
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildEnvkv, buildPrice, financingStatus, resolveBankPlaceholders } from "../_shared/offer-compliance.ts";
+import { buildEnvkv, buildPrice, financingStatus, resolveBankPlaceholders, withComputedFinance } from "../_shared/offer-compliance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,6 +214,7 @@ Deno.serve(async (req) => {
         const m = overlayVehicle(rest, vehicleMap[vehicle_id]);
         return {
           ...m,
+          vehicle_data: withComputedFinance(m.vehicle_data),
           internalNumber: (m.vehicle_data?.vehicle?.internalNumber || null),
           legalNotice: computeLegalNotice(m.vehicle_data),
           financingStatus: financingStatus(m.vehicle_data),
@@ -289,7 +290,7 @@ Deno.serve(async (req) => {
           dashboardTitle: merged.dashboardTitle,
           internalNumber: (merged.vehicle_data?.vehicle?.internalNumber || null),
           template_id: merged.template_id,
-          vehicle_data: merged.vehicle_data,
+          vehicle_data: withComputedFinance(merged.vehicle_data),
           legalNotice: computeLegalNotice(merged.vehicle_data),
           financingStatus: financingStatus(merged.vehicle_data),
           envkv: buildEnvkv(merged.vehicle_data),
