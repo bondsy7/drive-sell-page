@@ -19,6 +19,7 @@ import {
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle, calculateLeasingFactor } from '@/lib/templates/shared';
 import type { TemplateEditorProps } from './types';
+import AddImageFab from './AddImageFab';
 
 const Row: React.FC<{
   label: string; value: string; onChange: (v: string) => void; suffix?: string;
@@ -48,6 +49,7 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
         <div className="grid md:grid-cols-2 gap-0">
           {/* Left: Image */}
           <div className="relative bg-muted">
+              <AddImageFab onClick={onAddImages} />
             {allImages.length > 0 ? (
               <>
                 <img

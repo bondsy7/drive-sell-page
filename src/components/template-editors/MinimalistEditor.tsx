@@ -17,6 +17,7 @@ import {
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle, calculateLeasingFactor } from '@/lib/templates/shared';
 import type { TemplateEditorProps } from './types';
+import AddImageFab from './AddImageFab';
 import { getAiDisclosureText } from "@/lib/ai-disclosure";
 
 const Row: React.FC<{
@@ -68,6 +69,7 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
       <div>
         {allImages.length > 0 ? (
           <div className="relative">
+              <AddImageFab onClick={onAddImages} />
             <img src={allImages[selectedImage] || allImages[0]} alt={`${data.vehicle.brand} ${data.vehicle.model}`} className="w-full rounded-md" />
             {allImages.length > 1 && (
               <>

@@ -17,6 +17,7 @@ import {
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle, calculateLeasingFactor } from '@/lib/templates/shared';
 import type { TemplateEditorProps } from './types';
+import AddImageFab from './AddImageFab';
 
 const Row: React.FC<{
   label: string; value: string; onChange: (v: string) => void; suffix?: string;
@@ -67,6 +68,7 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         {allImages.length > 0 ? (
           <div className="relative">
+              <AddImageFab onClick={onAddImages} />
             <img src={allImages[selectedImage] || allImages[0]} alt={`${data.vehicle.brand} ${data.vehicle.model}`} className="w-full max-h-[420px] object-cover" />
             {allImages.length > 1 && (
               <>
