@@ -86,6 +86,6 @@ export function injectBrandContacts<T extends { sections?: { id: string; type: s
   if (!html || !page?.sections?.length) return page;
   const idx = [...page.sections].map((s, i) => [s, i] as const).reverse().find(([s]) => isContactSection(s.headline, s.type, s.id))?.[1];
   if (idx === undefined) return page;
-  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div>(?:<!--\/brand-contacts-->)?/, '')}${html}` } : s);
+  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div><!--\/brand-contacts-->|<div data-brand-contacts="1">(?:(?!<div)[\s\S])*?<\/div>/, '')}${html}` } : s);
   return { ...page, sections };
 }
