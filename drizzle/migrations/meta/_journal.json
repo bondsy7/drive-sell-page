@@ -141,6 +141,13 @@
       "when": 1793720446836,
       "tag": "0019_gallery_pipeline_runs",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794383079169,
+      "tag": "0020_protect_public_lead_inserts",
+      "breakpoints": true
     }
   ]
 }
