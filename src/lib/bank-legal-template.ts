@@ -57,7 +57,7 @@ export function shortcodeValues(data: VehicleData, bankName: string): Record<str
     fahrzeugpreis: eur(f.totalPrice),
     anzahlung: down,
     sonderzahlung: special || down,
-    nettodarlehensbetrag: eur(f.netLoanAmount || ''),
+    nettodarlehensbetrag: eur(f.netLoanAmount || '') || netLoanFallback(data),
     laufzeit: months(f.duration),
     laufzeit_zahl: clean(f.duration).replace(/\D+/g, ''),
     monatsrate: eur(f.monthlyRate),
@@ -68,6 +68,18 @@ export function shortcodeValues(data: VehicleData, bankName: string): Record<str
     gesamtbetrag: eur(f.totalAmount || '') || leasingTotal(data),
     kundentyp: data.customerType === 'business' ? 'Gewerbekunden' : 'Privatkunden',
   };
+}
+
+/** Financing net loan = Fahrzeugpreis − Anzahlung (mirrors offer-compliance.ts). Never for leasing. */
+export function netLoanFallback(data: VehicleData): string {
+  const c = (data.category || '').toLowerCase();
+  if (c.includes('leasing') || !(c.includes('finanzierung') || c.includes('kredit'))) return '';
+  const f: any = (data as any).finance || {};
+  const toNum = (v: string) => { const n = Number(v.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
+  if (!clean(f.totalPrice)) return '';
+  const price = toNum(clean(f.totalPrice)); const dp = clean(f.downPayment); const down = dp ? toNum(dp) : 0;
+  if (price == null || down == null || down > price) return '';
+  return `${(price - down).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
 /** Leasing total = Sonderzahlung + Laufzeit × Monatsrate (mirrors offer-compliance.ts). */
