@@ -568,11 +568,12 @@ function buildContactFormInline(opts: { dealerUserId: string; supabaseUrl: strin
         <p style="font-size:13px;color:#6b7a8d">${vehicleTitle.replace(/'/g, "\\'")}</p>
       </div>
       <form id="leadForm" onsubmit="return submitLead(event)">
+        <div hidden aria-hidden="true"><label>Website<input name="website" type="text" tabindex="-1" autocomplete="off" maxlength="1000" /></label></div>
         <div style="display:flex;flex-direction:column;gap:12px">
-          <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
-          <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
-          <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
-          <textarea name="message" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical"></textarea>
+          <input name="name" maxlength="200" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
+          <input name="email" maxlength="255" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
+          <input name="phone" maxlength="50" pattern="[+0-9() /.-]{0,50}" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
+          <textarea name="message" maxlength="3000" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical"></textarea>
           <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
             <span style="font-size:12px;font-weight:600;color:#6b7a8d;text-transform:uppercase;letter-spacing:0.5px">Ich interessiere mich für:</span>
             <label style="${labelStyle}"><input type="checkbox" name="interested_test_drive" style="${checkboxStyle}" /> Probefahrt</label>
@@ -600,11 +601,12 @@ function buildContactFormInline(opts: { dealerUserId: string; supabaseUrl: strin
     btn.disabled=true;btn.textContent='Wird gesendet...';
     var form=document.getElementById('leadForm');
     var fd=new FormData(form);
+    if(!form.reportValidity()){btn.disabled=false;btn.textContent='Anfrage senden';return false;}
     try{
       var res=await fetch('${supabaseUrl}/functions/v1/submit-lead',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          dealerUserId:'${dealerUserId}',projectId:null,
+          website:fd.get('website')||'',dealerUserId:'${dealerUserId}',projectId:null,
           vehicleId:${vehicleId ? `'${vehicleId}'` : 'null'},
           name:fd.get('name'),email:fd.get('email'),
           phone:fd.get('phone')||null,message:fd.get('message')||null,
