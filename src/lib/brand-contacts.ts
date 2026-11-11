@@ -73,9 +73,9 @@ export function brandContactsHtml(contacts: BrandContact[]): string {
     if (c.phone.trim()) lines.push(`Telefon: <a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${esc(c.phone.trim())}</a>`);
     if (c.email.trim()) lines.push(`E-Mail: <a href="mailto:${esc(c.email.trim())}">${esc(c.email.trim())}</a>`);
     const img = safeImageUrl(c.imageUrl);
-    const info = `<p style="margin:0;text-align:left">${lines.filter(Boolean).join('<br>')}</p>`;
-    if (!img) return `<p>${lines.filter(Boolean).join('<br>')}</p>`;
-    return `<span style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:20px;margin:16px 0;text-align:left"><img src="${esc(img)}" alt="${esc(c.name.trim() ? `Ansprechpartner ${c.name.trim()}` : 'Ansprechpartner')}" loading="lazy" decoding="async" style="width:140px;height:140px;object-fit:cover;border-radius:12px;flex:0 0 auto;margin:0">${info}</span>`;
+    const text = lines.filter(Boolean).join('<br>');
+    if (!img) return `<p>${text}</p>`;
+    return `<div class="lp-contact-person"><img src="${esc(img)}" alt="${esc(c.name.trim() ? `Ansprechpartner ${c.name.trim()}` : 'Ansprechpartner')}" loading="lazy" decoding="async" width="140" height="140"><p>${text}</p></div>`;
   });
   return `<div data-brand-contacts="1"><p><strong>${contacts.length > 1 ? 'Ihre Ansprechpartner' : 'Ihr Ansprechpartner'}</strong></p>${blocks.join('')}</div><!--/brand-contacts-->`;
 }
@@ -86,6 +86,6 @@ export function injectBrandContacts<T extends { sections?: { id: string; type: s
   if (!html || !page?.sections?.length) return page;
   const idx = [...page.sections].map((s, i) => [s, i] as const).reverse().find(([s]) => isContactSection(s.headline, s.type, s.id))?.[1];
   if (idx === undefined) return page;
-  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div>(?:<!--\/brand-contacts-->)?/, '')}${html}` } : s);
+  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div><!--\/brand-contacts-->|<div data-brand-contacts="1">(?:(?!<div)[\s\S])*?<\/div>/, '')}${html}` } : s);
   return { ...page, sections };
 }
