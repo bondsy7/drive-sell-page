@@ -30,6 +30,8 @@ import {
 } from '@/lib/live-inventory';
 
 export interface LandingPageContent {
+  /** 'background' = Headerbild füllt die ganze Header-Section, Text liegt auf einem Verlauf. */
+  heroImageMode?: 'box' | 'background';
   sectionHeights?: Record<string, number>;
   sectionColors?: Record<string, string>;
   logoSizes?: LandingLogoSizes;
@@ -307,6 +309,7 @@ export function buildLandingPageHTML(
   const heroHasText = !['brand', 'headline', 'subheadline', 'ctaText', 'whatsapp'].every(field => removed(`hero.${field}`));
   const heroImage = heroHasImage ? images.hero || '' : '';
   const heroFrame = resolveFrame(content, 'hero', 1);
+  const heroBgMode = content.heroImageMode === 'background' && heroHasImage && !!heroImage;
   const dealerName = dealer.name || '';
   const dealerLogo = dealer.logoUrl || '';
   const phone = dealer.phone || '';
@@ -388,6 +391,7 @@ export function buildLandingPageHTML(
       .lp-split-media{order:-1 !important}
       .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
       .lp-hero-media{min-height:300px !important}
+      .lp-hero-bgmode .lp-hero-scrim{background:var(--lp-hero-scrim-flat) !important}
       h1{font-size:32px !important;line-height:1.15 !important}
       h2{font-size:26px !important}
       ${LIVE_INVENTORY_NARROW_CSS}
@@ -398,6 +402,7 @@ export function buildLandingPageHTML(
       .lp-split-media{order:-1 !important}
       .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
       .lp-hero-media{min-height:300px !important}
+      .lp-hero-bgmode .lp-hero-scrim{background:var(--lp-hero-scrim-flat) !important}
       h1{font-size:32px !important;line-height:1.15 !important}
       h2{font-size:26px !important}
       ${LIVE_INVENTORY_NARROW_CSS}
@@ -419,10 +424,15 @@ ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;ba
     </div>
   </header>`}
 
-${removed('hero') ? '' : `  <div${sectionHeightAttributes(content.sectionHeights?.hero)}><section style="position:relative;min-height:560px;overflow:hidden;background:${heroBackground}">
-    <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)'};min-height:560px" class="lp-content-width lp-hero-grid">
-${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:${heroBackground};color:${onHero};min-height:420px">
-        <div style="max-width:${heroHasImage ? '520px' : 'none'}">
+${removed('hero') ? '' : `  <div${sectionHeightAttributes(content.sectionHeights?.hero)}><section${heroBgMode ? ' class="lp-hero-bgmode"' : ''} style="position:relative;min-height:560px;overflow:hidden;background:${heroBackground}">
+${heroBgMode ? `    <div style="position:absolute;inset:0;z-index:0">
+      ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
+      <img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block;${heroFrame ? frameImageCss(heroFrame) : ''}" loading="eager" decoding="async"/>
+    </div>
+    <div class="lp-hero-scrim" style="${heroScrimCss(heroBackground)}"></div>
+` : ''}    <div style="display:grid;grid-template-columns:${heroHasImage && heroHasText && !heroBgMode ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)'};min-height:560px;position:relative;z-index:1" class="lp-content-width lp-hero-grid">
+${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:${heroBgMode ? 'transparent' : heroBackground};color:${onHero};min-height:420px">
+        <div style="max-width:${heroBgMode ? '600px' : heroHasImage ? '520px' : 'none'}">
 ${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${secondary};border:1px solid ${secondary};color:${onSecondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>`}
 ${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${normalizeSectionColor(textColors['hero.headline']) || onHero}">${escapeHtml(heroHeadline)}</h1>`}
 ${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:${normalizeSectionColor(textColors['hero.subheadline']) || rgba(onHero, 0.85)};margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
@@ -434,7 +444,7 @@ ${removed('hero.ctaText') ? '' : `            <a ${heroLinkAttr('hero.ctaText', 
         </div>
       </div>
 ` : ''}
-${heroHasImage ? (heroFrame ? `      <div class="lp-hero-media" style="position:relative;align-self:start">
+${heroHasImage && !heroBgMode ? (heroFrame ? `      <div class="lp-hero-media" style="position:relative;align-self:start">
         <div class="lp-framed" style="position:relative;overflow:hidden;border-radius:16px;${frameOuterCss(heroFrame)}">
         ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
         ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block;${frameImageCss(heroFrame)}" loading="eager" decoding="async"/>` : ''}

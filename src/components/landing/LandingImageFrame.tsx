@@ -30,6 +30,8 @@ interface Props {
   /** Frame/pan/zoom tools are only offered in the desktop editor. */
   frameEditing?: boolean;
   onFrameChange?: (frame: LandingImageFrame | null) => void;
+  /** Fill the positioned parent completely (hero background mode); pan/zoom stay available, frame resizing does not. */
+  fill?: boolean;
 }
 
 const SNAP_SELECTOR = '.lp-editable, a, button, .lp-image-frame, h1, h2, h3, p';
@@ -49,7 +51,7 @@ function collectSnapEdges(self: HTMLElement) {
 
 export default function LandingImageFrame({
   src, alt, aspect, editable, loading, onReplace, primary, onDelete,
-  labelImage = true, rounded = true, frame, frameEditing = false, onFrameChange,
+  labelImage = true, rounded = true, frame, frameEditing = false, onFrameChange, fill = false,
 }: Props) {
   const insertActions = useContext(LandingImageInsertContext);
   const base = normalizeImageFrame(frame, parseAspect(aspect));
@@ -176,13 +178,13 @@ export default function LandingImageFrame({
   return (
     <div
       ref={ref}
-      className={`lp-image-frame${framed || tools ? ' lp-framed' : ''}${mode ? ` lp-frame-${mode}` : ''}`}
+      className={`lp-image-frame${!fill && (framed || tools) ? ' lp-framed' : ''}${mode ? ` lp-frame-${mode}` : ''}`}
       style={{
         position: 'relative',
         overflow: 'hidden',
         borderRadius: rounded ? 16 : 0,
         background: rgba(primary, 0.06),
-        ...(framed || (tools && mode) ? frameOuterStyle(active) : { width: '100%', aspectRatio: aspect }),
+        ...(fill ? { position: 'absolute', inset: 0, width: '100%', height: '100%' } : framed || (tools && mode) ? frameOuterStyle(active) : { width: '100%', aspectRatio: aspect }),
         outline: mode ? `2px solid ${primary}` : undefined,
         outlineOffset: mode ? -2 : undefined,
         touchAction: mode === 'pan' ? 'none' : undefined,
@@ -222,7 +224,7 @@ export default function LandingImageFrame({
         {onDelete && <ElementDeleteButton onDelete={onDelete} label="Bild löschen" />}
       </LandingEditMenu>}
 
-      {tools && (
+      {tools && !fill && (
         <>
           {handle('top', { left: 14, right: 14, top: 0, height: 10 }, 'ns-resize')}
           {handle('left', { left: 0, top: 14, bottom: 14, width: 10 }, 'ew-resize')}
