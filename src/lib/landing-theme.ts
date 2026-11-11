@@ -89,3 +89,17 @@ export function editorControlStyle(surface?: string): Record<string, string> | u
     '--lp-editor-control-fg': colors.foreground,
   };
 }
+
+/**
+ * Verlauf über dem Headerbild im Hintergrund-Modus. Er nutzt die Header-Farbe,
+ * auf der die Schriftfarbe bereits lesbar berechnet wird – hell oder dunkel je nach Kontrast.
+ */
+export function heroScrimGradient(heroBackground: string): string {
+  return `linear-gradient(90deg, ${rgba(heroBackground, 0.92)} 0%, ${rgba(heroBackground, 0.78)} 38%, ${rgba(heroBackground, 0.25)} 68%, ${rgba(heroBackground, 0)} 85%)`;
+}
+export function heroScrimFlat(heroBackground: string): string {
+  return rgba(heroBackground, 0.72);
+}
+export function heroScrimCss(heroBackground: string): string {
+  return `position:absolute;inset:0;z-index:0;pointer-events:none;background:${heroScrimGradient(heroBackground)};--lp-hero-scrim-flat:${heroScrimFlat(heroBackground)}`;
+}

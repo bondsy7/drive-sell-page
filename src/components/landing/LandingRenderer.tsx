@@ -29,7 +29,7 @@ import ButtonLinkButton from '@/components/landing/ButtonLinkButton';
 import { resolveButtonLink } from '@/lib/landing-button-links';
 
 import { isLandingElementRemoved } from '@/lib/landing-element-editing';
-import { editorControlStyle, landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
+import { editorControlStyle, heroScrimFlat, heroScrimGradient, landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import LiveVehicleShowcase from '@/components/landing/LiveVehicleShowcase';
 import {
   LIVE_INVENTORY_CSS,
@@ -78,6 +78,7 @@ export interface RendererProps {
   /** Desktop editor only: frame/pan/zoom tools for images. */
   frameEditing?: boolean;
   onFrameChange?: (imageId: string, frame: LandingImageFrame | null) => void;
+  onHeroImageModeChange?: (mode: 'box' | 'background') => void;
   /** Insert a new image block above/below an existing one in a section. */
   onInsertImage?: (sectionId: string, anchor: string, pos: 'before' | 'after') => void;
   onDeleteStackImage?: (imageId: string) => void;
@@ -255,6 +256,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onResizeSection,
   frameEditing = false,
   onFrameChange,
+  onHeroImageModeChange,
   onAddSection,
   imageLoading,
   liveInventory,
@@ -300,6 +302,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   const heroHasImage = !removed('hero.image');
   const heroHasText = !['brand', 'headline', 'subheadline', 'ctaText', 'whatsapp'].every(field => removed(`hero.${field}`));
   const heroImage = images.hero || '';
+  const heroBgMode = content.heroImageMode === 'background' && heroHasImage && !!heroImage;
   const dealerName = dealer.name || '';
   const dealerLogo = dealer.logoUrl || '';
   const phone = dealer.phone || '';
@@ -383,6 +386,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           .lp-hero-grid{grid-template-columns:1fr !important}
           .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
           .lp-hero-media{min-height:300px !important}
+          .lp-hero-scrim{background:var(--lp-hero-scrim-flat) !important}
           .lp-hero-media .lp-image-frame{aspect-ratio:4 / 3 !important}
           .lp-split{grid-template-columns:1fr !important;gap:24px !important}
           .lp-split-media{order:-1 !important}
@@ -395,6 +399,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           .lp-hero-grid{grid-template-columns:1fr !important}
           .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
           .lp-hero-media{min-height:300px !important}
+          .lp-hero-scrim{background:var(--lp-hero-scrim-flat) !important}
           .lp-hero-media .lp-image-frame{aspect-ratio:4 / 3 !important}
           .lp-split{grid-template-columns:1fr !important;gap:28px !important;align-items:start !important}
           .lp-split-media{order:-1 !important}
@@ -453,14 +458,37 @@ const LandingRenderer: React.FC<RendererProps> = ({
       </LandingElementBox>
 
       {/* HERO */}
-      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg={heroBackground} colorControl={colorControl('hero')}>
+      {!removed('hero') && <SectionShell id="hero" editable={editable} onDelete={() => onDeleteElement?.('hero')} onAddAfter={onAddSection ? () => onAddSection('hero') : undefined} bg={heroBackground} colorControl={<>{colorControl('hero')}{editable && onHeroImageModeChange && heroHasImage && <Button variant="ghost" className="justify-start" onClick={() => onHeroImageModeChange(heroBgMode ? 'box' : 'background')}><ImageIcon size={16} /> {heroBgMode ? 'Bild als Kasten' : 'Bild als Hintergrund'}</Button>}</>}>
+        {heroBgMode && <>
+          <div className="lp-hero-bg-media" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            <ImageFrame
+              src={heroImage}
+              labelImage={shouldLabelLandingImage(content, 'hero', heroImage)}
+              alt={`${brand} ${model}`}
+              aspect="16 / 9"
+              fill
+              rounded={false}
+              editable={editable}
+              loading={imageLoading === 'hero'}
+              onReplace={() => onReplaceImage?.('hero')}
+              onDelete={() => onDeleteElement?.('hero.image')}
+              primary={primary}
+              frame={content.imageFrames?.hero}
+              frameEditing={editable && frameEditing}
+              onFrameChange={(f) => onFrameChange?.('hero', f)}
+            />
+          </div>
+          <div className="lp-hero-scrim" style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', background: heroScrimGradient(heroBackground), ['--lp-hero-scrim-flat' as any]: heroScrimFlat(heroBackground) }} />
+        </>}
         <div
           className="lp-section-inner lp-content-width lp-hero-grid"
           style={{
             position: 'relative',
             minHeight: 560,
             display: 'grid',
-            gridTemplateColumns: heroHasImage && heroHasText ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            gridTemplateColumns: heroHasImage && heroHasText && !heroBgMode ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            zIndex: 1,
+            pointerEvents: heroBgMode ? 'none' : undefined,
             gap: 0,
             padding: '80px 32px',
             overflow: 'hidden',
@@ -474,12 +502,13 @@ const LandingRenderer: React.FC<RendererProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               padding: '80px 56px',
-              background: heroBackground,
+              background: heroBgMode ? 'transparent' : heroBackground,
+              pointerEvents: 'auto',
               color: onHero,
               minHeight: 420,
             }}
           >
-            <div style={{ maxWidth: heroHasImage ? 520 : undefined }}>
+            <div style={{ maxWidth: heroBgMode ? 600 : heroHasImage ? 520 : undefined }}>
               <LandingElementBox editable={editable} hidden={removed('hero.brand')} onDelete={() => onDeleteElement?.('hero.brand')} label="Marke löschen" inline>
               <div
                 style={{
@@ -575,7 +604,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           </div>}
 
           {/* Right: image */}
-          {heroHasImage && <div className="lp-hero-media" style={content.imageFrames?.hero ? { position: 'relative', alignSelf: 'start' } : { position: 'relative', minHeight: 420 }}>
+          {heroHasImage && !heroBgMode && <div className="lp-hero-media" style={content.imageFrames?.hero ? { position: 'relative', alignSelf: 'start' } : { position: 'relative', minHeight: 420 }}>
             <ImageFrame
               src={heroImage}
               labelImage={shouldLabelLandingImage(content, 'hero', heroImage)}
