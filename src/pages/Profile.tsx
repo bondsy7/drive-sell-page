@@ -574,7 +574,7 @@ const Profile = () => {
               <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
                 <p className="font-semibold text-foreground">Wichtiger Hinweis zu Bankangaben und Rechtstexten</p>
                 <p className="mt-1">
-                  autohaus.ai stellt ausschließlich die technische Plattform und unverbindliche Textvorlagen bereit. Wir prüfen oder kontrollieren die verwendeten Bankangaben und Rechtstexte nicht und übernehmen keine Gewähr für deren Richtigkeit, Vollständigkeit, Aktualität oder rechtliche Zulässigkeit. Dies gilt ebenso für automatisch befüllte Angaben. Die Verantwortung für Auswahl, Prüfung und Verwendung sämtlicher Inhalte liegt beim jeweiligen Händler. Bitte lassen Sie die Texte und Angaben vor ihrer Verwendung durch die jeweilige Bank und rechtlich prüfen.
+                  autohaus.ai stellt ausschließlich die technische Plattform und unverbindliche Textvorlagen bereit. Wir prüfen oder kontrollieren die verwendeten Bankangaben und Rechtstexte nicht und übernehmen keine Gewähr für deren Richtigkeit, Vollständigkeit, Aktualität oder rechtliche Zulässigkeit. Dies gilt ebenso für automatisch befüllte Angaben. Die Verantwortung für Auswahl, Prüfung und Verwendung sämtlicher Inhalte liegt beim jeweiligen Händler.
                 </p>
               </div>
 
