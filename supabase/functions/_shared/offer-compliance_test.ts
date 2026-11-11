@@ -44,3 +44,18 @@ Deno.test("leasing total is derived from Sonderzahlung + Laufzeit × Rate", () =
 Deno.test("bank name is read from legal text when the bank field is empty", () => {
   assertEquals(bankFromLegalText("Ein Angebot der Volkswagen Leasing GmbH, Gifhorner Straße 57"), "Volkswagen Leasing GmbH");
 });
+
+Deno.test("every leasing legal notice carries footnote marker 1", () => {
+  const notice = buildLegalNotice({ category: "Leasing", dealer: { leasingBank: "Testbank", leasingLegalText: "Angebot der {bank_name}." } });
+  assertEquals(notice?.footnoteMarker, "1");
+  assertEquals(notice?.text, "Angebot der Testbank.");
+});
+
+Deno.test("default legal notices also carry footnote marker 1", () => {
+  const notice = buildLegalNotice({ category: "Kauf", dealer: { defaultLegalText: "Allgemeine Pflichthinweise." } });
+  assertEquals(notice?.footnoteMarker, "1");
+});
+
+Deno.test("no legal notice is emitted without bank or text", () => {
+  assertEquals(buildLegalNotice({ category: "Leasing", dealer: {} }), null);
+});

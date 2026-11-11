@@ -1,6 +1,6 @@
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildEnvkv, buildPrice, financingStatus, resolveBankPlaceholders, withComputedFinance } from "../_shared/offer-compliance.ts";
+import { buildEnvkv, buildLegalNotice, buildPrice, financingStatus, withComputedFinance } from "../_shared/offer-compliance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
