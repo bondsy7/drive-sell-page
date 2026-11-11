@@ -1,7 +1,7 @@
 ## PHEV-Entladungswerte in PDF-Angeboten (11.11.2026)
-- [ ] Auto3-Editor um Verbrauch, CO₂, Stromverbrauch und Reichweite bei Plug-in-Hybriden ergänzen.
-- [ ] Fehlende Entladungswerte durch eine dokumentenbasierte Nachprüfung automatisch aus dem Angebot übernehmen; keine Werte schätzen.
-- [ ] Regeln und Editor testen, Funktion bereitstellen und zentrale Angebotsanzeige prüfen.
+- [x] Auto3-Editor um Verbrauch, CO₂, Stromverbrauch und Reichweite bei Plug-in-Hybriden ergänzt; Einheiten beim Bearbeiten vereinheitlicht.
+- [x] Fehlende Entladungswerte durch eine einmalige dokumentenbasierte Nachprüfung automatisch aus dem Angebot übernommen; vorhandene Werte bleiben unverändert, keine Schätzungen. `analyze-pdf` bereitgestellt und unbefugte Aufrufe mit 401 abgewiesen.
+- [x] Alle fünf Angebotsvorlagen mit beiden Entladungswerten getestet; 19 Frontend- und 3 Auslesetests bestanden. Echten DS-N°7-Eintrag im Browser gespeichert, nach Neuladen bestätigt und anschließend restlos entfernt; keine Browserfehler. Keine erneute kostenpflichtige PDF-Analyse mit einem echten Dokument ausgelöst.
 
 ## Spamschutz für Kontaktanfragen (11.11.2026)
 - [x] Kontaktanfragen nur über geprüfte Funktion speichern; Botfalle, begrenzte Eingaben und Händler-/Fahrzeugzuordnung ergänzt. 5 Schutztests und 9 Formulartests bestanden; echte öffentliche Formularanfrage gespeichert, Bot ohne Eintrag abgewiesen, direkte Schreibrechte beider Besucherrollen gesperrt. E-Mail-Versand unverändert und nicht getestet; vorhandene HTML-Dateien für die Botfalle neu herunterladen.
