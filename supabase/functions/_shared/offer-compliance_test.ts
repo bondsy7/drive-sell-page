@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { financingStatus, resolveBankPlaceholders, buildEnvkv, CREDIT_WARNING } from "./offer-compliance.ts";
+import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, CREDIT_WARNING } from "./offer-compliance.ts";
 
 const fullFin = { category: "Finanzierung", customerType: "private",
   finance: { totalPrice: "30000", downPayment: "3000", netLoanAmount: "27000", duration: "48", monthlyRate: "299", nominalInterestRate: "4,99", interestRate: "5,11", totalAmount: "31000" },
@@ -34,4 +34,13 @@ Deno.test("PHEV without discharged values is incomplete", () => {
   const e = buildEnvkv({ consumption: { isPluginHybrid: true, consumptionCombined: "1,2", consumptionElectric: "17", co2Emissions: "28", co2Class: "B" } });
   assertEquals(e.isComplete, false);
   assert(e.missingFields.includes("consumptionCombinedDischarged"));
+});
+
+Deno.test("leasing total is derived from Sonderzahlung + Laufzeit × Rate", () => {
+  const vd = { category: "Leasing", finance: { monthlyRate: "208,00 €", duration: "36 Monate", specialPayment: "6.000,00 €" } };
+  assertEquals(shortcodeValues(vd, "").gesamtbetrag, "13.488,00 €");
+});
+
+Deno.test("bank name is read from legal text when the bank field is empty", () => {
+  assertEquals(bankFromLegalText("Ein Angebot der Volkswagen Leasing GmbH, Gifhorner Straße 57"), "Volkswagen Leasing GmbH");
 });
