@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Auto3Editor from '@/components/template-editors/Auto3Editor';
+import { generateHTML } from '@/lib/templates';
+import type { TemplateId } from '@/types/template';
 import type { VehicleData } from '@/types/vehicle';
 
 vi.mock('@/components/CO2LabelSelector', () => ({
@@ -67,12 +69,23 @@ describe('PHEV-Werte in Auto3-Angeboten', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('8,4 l/100 km'));
+    fireEvent.click(screen.getByText('8,4 l/100km'));
     const input = screen.getByDisplayValue('8,4');
     fireEvent.change(input, { target: { value: '9,1' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    expect(updateConsumption).toHaveBeenCalledWith('consumptionCombinedDischarged', '9,1 l/100 km');
+    expect(updateConsumption).toHaveBeenCalledWith('consumptionCombinedDischarged', '9,1 l/100km');
     expect(screen.getByText('171 g/km')).toBeTruthy();
   });
+
+  it.each<TemplateId>(['autohaus', 'modern', 'klassisch', 'minimalist', 'auto3'])(
+    'schreibt beide Entladungswerte in die %s-Angebotsseite',
+    (templateId) => {
+      const html = generateHTML(templateId, phevOffer(), null);
+      expect(html).toContain('Verbrauch (komb., entladen)');
+      expect(html).toContain('8,4 l/100 km');
+      expect(html).toContain('CO₂-Emissionen (entladen)');
+      expect(html).toContain('171 g/km');
+    },
+  );
 });
