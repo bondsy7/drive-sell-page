@@ -22,3 +22,11 @@ describe('checkBankLegal', () => {
     expect(r.filter(i => i.level === 'error').length).toBe(2);
   });
 });
+
+describe('netLoanFallback', () => {
+  it('computes price minus down payment for financing', async () => {
+    const { netLoanFallback } = await import('./bank-legal-template');
+    expect(netLoanFallback({ category: 'Finanzierung', finance: { totalPrice: '30.000,00 €', downPayment: '5000' } } as any)).toBe('25.000,00 €');
+    expect(netLoanFallback({ category: 'Leasing', finance: { totalPrice: '30000' } } as any)).toBe('');
+  });
+});

@@ -1,5 +1,5 @@
 import type { VehicleData } from '@/types/vehicle';
-import { ADDRESS_PLACEHOLDER, BANK_SHORTCODES, shortcodeValues } from './bank-legal-template';
+import { ADDRESS_PLACEHOLDER, BANK_SHORTCODES, leasingTotal, netLoanFallback, shortcodeValues } from './bank-legal-template';
 
 export interface ProfileBank { bank_name: string; legal_text: string; bank_type?: string }
 export type CheckLevel = 'ok' | 'warn' | 'error';
@@ -30,6 +30,11 @@ export function checkBankLegal(text: string, bankName: string, banks: ProfileBan
     const label = (c: string) => BANK_SHORTCODES.find(s => s.code === `{${c}}`)?.label ?? c;
     items.push({ level: 'warn', label: `Ohne Angebotswert (wird ausgeblendet): ${empty.map(label).join(', ')}` });
   }
+  const f: any = (data as any).finance || {};
+  if (codes.includes('nettodarlehensbetrag') && !(f.netLoanAmount || '').trim() && netLoanFallback(data))
+    items.push({ level: 'warn', label: `Nettodarlehensbetrag berechnet (${netLoanFallback(data)} = Fahrzeugpreis − Anzahlung) – bitte mit dem Bankangebot abgleichen.` });
+  if (codes.includes('gesamtbetrag') && !(f.totalAmount || '').trim() && leasingTotal(data))
+    items.push({ level: 'warn', label: `Gesamtbetrag berechnet (${leasingTotal(data)}) – bitte mit dem Bankangebot abgleichen.` });
   if (codes.length && !unknown.length && !empty.length) items.push({ level: 'ok', label: 'Alle Platzhalter {…} werden automatisch aus dem Angebot befüllt.' });
   return items;
 }

@@ -38,6 +38,16 @@ export function leasingTotal(vd: any): string {
   return eur(String(Math.round((special + rate * n) * 100) / 100).replace(".", ","));
 }
 
+/** Financing net loan = Fahrzeugpreis − Anzahlung (Anzahlung missing = 0). Never for leasing. */
+export function netLoanFallback(vd: any): string {
+  if (offerType(vd) !== "financing") return "";
+  const f = vd?.finance || {};
+  const price = num(clean(f.totalPrice)); if (price == null || !clean(f.totalPrice)) return "";
+  const dp = clean(f.downPayment); const down = dp ? num(dp) : 0;
+  if (down == null || down > price) return "";
+  return eur(String(Math.round((price - down) * 100) / 100).replace(".", ","));
+}
+
 /** Bank name from a legal text like "Ein Angebot der Volkswagen Leasing GmbH, ..." */
 export function bankFromLegalText(text: string): string {
   const m = clean(text).match(/\b(?:der|die|des)\s+([^,.\n]{3,80}?(?:GmbH|AG|S\.A\.|SE|Bank|Leasing|Financial Services?|N\.V\.)[^,\n]*?)(?=,|\.\s|\n|$)/i);
@@ -53,7 +63,7 @@ export function shortcodeValues(vd: any, bankName: string): Record<string, strin
     fahrzeugpreis: eur(f.totalPrice),
     anzahlung: down,
     sonderzahlung: special || down,
-    nettodarlehensbetrag: eur(f.netLoanAmount),
+    nettodarlehensbetrag: eur(f.netLoanAmount) || netLoanFallback(vd),
     laufzeit: months(f.duration),
     laufzeit_zahl: clean(f.duration).replace(/\D+/g, ""),
     monatsrate: eur(f.monthlyRate),
@@ -87,7 +97,7 @@ export function financingStatus(vd: any) {
   const dealer = vd?.dealer || {};
   const hasCashPrice = !!eur(vd?.finance?.totalPrice);
   if (type === "cash") {
-    return { offerType: type, customerType: vd?.customerType === "business" ? "business" : "private", canPublishCash: hasCashPrice, canPublishFinancing: false, showRate: false, isComplete: true, missingFields: [] as string[], missingLabels: [] as string[], creditWarning: null as string | null, representativeExample: false };
+    return { offerType: type, customerType: vd?.customerType === "business" ? "business" : "private", canPublishCash: hasCashPrice, canPublishFinancing: false, showRate: false, isComplete: true, computedFields: [] as string[], missingFields: [] as string[], missingLabels: [] as string[], creditWarning: null as string | null, representativeExample: false };
   }
   const legal = clean(type === "leasing" ? dealer.leasingLegalText : dealer.financingLegalText);
   const bank = clean(type === "leasing" ? dealer.leasingBank : dealer.financingBank) || bankFromLegalText(legal);
@@ -96,6 +106,10 @@ export function financingStatus(vd: any) {
   if (!bank) miss.push(["bank_name", "Bank"]);
   if (!legal) miss.push(["legal_text", "Banktext"]);
   const complete = miss.length === 0;
+  const f = vd?.finance || {};
+  const computedFields: string[] = [];
+  if (!eur(f.netLoanAmount) && vals.nettodarlehensbetrag && type === "financing") computedFields.push("nettodarlehensbetrag");
+  if (!eur(f.totalAmount) && vals.gesamtbetrag) computedFields.push("gesamtbetrag");
   const b2c = type === "financing" && vd?.customerType !== "business";
   return {
     offerType: type,
@@ -108,6 +122,7 @@ export function financingStatus(vd: any) {
     missingLabels: miss.map(([, l]) => l),
     creditWarning: complete && b2c ? CREDIT_WARNING : null,
     representativeExample: complete && b2c,
+    computedFields,
   };
 }
 
