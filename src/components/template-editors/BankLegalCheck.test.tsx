@@ -1,13 +1,25 @@
-import { describe, it, expect, vi } from 'vitest';
+import { useEffect, useState } from 'react';
+import { describe, it, expect } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BankLegalCheck } from './BankLegalCheck';
 
 const banks = [{ bank_name: 'Leasys', legal_text: 'Angebot der {bank_name}, Musterstr. 1.' }];
 const data: any = { category: 'Finanzierung', customerType: 'private', finance: { totalPrice: '30000' } };
 
+/** Mirrors BankLegalCheckBound: one mounted component whose editVersion rises on every bank-field edit. */
+function Harness(props: any) {
+  const [v, setV] = useState(1);
+  useEffect(() => {
+    const h = () => setV(n => n + 1);
+    window.addEventListener('bank-legal-edited', h);
+    return () => window.removeEventListener('bank-legal-edited', h);
+  }, []);
+  return <BankLegalCheck {...props} editVersion={v} />;
+}
+
 async function openNotice(props: any) {
-  render(<BankLegalCheck {...props} editVersion={1} />);
-  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeNull());
+  render(<Harness {...props} />);
+  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeNull(), { timeout: 3000 });
 }
 
 describe('BankLegalCheck confirmation', () => {
@@ -30,15 +42,12 @@ describe('BankLegalCheck confirmation', () => {
   }, 5000);
 
   it('re-opens the notice after a further edit and drops the confirmation', async () => {
-    const props = { text: banks[0].legal_text, bankName: 'Leasys', banks, data };
-    render(<BankLegalCheck {...props} editVersion={1} />);
-    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeNull());
+    await openNotice({ text: banks[0].legal_text, bankName: 'Leasys', banks, data });
     fireEvent.click(screen.getByRole('checkbox'));
     expect(screen.queryByRole('alert')).toBeNull();
-    // Simulate the next bank-field edit: the bound wrapper bumps editVersion.
+    expect(screen.getByText(/Bankangaben bestätigt/)).toBeInTheDocument();
     act(() => { window.dispatchEvent(new Event('bank-legal-edited')); });
-    render(<BankLegalCheck {...props} editVersion={2} />);
-    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeNull());
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeNull(), { timeout: 3000 });
     expect(screen.queryByText(/Bankangaben bestätigt/)).toBeNull();
   }, 8000);
 });
