@@ -395,6 +395,13 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     Bankangaben / Pflichthinweis
                     <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-0.5 rounded">Pflichtfeld</span>
                   </div>
+                  {banks.length === 0 && filterType && (
+                    <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900">
+                      Im Profil ist noch keine {filterType === 'financing' ? 'Finanzierungsbank' : 'Leasingbank'} gespeichert
+                      {dealerBanks.length > 0 ? ` (nur ${filterType === 'financing' ? 'Leasing' : 'Finanzierung'}sbanken vorhanden)` : ''}.
+                      {' '}Bitte unter <a href="/profile" target="_blank" rel="noopener" className="underline font-semibold">Profil → Banken &amp; Rechtstexte</a> eine {filterType === 'financing' ? 'Finanzierungsbank' : 'Leasingbank'} anlegen.
+                    </div>
+                  )}
                   {banks.length > 0 && (
                     <div className="space-y-1.5 mb-2">
                       <label className="text-xs text-gray-500">Gespeicherte Banktexte</label>
