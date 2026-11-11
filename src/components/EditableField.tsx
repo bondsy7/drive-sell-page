@@ -46,11 +46,11 @@ function splitValueAndUnit(raw: string, fixedSuffix?: string): { numericPart: st
     if (match) {
       return { numericPart: match[1].trim(), unit: fixedSuffix };
     }
-    // Also try the auto-detect patterns for kW(PS) special case
+    // Accept spacing variants such as "l/100 km", but keep the configured unit canonical.
     for (const pattern of UNIT_PATTERNS) {
       const m = trimmed.match(pattern);
       if (m) {
-        return { numericPart: m[1].trim(), unit: m[2].trim() };
+        return { numericPart: m[1].trim(), unit: fixedSuffix };
       }
     }
     return { numericPart: trimmed, unit: fixedSuffix };

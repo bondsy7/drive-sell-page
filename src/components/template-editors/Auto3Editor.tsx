@@ -309,6 +309,12 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                       { l: 'Stadtrand', v: consumption.consumptionSuburban, on: (v: string) => updateConsumption('consumptionSuburban', v), s: 'l/100 km' },
                       { l: 'Landstraße', v: consumption.consumptionRural, on: (v: string) => updateConsumption('consumptionRural', v), s: 'l/100 km' },
                       { l: 'Autobahn', v: consumption.consumptionHighway, on: (v: string) => updateConsumption('consumptionHighway', v), s: 'l/100 km' },
+                      ...(isPluginHybrid(consumption) ? [
+                        { l: 'Verbrauch (komb., entladen)', v: consumption.consumptionCombinedDischarged, on: (v: string) => updateConsumption('consumptionCombinedDischarged', v), s: 'l/100km' },
+                        { l: 'CO₂-Emissionen (entladen)', v: consumption.co2EmissionsDischarged, on: (v: string) => updateConsumption('co2EmissionsDischarged', v), s: 'g/km' },
+                        { l: 'Stromverbrauch (komb.)', v: consumption.consumptionElectric, on: (v: string) => updateConsumption('consumptionElectric', v), s: 'kWh/100km' },
+                        { l: 'Elektrische Reichweite', v: consumption.electricRange, on: (v: string) => updateConsumption('electricRange', v), s: 'km' },
+                      ] : []),
                     ].map((r) => (
                       <div key={r.l} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 text-[13px]">
                         <span className="text-gray-600">{r.l}</span>
