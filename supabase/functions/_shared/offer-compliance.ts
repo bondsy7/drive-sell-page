@@ -164,3 +164,20 @@ export function buildEnvkv(vd: any) {
     summaryText: missing.length === 0 ? parts.join(" • ") : null,
   };
 }
+
+/** Machine-readable price block for external consumers (numbers in EUR, null if unknown). */
+export function buildPrice(vd: any) {
+  const f = vd?.finance || {};
+  const toNum = (v: unknown) => { const s = clean(v); return s ? num(s) : null; };
+  const status = financingStatus(vd);
+  const cash = toNum(f.totalPrice);
+  const rate = toNum(f.monthlyRate);
+  return {
+    currency: "EUR",
+    cashPrice: cash,
+    cashPriceFormatted: cash != null ? eur(f.totalPrice) : null,
+    monthlyRate: status.showRate ? rate : null,
+    monthlyRateFormatted: status.showRate && rate != null ? eur(f.monthlyRate) : null,
+    source: "vehicle_data.finance.totalPrice",
+  };
+}
