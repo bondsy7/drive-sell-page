@@ -65,9 +65,21 @@ export function shortcodeValues(data: VehicleData, bankName: string): Record<str
     fahrleistung: km(f.annualMileage),
     sollzins: pct(f.nominalInterestRate || ''),
     effektiver_zins: pct(f.interestRate),
-    gesamtbetrag: eur(f.totalAmount || ''),
+    gesamtbetrag: eur(f.totalAmount || '') || leasingTotal(data),
     kundentyp: data.customerType === 'business' ? 'Gewerbekunden' : 'Privatkunden',
   };
+}
+
+/** Leasing total = Sonderzahlung + Laufzeit × Monatsrate (mirrors offer-compliance.ts). */
+export function leasingTotal(data: VehicleData): string {
+  if (!(data.category || '').toLowerCase().includes('leasing')) return '';
+  const f: any = (data as any).finance || {};
+  const toNum = (v: string) => { const n = Number(v.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
+  const rate = toNum(clean(f.monthlyRate)); const n = Number(clean(f.duration).replace(/\D+/g, ''));
+  const sp = clean(f.specialPayment) || clean(f.downPayment);
+  const special = sp ? toNum(sp) : 0;
+  if (rate == null || !clean(f.monthlyRate) || !n || special == null) return '';
+  return `${(special + rate * n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
 /** Replace shortcodes; clauses whose value is unknown are removed instead of left empty. */

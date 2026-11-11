@@ -27,6 +27,23 @@ export function offerType(vd: any): "leasing" | "financing" | "cash" {
   return "cash";
 }
 
+/** Leasing total = Sonderzahlung + Laufzeit × Monatsrate (only if all three are known). */
+export function leasingTotal(vd: any): string {
+  if (offerType(vd) !== "leasing") return "";
+  const f = vd?.finance || {};
+  const rate = num(clean(f.monthlyRate)); const n = Number(clean(f.duration).replace(/\D+/g, ""));
+  const sp = clean(f.specialPayment) || clean(f.downPayment);
+  const special = sp ? num(sp) : 0;
+  if (rate == null || !n || special == null) return "";
+  return eur(String(Math.round((special + rate * n) * 100) / 100).replace(".", ","));
+}
+
+/** Bank name from a legal text like "Ein Angebot der Volkswagen Leasing GmbH, ..." */
+export function bankFromLegalText(text: string): string {
+  const m = clean(text).match(/\b(?:der|die|des)\s+([^,.\n]{3,80}?(?:GmbH|AG|S\.A\.|SE|Bank|Leasing|Financial Services?|N\.V\.)[^,\n]*?)(?=,|\.\s|\n|$)/i);
+  return m ? m[1].trim() : "";
+}
+
 export function shortcodeValues(vd: any, bankName: string): Record<string, string> {
   const f = vd?.finance || {};
   const special = eur(f.specialPayment);
@@ -44,7 +61,7 @@ export function shortcodeValues(vd: any, bankName: string): Record<string, strin
     fahrleistung: km(f.annualMileage),
     sollzins: pct(f.nominalInterestRate),
     effektiver_zins: pct(f.interestRate),
-    gesamtbetrag: eur(f.totalAmount),
+    gesamtbetrag: eur(f.totalAmount) || leasingTotal(vd),
     kundentyp: vd?.customerType === "business" ? "Gewerbekunden" : "Privatkunden",
   };
 }
@@ -72,8 +89,8 @@ export function financingStatus(vd: any) {
   if (type === "cash") {
     return { offerType: type, customerType: vd?.customerType === "business" ? "business" : "private", canPublishCash: hasCashPrice, canPublishFinancing: false, showRate: false, isComplete: true, missingFields: [] as string[], missingLabels: [] as string[], creditWarning: null as string | null, representativeExample: false };
   }
-  const bank = clean(type === "leasing" ? dealer.leasingBank : dealer.financingBank);
   const legal = clean(type === "leasing" ? dealer.leasingLegalText : dealer.financingLegalText);
+  const bank = clean(type === "leasing" ? dealer.leasingBank : dealer.financingBank) || bankFromLegalText(legal);
   const vals = shortcodeValues(vd, bank);
   const miss = REQUIRED[type].filter(([k]) => !vals[k]);
   if (!bank) miss.push(["bank_name", "Bank"]);
