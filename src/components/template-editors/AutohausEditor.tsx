@@ -1,3 +1,4 @@
+import { CREDIT_WARNING, needsCreditWarning } from '@/lib/bank-legal-template';
 import React, { useState } from 'react';
 import {
   Accordion,
@@ -484,18 +485,16 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     <div className="space-y-1.5">
                       <label className="text-xs text-muted-foreground">Gespeicherte Banktexte</label>
                       <Select
-                        value=""
+                        value={dealerBanks.find(b => isLeasing
+                          ? b.bank_name === data.dealer.leasingBank && b.legal_text === data.dealer.leasingLegalText
+                          : b.bank_name === data.dealer.financingBank && b.legal_text === data.dealer.financingLegalText)?.id ?? ''}
                         onValueChange={(bankId) => {
                           const bank = dealerBanks.find(b => b.id === bankId);
-                          if (bank) {
-                            if (isLeasing) {
-                              updateDealer('leasingBank', bank.bank_name);
-                              updateDealer('leasingLegalText', bank.legal_text);
-                            } else {
-                              updateDealer('financingBank', bank.bank_name);
-                              updateDealer('financingLegalText', bank.legal_text);
-                            }
-                          }
+                          if (!bank) return;
+                          // One update: two sequential updateDealer calls overwrite each other.
+                          onDataChange({ ...data, dealer: { ...data.dealer, ...(isLeasing
+                            ? { leasingBank: bank.bank_name, leasingLegalText: bank.legal_text }
+                            : { financingBank: bank.bank_name, financingLegalText: bank.legal_text }) } });
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm">
@@ -512,6 +511,9 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     </div>
                   )}
 
+                  {needsCreditWarning(data) && (
+                    <div className="text-[15px] font-bold text-foreground">{CREDIT_WARNING}</div>
+                  )}
                   <div className="relative">
                     <span className="absolute top-3 left-3 text-xs font-bold text-foreground select-none"><sup>1</sup></span>
                     <textarea

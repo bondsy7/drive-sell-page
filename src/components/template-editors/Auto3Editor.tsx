@@ -1,3 +1,4 @@
+import { CREDIT_WARNING, needsCreditWarning } from '@/lib/bank-legal-template';
 import React, { useState } from 'react';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
@@ -395,12 +396,12 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     <div className="space-y-1.5 mb-2">
                       <label className="text-xs text-gray-500">Gespeicherte Banktexte</label>
                       <Select
-                        value=""
+                        value={banks.find(b => bankKey && b.bank_name === (data.dealer as any)[bankKey] && b.legal_text === value)?.id ?? ''}
                         onValueChange={(bankId) => {
                           const bank = banks.find(b => b.id === bankId);
                           if (!bank) return;
-                          if (bankKey) updateDealer(bankKey, bank.bank_name);
-                          updateDealer(legalKey, bank.legal_text);
+                          // One update: two sequential updateDealer calls overwrite each other.
+                          onDataChange({ ...data, dealer: { ...data.dealer, ...(bankKey ? { [bankKey]: bank.bank_name } : {}), [legalKey]: bank.legal_text } });
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm bg-white">
@@ -415,6 +416,9 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                         </SelectContent>
                       </Select>
                     </div>
+                  )}
+                  {needsCreditWarning(data) && (
+                    <div className="text-[15px] font-bold mb-2" style={{ color: dark }}>{CREDIT_WARNING}</div>
                   )}
                   <div className="relative">
                     {!isBuyCategory && <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>}
