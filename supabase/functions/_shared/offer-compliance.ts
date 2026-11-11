@@ -203,5 +203,14 @@ export function withComputedFinance(vd: any): any {
   const f = vd.finance;
   const total = eur(f.totalAmount) ? f.totalAmount : leasingTotal(vd);
   const net = eur(f.netLoanAmount) ? f.netLoanAmount : (offerType(vd) === "financing" ? netLoanFallback(vd) : f.netLoanAmount);
-  return { ...vd, finance: { ...f, totalAmount: total || f.totalAmount || "", ...(net !== undefined ? { netLoanAmount: net || "" } : {}) } };
+  const out = { ...vd, finance: { ...f, totalAmount: total || f.totalAmount || "", ...(net !== undefined ? { netLoanAmount: net || "" } : {}) } };
+  // Legacy plugins print dealer.*LegalText verbatim: deliver resolved text (template stays in legalNotice.rawText).
+  const d = vd?.dealer;
+  if (d) {
+    out.dealer = { ...d };
+    if (d.leasingLegalText) out.dealer.leasingLegalText = resolveBankPlaceholders(String(d.leasingLegalText), out, clean(d.leasingBank) || bankFromLegalText(String(d.leasingLegalText)));
+    if (d.financingLegalText) out.dealer.financingLegalText = resolveBankPlaceholders(String(d.financingLegalText), out, clean(d.financingBank) || bankFromLegalText(String(d.financingLegalText)));
+    if (d.defaultLegalText) out.dealer.defaultLegalText = resolveBankPlaceholders(String(d.defaultLegalText), out, "");
+  }
+  return out;
 }
