@@ -1,3 +1,4 @@
+import { BankTemplateLibrary } from '@/components/BankTemplateLibrary';
 import { BankTemplateHelp } from '@/components/BankTemplateHelp';
 import { bankTemplate } from '@/lib/bank-legal-template';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -537,6 +538,8 @@ const Profile = () => {
               <p className="text-xs text-muted-foreground -mt-2 mb-2">
                 Je nach Angebotstyp wird der passende Rechtstext angezeigt: Leasing-Text bei Leasing, Finanzierungs-Text bei Finanzierung, sonst der Standard-Text.
               </p>
+
+              <BankTemplateLibrary />
 
               {/* Leasing Banks */}
               <div className="space-y-3">
