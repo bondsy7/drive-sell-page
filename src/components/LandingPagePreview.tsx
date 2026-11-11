@@ -30,6 +30,8 @@ interface LandingPagePreviewProps {
   vehicleData: VehicleData;
   imageBase64: string | null;
   galleryImages?: string[];
+  /** Öffnet den Dialog „Weitere Bilder hinzufügen“ (nur generierte PDF-Angebotsseiten). */
+  onAddImages?: () => void;
   onReset: () => void;
   onDataChange: (data: VehicleData) => void;
   selectedTemplate: TemplateId;
@@ -59,7 +61,7 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
   </div>
 );
 
-const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange: onDataChangeRaw, selectedTemplate, projectId, vehicleId }) => {
+const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange: onDataChangeRaw, selectedTemplate, projectId, vehicleId, onAddImages }) => {
   const emptyDealer = { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' };
   const emptyConsumption = { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' };
   const data: VehicleData = {
@@ -345,7 +347,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           updatePower, updateFuelType, onDataChange,
           recalculateRate, calculateCosts, costCalculating, costMissingFields,
           addFeature, updateFeature, removeFeature, vinLookup,
-          dealerBanks,
+          dealerBanks, onAddImages,
         };
         switch (selectedTemplate) {
           case 'autohaus': return <AutohausEditor {...editorProps} />;

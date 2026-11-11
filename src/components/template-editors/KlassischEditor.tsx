@@ -29,7 +29,7 @@ const Row: React.FC<{
 );
 
 const KlassischEditor: React.FC<TemplateEditorProps> = ({
-  data, consumption, imageBase64, galleryImages, allImages,
+  data, consumption, imageBase64, galleryImages, allImages, onAddImages,
   isBuyCategory, category,
   updateVehicle, updateFinance, updateDealer, updateConsumption,
   updatePower, updateFuelType, onDataChange,

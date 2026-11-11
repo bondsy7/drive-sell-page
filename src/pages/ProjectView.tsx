@@ -7,6 +7,8 @@ import AppHeader from '@/components/AppHeader';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import LandingPageEditor from '@/components/LandingPageEditor';
 import TemplateSidebar from '@/components/TemplateSidebar';
+import OfferImageAddDialog from '@/components/OfferImageAddDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 import type { VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
@@ -21,6 +23,8 @@ const ProjectView = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [addImagesOpen, setAddImagesOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -125,7 +129,19 @@ const ProjectView = () => {
               selectedTemplate={selectedTemplate}
               projectId={id}
               vehicleId={project.vehicle_id}
+              onAddImages={user ? () => setAddImagesOpen(true) : undefined}
             />
+            {user && id && (
+              <OfferImageAddDialog
+                open={addImagesOpen}
+                onOpenChange={setAddImagesOpen}
+                projectId={id}
+                userId={user.id}
+                vehicleId={project.vehicle_id}
+                existingUrls={mainImage ? Array.from(new Set([mainImage, ...images])) : images}
+                onAdded={(urls) => setImages((prev) => Array.from(new Set([...(prev.length ? prev : mainImage ? [mainImage] : []), ...urls])))}
+              />
+            )}
           </div>
         </main>
       </div>
