@@ -310,9 +310,9 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                       { l: 'Landstraße', v: consumption.consumptionRural, on: (v: string) => updateConsumption('consumptionRural', v), s: 'l/100 km' },
                       { l: 'Autobahn', v: consumption.consumptionHighway, on: (v: string) => updateConsumption('consumptionHighway', v), s: 'l/100 km' },
                       ...(isPluginHybrid(consumption) ? [
-                        { l: 'Verbrauch (komb., entladen)', v: consumption.consumptionCombinedDischarged, on: (v: string) => updateConsumption('consumptionCombinedDischarged', v), s: 'l/100 km' },
+                        { l: 'Verbrauch (komb., entladen)', v: consumption.consumptionCombinedDischarged, on: (v: string) => updateConsumption('consumptionCombinedDischarged', v), s: 'l/100km' },
                         { l: 'CO₂-Emissionen (entladen)', v: consumption.co2EmissionsDischarged, on: (v: string) => updateConsumption('co2EmissionsDischarged', v), s: 'g/km' },
-                        { l: 'Stromverbrauch (komb.)', v: consumption.consumptionElectric, on: (v: string) => updateConsumption('consumptionElectric', v), s: 'kWh/100 km' },
+                        { l: 'Stromverbrauch (komb.)', v: consumption.consumptionElectric, on: (v: string) => updateConsumption('consumptionElectric', v), s: 'kWh/100km' },
                         { l: 'Elektrische Reichweite', v: consumption.electricRange, on: (v: string) => updateConsumption('electricRange', v), s: 'km' },
                       ] : []),
                     ].map((r) => (
