@@ -196,3 +196,12 @@ export function buildPrice(vd: any) {
     source: "vehicle_data.finance.totalPrice",
   };
 }
+
+/** Legacy plugins read vehicle_data.finance directly: fill empty totalAmount/netLoanAmount with computed values. */
+export function withComputedFinance(vd: any): any {
+  if (!vd?.finance) return vd;
+  const f = vd.finance;
+  const total = eur(f.totalAmount) ? f.totalAmount : leasingTotal(vd);
+  const net = eur(f.netLoanAmount) ? f.netLoanAmount : (offerType(vd) === "financing" ? netLoanFallback(vd) : f.netLoanAmount);
+  return { ...vd, finance: { ...f, totalAmount: total || f.totalAmount || "", ...(net !== undefined ? { netLoanAmount: net || "" } : {}) } };
+}
