@@ -1,3 +1,6 @@
+## Spamschutz für Kontaktanfragen (11.11.2026)
+- [ ] Kontaktanfragen nur über geprüfte Funktion speichern; Formular-Botfalle und Eigentümerprüfung ergänzen, gültige Anfrage und abgewiesene Einträge testen.
+
 ## Aufgeräumte Landingpage-Bearbeitung (29.10.2026)
 - [x] Abschnittsaktionen in zentraler Reihe, Element-/Bildaktionen im Stift-Menü, verschachtelte Textfarbe und Bild-Einfügen gebündelt; Desktop, Tablet, mobile Vorschau und echte 390px Handybreite geprüft. Farbwahl, Löschen/Rückgängig am Anfragebutton und Menüs ohne Browserfehler geprüft, Ausgangsinhalt erhalten; 20 Tests grün, nicht veröffentlicht.
 
