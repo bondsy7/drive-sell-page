@@ -20,6 +20,6 @@ describe('bank legal templates', () => {
     expect(needsCreditWarning({ ...base, category: 'Kauf' })).toBe(false);
   });
   it('reports missing credit values', () => {
-    expect(missingCreditFields({ ...base, finance: { ...base.finance, netLoanAmount: '' } })).toEqual(['Nettodarlehensbetrag']);
+    expect(missingCreditFields({ ...base, finance: { ...base.finance, netLoanAmount: '', totalPrice: '' } })).toEqual(['Nettodarlehensbetrag']);
   });
 });
