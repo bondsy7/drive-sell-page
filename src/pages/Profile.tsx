@@ -215,6 +215,7 @@ const Profile = () => {
 
   const addBank = async (type: 'leasing' | 'financing') => {
     if (!user) return;
+    pushBankHistory(true);
     const order = banks.filter(b => b.bank_type === type).length;
     const { data, error } = await supabase.from('dealer_banks').insert({ user_id: user.id, bank_type: type, bank_name: '', legal_text: bankTemplate(type), sort_order: order } as any).select().single();
     if (error) { toast.error('Fehler beim Anlegen'); return; }
