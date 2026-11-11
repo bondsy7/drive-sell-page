@@ -4,7 +4,7 @@ import { getSecret } from "../_shared/get-secret.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { isHoneypotSubmission, leadSchema, ownsLeadContext } from "./validation.ts";
 
-const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c)));
+const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
 const RECIPIENT_RE = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
 
 const reply = (body: object, status = 200) => new Response(JSON.stringify(body), {
