@@ -1,3 +1,4 @@
+import { Undo2 } from 'lucide-react';
 import { BankTemplateLibrary } from '@/components/BankTemplateLibrary';
 import { BankTemplateHelp } from '@/components/BankTemplateHelp';
 import { bankTemplate } from '@/lib/bank-legal-template';
@@ -214,13 +215,40 @@ const Profile = () => {
 
   const addBank = async (type: 'leasing' | 'financing') => {
     if (!user) return;
+    pushBankHistory(true);
     const order = banks.filter(b => b.bank_type === type).length;
     const { data, error } = await supabase.from('dealer_banks').insert({ user_id: user.id, bank_type: type, bank_name: '', legal_text: bankTemplate(type), sort_order: order } as any).select().single();
     if (error) { toast.error('Fehler beim Anlegen'); return; }
     if (data) setBanks(prev => [...prev, { id: (data as any).id, bank_type: type, bank_name: '', legal_text: bankTemplate(type), sort_order: order }]);
   };
 
+  const bankHistory = useRef<{ snap: typeof banks; at: number }[]>([]);
+  const [bankHistoryLen, setBankHistoryLen] = useState(0);
+  const pushBankHistory = (force = false) => {
+    const h = bankHistory.current; const now = Date.now();
+    if (!force && h.length && now - h[h.length - 1].at < 1000) { h[h.length - 1].at = now; return; }
+    h.push({ snap: banks.map(b => ({ ...b })), at: force ? 0 : now });
+    if (h.length > 50) h.shift();
+    setBankHistoryLen(h.length);
+  };
+  const undoBanks = async () => {
+    const entry = bankHistory.current.pop();
+    setBankHistoryLen(bankHistory.current.length);
+    if (!entry || !user) return;
+    const current = new Set(banks.map(b => b.id));
+    const restore = entry.snap.filter(b => !current.has(b.id));
+    if (restore.length) {
+      const { error } = await supabase.from('dealer_banks').upsert(restore.map(b => ({ id: b.id, user_id: user.id, bank_type: b.bank_type, bank_name: b.bank_name, legal_text: b.legal_text, sort_order: b.sort_order })) as any);
+      if (error) { toast.error('Rückgängig fehlgeschlagen'); return; }
+    }
+    const removed = banks.filter(b => !entry.snap.some(s => s.id === b.id));
+    for (const b of removed) await supabase.from('dealer_banks').delete().eq('id', b.id);
+    setBanks(entry.snap);
+    toast.success('Änderung rückgängig gemacht');
+  };
+
   const updateBank = (id: string, field: 'bank_name' | 'legal_text', value: string) => {
+    pushBankHistory();
     setBanks(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b));
   };
 
@@ -234,11 +262,15 @@ const Profile = () => {
 
   const confirmDeleteBank = async () => {
     if (!bankToDelete) return;
+    pushBankHistory(true);
     await supabase.from('dealer_banks').delete().eq('id', bankToDelete);
     setBanks(prev => prev.filter(b => b.id !== bankToDelete));
     setBankToDelete(null);
-    toast.success('Bank entfernt');
+    toast.success('Bank entfernt', { action: { label: 'Rückgängig', onClick: () => { void undoBanksRef.current(); } } });
   };
+
+  const undoBanksRef = useRef(undoBanks);
+  undoBanksRef.current = undoBanks;
 
   const update = (key: keyof ProfileData, val: string) => setProfile(p => ({ ...p, [key]: val }));
 
@@ -539,6 +571,11 @@ const Profile = () => {
                 Je nach Angebotstyp wird der passende Rechtstext angezeigt: Leasing-Text bei Leasing, Finanzierungs-Text bei Finanzierung, sonst der Standard-Text.
               </p>
 
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" disabled={bankHistoryLen === 0} onClick={() => void undoBanks()}>
+                  <Undo2 className="w-3 h-3" /> Rückgängig
+                </Button>
+              </div>
               <BankTemplateLibrary />
 
               {/* Leasing Banks */}
@@ -554,8 +591,8 @@ const Profile = () => {
                 )}
                 {banks.filter(b => b.bank_type === 'leasing').map(bank => (
                   <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
-                    <button onClick={() => setBankToDelete(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
-                      <X className="w-4 h-4" />
+                    <button onClick={() => setBankToDelete(bank.id)} title="Bank löschen" aria-label="Bank löschen" className="absolute top-2 right-2 flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10">
+                      <X className="w-4 h-4" /> Löschen
                     </button>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Bankname</Label>
@@ -583,8 +620,8 @@ const Profile = () => {
                 )}
                 {banks.filter(b => b.bank_type === 'financing').map(bank => (
                   <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
-                    <button onClick={() => setBankToDelete(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
-                      <X className="w-4 h-4" />
+                    <button onClick={() => setBankToDelete(bank.id)} title="Bank löschen" aria-label="Bank löschen" className="absolute top-2 right-2 flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10">
+                      <X className="w-4 h-4" /> Löschen
                     </button>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Bankname</Label>
