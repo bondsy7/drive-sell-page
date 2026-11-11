@@ -1,4 +1,5 @@
 import { CREDIT_WARNING, needsCreditWarning } from '@/lib/bank-legal-template';
+import { BankLegalCheckBound } from './BankLegalCheck';
 import React, { useState } from 'react';
 import {
   Accordion,
@@ -495,6 +496,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                           onDataChange({ ...data, dealer: { ...data.dealer, ...(isLeasing
                             ? { leasingBank: bank.bank_name, leasingLegalText: bank.legal_text }
                             : { financingBank: bank.bank_name, financingLegalText: bank.legal_text }) } });
+                          window.dispatchEvent(new Event('bank-legal-edited'));
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm">
@@ -518,7 +520,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     <span className="absolute top-3 left-3 text-xs font-bold text-foreground select-none"><sup>1</sup></span>
                     <textarea
                       value={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
-                      onChange={(e) => updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value)}
+                      onChange={(e) => { updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value); window.dispatchEvent(new Event('bank-legal-edited')); }}
                       className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 pl-6 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
                       placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
                     />
@@ -527,6 +529,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     <span className="text-base">⚠</span>
                     Pflichtfeld – Bankangaben müssen ausgefüllt sein
                   </div>
+                  <BankLegalCheckBound
+                    text={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
+                    bankName={isLeasing ? (data.dealer.leasingBank || '') : (data.dealer.financingBank || '')}
+                    banks={dealerBanks.filter(b => b.bank_type === (isLeasing ? 'leasing' : 'financing'))}
+                    data={data}
+                  />
                 </div>
               )}
             </AccordionContent>
