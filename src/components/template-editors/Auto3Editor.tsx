@@ -1,4 +1,5 @@
 import { CREDIT_WARNING, needsCreditWarning } from '@/lib/bank-legal-template';
+import { BankLegalCheckBound } from './BankLegalCheck';
 import React, { useState } from 'react';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
@@ -402,6 +403,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                           if (!bank) return;
                           // One update: two sequential updateDealer calls overwrite each other.
                           onDataChange({ ...data, dealer: { ...data.dealer, ...(bankKey ? { [bankKey]: bank.bank_name } : {}), [legalKey]: bank.legal_text } });
+                          window.dispatchEvent(new Event('bank-legal-edited'));
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm bg-white">
@@ -424,7 +426,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     {!isBuyCategory && <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>}
                     <textarea
                       value={value}
-                      onChange={(e) => updateDealer(legalKey, e.target.value)}
+                      onChange={(e) => { updateDealer(legalKey, e.target.value); window.dispatchEvent(new Event('bank-legal-edited')); }}
                       className="w-full text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-xl p-3 pl-6 min-h-[80px] resize-y focus:outline-none focus:ring-2"
                       style={{ ['--tw-ring-color' as any]: accent }}
                       placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
@@ -436,6 +438,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                       Pflichtfeld – Bankangaben müssen ausgefüllt sein
                     </div>
                   )}
+                  {!isBuyCategory && <BankLegalCheckBound text={value} bankName={bankKey ? ((data.dealer as any)[bankKey] || '') : ''} banks={banks} data={data} />}
                 </div>
               );
             })()}
