@@ -35,7 +35,7 @@ export function BankLegalCheck({ text, bankName, banks, data, editVersion }: Pro
               className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-amber-600"
               checked={confirmed}
               disabled={hasErrors}
-              onChange={() => { setConfirmed(true); setShowNotice(false); }}
+              onChange={() => { if (hasErrors) return; setConfirmed(true); setShowNotice(false); }}
             />
             <span>
               Ich habe geprüft: Alle Bankangaben (Bank, Anschrift und Pflichtwerte) sind korrekt eingetragen.

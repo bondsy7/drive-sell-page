@@ -36,6 +36,7 @@ describe('BankLegalCheck confirmation', () => {
     await openNotice({ text: 'Angebot der {bank_name}, [Anschrift der Bank eintragen].', bankName: 'Leasys', banks, data });
     const box = screen.getByRole('checkbox');
     expect(box).toBeDisabled();
+    // A stray click must not confirm while errors remain.
     fireEvent.click(box);
     expect(screen.queryByRole('alert')).not.toBeNull();
     expect(screen.queryByText(/Bankangaben bestätigt/)).toBeNull();
