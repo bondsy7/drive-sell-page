@@ -34,6 +34,7 @@ const OfferImageAddDialog: React.FC<Props> = ({ open, onOpenChange, projectId, u
   useEffect(() => {
     if (!open || !vehicleId) return;
     setPicked([]);
+    // nur beim Öffnen neu laden
     supabase.from('project_images').select('image_url, created_at')
       .eq('vehicle_id', vehicleId).not('image_url', 'is', null)
       .order('created_at', { ascending: false }).limit(60)
@@ -41,7 +42,8 @@ const OfferImageAddDialog: React.FC<Props> = ({ open, onOpenChange, projectId, u
         const urls = Array.from(new Set((data || []).map((r: any) => r.image_url as string).filter(Boolean)));
         setGalleryUrls(urls.filter((u) => !existingUrls.includes(u)));
       });
-  }, [open, vehicleId, existingUrls]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, vehicleId, existingUrls.join('|')]);
 
   const persist = async (urls: string[]) => {
     const base = existingUrls.length;

@@ -8,7 +8,7 @@ import LandingPagePreview from '@/components/LandingPagePreview';
 import LandingPageEditor from '@/components/LandingPageEditor';
 import TemplateSidebar from '@/components/TemplateSidebar';
 import OfferImageAddDialog from '@/components/OfferImageAddDialog';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 import type { VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
