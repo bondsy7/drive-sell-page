@@ -17,7 +17,7 @@ export function BankTemplateLibrary() {
   return (
     <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-semibold">Universelle Vorlage für rechtssichere Banktexte</span>
+        <span className="text-sm font-semibold">Universelle Vorlage für Banktexte</span>
         <div className="flex items-center gap-2">
           <Select value={type} onValueChange={(v) => setType(v as 'leasing' | 'financing')}>
             <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
