@@ -1,4 +1,4 @@
-import { bankFromLegalText, shortcodeValues, assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, CREDIT_WARNING } from "./offer-compliance.ts";
 
 const fullFin = { category: "Finanzierung", customerType: "private",
