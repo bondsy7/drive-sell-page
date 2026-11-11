@@ -2,6 +2,7 @@ import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import { mergeMissingPhevValues, missingPhevDischargedFields } from "../_shared/phev-extraction.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,6 +80,7 @@ VERBRAUCH - Suche nach ALLEN dieser Werte:
 - CO₂-Kosten: niedrig, mittel, hoch (jeweils über 10 Jahre)
 - Kfz-Steuer pro Jahr
 - Bei Elektro/PHEV: Stromverbrauch in kWh/100km
+- Bei JEDEM Plug-in-Hybrid zusätzlich den kombinierten Kraftstoffverbrauch und die CO₂-Emissionen BEI ENTLADENER BATTERIE aus Tabellen, Fußnoten und Pflichtangaben auslesen. Diese gehören in consumptionCombinedDischarged und co2EmissionsDischarged; die CO₂-Klasse allein ersetzt diese Textwerte nicht. Keine Werte schätzen.
 
 JSON-Schema:
 {
@@ -524,6 +526,53 @@ Gib das Ergebnis als JSON zurück.`;
       if (parsed.vehicle) parsed.vehicle.fuelType = normalized;
     }
 
+    // PHEV-Nachprüfung: Die erste Analyse erkennt gelegentlich nur das Doppellabel,
+    // lässt aber die textlichen Entladungswerte leer. Nur in diesem Fall dasselbe
+    // Quelldokument gezielt erneut lesen — ohne Modellwissen oder Schätzwerte.
+    const missingDischarged = missingPhevDischargedFields(c);
+    if (missingDischarged.length > 0) {
+      const retryCtrl = new AbortController();
+      const retryTimeout = setTimeout(() => retryCtrl.abort(), 30_000);
+      try {
+        console.log(`[analyze-pdf] PHEV document retry for: ${missingDischarged.join(', ')}`);
+        const retryResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+          method: "POST",
+          headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
+          signal: retryCtrl.signal,
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: "Du liest ausschließlich Werte aus dem mitgesendeten Fahrzeugangebot ab. Nutze kein Modellwissen und schätze niemals. Antworte nur mit validem JSON." }] },
+            contents: [{ parts: [
+              { text: `Dieses Angebot gehört zu einem Plug-in-Hybrid. Suche im GESAMTEN Dokument, einschließlich Verbrauchstabellen, Fußnoten und Pkw-EnVKV-Pflichtangaben, nach den Werten BEI ENTLADENER BATTERIE (nicht gewichtet kombiniert).
+Antworte nur mit:
+{
+  "consumptionCombinedDischarged": "Kraftstoffverbrauch bei entladener Batterie kombiniert inkl. l/100km oder null",
+  "co2EmissionsDischarged": "CO₂-Emissionen bei entladener Batterie kombiniert inkl. g/km oder null",
+  "co2ClassDischarged": "ausdrücklich ausgewiesene CO₂-Klasse A-G bei entladener Batterie oder null"
+}
+Übernimm Zahlen und Einheiten exakt aus dem Dokument. Wenn ein Wert nicht eindeutig lesbar ist, verwende null.` },
+              ...contentParts.slice(1),
+            ] }],
+            generationConfig: { responseMimeType: "application/json", temperature: 0 },
+          }),
+        });
+        if (retryResp.ok) {
+          const retryData = await retryResp.json();
+          const retryContent = String(retryData.candidates?.[0]?.content?.parts?.[0]?.text || "")
+            .replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+          if (retryContent) {
+            const merged = mergeMissingPhevValues(c, JSON.parse(retryContent));
+            console.log(`[analyze-pdf] PHEV document retry filled: ${merged.join(', ') || 'none'}`);
+          }
+        } else {
+          console.warn(`[analyze-pdf] PHEV document retry HTTP ${retryResp.status}`);
+        }
+      } catch (retryErr) {
+        console.warn("[analyze-pdf] PHEV document retry failed; keeping original extraction", retryErr);
+      } finally {
+        clearTimeout(retryTimeout);
+      }
+    }
+
     // Auto-derive CO₂ classes (NUR A-G, alle Plus-Klassen verwerfen!)
     const isValidCO2Class = (v: string) => /^[A-G]$/i.test((v || '').trim());
     if (!isValidCO2Class(c.co2Class) && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
@@ -612,7 +661,7 @@ Berechne die Kosten mit diesen Formeln:
 Wenn du den genauen Hubraum nicht kennst, schätze ihn anhand des Modellnamens und der Leistung.
 Antworte NUR mit JSON, keine Erklärungen.`;
 
-        const lookupResp = await fetch(geminiUrl, {
+        const lookupResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
           method: "POST",
           headers: {
             "x-goog-api-key": GEMINI_API_KEY,
