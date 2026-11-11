@@ -40,3 +40,21 @@ describe('brand contacts', () => {
     expect(injectBrandContacts(out, contactsForBrand(list, 'kia')).sections[1].content.match(/Anna/g)?.length).toBe(1);
   });
 });
+
+import { brandContactsHtml as _html, injectBrandContacts as _inject } from '@/lib/brand-contacts';
+describe('Ansprechpartner-Bild', () => {
+  const c = { id: '1', brand: 'Skoda', brands: ['Skoda'], name: 'Max', email: 'm@x.de', phone: '1', imageUrl: 'https://x.de/a.jpg' };
+  it('rendert Bild links neben Kontaktdaten', () => {
+    const h = _html([c]);
+    expect(h.indexOf('<img src="https://x.de/a.jpg"')).toBeLessThan(h.indexOf('Max'));
+  });
+  it('verwirft javascript-Links', () => {
+    expect(_html([{ ...c, imageUrl: 'javascript:alert(1)' }])).not.toContain('<img');
+  });
+  it('ersetzt vorhandenen Block vollständig', () => {
+    const page = { sections: [{ id: 'kontakt', type: 'cta', headline: 'Kontakt', content: 'X' }] };
+    const twice = _inject(_inject(page, [c]), [c]);
+    expect(twice.sections[0].content.match(/data-brand-contacts/g)).toHaveLength(1);
+    expect(twice.sections[0].content).not.toContain('</span></div><!--/brand-contacts--></span>');
+  });
+});
