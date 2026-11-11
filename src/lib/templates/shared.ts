@@ -1,3 +1,4 @@
+import { resolveBankPlaceholders, needsCreditWarning, CREDIT_WARNING } from '@/lib/bank-legal-template';
 import { withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
@@ -371,7 +372,11 @@ export function buildLegalTextHTML(data: VehicleData): string {
     legalText = dealer.defaultLegalText;
   }
 
-  if (!legalText && !bankInfo) return '';
+  const bankName = category.includes('leasing') ? dealer.leasingBank : dealer.financingBank;
+  legalText = resolveBankPlaceholders(legalText, data, bankName || '');
+  const warning = needsCreditWarning(data)
+    ? `<div style="font-size:14px;font-weight:800;margin-bottom:10px;color:#1a2332">${CREDIT_WARNING}</div>` : '';
+  if (!legalText && !bankInfo) return warning ? `<div class="legal-text" style="margin-top:24px;padding:20px;background:#ffffff;border-radius:12px;border:1px solid #e8eaee">${warning}</div>` : '';
 
   // Fußnoten-"1" nur bei Leasing/Finanzierung – bei reinem Kaufpreis-Angebot entfällt sie.
   const isBuy = !category.includes('leasing') && !category.includes('finanzierung') && !category.includes('kredit');
@@ -379,8 +384,9 @@ export function buildLegalTextHTML(data: VehicleData): string {
 
   return `<div class="legal-text" style="margin-top:24px;padding:20px;background:#ffffff;border-radius:12px;border:1px solid #e8eaee">
     <div style="font-size:12px;font-weight:700;margin-bottom:8px">Bankangaben / Pflichthinweise</div>
+    ${warning}
     ${bankInfo ? `<div style="font-size:12px;font-weight:600;margin-bottom:8px">${bankInfo}</div>` : ''}
-    <div style="font-size:11px;color:#6b7280;line-height:1.6;white-space:pre-line">${supMarker}${legalText}</div>
+    <div style="font-size:12px;color:#374151;line-height:1.6;white-space:pre-line">${supMarker}${legalText}</div>
   </div>`;
 }
 

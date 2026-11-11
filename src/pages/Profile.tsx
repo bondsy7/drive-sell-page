@@ -1,3 +1,5 @@
+import { BankTemplateHelp } from '@/components/BankTemplateHelp';
+import { bankTemplate } from '@/lib/bank-legal-template';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -212,9 +214,9 @@ const Profile = () => {
   const addBank = async (type: 'leasing' | 'financing') => {
     if (!user) return;
     const order = banks.filter(b => b.bank_type === type).length;
-    const { data, error } = await supabase.from('dealer_banks').insert({ user_id: user.id, bank_type: type, bank_name: '', legal_text: '', sort_order: order } as any).select().single();
+    const { data, error } = await supabase.from('dealer_banks').insert({ user_id: user.id, bank_type: type, bank_name: '', legal_text: bankTemplate(type), sort_order: order } as any).select().single();
     if (error) { toast.error('Fehler beim Anlegen'); return; }
-    if (data) setBanks(prev => [...prev, { id: (data as any).id, bank_type: type, bank_name: '', legal_text: '', sort_order: order }]);
+    if (data) setBanks(prev => [...prev, { id: (data as any).id, bank_type: type, bank_name: '', legal_text: bankTemplate(type), sort_order: order }]);
   };
 
   const updateBank = (id: string, field: 'bank_name' | 'legal_text', value: string) => {
@@ -558,7 +560,8 @@ const Profile = () => {
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Rechtstext</Label>
-                      <Textarea value={bank.legal_text} onChange={e => updateBank(bank.id, 'legal_text', e.target.value)} placeholder="Rechtstext für diese Leasing-Bank..." rows={3} className="text-sm" />
+                      <Textarea value={bank.legal_text} onChange={e => updateBank(bank.id, 'legal_text', e.target.value)} placeholder="Rechtstext für diese Leasing-Bank..." rows={5} className="text-sm" />
+                      <BankTemplateHelp type="leasing" text={bank.legal_text} onInsert={(v) => updateBank(bank.id, 'legal_text', v)} />
                     </div>
                   </div>
                 ))}
@@ -586,7 +589,8 @@ const Profile = () => {
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Rechtstext</Label>
-                      <Textarea value={bank.legal_text} onChange={e => updateBank(bank.id, 'legal_text', e.target.value)} placeholder="Rechtstext für diese Finanzierungs-Bank..." rows={3} className="text-sm" />
+                      <Textarea value={bank.legal_text} onChange={e => updateBank(bank.id, 'legal_text', e.target.value)} placeholder="Rechtstext für diese Finanzierungs-Bank..." rows={5} className="text-sm" />
+                      <BankTemplateHelp type="financing" text={bank.legal_text} onInsert={(v) => updateBank(bank.id, 'legal_text', v)} />
                     </div>
                   </div>
                 ))}
