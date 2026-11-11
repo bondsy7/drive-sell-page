@@ -131,45 +131,6 @@ Deno.serve(async (req) => {
     };
   };
 
-  // Bankangaben / Pflichthinweise — kategorieabhängig aus dealer.* zusammensetzen.
-  // Quelle: vehicle_data.dealer.{leasingLegalText, financingLegalText, defaultLegalText,
-  // leasingBank, financingBank}. Identisch zur Tool-Preview (buildLegalTextHTML).
-  const computeLegalNotice = (vd: any) => {
-    const dealer = (vd?.dealer as Record<string, any>) || {};
-    const category = String(vd?.category || '').toLowerCase();
-    const isLeasing = category.includes('leasing');
-    const isFinancing = category.includes('finanzierung') || category.includes('kredit');
-
-    let type: 'leasing' | 'financing' | 'default' | null = null;
-    let text = '';
-    let bank = '';
-    if (isLeasing && dealer.leasingLegalText) {
-      type = 'leasing';
-      text = String(dealer.leasingLegalText || '');
-      bank = String(dealer.leasingBank || '');
-    } else if (isFinancing && dealer.financingLegalText) {
-      type = 'financing';
-      text = String(dealer.financingLegalText || '');
-      bank = String(dealer.financingBank || '');
-    } else if (dealer.defaultLegalText) {
-      type = 'default';
-      text = String(dealer.defaultLegalText || '');
-    }
-    if (!text && !bank) return null;
-    const status = financingStatus(vd);
-    return {
-      // Shortcodes resolved server-side; rawText keeps the profile template.
-      rawText: text,
-      warning: status.creditWarning,
-      showFinanceText: type === 'default' || status.showRate,
-      label: 'Bankangaben / Pflichthinweise',
-      type,
-      bank: bank || null,
-      text: resolveBankPlaceholders(text, vd, bank),               // Zeilenumbrüche (\n) bleiben erhalten — nicht kürzen.
-      footnoteMarker: (isLeasing || isFinancing) ? '1' : null,
-    };
-  };
-
   try {
     // GET /api-vehicles — list all vehicles
     // Sortierung identisch zum Dashboard (get_vehicle_dashboard_page):
