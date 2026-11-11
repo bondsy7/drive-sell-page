@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, CREDIT_WARNING } from "./offer-compliance.ts";
+import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, buildLegalNotice, CREDIT_WARNING } from "./offer-compliance.ts";
 
 const fullFin = { category: "Finanzierung", customerType: "private",
   finance: { totalPrice: "30000", downPayment: "3000", netLoanAmount: "27000", duration: "48", monthlyRate: "299", nominalInterestRate: "4,99", interestRate: "5,11", totalAmount: "31000" },
@@ -43,4 +43,19 @@ Deno.test("leasing total is derived from Sonderzahlung + Laufzeit × Rate", () =
 
 Deno.test("bank name is read from legal text when the bank field is empty", () => {
   assertEquals(bankFromLegalText("Ein Angebot der Volkswagen Leasing GmbH, Gifhorner Straße 57"), "Volkswagen Leasing GmbH");
+});
+
+Deno.test("every leasing legal notice carries footnote marker 1", () => {
+  const notice = buildLegalNotice({ category: "Leasing", dealer: { leasingBank: "Testbank", leasingLegalText: "Angebot der {bank_name}." } });
+  assertEquals(notice?.footnoteMarker, "1");
+  assertEquals(notice?.text, "Angebot der Testbank.");
+});
+
+Deno.test("default legal notices also carry footnote marker 1", () => {
+  const notice = buildLegalNotice({ category: "Kauf", dealer: { defaultLegalText: "Allgemeine Pflichthinweise." } });
+  assertEquals(notice?.footnoteMarker, "1");
+});
+
+Deno.test("no legal notice is emitted without bank or text", () => {
+  assertEquals(buildLegalNotice({ category: "Leasing", dealer: {} }), null);
 });
