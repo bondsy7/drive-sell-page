@@ -1,3 +1,4 @@
+import { fixBrandSpelling, fixBrandSpellingDeep } from '@/lib/brand-spelling';
 import { readBrandContacts, contactsForBrand, contactBrands, injectBrandContacts } from '@/lib/brand-contacts';
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { buildLandingPageHTML } from '@/lib/landing-page-builder';
@@ -377,13 +378,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         setProgress('Seite wird gespeichert...');
         setProgressPercent(90);
 
+        data.pageContent = fixBrandSpellingDeep(data.pageContent);
         const brandContacts = readBrandContacts(dealerProfile?.ci_settings);
         const chosenContacts = contactBrand === '__none' ? [] : contactsForBrand(brandContacts, contactBrand === '__auto' ? brand : contactBrand);
         if (chosenContacts.length) data.pageContent = injectBrandContacts(data.pageContent, chosenContacts);
         const { data: project, error: saveError } = await supabase.from('projects').insert({
           user_id: user.id,
           vehicle_id: effectiveVehicleId,
-          title: `${brand} ${model}${variant ? ` ${variant}` : ''} – Landing Page`,
+          title: fixBrandSpelling(`${brand} ${model}${variant ? ` ${variant}` : ''} – Landing Page`),
           vehicle_data: {
             type: 'landing-page',
             brand, model, variant,
