@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, User, Chrome, ShieldCheck, Building2 } from 'lucide-react';
+import { Mail, Lock, User, Chrome, ShieldCheck, Building2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LEGAL_VERSIONS, TERMS_DOCUMENT, B2B_CONFIRM_TEXT } from '@/lib/legal-config';
@@ -25,6 +25,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(!plan);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [termsConfirmed, setTermsConfirmed] = useState(false);
@@ -167,7 +168,16 @@ const Auth = () => {
             <Label htmlFor="password">Passwort</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-9" minLength={6} required />
+              <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-9 pr-11" minLength={6} required />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                aria-label={showPassword ? 'Passwort ausblenden' : 'Passwort anzeigen'}
+                title={showPassword ? 'Passwort ausblenden' : 'Passwort anzeigen'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
           </div>
           {!isLogin && (
