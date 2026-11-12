@@ -1,12 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_MODEL_TIER, MODEL_CHOICES, resolveSelectableModelTier,
-  getSelectableModelTiers, hasFullModelAccess, FULL_MODEL_ACCESS_EMAILS,
+  getSelectableModelTiers, hasFullModelAccess, FULL_MODEL_ACCESS_EMAILS, ALL_MODEL_TIERS,
 } from '@/lib/model-choice';
+import { MODEL_TIER_OPTIONS } from '@/lib/auto3-processing';
 
 const BONDS = 'd.bonds@autoactiva.de';
 
 describe('public model selection', () => {
+  it('hides provider names and parenthetical model details in every customer-facing quality choice', () => {
+    const visibleTexts = [
+      ...MODEL_TIER_OPTIONS.map((tier) => tier.label),
+      ...ALL_MODEL_TIERS.flatMap((tier) => [tier.label, tier.sublabel]),
+    ];
+    expect(visibleTexts).toEqual([
+      'Schnell', 'Qualität', 'Premium', 'Advanced', 'Neu',
+      'Schnell', 'Schnelle Verarbeitung', 'Qualität', 'Ausgewogene Qualität',
+      'Premium', 'Standard', 'Advanced', 'Upgrade', 'Turbo', 'Erweiterte Qualität',
+      'Ultra', 'Hohe Qualität', 'Neu', 'Aktuelle Qualität', 'Sunburst', 'Maximale Qualität',
+      'NB 2.1', 'Test',
+    ]);
+    for (const text of visibleTexts) {
+      expect(text).not.toMatch(/gemini|gpt|openai|nano banana/i);
+      expect(text).not.toMatch(/[()]/);
+    }
+  });
   it('offers only the existing Premium and Flare model IDs', () => {
     expect(MODEL_CHOICES).toEqual(['premium', 'flare']);
   });

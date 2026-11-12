@@ -76,10 +76,10 @@ export const AUTO_SCHMITT_STANDARD: ProcessingSettings = {
 
 export const MODEL_TIER_OPTIONS: { value: ModelTierOption; label: string }[] = [
   { value: 'schnell', label: 'Schnell' },
-  { value: 'qualitaet', label: 'Qualität (Standard)' },
+  { value: 'qualitaet', label: 'Qualität' },
   { value: 'premium', label: 'Premium' },
-  { value: 'flare', label: 'Advanced (GPT Image 2.5 Flare)' },
-  { value: 'neu', label: 'Neu (GPT Image 2)' },
+  { value: 'flare', label: 'Advanced' },
+  { value: 'neu', label: 'Neu' },
 ];
 
 /** Banner generator has no Flare engine; Flare banners use the OpenAI "neu" tier (same engine family, no Gemini fallback). */

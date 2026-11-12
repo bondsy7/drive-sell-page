@@ -16,16 +16,16 @@ export interface ModelTierInfo {
 
 // Alle aktuell im Backend unterstützten Tiers.
 export const ALL_MODEL_TIERS: ModelTierInfo[] = [
-  { id: 'schnell',   label: 'Schnell',  sublabel: 'Gemini Flash Lite',      group: 'A', remaster: true, generate: true },
-  { id: 'qualitaet', label: 'Qualität', sublabel: 'Nano Banana 2',          group: 'A', remaster: true, generate: true },
+  { id: 'schnell',   label: 'Schnell',  sublabel: 'Schnelle Verarbeitung',  group: 'A', remaster: true, generate: true },
+  { id: 'qualitaet', label: 'Qualität', sublabel: 'Ausgewogene Qualität',   group: 'A', remaster: true, generate: true },
   { id: 'premium',   label: 'Premium',  sublabel: 'Standard',               group: 'A', remaster: true, generate: true },
   { id: 'flare',     label: 'Advanced', sublabel: 'Upgrade',                group: 'B', remaster: true, generate: false },
-  { id: 'turbo',     label: 'Turbo',    sublabel: 'GPT Image 1',            group: 'B', remaster: true, generate: true },
-  { id: 'ultra',     label: 'Ultra',    sublabel: 'GPT Image 1 High',       group: 'B', remaster: true, generate: true },
-  { id: 'neu',       label: 'Neu',      sublabel: 'GPT Image 2',            group: 'B', remaster: true, generate: true },
-  { id: 'sunburst',  label: 'Sunburst', sublabel: 'GPT Image 2.5 Sunburst', group: 'B', remaster: true, generate: false },
+  { id: 'turbo',     label: 'Turbo',    sublabel: 'Erweiterte Qualität',    group: 'B', remaster: true, generate: true },
+  { id: 'ultra',     label: 'Ultra',    sublabel: 'Hohe Qualität',          group: 'B', remaster: true, generate: true },
+  { id: 'neu',       label: 'Neu',      sublabel: 'Aktuelle Qualität',      group: 'B', remaster: true, generate: true },
+  { id: 'sunburst',  label: 'Sunburst', sublabel: 'Maximale Qualität',      group: 'B', remaster: true, generate: false },
   // Nano Banana 2.1 Testpfad (nur Testaccount); Versionswahl V1/V2 im Foto-Bereich.
-  { id: 'nb21',      label: 'NB 2.1',   sublabel: 'Nano Banana 2.1 (Test)', group: 'A', remaster: true, generate: false },
+  { id: 'nb21',      label: 'NB 2.1',   sublabel: 'Test',                   group: 'A', remaster: true, generate: false },
 ];
 
 export function hasFullModelAccess(email?: string | null): boolean {

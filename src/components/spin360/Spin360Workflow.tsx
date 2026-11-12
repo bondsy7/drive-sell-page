@@ -67,9 +67,9 @@ const SPIN_FRAME_COUNT = 48;
 type SpinImageEngineOption = 'gemini' | 'flare' | 'sunburst';
 
 const SPIN_IMAGE_ENGINES: { value: SpinImageEngineOption; label: string; hint: string }[] = [
-  { value: 'gemini', label: 'Standard', hint: 'Bewährte Engine' },
-  { value: 'flare', label: 'Flare (Test)', hint: 'GPT-Image-2.5 Flare' },
-  { value: 'sunburst', label: 'Sunburst (Test)', hint: 'GPT-Image-2.5 Sunburst' },
+  { value: 'gemini', label: 'Standard', hint: 'Bewährte Qualität' },
+  { value: 'flare', label: 'Flare', hint: 'Erweiterte Qualität' },
+  { value: 'sunburst', label: 'Sunburst', hint: 'Maximale Qualität' },
 ];
 
 /** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
