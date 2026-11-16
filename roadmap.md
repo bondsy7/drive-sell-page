@@ -1,4 +1,9 @@
 
+## Preiserkennung im neuen Plugin weiterhin fehlerhaft (16.11.2026)
+- [x] Listen- und Einzel-API liefern für Peaq `cashPrice: 51500`, `price.cashPrice: 51500`, `vehicle.price` und `finance.totalPrice` korrekt. Öffentlich sichtbare Škoda-Imports zuletzt um 09:27 Uhr aktualisiert, also vor der API-Korrektur um 09:46 Uhr.
+- [ ] Erwartetes Prüffeld des neu installierten Plugins verbindlich prüfen — wartet auf erneute Synchronisation nach 09:46 Uhr oder, falls der Fehler dann bestehen bleibt, auf die aktuelle Plugin-ZIP/PHP; keine weiteren Felder auf Verdacht ergänzen.
+
+
 ## Fehlende Preise im WordPress-Plugin (16.11.2026)
 - [x] Ursache bestätigt: Plugin und Dokumentation lasen `vehicle_data.vehicle.price`, während die Live-API die Preise korrekt unter `cashPrice`, `price.cashPrice` und `vehicle_data.finance.totalPrice` lieferte.
 - [x] Legacy-Preisfeld in der API kompatibel befüllt, ohne explizite Fahrzeugpreise zu überschreiben; Plugin-Generator und Dokumentation auf die numerischen Preisfelder korrigiert. `api-vehicles` bereitgestellt, 12 Regeltests bestanden; echte API-Ausgabe für beide K4-Angebote, Berlingo, Elroq, Peaq und Epiq sowie alle 30 Angebote ohne fehlendes Legacy-Preisfeld geprüft. WordPress-Synchronisation nicht selbst ausgelöst.
