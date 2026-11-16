@@ -39,10 +39,18 @@ export async function resolveAuto3Host(tenant: string, opts: { fresh?: boolean }
 
 export async function auto3Fetch(path: string, tenant: string) {
   const host = await resolveAuto3Host(tenant);
-  const res = await fetch(`${host}${path}`, {
-    method: "GET",
-    headers: { Accept: "application/json", "X-BASEURL": tenant },
-  });
-  if (!res.ok) { await res.text(); throw new Error(`Auto3 ${res.status}`); }
-  return res.json();
+  // Auto3 occasionally answers single pages with transient 5xx/429; retry before failing the whole inventory.
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 600 * attempt));
+    let res: Response;
+    try {
+      res = await fetch(`${host}${path}`, { method: "GET", headers: { Accept: "application/json", "X-BASEURL": tenant } });
+    } catch (e) { if (attempt === 2) throw e; continue; }
+    if (res.ok) return res.json();
+    await res.text();
+    lastStatus = res.status;
+    if (res.status < 500 && res.status !== 429) break;
+  }
+  throw new Error(`Auto3 ${lastStatus}`);
 }
