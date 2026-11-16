@@ -17,6 +17,7 @@ import { buildFinanceFootnotes, toSuperscript } from '@/lib/finance-footnotes';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 import { contactBodyClass, plainContactContent } from '@/lib/landing-contact-plain';
 import { LANDING_IMAGE_FRAME_CSS, frameImageCss, frameOuterCss, normalizeImageFrame, type LandingImageFrame } from '@/lib/landing-image-frame';
+import { LANDING_TEXT_FRAME_CSS, textFrameOuterCss, type LandingTextFrame } from '@/lib/landing-text-frame';
 import { heroScrimCss, landingPrimary, landingSecondary, readableOn, rgba } from '@/lib/landing-theme';
 import { buildAiDisclosureImageOverlayHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import {
@@ -36,6 +37,8 @@ export interface LandingPageContent {
   sectionColors?: Record<string, string>;
   logoSizes?: LandingLogoSizes;
   imageFrames?: Record<string, Partial<import('@/lib/landing-image-frame').LandingImageFrame>>;
+  /** Horizontal width/offset per stable text element id (hero.headline, section.content, …). */
+  textFrames?: Record<string, LandingTextFrame>;
   /** Ordered image blocks per section; '@main' marks the section's original image. */
   imageStacks?: Record<string, string[]>;
   imageSources?: Record<string, { kind: 'upload' | 'ai'; url: string }>;
@@ -105,6 +108,17 @@ function escapeHtml(s: string): string {
   );
 }
 
+function textFrameStyle(content: LandingPageContent | undefined, id: string): string {
+  const frame = content?.textFrames?.[id];
+  return frame ? `;${textFrameOuterCss(frame)}` : '';
+}
+
+function textFrameClass(content: LandingPageContent | undefined, id: string): string {
+  return content?.textFrames?.[id] ? ' lp-text-framed' : '';
+}
+
+const PLAIN_TEXT_BREAKS_CSS = 'white-space:pre-line';
+
 /* ─── Section renderers (matching React renderer 1:1) ─── */
 
 function renderSection(
@@ -161,8 +175,8 @@ function renderSection(
     const waBg = normalizeSectionColor(buttonColors[`${s.id}.whatsapp`]);
     return `<section style="background:${theme.custom ? bg : `linear-gradient(135deg,${primary},#0b1220)`};color:${theme.custom ? textColor : '#fff'};padding:88px 0;text-align:center">
   <div class="lp-content-width">
-    ${removed('headline') ? '' : `<h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:${headlineColor || (theme.custom ? textColor : '#fff')}">${escapeHtml(s.headline)}</h2>`}
-    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:17px;opacity:0.9;margin-bottom:32px${contentColor ? `;color:${contentColor}` : ''}">${bodyContent}</div>`}
+    ${removed('headline') ? '' : `<h2 class="${textFrameClass(stackCtx?.content, `${s.id}.headline`)}" style="font-size:36px;font-weight:700;margin-bottom:16px;color:${headlineColor || (theme.custom ? textColor : '#fff')};${PLAIN_TEXT_BREAKS_CSS}${textFrameStyle(stackCtx?.content, `${s.id}.headline`)}">${escapeHtml(s.headline)}</h2>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}${textFrameClass(stackCtx?.content, `${s.id}.content`)}" style="font-size:17px;opacity:0.9;margin-bottom:32px${contentColor ? `;color:${contentColor}` : ''}${textFrameStyle(stackCtx?.content, `${s.id}.content`)}">${bodyContent}</div>`}
     <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
       ${phone && !removed('phone') ? `<a ${linkAttr('phone', `tel:${phone}`)} style="background:${phoneBg || secondary};color:${phoneBg ? readableOn(phoneBg) : onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
       ${whatsapp && !removed('whatsapp') ? `<a ${linkAttr('whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)} style="background:${waBg || '#25d366'};color:${waBg ? readableOn(waBg) : '#fff'};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
@@ -177,8 +191,8 @@ function renderSection(
   if (isFullWidth) {
     return `<section style="background:${bg}">
   <div class="lp-content-width" style="padding:96px 32px">
-    ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${headlineColor || textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${bodyContent}</div>`}
+    ${removed('headline') ? '' : `<h2 class="${textFrameClass(stackCtx?.content, `${s.id}.headline`)}" style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${headlineColor || textColor};${PLAIN_TEXT_BREAKS_CSS}${textFrameStyle(stackCtx?.content, `${s.id}.headline`)}">${escapeHtml(s.headline)}</h2>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}${textFrameClass(stackCtx?.content, `${s.id}.content`)}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75${textFrameStyle(stackCtx?.content, `${s.id}.content`)}">${bodyContent}</div>`}
   </div>
 </section>`;
   }
@@ -186,9 +200,9 @@ function renderSection(
   if (s.type === 'gallery' || s.type === 'specs') {
     return `<section style="background:${bg}">
   <div class="lp-content-width" style="padding:96px 32px">
-    ${removed('headline') ? '' : `<h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${headlineColor || textColor}">${escapeHtml(s.headline)}</h2>`}
+    ${removed('headline') ? '' : `<h2 class="${textFrameClass(stackCtx?.content, `${s.id}.headline`)}" style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${headlineColor || textColor};${PLAIN_TEXT_BREAKS_CSS}${textFrameStyle(stackCtx?.content, `${s.id}.headline`)}">${escapeHtml(s.headline)}</h2>`}
     ${(() => { const h = stackHtml(16 / 9, 'aspect-ratio:16/9', false); return h ? `<div style="margin-bottom:28px">${h}</div>` : ''; })()}
-    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${bodyContent}</div>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}${textFrameClass(stackCtx?.content, `${s.id}.content`)}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75${textFrameStyle(stackCtx?.content, `${s.id}.content`)}">${bodyContent}</div>`}
   </div>
 </section>`;
   }
@@ -197,8 +211,8 @@ function renderSection(
   const imageOnLeft = idx % 2 === 0;
   const imgHtml = `<div class="lp-split-media">${stackHtml(4 / 3, 'aspect-ratio:4/3', true)}</div>`;
   const textHtml = removed('headline') && removed('content') ? '' : `<div>
-    ${removed('headline') ? '' : `<h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${headlineColor || textColor}">${escapeHtml(s.headline)}</h2>`}
-    ${removed('content') ? '' : `<div class="${bodyClass}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75">${bodyContent}</div>`}
+    ${removed('headline') ? '' : `<h2 class="${textFrameClass(stackCtx?.content, `${s.id}.headline`)}" style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${headlineColor || textColor};${PLAIN_TEXT_BREAKS_CSS}${textFrameStyle(stackCtx?.content, `${s.id}.headline`)}">${escapeHtml(s.headline)}</h2>`}
+    ${removed('content') ? '' : `<div class="${bodyClass}${textFrameClass(stackCtx?.content, `${s.id}.content`)}" style="font-size:16px;color:${contentColor || bodyColor};line-height:1.75${textFrameStyle(stackCtx?.content, `${s.id}.content`)}">${bodyContent}</div>`}
   </div>`;
 
   return `<section style="background:${bg}">
@@ -383,6 +397,7 @@ export function buildLandingPageHTML(
     .lp-body-html th{background:var(--lp-tint);font-weight:600}
     body{container-type:inline-size;container-name:lp}
     ${LANDING_IMAGE_FRAME_CSS}
+    ${LANDING_TEXT_FRAME_CSS}
     ${LIVE_INVENTORY_CSS}
     /* Narrow layouts (tablet / mobile and real devices): image and text always stack. */
     @media(max-width:768px){
@@ -434,8 +449,8 @@ ${heroBgMode ? `    <div style="position:absolute;inset:0;z-index:0">
 ${heroHasText ? `      <div class="lp-hero-text" style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:${heroBgMode ? 'transparent' : heroBackground};color:${onHero};min-height:420px">
         <div style="max-width:${heroBgMode ? '600px' : heroHasImage ? '520px' : 'none'}">
 ${removed('hero.brand') ? '' : `          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${secondary};border:1px solid ${secondary};color:${onSecondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>`}
-${removed('hero.headline') ? '' : `          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${normalizeSectionColor(textColors['hero.headline']) || onHero}">${escapeHtml(heroHeadline)}</h1>`}
-${removed('hero.subheadline') ? '' : `          <p style="font-size:19px;line-height:1.55;color:${normalizeSectionColor(textColors['hero.subheadline']) || rgba(onHero, 0.85)};margin-bottom:36px">${escapeHtml(heroSub)}</p>`}
+${removed('hero.headline') ? '' : `          <h1 class="${textFrameClass(content, 'hero.headline')}" style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:${normalizeSectionColor(textColors['hero.headline']) || onHero};${PLAIN_TEXT_BREAKS_CSS}${textFrameStyle(content, 'hero.headline')}">${escapeHtml(heroHeadline)}</h1>`}
+${removed('hero.subheadline') ? '' : `          <p class="${textFrameClass(content, 'hero.subheadline')}" style="font-size:19px;line-height:1.55;color:${normalizeSectionColor(textColors['hero.subheadline']) || rgba(onHero, 0.85)};margin-bottom:36px;${PLAIN_TEXT_BREAKS_CSS}${textFrameStyle(content, 'hero.subheadline')}">${escapeHtml(heroSub)}</p>`}
           <div style="display:flex;gap:12px;flex-wrap:wrap">
 ${removed('hero.ctaText') ? '' : `            <a ${heroLinkAttr('hero.ctaText', '#kontakt')} style="display:inline-flex;align-items:center;background:${heroCtaBg || secondary};color:${normalizeSectionColor(textColors['hero.ctaText']) || (heroCtaBg ? readableOn(heroCtaBg) : onSecondary)};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>`}
             ${whatsapp && !removed('hero.whatsapp') ? `<a ${heroLinkAttr('hero.whatsapp', `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`)} style="display:inline-flex;align-items:center;background:${heroWhatsappBg || rgba(onHero, 0.1)};color:${heroWhatsappBg ? readableOn(heroWhatsappBg) : onHero};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid ${heroWhatsappBg ? rgba(readableOn(heroWhatsappBg), 0.2) : rgba(onHero, 0.2)}">💬 WhatsApp</a>` : ''}

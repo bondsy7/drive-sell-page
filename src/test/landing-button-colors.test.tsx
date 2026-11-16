@@ -75,7 +75,7 @@ describe('Buttonfarbe auf generierten Landingpages', () => {
       />,
     );
     expect(screen.getByRole('link', { name: 'CTA' }).style.background).toBe('rgb(18, 52, 86)');
-    fireEvent.click(screen.getByRole('button', { name: 'Anfragebutton bearbeiten' }));
+    fireEvent.pointerDown(screen.getByRole('link', { name: 'CTA' }));
     expect(screen.getByRole('button', { name: 'Buttonfarbe ändern' })).toBeTruthy();
   });
 

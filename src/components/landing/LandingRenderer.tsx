@@ -23,6 +23,8 @@ import type { LandingPageContent, LandingPageSection, LandingPageDealer, Landing
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import LandingElementBox, { ElementDeleteButton } from '@/components/landing/LandingElementBox';
+import LandingTextFrame, { LandingTextFrameProvider } from '@/components/landing/LandingTextFrame';
+import { LANDING_TEXT_FRAME_CSS, type LandingTextFrame as LandingTextFrameValue } from '@/lib/landing-text-frame';
 import TextColorButton from '@/components/landing/TextColorButton';
 import ButtonColorButton from '@/components/landing/ButtonColorButton';
 import ButtonLinkButton from '@/components/landing/ButtonLinkButton';
@@ -71,6 +73,7 @@ export interface RendererProps {
   onTextColorChange?: (id: string, color: string | null) => void;
   onButtonColorChange?: (id: string, color: string | null) => void;
   onButtonLinkChange?: (id: string, link: string | null) => void;
+  onTextFrameChange?: (id: string, frame: LandingTextFrameValue) => void;
 
   onDeleteElement?: (id: string) => void;
   onResizeLogo?: (id: LandingLogoId, height: number) => void;
@@ -90,6 +93,7 @@ export interface RendererProps {
 }
 
 const Editable: React.FC<{
+  id?: string;
   value: string;
   editable: boolean;
   onChange?: (v: string) => void;
@@ -102,8 +106,9 @@ const Editable: React.FC<{
   hidden?: boolean;
   onDelete?: () => void;
   colorControl?: React.ReactNode;
-}> = ({ value, editable, onChange, as: Tag = 'div', multiline, className, style, placeholder, html, hidden, onDelete, colorControl }) => {
+}> = ({ id, value, editable, onChange, as: Tag = 'div', multiline, className, style, placeholder, html, hidden, onDelete, colorControl }) => {
   const ref = useRef<HTMLElement>(null);
+  const allowMultiline = multiline ?? Tag !== 'span';
   const commit = useCallback(() => {
     if (!ref.current) return;
     const next = html ? ref.current.innerHTML : (ref.current.innerText || '');
@@ -116,7 +121,7 @@ const Editable: React.FC<{
         suppressContentEditableWarning: true,
         onBlur: commit,
         onKeyDown: (e: React.KeyboardEvent) => {
-          if (!multiline && e.key === 'Enter') {
+          if (!allowMultiline && e.key === 'Enter') {
             e.preventDefault();
             (e.currentTarget as HTMLElement).blur();
           }
@@ -135,28 +140,33 @@ const Editable: React.FC<{
       }
     : {};
 
-  const combined = { ...hoverStyle, ...style };
+  const combined = { ...hoverStyle, ...(!html ? { whiteSpace: 'pre-line' as const } : {}), ...style };
+  const label = Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen';
 
   if (hidden) return null;
   if (html) {
     return (
-      <LandingElementBox editable={editable} onDelete={onDelete} colorControl={colorControl} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
-      <Tag
-        ref={ref as any}
-        className={`lp-editable ${className || ''}`}
-        style={combined}
-        dangerouslySetInnerHTML={{ __html: value || '' }}
-        {...editableProps}
-      />
-      </LandingElementBox>
+      <LandingTextFrame id={id}>
+        <LandingElementBox editable={editable} onDelete={onDelete} colorControl={colorControl} label={label}>
+          <Tag
+            ref={ref as any}
+            className={`lp-editable ${className || ''}`}
+            style={combined}
+            dangerouslySetInnerHTML={{ __html: value || '' }}
+            {...editableProps}
+          />
+        </LandingElementBox>
+      </LandingTextFrame>
     );
   }
   return (
-    <LandingElementBox editable={editable} onDelete={onDelete} colorControl={colorControl} inline={Tag === 'span'} label={Tag === 'h1' || Tag === 'h2' || Tag === 'h3' ? 'Überschrift löschen' : 'Text löschen'}>
-    <Tag ref={ref as any} className={`lp-editable ${className || ''}`} style={combined} {...editableProps}>
-      {value || (editable ? '' : '')}
-    </Tag>
-    </LandingElementBox>
+    <LandingTextFrame id={Tag === 'span' ? undefined : id}>
+      <LandingElementBox editable={editable} onDelete={onDelete} colorControl={colorControl} inline={Tag === 'span'} label={label}>
+        <Tag ref={ref as any} className={`lp-editable ${className || ''}`} style={combined} {...editableProps}>
+          {value || ''}
+        </Tag>
+      </LandingElementBox>
+    </LandingTextFrame>
   );
 };
 
@@ -250,6 +260,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   onTextColorChange,
   onButtonColorChange,
   onButtonLinkChange,
+  onTextFrameChange,
 
   onDeleteElement,
   onResizeLogo,
@@ -352,6 +363,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
   return (
     <LandingToolboxProvider enabled={editable}>
+    <LandingTextFrameProvider frames={content.textFrames} editable={editable} onChange={onTextFrameChange}>
     <LandingSectionSizeContext.Provider value={{ heights: content.sectionHeights, onResize: onResizeSection }}>
     <div className={`lp-root lp-layout${editable ? ' lp-toolbox-mode' : ''}`} style={{ ...cssVars, background: '#ffffff', color: '#0f172a', fontFamily: "'Inter',ui-sans-serif,system-ui,sans-serif" }}>
       <style>{`
@@ -408,6 +420,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         ${LANDING_LAYOUT_CSS}
         ${LANDING_LOGO_CSS}
         ${LANDING_IMAGE_FRAME_CSS}
+        ${LANDING_TEXT_FRAME_CSS}
         ${LANDING_SECTION_HEIGHT_CSS}
       `}</style>
 
@@ -530,6 +543,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
               </LandingElementBox>
               <Editable
                 as="h1"
+                id="hero.headline"
                 editable={editable}
                 value={content.hero?.headline || `${brand} ${model}`}
                 onChange={(v) => onUpdateHero?.('headline', v)}
@@ -541,6 +555,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
               />
               <Editable
                 as="p"
+                id="hero.subheadline"
                 editable={editable}
                 multiline
                 value={content.hero?.subheadline || ''}
@@ -749,6 +764,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
     </div>
     </LandingSectionSizeContext.Provider>
+    </LandingTextFrameProvider>
     </LandingToolboxProvider>
   );
 };
@@ -885,6 +901,7 @@ const SectionRenderer: React.FC<{
             <Editable
               as="h2"
               editable={editable}
+              id={`${s.id}.headline`}
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
@@ -896,6 +913,7 @@ const SectionRenderer: React.FC<{
               as="div"
               html
               editable={editable}
+              id={`${s.id}.content`}
               value={bodyContent}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
@@ -936,6 +954,7 @@ const SectionRenderer: React.FC<{
           <Editable
             as="h2"
             editable={editable}
+            id={`${s.id}.headline`}
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
@@ -947,6 +966,7 @@ const SectionRenderer: React.FC<{
             as="div"
             html
             editable={editable}
+            id={`${s.id}.content`}
             value={bodyContent}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
@@ -968,6 +988,7 @@ const SectionRenderer: React.FC<{
           <Editable
             as="h2"
             editable={editable}
+            id={`${s.id}.headline`}
             value={s.headline}
             onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
@@ -995,6 +1016,7 @@ const SectionRenderer: React.FC<{
             as="div"
             html
             editable={editable}
+            id={`${s.id}.content`}
             value={bodyContent}
             onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}
@@ -1048,6 +1070,7 @@ const SectionRenderer: React.FC<{
             <Editable
               as="h2"
               editable={editable}
+              id={`${s.id}.headline`}
               value={s.headline}
               onChange={(v) => onUpdate('headline', v)}
               hidden={removed('headline')} onDelete={() => onDeleteElement?.('headline')}
@@ -1059,6 +1082,7 @@ const SectionRenderer: React.FC<{
               as="div"
               html
               editable={editable}
+              id={`${s.id}.content`}
               value={bodyContent}
               onChange={(v) => onUpdate('content', v)}
               hidden={removed('content')} onDelete={() => onDeleteElement?.('content')}

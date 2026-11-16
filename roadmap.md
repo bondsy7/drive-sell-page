@@ -1,4 +1,8 @@
 
+## Landingpage-Textbreiten und manuelle Zeilenumbrüche (16.11.2026)
+- [x] In /generator/manual-landing Überschriften- und Textblockbreiten über ziehbare Ränder analog zu Bildern angepasst; Werte stabil je Element in `pageContent.textFrames` gespeichert und in Editor, Vorschau und HTML identisch ausgegeben.
+- [x] Manuell mit Enter erzeugte Zeilenumbrüche bleiben in allen drei Darstellungen erhalten; gemeinsames Undo, 20-%-Mindestbreite und volle Textbreite bis 900 px sichergestellt. Echte Peaq-Browserprüfung mit rechtem und linkem Ziehgriff, Headline und Fließtext, Vorschau, HTML-Download, Desktop/Smartphone und Wiederherstellung bestanden; 22 Regel-/Integrationstests bestanden.
+
 ## Peaq fehlt trotz erkanntem Preis auf der Dev-Angebotsübersicht (16.11.2026)
 - [x] Screenshot nach Plugin 1.7.9 geprüft: Peaq mit `ab 339 € mtl.`, Pflichtfeldprüfung bestanden, API- und WordPress-Ausgabeprüfung `passed`, aber ausdrücklich `Frontend: deaktiviert`. Der Preis-/JSON-Fehler ist damit nicht die Ursache für die fehlende Karte auf /deals/.
 - [ ] Beim Peaq im Backend rechts auf „Aktivieren“ klicken und anschließend https://dev.wir-sind-jacobs.de/deals/ neu laden. Keine WordPress-Verbindung zum Ausführen dieses Klicks verfügbar; tatsächliche Frontend-Anzeige nach Aktivierung noch nicht selbst geprüft.
