@@ -1,3 +1,6 @@
+## Felgen und Detailaufnahmen als ein Block (16.11.2026)
+- [x] Untertitel „Empfohlene Referenzen und eigene Detailfotos" entfernt; beide Sektionen öffnen/schließen gemeinsam und haben ausgeklappt wie eingeklappt die gleiche Höhe. Desktop (1280px) und Handy (390px) im Browser geprüft, 5 Aufnahme-Regeltests bestanden, keine Generierung ausgelöst.
+
 ## Aufnahmeübersicht und Remaster-Bewertung (16.11.2026)
 - [x] Empfohlene Rundgang-Referenzen aus dem oberen Aufnahmeraster in „Weitere Detailaufnahmen“ verschoben; Upload, Vorschau und Datenreihenfolge unverändert. Desktop und Handy im Browser geprüft, 5 Aufnahme-Regeltests bestanden, keine Generierung ausgelöst.
 - [x] Direkte Pipeline mit Originalen beurteilt: technisch sinnvoll als optionaler Ablauf, erfordert aber eigenen Abschluss-/Galeriepfad und originals-first Referenzrouting; bestehender Remaster-Prozess vorerst unverändert.
