@@ -1,8 +1,8 @@
 
 ## DEKRA-Originalbilder November 2026 (16.11.2026)
-- [ ] Alle Originalaufnahmen der November-Tests aus dekra@autohaus.ai, dekra2@autohaus.ai und dekra3@autohaus.ai vollständig erfassen; KI-/Remaster-Ergebnisse ausschließen.
-- [ ] Jedes Originalbild visuell auf Beschnitt, Sichtbehinderung, Perspektive, Schärfe, Belichtung und fehlende Detailbelege prüfen und konkrete Verbesserungen je Fahrzeug ableiten.
-- [ ] Ausführliches PDF mit allen Originalbildern erstellen, jede Seite rendern und Sichtprüfung abschließen; keine Generierung oder Projektcodeänderung auslösen.
+- [x] Alle 117 Originalaufnahmen aus 11 November-Tests von dekra@autohaus.ai und dekra2@autohaus.ai erfasst; KI-/Remaster-Ergebnisse ausgeschlossen. Für dekra3@autohaus.ai bestehen keine November-Originale.
+- [x] Jedes Originalbild visuell auf Beschnitt, Sichtbehinderung, Perspektive, Schärfe, Belichtung und fehlende Detailbelege geprüft; 70 geeignete, 38 eingeschränkte und 9 kritische Referenzen mit konkreten Verbesserungen bewertet.
+- [x] 79-seitiges PDF mit allen Originalbildern erstellt und jede Seite gerendert; alle 117 Dateinamen geprüft, zwei gefundene Layout-/Rollenfehler korrigiert und betroffene Seiten erneut geprüft. Keine Generierung oder Projektcodeänderung ausgelöst.
 
 ## Werkzeugkasten für Abschnitts- und Elementänderungen (16.11.2026)
 - [x] Abschnitts-Stift ohne separates Popover in den schwebenden Werkzeugkasten verlegt; alle bisherigen Abschnittsoptionen einschließlich Mitarbeiterbilder, Farbe, Höhe, Verschieben, Einfügen und Löschen erhalten.
