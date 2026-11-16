@@ -1,4 +1,8 @@
 
+## Werkzeugkasten für Abschnitts- und Elementänderungen (16.11.2026)
+- [x] Abschnitts-Stift ohne separates Popover in den schwebenden Werkzeugkasten verlegt; alle bisherigen Abschnittsoptionen einschließlich Mitarbeiterbilder, Farbe, Höhe, Verschieben, Einfügen und Löschen erhalten.
+- [x] Werkzeugkasten in „Abschnittsänderungen“ und „Änderungen am gewählten Element“ geteilt; beide Auswahlen unabhängig sichtbar, Außenklick und Unterdialoge korrekt. Peaq-Browserprüfung mit Kontakt-Stift, Überschrift und Mitarbeiterbild-Dialog ohne Laufzeitfehler bestanden; 25 Tests bestanden.
+
 ## Mitarbeiterbilder in bestehenden Kontaktsections (16.11.2026)
 - [x] Im Stift-Menü jeder Kontaktsection „Mitarbeiterbilder“ anbieten; Profilpersonen der Fahrzeugmarke laden und pro Person Upload oder Bildlink ermöglichen.
 - [x] Beim Übernehmen nur den Ansprechpartner-Block der gewählten Section ersetzen, Bilder zusätzlich im Profil speichern, Autosave/HTML/Rückgängig erhalten und im echten Peaq-Editor prüfen. Link-Ablauf, Vorschau, HTML und Undo im Browser bestätigt; temporäres Markus-Testbild entfernt, vorhandenes Stefan-Bild erhalten. 16 Regel-/Integrationstests bestanden.

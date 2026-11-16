@@ -191,3 +191,7 @@
 .lp-toolbox-body { padding:8px; max-height:min(70vh,560px); overflow:auto; }
 .lp-toolbox-body[hidden] { display:none; }
 .lp-toolbox-empty { padding:6px 4px; font-size:12px; line-height:1.5; color:hsl(var(--muted-foreground)); }
+.lp-toolbox-group + .lp-toolbox-group { margin-top:10px; padding-top:10px; border-top:1px solid hsl(var(--border)); }
+.lp-toolbox-group-head { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:2px 4px 6px; }
+.lp-toolbox-group-title { font-size:11px; line-height:1.4; font-weight:700; letter-spacing:.02em; color:hsl(var(--foreground)); }
+.lp-toolbox-group-selection { max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; color:hsl(var(--muted-foreground)); }
