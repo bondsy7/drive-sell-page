@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         liveInventory: live ? {
           enabled: true,
           mode: live.mode, brand: live.brand || "", model: live.model || "",
-          condition: live.condition || "all", maxItems: live.maxItems || 8,
+          condition: live.condition || "all", maxItems: live.maxItems === 0 ? 0 : (live.maxItems || 8),
           selectedIds: live.mode === "manual" ? (live.selectedIds || []) : [],
           layout: live.layout || "slider", title: live.title || "",
           financeBank: live.financeBank || null,

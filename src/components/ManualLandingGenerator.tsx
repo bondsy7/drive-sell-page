@@ -844,7 +844,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
               {
                 label: 'Live-Fahrzeuge',
                 value: liveInventory.enabled
-                  ? `${liveInventory.layout === 'slider' ? 'Slider' : 'Raster'}, max. ${liveInventory.maxItems}`
+                  ? `${liveInventory.layout === 'slider' ? 'Slider' : 'Raster'}, ${liveInventory.maxItems > 0 ? `max. ${liveInventory.maxItems}` : 'alle Fahrzeuge'}`
                   : 'nicht aktiviert',
               },
             ].map(row => (

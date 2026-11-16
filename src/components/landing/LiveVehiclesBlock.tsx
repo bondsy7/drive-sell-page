@@ -78,7 +78,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
   const filtered = useMemo(() => (items || []).filter(v => matchesLiveFilter(v, value)), [items, value]);
   const gaps = useMemo(() => findFinanceGaps(resolveLiveVehicles(items || [], { ...value, cardDesign: cardDesign || value.cardDesign }), { ...value, cardDesign: cardDesign || value.cardDesign }), [items, value, cardDesign]);
   const selected = new Set(value.selectedIds);
-  const shownCount = value.mode === 'manual' ? value.selectedIds.length : Math.min(filtered.length, value.maxItems);
+  const shownCount = value.mode === 'manual' ? value.selectedIds.length : (value.maxItems > 0 ? Math.min(filtered.length, value.maxItems) : filtered.length);
 
   const toggle = (id: string) => {
     const next = selected.has(id) ? value.selectedIds.filter(x => x !== id) : [...value.selectedIds, id];
@@ -176,7 +176,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                     <label className="text-xs font-medium text-muted-foreground">Max. Fahrzeuge</label>
                     <Select value={String(value.maxItems)} onValueChange={(n) => set({ maxItems: Number(n) })} disabled={disabled}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{[4, 6, 8, 12, 16, 24].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+                      <SelectContent><SelectItem value="0">Alle anzeigen</SelectItem>{[4, 6, 8, 12, 16, 24].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 )}
@@ -235,7 +235,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                   {filtered.length === 0 && <p className="p-4 text-xs text-muted-foreground">Keine Fahrzeuge für diese Auswahl im Bestand.</p>}
                   {filtered.map((v, idx) => {
                     const isSel = selected.has(v.externalVehicleId);
-                    const inShow = value.mode === 'manual' ? isSel : idx < value.maxItems;
+                    const inShow = value.mode === 'manual' ? isSel : (value.maxItems <= 0 || idx < value.maxItems);
                     return (
                       <button key={v.externalVehicleId} type="button" disabled={disabled || value.mode !== 'manual'}
                         onClick={() => toggle(v.externalVehicleId)}

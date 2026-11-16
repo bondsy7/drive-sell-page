@@ -135,7 +135,7 @@ export function resolveLiveVehicles(items: LiveVehicle[], c: LiveInventoryConfig
     const wanted = new Set(c.selectedIds);
     return items.filter(v => wanted.has(v.externalVehicleId));
   }
-  return items.filter(v => matchesLiveFilter(v, c)).slice(0, Math.max(1, c.maxItems));
+  return items.filter(v => matchesLiveFilter(v, c)).slice(0, c.maxItems > 0 ? c.maxItems : undefined);
 }
 
 /* ─── formatting (identical in editor preview and exported HTML) ─── */

@@ -148,5 +148,5 @@ export function matchVehicles(raws: Row[], c: LiveConfig): ApiVehicle[] {
   const eq = (a: string | null, b?: string) => !b || (a || "").toLowerCase() === b.toLowerCase();
   return all.filter((v) => eq(v.brand, c.brand) && eq(v.model, c.model)
     && (c.condition !== "new" || v.condition === "new") && (c.condition !== "used" || v.condition === "used"))
-    .slice(0, Math.max(1, Math.min(50, c.maxItems || 8)));
+    .slice(0, c.maxItems === 0 ? 500 : Math.max(1, Math.min(50, c.maxItems || 8)));
 }
