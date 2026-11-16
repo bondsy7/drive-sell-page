@@ -1,7 +1,8 @@
 
 ## Preiserkennung im neuen Plugin weiterhin fehlerhaft (16.11.2026)
 - [x] Listen- und Einzel-API liefern für Peaq `cashPrice: 51500`, `price.cashPrice: 51500`, `vehicle.price` und `finance.totalPrice` korrekt. Öffentlich sichtbare Škoda-Imports zuletzt um 09:27 Uhr aktualisiert, also vor der API-Korrektur um 09:46 Uhr.
-- [ ] Erwartetes Prüffeld des neu installierten Plugins verbindlich prüfen — wartet auf erneute Synchronisation nach 09:46 Uhr oder, falls der Fehler dann bestehen bleibt, auf die aktuelle Plugin-ZIP/PHP; keine weiteren Felder auf Verdacht ergänzen.
+- [x] Version 1.7.8-dev aus der hochgeladenen ZIP geprüft: alle vorhandenen Plugin-Smoke-Tests bestanden; Preisauflösung und echter Sync-Merge mit Live-API erkennen Peaq 339 € mtl./51.500 €, Epiq 130 €/32.100 €, Elroq 208 €/39.410 €, Berlingo 218 €/26.170 € und beide K4-Preise korrekt. Keine Plugin-Codeänderung und keine neue ZIP ohne nachweisbaren Fehler erstellt.
+- [ ] Dev-WordPress nach Installation mit „Jetzt synchronisieren“ aktualisieren; falls die Fehlermeldung bei einem Import nach 09:46 Uhr weiterhin erscheint, Diagnose „Titel prüfen“ und aktuellen Screenshot nachreichen. Dev und Live speichern trotz derselben API getrennte lokale Fahrzeugkopien.
 
 
 ## Fehlende Preise im WordPress-Plugin (16.11.2026)
