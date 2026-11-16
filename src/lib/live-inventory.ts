@@ -90,7 +90,25 @@ export const jacobsMonthlyRate = (v: LiveVehicle): number | null => {
   const rate = v.monthlyRate || jacobsFallbackMonthlyRate(v.priceEur);
   return rate ? Math.round(rate) : null;
 };
-export const jacobsFuelLabel = (v: LiveVehicle) => ({ FUEL: 'Benzin', PETROL: 'Benzin', DIESEL: 'Diesel', ELECTRIC: 'Elektro', HYBRID: 'Hybrid', PLUGIN_HYBRID: 'Plug-in-Hybrid' }[v.fuelType || ''] || v.fuelType || '—');
+/** Auto3 delivers machine codes (HYBRID_BENZIN, ELEKTRO …); customers only ever see the plain German word. */
+const FUEL_LABELS: Record<string, string> = {
+  FUEL: 'Benzin', PETROL: 'Benzin', BENZIN: 'Benzin',
+  DIESEL: 'Diesel',
+  ELECTRIC: 'Elektro', ELEKTRO: 'Elektro',
+  HYBRID: 'Hybrid',
+  PLUGIN_HYBRID: 'Plug-in-Hybrid', PHEV: 'Plug-in-Hybrid',
+};
+
+export const liveFuelLabel = (v: LiveVehicle): string => {
+  const code = (v.fuelType || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (FUEL_LABELS[code]) return FUEL_LABELS[code];
+  if (code.startsWith('PLUGIN_HYBRID')) return 'Plug-in-Hybrid';
+  // HYBRID_BENZIN, HYBRID_DIESEL … are all shown as plain "Hybrid".
+  if (code.startsWith('HYBRID')) return 'Hybrid';
+  return v.fuelType?.trim() || '—';
+};
+export const isElectricFuel = (v: LiveVehicle) => liveFuelLabel(v) === 'Elektro';
+export const jacobsFuelLabel = liveFuelLabel;
 export const jacobsPowerLabel = (v: LiveVehicle) => v.powerKw != null ? `${v.powerKw} kW${v.powerPs != null ? ` (${v.powerPs} PS)` : ''}` : '—';
 
 /** Saved rule: the renderer (and later the website plugin) re-resolves live vehicles from this. */

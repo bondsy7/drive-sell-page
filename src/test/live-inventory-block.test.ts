@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_LIVE_INVENTORY,
+  isElectricFuel,
+  jacobsFuelLabel,
   matchesLiveFilter,
   resolveLiveVehicles,
   resolveProfileCardDesign,
@@ -83,5 +85,21 @@ describe('Live-Fahrzeuge block', () => {
     expect(matchesLiveFilter(car('9', 'ŠKODA', 'KAROQ', true), cfg({ brand: 'Škoda', model: 'karoq' }))).toBe(true);
     expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'skoda', model: 'KAROQ' }))).toBe(true);
     expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'Škoda' }))).toBe(false);
+  });
+
+  it('zeigt Auto3-Kraftstoffcodes als deutsches Wort', () => {
+    const fuel = (fuelType: string) => jacobsFuelLabel({ ...car('1', 'Skoda', 'Karoq', true), fuelType });
+    expect(fuel('HYBRID_BENZIN')).toBe('Hybrid');
+    expect(fuel('HYBRID_DIESEL')).toBe('Hybrid');
+    expect(fuel('HYBRID')).toBe('Hybrid');
+    expect(fuel('PLUGIN_HYBRID')).toBe('Plug-in-Hybrid');
+    expect(fuel('BENZIN')).toBe('Benzin');
+    expect(fuel('ELEKTRO')).toBe('Elektro');
+    expect(fuel('')).toBe('—');
+  });
+
+  it('erkennt Elektro nur bei reinem Elektroantrieb', () => {
+    expect(isElectricFuel({ ...car('1', 'Skoda', 'Enyaq', true), fuelType: 'ELEKTRO' })).toBe(true);
+    expect(isElectricFuel({ ...car('1', 'Skoda', 'Karoq', true), fuelType: 'HYBRID_BENZIN' })).toBe(false);
   });
 });

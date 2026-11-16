@@ -2,7 +2,7 @@ import { Car, Gauge, SlidersHorizontal, Fuel, Zap, Mail, Phone } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import type { FinanceFootnote } from '@/lib/finance-footnotes';
 import { toSuperscript } from '@/lib/finance-footnotes';
-import { jacobsFuelLabel, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
+import { isElectricFuel, jacobsFuelLabel, jacobsPowerLabel, jacobsPriceLabel, jacobsTitleLabel, liveVehicleHref, type LiveVehicle, type LiveVehicleCardDesign } from '@/lib/live-inventory';
 
 export default function JacobsVehicleCard({ vehicle: v, design, editable, footnote }: { vehicle: LiveVehicle; design: LiveVehicleCardDesign; editable?: boolean; footnote?: FinanceFootnote }) {
   const href = liveVehicleHref(v, design);
@@ -18,7 +18,7 @@ export default function JacobsVehicleCard({ vehicle: v, design, editable, footno
         <div className="lp-jacobs-specs">
           <div className="lp-jacobs-spec"><Gauge aria-hidden="true" /><span>{v.mileage != null ? `${v.mileage.toLocaleString('de-DE')} km` : '—'}</span></div>
           <div className="lp-jacobs-spec"><SlidersHorizontal aria-hidden="true" /><span>{v.transmission || '—'}</span></div>
-          <div className="lp-jacobs-spec">{['ELECTRIC', 'Elektro'].includes(v.fuelType || '') ? <Zap aria-hidden="true" /> : <Fuel aria-hidden="true" />}<span>{jacobsFuelLabel(v)}</span></div>
+          <div className="lp-jacobs-spec">{isElectricFuel(v) ? <Zap aria-hidden="true" /> : <Fuel aria-hidden="true" />}<span>{jacobsFuelLabel(v)}</span></div>
           <div className="lp-jacobs-spec"><Gauge aria-hidden="true" /><span>{jacobsPowerLabel(v)}</span></div>
         </div>
       </div>
