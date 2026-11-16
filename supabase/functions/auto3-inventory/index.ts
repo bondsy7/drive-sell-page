@@ -220,6 +220,7 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Prom
 Deno.serve(async (req) => {
   { const __blocked = blockedAccountResponse(req); if (__blocked) return __blocked; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  let currentAction: unknown = null;
   try {
     const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     if (!token) return json({ error: "Nicht angemeldet" }, 401);
@@ -230,6 +231,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
+    currentAction = action;
     // Read-only live listing for landing pages is also allowed for the landing-page module.
     const allowedModules = action === "live_list" ? [MODULE, "manual-landing"] : [MODULE];
     const { data: accessRows } = await sb.from("user_module_access").select("enabled")
@@ -498,6 +500,7 @@ Deno.serve(async (req) => {
     return json({ error: "Unbekannte Aktion" }, 400);
   } catch (e) {
     console.error("[auto3-inventory]", e);
-    return json({ error: "Auto3-Bestand konnte nicht geladen werden." }, 502);
+    // live_list answers 200 so landing pages show a hint instead of a blank runtime error.
+    return json({ error: "Auto3-Bestand konnte nicht geladen werden.", code: "upstream" }, currentAction === "live_list" ? 200 : 502);
   }
 });
