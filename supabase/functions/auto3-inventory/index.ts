@@ -6,6 +6,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { analyzeVehicleOriginals } from "../_shared/auto3-analysis.ts";
 
 import { auto3Fetch, resolveAuto3Host } from "../_shared/auto3-host.ts";
+import { auto3TransmissionLabel } from "../_shared/auto3-transmission.ts";
 const LEGACY_AUTO3_X_BASEURL = Deno.env.get("AUTO3_X_BASEURL") || "https://schmitt.indicar.de";
 const SOURCE = "auto3";
 const MODULE = "website-publishing";
@@ -317,6 +318,7 @@ Deno.serve(async (req) => {
         mileage: n(r.mileage),
         firstRegistration: r.firstRegistration ?? null,
         fuelType: r.vehicleModel?.fuelType ?? null,
+        transmission: auto3TransmissionLabel(r),
         powerKw: n(r.vehicleModel?.kwpower),
         powerPs: n(r.vehicleModel?.horsePower),
         emissionText: typeof r.emissionText === "string" ? r.emissionText : null,
