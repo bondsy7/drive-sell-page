@@ -3,6 +3,9 @@
 - [x] Alle 117 Originalaufnahmen aus 11 November-Tests von dekra@autohaus.ai und dekra2@autohaus.ai erfasst; KI-/Remaster-Ergebnisse ausgeschlossen. Für dekra3@autohaus.ai bestehen keine November-Originale.
 - [x] Jedes Originalbild visuell auf Beschnitt, Sichtbehinderung, Perspektive, Schärfe, Belichtung und fehlende Detailbelege geprüft; 70 geeignete, 38 eingeschränkte und 9 kritische Referenzen mit konkreten Verbesserungen bewertet.
 - [x] 79-seitiges PDF mit allen Originalbildern erstellt und jede Seite gerendert; alle 117 Dateinamen geprüft, zwei gefundene Layout-/Rollenfehler korrigiert und betroffene Seiten erneut geprüft. Keine Generierung oder Projektcodeänderung ausgelöst.
+- [x] Überarbeitete Version 2 ohne doppelte Fahrzeuge/Bewertungen erstellt: 76 eindeutige Originale in fünf Fahrzeugkapiteln (49 geeignet, 22 eingeschränkt, 5 kritisch); 41 doppelte Bildplätze aus der Statistik entfernt, 15 neue Transporter-Motive einmalig zusammengeführt.
+- [x] Tatsächliche Premium-/Advanced-Laufprotokolle gegenübergestellt und 21 vorhandene Ergebnispaare visuell bewertet: Advanced bei mehreren Details besser, aber nicht durchgehend; BMW-Master mit falscher Limousinenform. Kontrollierten A/B-Folgetest dokumentiert, keine Neugenerierung ausgelöst.
+- [x] 64-seitige Version 2 vollständig visuell geprüft; alle 76 Dateinamen exakt einmal nachgewiesen, alte Statistikwerte ausgeschlossen, Kompression von 159 MB auf 2,9 MB mit erneuter Bild-/Textkontrolle. PDF: `/mnt/documents/DEKRA_Originalbilder_November_2026_Qualitaetspruefung_v2.pdf`.
 
 ## Werkzeugkasten für Abschnitts- und Elementänderungen (16.11.2026)
 - [x] Abschnitts-Stift ohne separates Popover in den schwebenden Werkzeugkasten verlegt; alle bisherigen Abschnittsoptionen einschließlich Mitarbeiterbilder, Farbe, Höhe, Verschieben, Einfügen und Löschen erhalten.
