@@ -65,7 +65,6 @@ import { isMotorhomeSelectionComplete } from '@/config/motorhome-workflow';
 import type { MotorhomeBodyTypeKey } from '@/config/vehicle-class-types';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 import tireReferenceAsset from '@/assets/tire-reference.png.asset.json';
 import vinReferenceAsset from '@/assets/capture-perspectives/vin.webp.asset.json';
@@ -137,23 +136,24 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
  */
 const CaptureSection: React.FC<{
   title: string;
-  subtitle?: string;
   badge?: string;
   badgeOk?: boolean;
   collapsible?: boolean;
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Streckt die Sektion auf die Zeilenhöhe und zentriert ihren Inhalt. */
+  fill?: boolean;
   children: React.ReactNode;
 }> = ({
   title,
-  subtitle,
   badge,
   badgeOk,
   collapsible,
   defaultOpen = true,
   open: openProp,
   onOpenChange,
+  fill,
   children,
 }) => {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -173,7 +173,6 @@ const CaptureSection: React.FC<{
     <>
       <div className="min-w-0 text-left">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{subtitle}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         {badge && (
@@ -193,7 +192,7 @@ const CaptureSection: React.FC<{
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card p-3 sm:p-4 shadow-sm">
+    <section className={`rounded-xl border border-border bg-card p-3 sm:p-4 shadow-sm${fill ? ' flex h-full flex-col' : ''}`}>
       {collapsible ? (
         <Button
           type="button"
@@ -207,7 +206,7 @@ const CaptureSection: React.FC<{
       ) : (
         <header className="flex items-start justify-between gap-3">{heading}</header>
       )}
-      {isOpen && <div className="mt-2.5">{children}</div>}
+      {isOpen && <div className={fill ? 'mt-2.5 flex flex-1 flex-col justify-center' : 'mt-2.5'}>{children}</div>}
     </section>
   );
 };
@@ -373,8 +372,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const derivedWheelSourceRef = useRef<string | null>(null);
   const [wheelAnalyzing, setWheelAnalyzing] = useState(false);
   const wheelFileRef = useRef<HTMLInputElement | null>(null);
-  const isMobile = useIsMobile();
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const vinLookup = useVinLookup();
   const { makes } = useVehicleMakes();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -571,6 +568,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   // Datenreihenfolge oben bleibt unverändert; nur ihre Darstellung wandert.
   const primaryDisplaySlots = displaySlots.filter(s => !s.referenceOnly);
   const recommendedReferenceSlots = displaySlots.filter(s => s.referenceOnly);
+  // Felgen und Detailaufnahmen sind ein gemeinsamer Block: beide Sektionen
+  // werden zusammen geöffnet und bleiben in ihrer Höhe gleich.
+  const [detailsOpen, setDetailsOpen] = useState(recommendedReferenceSlots.length > 0);
   const capturedVehicleImages = remasterSlots.filter(s => captures[s.key]);
   const [lightboxSlotKey, setLightboxSlotKey] = useState<string | null>(null);
 
@@ -1643,15 +1643,15 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </CaptureSection>
 
-              <div className="grid items-start gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
+              <div className="grid items-stretch gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
               <CaptureSection
                 title="Felgen / Reifen"
                 badge={wheelReference?.image ? '1 Foto' : 'Optional'}
                 badgeOk={!!wheelReference?.image}
                 collapsible
-                defaultOpen={false}
-                open={isMobile ? undefined : detailsOpen}
-                onOpenChange={isMobile ? undefined : setDetailsOpen}
+                open={detailsOpen}
+                onOpenChange={setDetailsOpen}
+                fill
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted/40">
@@ -1705,11 +1705,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
               <CaptureSection
                 title="Weitere Detailaufnahmen"
-                subtitle="Empfohlene Referenzen und eigene Detailfotos"
                 badge={`${detailImages.length} / 10`}
                 badgeOk={detailImages.length > 0}
                 collapsible
-                defaultOpen={recommendedReferenceSlots.length > 0}
+                open={detailsOpen}
+                onOpenChange={setDetailsOpen}
               >
                 {recommendedReferenceSlots.length > 0 && (
                   <div className="mb-4">
