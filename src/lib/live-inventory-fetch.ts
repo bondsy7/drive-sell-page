@@ -6,9 +6,16 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { LiveVehicle } from '@/lib/live-inventory';
 
+/** The function itself answers within ~60 s; this only catches a request that never answers. */
+export const LIVE_INVENTORY_TIMEOUT_MS = 90_000;
+
 /** Loads the current dealer stock for the connected Auto3/Indicar URL. */
 export async function fetchLiveInventory(): Promise<{ items: LiveVehicle[]; inventoryUrl: string; error?: string }> {
-  const { data, error } = await supabase.functions.invoke('auto3-inventory', { body: { action: 'live_list' } });
+  // Bounded wait: a stuck Auto3 must surface as a hint in the editor, never as a hanging page.
+  const { data, error } = await supabase.functions.invoke('auto3-inventory', {
+    body: { action: 'live_list' },
+    timeout: LIVE_INVENTORY_TIMEOUT_MS,
+  });
   if (error || data?.error) {
     let msg = data?.error as string | undefined;
     try { msg = msg || (await (error as any)?.context?.json?.())?.error; } catch { /* ignore */ }

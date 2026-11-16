@@ -10,10 +10,15 @@ const LEGACY_AUTO3_X_BASEURL = Deno.env.get("AUTO3_X_BASEURL") || "https://schmi
 const SOURCE = "auto3";
 const MODULE = "website-publishing";
 
+/** Budgets well under the edge runtime's 150 s idle limit: a slow Auto3 must answer, not hang. */
+const LIVE_LIST_BUDGET_MS = 60_000;
+const LIST_BUDGET_MS = 100_000;
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const auto3Get = (path: string, tenantUrl: string) => auto3Fetch(path, tenantUrl);
+/** @param deadlineAt absolute timestamp – no Auto3 call may outlive the request budget. */
+const auto3Get = (path: string, tenantUrl: string, deadlineAt?: number) => auto3Fetch(path, tenantUrl, { deadlineAt });
 
 // deno-lint-ignore no-explicit-any
 type Raw = Record<string, any>;
@@ -61,8 +66,8 @@ function summary(r: Raw) {
   };
 }
 
-async function detail(id: string, tenantUrl: string): Promise<Raw> {
-  const d = await auto3Get(`/v1/vehicle/vehicle/buy/${encodeURIComponent(id)}`, tenantUrl);
+async function detail(id: string, tenantUrl: string, deadlineAt?: number): Promise<Raw> {
+  const d = await auto3Get(`/v1/vehicle/vehicle/buy/${encodeURIComponent(id)}`, tenantUrl, deadlineAt);
   return Array.isArray(d?.content) ? d.content[0] : d;
 }
 
@@ -278,18 +283,20 @@ Deno.serve(async (req) => {
 
     // Lightweight live inventory for landing-page blocks: listing only, no VIN, no detail calls.
     if (action === "live_list") {
-      // Page 0 tells us how many pages exist; the rest are fetched in parallel so the
+      // Hard budget: the platform kills a silent request after 150 s, so the block answers with
+      // whatever arrived instead of letting a slow Auto3 blank the landing-page editor.
+      const deadlineAt = Date.now() + LIVE_LIST_BUDGET_MS;
+      // Page 0 tells us how many pages exist; the rest are fetched with bounded concurrency so the
       // landing-page block is usable even with a few hundred vehicles in stock.
-      const first = await auto3Get(`/v1/vehicle/vehicle/buy?page=0&pageSize=100&includeImages=true`, tenantUrl);
+      const first = await auto3Get(`/v1/vehicle/vehicle/buy?page=0&pageSize=100&includeImages=true`, tenantUrl, deadlineAt);
       const totalPages = Math.min(20, Math.max(1, Number(first?.totalPages ?? 1) || 1));
       const raws: Raw[] = [...((first?.content || []) as Raw[])];
       if (totalPages > 1) {
-        const rest = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, i) =>
-            auto3Get(`/v1/vehicle/vehicle/buy?page=${i + 1}&pageSize=100&includeImages=true`, tenantUrl)
-          )
+        const pages = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
+        const rest = await pool(pages, 4, (p) =>
+          auto3Get(`/v1/vehicle/vehicle/buy?page=${p}&pageSize=100&includeImages=true`, tenantUrl, deadlineAt).catch(() => null)
         );
-        for (const r of rest) raws.push(...((r?.content || []) as Raw[]));
+        for (const r of rest) if (r) raws.push(...((r?.content || []) as Raw[]));
       }
       const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null; };
       const items = raws.map((r) => ({
@@ -319,14 +326,21 @@ Deno.serve(async (req) => {
     }
 
     if (action === "list") {
+      // Same idle-limit guard as live_list: stop collecting when the budget runs out and hand
+      // back what arrived instead of letting the platform kill the request.
+      const deadlineAt = Date.now() + LIST_BUDGET_MS;
       const raws: Raw[] = [];
       for (let page = 0; page < 20; page++) {
-        const r = await auto3Get(`/v1/vehicle/vehicle/buy?page=${page}&pageSize=100&includeImages=true`, tenantUrl);
+        if (Date.now() > deadlineAt - 15_000) break;
+        const r = await auto3Get(`/v1/vehicle/vehicle/buy?page=${page}&pageSize=100&includeImages=true`, tenantUrl, deadlineAt);
         raws.push(...((r?.content || []) as Raw[]));
         if (page + 1 >= (r?.totalPages ?? 1)) break;
       }
       // VIN only exists in the detail record → fetch details server-side, never return plain VIN.
-      const details = await pool(raws, 10, async (r) => { try { return await detail(String(r.id), tenantUrl); } catch { return null; } });
+      const details = await pool(raws, 10, async (r) => {
+        if (Date.now() > deadlineAt - 10_000) return null;
+        try { return await detail(String(r.id), tenantUrl, deadlineAt); } catch { return null; }
+      });
 
       const { data: vehicles } = await sb.from("vehicles").select("id, vin, external_vehicle_id, source_system").eq("user_id", userId);
       const byExt = new Map<string, Raw>(); const byVin = new Map<string, Raw>();
