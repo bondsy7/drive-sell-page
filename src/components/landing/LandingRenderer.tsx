@@ -1,5 +1,5 @@
 import { landingImageAlt } from '@/lib/landing-image-alt';
-import { contactBodyClass, plainContactContent } from '@/lib/landing-contact-plain';
+import { contactBodyClass, isContactSection, plainContactContent } from '@/lib/landing-contact-plain';
 import LandingEditMenu from '@/components/landing/LandingEditMenu';
 import { LandingToolboxProvider } from '@/components/landing/LandingToolbox';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { LANDING_LOGO_CSS, type LandingLogoId } from '@/lib/landing-logo-size';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { liveInsertIndex, LIVE_BLOCK_ID } from '@/lib/landing-section-order';
 import { motion } from 'framer-motion';
-import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon } from 'lucide-react';
+import { RefreshCw, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Plus, ImageIcon, UserRound } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
 import { shouldLabelLandingImage } from '@/lib/landing-image-disclosure';
 import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelVector, getAiDisclosureLabelAlt, withAiDisclosureAlt } from "@/lib/ai-disclosure";
@@ -65,6 +65,7 @@ export interface RendererProps {
   editable?: boolean;
   onUpdateHero?: (field: 'headline' | 'subheadline' | 'ctaText', value: string) => void;
   onUpdateSection?: (id: string, field: 'headline' | 'content', value: string) => void;
+  onManageContactImages?: (sectionId: string) => void;
   onReplaceImage?: (sectionId: string) => void;
   onMoveSection?: (id: string, dir: 'up' | 'down') => void;
   onToggleSection?: (id: string) => void;
@@ -249,6 +250,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
   editable = false,
   onUpdateHero,
   onUpdateSection,
+  onManageContactImages,
   onReplaceImage,
   onInsertImage,
   onDeleteStackImage,
@@ -668,6 +670,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
           removedElements={content.removedElements}
           onDeleteElement={(field) => onDeleteElement?.(`${s.id}.${field}`)}
           onUpdate={(field, v) => onUpdateSection?.(s.id, field, v)}
+          onManageContactImages={onManageContactImages ? () => onManageContactImages(s.id) : undefined}
           onMove={(dir) => onMoveSection?.(s.id, dir)}
           onToggle={() => onToggleSection?.(s.id)}
           onDelete={() => onDeleteSection?.(s.id)}
@@ -810,6 +813,7 @@ const SectionRenderer: React.FC<{
   removedElements?: string[];
   onDeleteElement?: (field: string) => void;
   onUpdate: (field: 'headline' | 'content', v: string) => void;
+  onManageContactImages?: () => void;
   onMove: (dir: 'up' | 'down') => void;
   onToggle: () => void;
   onDelete: () => void;
@@ -852,6 +856,7 @@ const SectionRenderer: React.FC<{
   whatsapp,
   imageLoading,
   onUpdate,
+  onManageContactImages,
   onMove,
   onToggle,
   onDelete,
@@ -883,11 +888,15 @@ const SectionRenderer: React.FC<{
   const enabled = (s as any).enabled !== false;
   const bodyContent = plainContactContent(s.headline, s.content, s.type, s.id);
   const bodyClass = contactBodyClass(s.headline, s.type, s.id);
+  const sectionColorControls = <>
+    {colorControl}
+    {editable && onManageContactImages && isContactSection(s.headline, s.type, s.id) && <Button variant="ghost" className="justify-start" onClick={onManageContactImages}><UserRound size={16} /> Mitarbeiterbilder</Button>}
+  </>;
 
   // CTA band
   if (s.type === 'cta') {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={theme.custom ? bg : undefined} surface={theme.custom ? bg : '#0b1220'}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={sectionColorControls} bg={theme.custom ? bg : undefined} surface={theme.custom ? bg : '#0b1220'}>
         <div
           className="lp-section-inner"
           style={{
@@ -949,7 +958,7 @@ const SectionRenderer: React.FC<{
 
   if (isFullWidth) {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={bg}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={sectionColorControls} bg={bg}>
         <div className="lp-section-inner lp-content-width" style={{ padding: '96px 32px' }}>
           <Editable
             as="h2"
@@ -983,7 +992,7 @@ const SectionRenderer: React.FC<{
   // Gallery: image on top, text below
   if (s.type === 'gallery' || s.type === 'specs') {
     return (
-      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={bg}>
+      <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={sectionColorControls} bg={bg}>
         <div className="lp-section-inner lp-content-width" style={{ padding: '96px 32px' }}>
           <Editable
             as="h2"
@@ -1032,7 +1041,7 @@ const SectionRenderer: React.FC<{
   // Editorial split (default content type with image) - alternating
   const imageOnLeft = index % 2 === 0;
   return (
-    <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={colorControl} bg={bg}>
+    <SectionShell id={s.id} editable={editable} enabled={enabled} onMove={onMove} onToggle={onToggle} onDelete={onDelete} onAddAfter={onAddAfter} colorControl={sectionColorControls} bg={bg}>
       <div
         className="lp-section-inner lp-content-width"
         style={{

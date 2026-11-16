@@ -44,6 +44,8 @@ import {
 } from '@/lib/landing-credit-costs';
 import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
 import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
+import LandingContactImagesDialog from '@/components/landing/LandingContactImagesDialog';
+import { injectBrandContactsIntoSection } from '@/lib/brand-contacts';
 import { buttonColorOverride } from '@/lib/landing-section-colors';
 
 import LandingStatusSelect from '@/components/landing/LandingStatusSelect';
@@ -109,6 +111,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const contactFormConfig = editorState.contactFormConfig;
   const setContactFormConfig = useCallback((value: LandingContactFormConfig) => updateEditor('contactFormConfig', value), [updateEditor]);
   const [contactConfigOpen, setContactConfigOpen] = useState(false);
+  const [contactImagesSection, setContactImagesSection] = useState<string | null>(null);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const { content, images, contactFormEnabled } = editorState;
   const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
@@ -502,6 +505,15 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       )}
 
       <ContactFormConfigDialog open={contactConfigOpen} onOpenChange={setContactConfigOpen} value={contactFormConfig} onConfirm={setContactFormConfig} />
+      <LandingContactImagesDialog
+        open={!!contactImagesSection}
+        onOpenChange={open => { if (!open) setContactImagesSection(null); }}
+        brand={brand}
+        onApply={contacts => {
+          if (!contactImagesSection) return;
+          setContent(previous => injectBrandContactsIntoSection(previous, contactImagesSection, contacts));
+        }}
+      />
       <Dialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
         <DialogContent>
           <DialogHeader>
@@ -561,6 +573,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               editable={viewMode === 'edit'}
               onUpdateHero={updateHero}
               onUpdateSection={updateSection}
+              onManageContactImages={setContactImagesSection}
               onReplaceImage={(id) => { pendingInsert.current = null; setImageDialogSection(id); }}
               onInsertImage={(sectionId, anchor, pos) => {
                 const id = newStackImageId(sectionId);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { contactsForBrand, contactBrands, injectBrandContacts, readBrandContacts } from '@/lib/brand-contacts';
+import { contactsForBrand, contactBrands, injectBrandContacts, injectBrandContactsIntoSection, mergeBrandContacts, readBrandContacts } from '@/lib/brand-contacts';
 const list = [
   { id: '1', brand: 'KIA', brands: ['KIA'], name: 'Anna', email: 'a@x.de', phone: '0711' },
   { id: '2', brand: 'Škoda', brands: ['Škoda'], name: 'Ben', email: '', phone: '' },
@@ -38,6 +38,25 @@ describe('brand contacts', () => {
     expect(out.sections[0].content).toBe('x');
     expect(out.sections[1].content).toContain('Anna');
     expect(injectBrandContacts(out, contactsForBrand(list, 'kia')).sections[1].content.match(/Anna/g)?.length).toBe(1);
+  });
+  it('aktualisiert nur die gewählte bestehende Kontaktsection ohne doppelten Block', () => {
+    const contacts = [{ ...list[1], imageUrl: 'https://x.de/ben.jpg' }];
+    const page = { sections: [
+      { id: 'a', type: 'cta', headline: 'Kontakt A', content: '<p>Text A</p>' },
+      { id: 'b', type: 'cta', headline: 'Kontakt B', content: '<p>Text B</p>' },
+    ] };
+    const once = injectBrandContactsIntoSection(page, 'b', contacts);
+    const twice = injectBrandContactsIntoSection(once, 'b', contacts);
+    expect(twice.sections[0].content).toBe('<p>Text A</p>');
+    expect(twice.sections[1].content).toContain('<p>Text B</p><div data-brand-contacts="1">');
+    expect(twice.sections[1].content).toContain('https://x.de/ben.jpg');
+    expect(twice.sections[1].content.match(/data-brand-contacts/g)).toHaveLength(1);
+  });
+  it('behält beim Profilabgleich alle nicht bearbeiteten Marken und Personen', () => {
+    const merged = mergeBrandContacts(list, [{ ...list[1], imageUrl: 'https://x.de/ben.jpg' }]);
+    expect(merged[0]).toEqual(list[0]);
+    expect(merged[1].imageUrl).toBe('https://x.de/ben.jpg');
+    expect(merged).toHaveLength(2);
   });
 });
 

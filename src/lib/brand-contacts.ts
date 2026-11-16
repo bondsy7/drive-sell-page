@@ -80,12 +80,32 @@ export function brandContactsHtml(contacts: BrandContact[]): string {
   return `<div data-brand-contacts="1"><p><strong>${contacts.length > 1 ? 'Ihre Ansprechpartner' : 'Ihr Ansprechpartner'}</strong></p>${blocks.join('')}</div><!--/brand-contacts-->`;
 }
 
+export function mergeBrandContacts(existing: BrandContact[], updates: BrandContact[]): BrandContact[] {
+  const byId = new Map(updates.map(contact => [contact.id, contact]));
+  return existing.map(contact => byId.get(contact.id) || contact);
+}
+
+function replaceBrandContactsBlock(content: string, html: string): string {
+  const without = (content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div><!--\/brand-contacts-->|<div data-brand-contacts="1">(?:(?!<div)[\s\S])*?<\/div>/, '');
+  return `${without}${html}`;
+}
+
+/** Ersetzt den Ansprechpartner-Block genau einer bereits bestehenden Kontaktsection. */
+export function injectBrandContactsIntoSection<T extends { sections?: { id: string; type: string; headline: string; content: string }[] }>(page: T, sectionId: string, contacts: BrandContact[]): T {
+  if (!page?.sections?.length) return page;
+  const html = brandContactsHtml(contacts);
+  const sections = page.sections.map(section => section.id === sectionId
+    ? { ...section, content: replaceBrandContactsBlock(section.content, html) }
+    : section);
+  return { ...page, sections };
+}
+
 /** Hängt die Ansprechpartner an den (letzten) Kontakt-Abschnitt an. */
 export function injectBrandContacts<T extends { sections?: { id: string; type: string; headline: string; content: string }[] }>(page: T, contacts: BrandContact[]): T {
   const html = brandContactsHtml(contacts);
   if (!html || !page?.sections?.length) return page;
   const idx = [...page.sections].map((s, i) => [s, i] as const).reverse().find(([s]) => isContactSection(s.headline, s.type, s.id))?.[1];
   if (idx === undefined) return page;
-  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: `${(s.content || '').replace(/<div data-brand-contacts="1">[\s\S]*?<\/div><!--\/brand-contacts-->|<div data-brand-contacts="1">(?:(?!<div)[\s\S])*?<\/div>/, '')}${html}` } : s);
+  const sections = page.sections.map((s, i) => i === idx ? { ...s, content: replaceBrandContactsBlock(s.content, html) } : s);
   return { ...page, sections };
 }

@@ -1,4 +1,8 @@
 
+## Mitarbeiterbilder in bestehenden Kontaktsections (16.11.2026)
+- [x] Im Stift-Menü jeder Kontaktsection „Mitarbeiterbilder“ anbieten; Profilpersonen der Fahrzeugmarke laden und pro Person Upload oder Bildlink ermöglichen.
+- [x] Beim Übernehmen nur den Ansprechpartner-Block der gewählten Section ersetzen, Bilder zusätzlich im Profil speichern, Autosave/HTML/Rückgängig erhalten und im echten Peaq-Editor prüfen. Link-Ablauf, Vorschau, HTML und Undo im Browser bestätigt; temporäres Markus-Testbild entfernt, vorhandenes Stefan-Bild erhalten. 16 Regel-/Integrationstests bestanden.
+
 ## Landingpage-Textbreiten und manuelle Zeilenumbrüche (16.11.2026)
 - [x] In /generator/manual-landing Überschriften- und Textblockbreiten über ziehbare Ränder analog zu Bildern angepasst; Werte stabil je Element in `pageContent.textFrames` gespeichert und in Editor, Vorschau und HTML identisch ausgegeben.
 - [x] Manuell mit Enter erzeugte Zeilenumbrüche bleiben in allen drei Darstellungen erhalten; gemeinsames Undo, 20-%-Mindestbreite und volle Textbreite bis 900 px sichergestellt. Echte Peaq-Browserprüfung mit rechtem und linkem Ziehgriff, Headline und Fließtext, Vorschau, HTML-Download, Desktop/Smartphone und Wiederherstellung bestanden; 22 Regel-/Integrationstests bestanden.
