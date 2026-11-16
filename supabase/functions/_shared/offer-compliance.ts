@@ -240,6 +240,11 @@ export function withComputedFinance(vd: any): any {
   const total = eur(f.totalAmount) ? f.totalAmount : leasingTotal(vd);
   const net = eur(f.netLoanAmount) ? f.netLoanAmount : (offerType(vd) === "financing" ? netLoanFallback(vd) : f.netLoanAmount);
   const out = { ...vd, finance: { ...f, totalAmount: total || f.totalAmount || "", ...(net !== undefined ? { netLoanAmount: net || "" } : {}) } };
+  // Legacy plugins read vehicle_data.vehicle.price although PDF offers store the
+  // price in finance.totalPrice. Mirror it only when no explicit vehicle price exists.
+  if (!clean(out.vehicle?.price) && clean(f.totalPrice)) {
+    out.vehicle = { ...(out.vehicle || {}), price: f.totalPrice };
+  }
   // Legacy plugins print dealer.*LegalText verbatim: deliver resolved text (template stays in legalNotice.rawText).
   const d = vd?.dealer;
   if (d) {

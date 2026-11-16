@@ -1,3 +1,8 @@
+
+## Fehlende Preise im WordPress-Plugin (16.11.2026)
+- [x] Ursache bestätigt: Plugin und Dokumentation lasen `vehicle_data.vehicle.price`, während die Live-API die Preise korrekt unter `cashPrice`, `price.cashPrice` und `vehicle_data.finance.totalPrice` lieferte.
+- [x] Legacy-Preisfeld in der API kompatibel befüllt, ohne explizite Fahrzeugpreise zu überschreiben; Plugin-Generator und Dokumentation auf die numerischen Preisfelder korrigiert. `api-vehicles` bereitgestellt, 12 Regeltests bestanden; echte API-Ausgabe für beide K4-Angebote, Berlingo, Elroq, Peaq und Epiq sowie alle 30 Angebote ohne fehlendes Legacy-Preisfeld geprüft. WordPress-Synchronisation nicht selbst ausgelöst.
+
 ## Felgen und Detailaufnahmen als ein Block (16.11.2026)
 - [x] Untertitel „Empfohlene Referenzen und eigene Detailfotos" entfernt; beide Sektionen öffnen/schließen gemeinsam und haben ausgeklappt wie eingeklappt die gleiche Höhe. Desktop (1280px) und Handy (390px) im Browser geprüft, 5 Aufnahme-Regeltests bestanden, keine Generierung ausgelöst.
 

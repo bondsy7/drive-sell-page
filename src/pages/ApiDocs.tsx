@@ -464,7 +464,7 @@ $vehicles = json_decode(
 foreach ($vehicles['vehicles'] as $vehicle) {
     echo '<h2>' . esc_html($vehicle['title']) . '</h2>';
     echo '<p>' . esc_html(
-        $vehicle['vehicle_data']['vehicle']['price']
+        $vehicle['price']['cashPriceFormatted']
     ) . '</p>';
 }`}
             />
@@ -485,7 +485,7 @@ response = requests.get(
 vehicles = response.json()["vehicles"]
 
 for v in vehicles:
-    print(f"{v['title']} - {v['vehicle_data']['vehicle']['price']}")
+    print(f"{v['title']} - {v['price']['cashPriceFormatted']}")
 
 # Einzelnes Fahrzeug als HTML
 html = requests.get(

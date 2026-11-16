@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, buildLegalNotice, CREDIT_WARNING } from "./offer-compliance.ts";
+import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, buildLegalNotice, buildPrice, withComputedFinance, CREDIT_WARNING } from "./offer-compliance.ts";
 
 const fullFin = { category: "Finanzierung", customerType: "private",
   finance: { totalPrice: "30000", downPayment: "3000", netLoanAmount: "27000", duration: "48", monthlyRate: "299", nominalInterestRate: "4,99", interestRate: "5,11", totalAmount: "31000" },
@@ -58,4 +58,15 @@ Deno.test("default legal notices also carry footnote marker 1", () => {
 
 Deno.test("no legal notice is emitted without bank or text", () => {
   assertEquals(buildLegalNotice({ category: "Leasing", dealer: {} }), null);
+});
+
+Deno.test("Peaq cash price is numeric and mirrored for legacy WordPress readers", () => {
+  const vd = { category: "Leasing", vehicle: { brand: "Skoda", model: "Peaq" }, finance: { totalPrice: "51.500,00 €" } };
+  assertEquals(buildPrice(vd).cashPrice, 51500);
+  assertEquals(withComputedFinance(vd).vehicle.price, "51.500,00 €");
+});
+
+Deno.test("legacy price fallback never overwrites an explicit vehicle price", () => {
+  const vd = { vehicle: { price: "49.900,00 €" }, finance: { totalPrice: "51.500,00 €" } };
+  assertEquals(withComputedFinance(vd).vehicle.price, "49.900,00 €");
 });

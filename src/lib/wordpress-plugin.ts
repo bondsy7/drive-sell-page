@@ -213,7 +213,7 @@ function autohaus_ai_sync_vehicles() {
             $meta_fields = [
                 '_vehicle_brand'      => $v['brand'] ?? '',
                 '_vehicle_model'      => $v['model'] ?? '',
-                '_vehicle_price'      => $v['price'] ?? '',
+                '_vehicle_price'      => $vehicle['cashPrice'] ?? ($vehicle['price']['cashPrice'] ?? ($vehicle_data['finance']['totalPrice'] ?? ($v['price'] ?? ''))),
                 '_vehicle_year'       => $v['year'] ?? $v['ez'] ?? '',
                 '_vehicle_mileage'    => $v['mileage'] ?? $v['km'] ?? '',
                 '_vehicle_fuel'       => $v['fuelType'] ?? $v['fuel'] ?? '',
