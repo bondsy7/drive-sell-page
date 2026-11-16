@@ -567,6 +567,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       .map(x => x.s),
     [vehicleSlots],
   );
+  // Reine Referenzperspektiven gehören zu den ergänzenden Aufnahmen. Die
+  // Datenreihenfolge oben bleibt unverändert; nur ihre Darstellung wandert.
+  const primaryDisplaySlots = displaySlots.filter(s => !s.referenceOnly);
+  const recommendedReferenceSlots = displaySlots.filter(s => s.referenceOnly);
   const capturedVehicleImages = remasterSlots.filter(s => captures[s.key]);
   const [lightboxSlotKey, setLightboxSlotKey] = useState<string | null>(null);
 
@@ -1551,7 +1555,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   </p>
                 )}
                 <div className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-5">
-                  {displaySlots.map((slot) => (
+                  {primaryDisplaySlots.map((slot) => (
                     <div key={slot.key} className="min-w-0">
                       {renderSlotCard(slot)}
                     </div>
@@ -1639,7 +1643,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </CaptureSection>
 
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
+              <div className="grid items-start gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
               <CaptureSection
                 title="Felgen / Reifen"
                 badge={wheelReference?.image ? '1 Foto' : 'Optional'}
@@ -1701,13 +1705,27 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
               <CaptureSection
                 title="Weitere Detailaufnahmen"
+                subtitle="Empfohlene Referenzen und eigene Detailfotos"
                 badge={`${detailImages.length} / 10`}
                 badgeOk={detailImages.length > 0}
                 collapsible
-                defaultOpen={false}
-                open={isMobile ? undefined : detailsOpen}
-                onOpenChange={isMobile ? undefined : setDetailsOpen}
+                defaultOpen={recommendedReferenceSlots.length > 0}
               >
+                {recommendedReferenceSlots.length > 0 && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-[11px] font-semibold text-foreground">Empfohlen als Referenz</p>
+                    <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-5">
+                      {recommendedReferenceSlots.map((slot) => (
+                        <div key={slot.key} className="min-w-0">
+                          {renderSlotCard(slot)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {recommendedReferenceSlots.length > 0 && (
+                  <p className="mb-2 text-[11px] font-semibold text-foreground">Eigene Detailaufnahmen</p>
+                )}
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
                     <div key={img} className={`group relative ${isNb21Tier(modelTier) ? 'h-36 w-44' : 'h-14 w-14'} shrink-0 overflow-hidden rounded-md border border-border bg-card`}>

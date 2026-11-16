@@ -1,3 +1,7 @@
+## Aufnahmeübersicht und Remaster-Bewertung (16.11.2026)
+- [x] Empfohlene Rundgang-Referenzen aus dem oberen Aufnahmeraster in „Weitere Detailaufnahmen“ verschoben; Upload, Vorschau und Datenreihenfolge unverändert. Desktop und Handy im Browser geprüft, 5 Aufnahme-Regeltests bestanden, keine Generierung ausgelöst.
+- [x] Direkte Pipeline mit Originalen beurteilt: technisch sinnvoll als optionaler Ablauf, erfordert aber eigenen Abschluss-/Galeriepfad und originals-first Referenzrouting; bestehender Remaster-Prozess vorerst unverändert.
+
 ## PHEV-Entladungswerte in PDF-Angeboten (11.11.2026)
 - [x] Auto3-Editor um Verbrauch, CO₂, Stromverbrauch und Reichweite bei Plug-in-Hybriden ergänzt; Einheiten beim Bearbeiten vereinheitlicht.
 - [x] Fehlende Entladungswerte durch eine einmalige dokumentenbasierte Nachprüfung automatisch aus dem Angebot übernommen; vorhandene Werte bleiben unverändert, keine Schätzungen. `analyze-pdf` bereitgestellt und unbefugte Aufrufe mit 401 abgewiesen.
