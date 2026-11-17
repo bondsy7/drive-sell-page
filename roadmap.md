@@ -1,8 +1,8 @@
 
 ## Einheitliche Monatsraten auf Fahrzeugangebotsseiten (17.11.2026)
-- [ ] Eingaben mit deutscher Dezimal- und Tausenderschreibweise sowie Altbestände mit `€`, `EUR`, `mtl.` oder doppeltem `/mtl.` auf genau `249,00 €/mtl.` normalisieren; Barpreise unverändert lassen.
-- [ ] Editor, Vorschau und HTML aller Angebotsvorlagen sowie Legacy-Felder und formatierte Preise in `api-vehicles` synchron ausgeben.
-- [ ] Regeltests für Eingabe, alle Vorlagen und API ergänzen; Build, Browser-Ablauf und echte Rinnetal-Ausgabe prüfen.
+- [x] Eingaben mit deutscher Dezimal- und Tausenderschreibweise sowie Altbestände mit `€`, `EUR`, `mtl.` oder doppeltem `/mtl.` auf genau `249,00 €/mtl.` normalisieren; Barpreise unverändert lassen.
+- [x] Editor, Vorschau und HTML aller Angebotsvorlagen sowie Legacy-Felder und formatierte Preise in `api-vehicles` synchron ausgeben; API-Zahlenerkennung ignoriert jetzt auch die Punkte in `mtl.` korrekt.
+- [x] 25 Frontend- und 15 API-Regeltests bestanden; Build erfolgreich. Echtes Kia-EV4-Angebot im Rinnetal-Konto in Editor/Vorschau gespeichert und geprüft: `249,00 €/mtl.`, Barpreis `34.669,20 €`; Live-API liefert `monthlyRate: 249` und beide formatierten Felder korrekt. Alle 15 Rinnetal-Leasingangebote liefern kanonische Legacy-Raten; sechs ältere Datensätze behalten aufgrund der bestehenden Banken-Vollständigkeitsprüfung `price.monthlyRate: null`. WordPress-Synchronisation nicht selbst ausgelöst.
 
 ## Isolierter Admin-Storage-Export (17.11.2026)
 - [x] Neue Admin-only Export-Sitzungen und read-only Storage-/DB-Abgleich bereitgestellt; bestehende Buckets, Dateien, Policies und Produktfunktionen unverändert. Unauthentifizierte und widerrufene Sitzungen mit 401 abgewiesen.
