@@ -27,6 +27,7 @@ import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
 import type { PhotoMode } from '@/components/spin360';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
@@ -810,7 +811,7 @@ const Index = () => {
       if (linkedVehicleId) {
         const v = (vehicleData as any).vehicle || {};
         const yearNum = v.year ? Number(v.year) || null : null;
-        const patch: Record<string, any> = {
+        const patch: TablesUpdate<'vehicles'> = {
           brand: v.brand || null,
           model: v.model || null,
           year: yearNum,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -113,7 +114,7 @@ export default function AdminPdfGallery() {
   const updateField = async (id: string, field: string, value: string | boolean | number | null) => {
     const { error } = await supabase
       .from('sample_pdfs')
-      .update({ [field]: value, updated_at: new Date().toISOString() } as Record<string, unknown>)
+      .update({ [field]: value, updated_at: new Date().toISOString() } as TablesUpdate<'sample_pdfs'>)
       .eq('id', id);
     if (error) toast.error('Fehler: ' + error.message);
     else loadPdfs();

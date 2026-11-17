@@ -43,3 +43,4 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 - Gallery groups images per vehicle folder and `project_images.pipeline_run_at`; new runs start only where a creation process opens (beginGalleryRun), storage paths include the run segment, and a DB trigger assigns unspecified inserts, because re-runs must never overwrite or merge with earlier runs.
 
 - Public vehicle enquiries are inserted only by submit-lead after bounded schema validation, a honeypot check and dealer/project/vehicle ownership checks; client INSERT privileges stay revoked to prevent bypassing the form protections.
+- Pricing uses invoice_orders plus create-invoice-order and manage-invoice-orders for invoice-only sales; invoice/payment status never activates service, and only an explicit admin call to activate_invoice_order can grant credits or plans after account approval, because orders must work without Stripe or accidental activation.

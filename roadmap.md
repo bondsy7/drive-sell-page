@@ -339,7 +339,7 @@
 - [x] „Landing Page generieren" öffnet zuerst eine Bestätigung mit allen Grundeinstellungen (Fahrzeug, Seitentyp, Zielgruppe, Ton, Bildstil, eigene Bilder, Live-Fahrzeuge) und dem Hinweis, dass sich diese im Nachgang nicht mehr ändern lassen; abgebrochen wird nichts gestartet, erst „Ja, jetzt generieren" läuft wirklich. Dialog in der Vorschau geöffnet und abgebrochen, 2 neue Tests grün, nicht veröffentlicht.
 
 ## Rechnungskauf unter Preise (17.11.2026)
-- [ ] Alle Tarife und Credit-Pakete ohne Stripe über einen gespeicherten Rechnungsauftrag buchbar machen; Gäste und angemeldete Nutzer unterstützen
-- [ ] Vollständige Rechnungsadresse, AGB-Bestätigung, 14 Tage Zahlungsziel, Bestellnummer und verständliche Abschlussbestätigung umsetzen
-- [ ] Adminübersicht für Rechnungsaufträge sowie sichere Rechnungs-/Zahlungsstatus und ausschließlich manuell durch einen Admin ausgelöste Leistungsfreischaltung ergänzen
-- [ ] Preis-/Validierungsregeln testen, kompletten Browserablauf für Gast und Nutzer prüfen, Backend bereitstellen und Änderungen committen
+- [x] Alle 20 Tarife, Credit-Pakete und Zusatzleistungen ohne Stripe über einen gespeicherten Rechnungsauftrag buchbar gemacht; Gäste und angemeldete Nutzer unterstützt
+- [x] Vollständige Rechnungsadresse, B2B-/AGB-Bestätigung, 14 Tage Zahlungsziel, Bestellnummer und verständliche Abschlussbestätigung umgesetzt; Erstbuchungsgebühr serverseitig berechnet
+- [x] Adminübersicht für Rechnungsaufträge sowie getrennte Rechnungs-/Zahlungsstatus und ausschließlich manuell durch einen Admin ausgelöste Leistungsfreischaltung ergänzt; Freigabe atomar und nur mit freigegebenem Konto für Abos/Credits
+- [x] 6 Preis-/Katalogtests, Deno-/Lint-/Build-Prüfungen sowie echte Gast- und Nutzerbestellung, Rechnungs-/Zahlungsstatus ohne Autoaktivierung und 200-Credit-Adminfreigabe bestanden; mobile 20-Angebote-Auswahl ohne Überlauf geprüft, Functions bereitgestellt, Testaufträge entfernt. Resend lehnte nur die reservierte example.com-Testadresse mit 422 ab; reale Rechnungszustellung nicht ausgelöst.

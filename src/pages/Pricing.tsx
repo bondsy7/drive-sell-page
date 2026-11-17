@@ -421,7 +421,7 @@ const Pricing = () => {
                       <p className="font-semibold text-foreground text-sm">{extra.label}</p>
                       {extra.onRequest && (
                         <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                          Nur auf Anfrage
+                          Individuelle Einrichtung
                         </span>
                       )}
                     </div>
