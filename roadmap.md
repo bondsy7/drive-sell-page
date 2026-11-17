@@ -363,3 +363,5 @@
 - [x] Vollständige Rechnungsadresse, B2B-/AGB-Bestätigung, 14 Tage Zahlungsziel, Bestellnummer und verständliche Abschlussbestätigung umgesetzt; Erstbuchungsgebühr serverseitig berechnet
 - [x] Adminübersicht für Rechnungsaufträge sowie getrennte Rechnungs-/Zahlungsstatus und ausschließlich manuell durch einen Admin ausgelöste Leistungsfreischaltung ergänzt; Freigabe atomar und nur mit freigegebenem Konto für Abos/Credits
 - [x] 6 Preis-/Katalogtests, Deno-/Lint-/Build-Prüfungen sowie echte Gast- und Nutzerbestellung, Rechnungs-/Zahlungsstatus ohne Autoaktivierung und 200-Credit-Adminfreigabe bestanden; mobile 20-Angebote-Auswahl ohne Überlauf geprüft, Functions bereitgestellt, Testaufträge entfernt. Resend lehnte nur die reservierte example.com-Testadresse mit 422 ab; reale Rechnungszustellung nicht ausgelöst.
+- [x] api-vehicles liefert `offerCheck` mit exakten Händler-Fehlern (Angebotsart, Preis, Rate, Bank/Banktext, EnVKV) für alte und neue Angebote; Landingpages/Fotoprojekte als „kein Angebot“ markiert.
+- [ ] Plugin: `offerCheck.issues` anzeigen statt eigener Preis-/Angebotsart-Prüfung (wartet auf Plugin-Entwicklung).

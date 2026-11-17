@@ -1,6 +1,6 @@
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildEnvkv, buildLegalNotice, buildPrice, financingStatus, withComputedFinance } from "../_shared/offer-compliance.ts";
+import { buildEnvkv, buildLegalNotice, buildOfferCheck, buildPrice, financingStatus, withComputedFinance } from "../_shared/offer-compliance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
           envkv: buildEnvkv(m.vehicle_data),
           price: buildPrice(m.vehicle_data),
           cashPrice: buildPrice(m.vehicle_data).cashPrice,
+          offerCheck: buildOfferCheck(m.vehicle_data, m.template_id),
         };
       });
 
@@ -257,6 +258,7 @@ Deno.serve(async (req) => {
           envkv: buildEnvkv(merged.vehicle_data),
           price: buildPrice(merged.vehicle_data),
           cashPrice: buildPrice(merged.vehicle_data).cashPrice,
+          offerCheck: buildOfferCheck(merged.vehicle_data, merged.template_id),
           main_image_url: merged.main_image_url,
           images: (images || []).map((img: any) => ({
             id: img.id,

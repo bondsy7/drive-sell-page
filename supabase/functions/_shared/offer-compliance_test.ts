@@ -93,3 +93,84 @@ Deno.test("cash offers do not receive a monthly suffix", () => {
   assertEquals(buildPrice(vd).monthlyRate, null);
   assertEquals(buildPrice(vd).cashPrice, 34669.2);
 });
+
+// ─── offerCheck: exakte Händler-Fehler statt Preisvermutungen ───────────────
+import { buildOfferCheck } from "./offer-compliance.ts";
+const envOk = { consumption: { fuelType: "Benzin", consumptionCombined: "5,1", co2Emissions: "116", co2Class: "D" } };
+
+Deno.test("offerCheck: landing page is not an offer and gets no price issues", () => {
+  const c = buildOfferCheck({ vehicle: { brand: "Kia" } }, "landing-page");
+  assertEquals(c.kind, "landing_page");
+  assertEquals(c.status, "not_an_offer");
+  assertEquals(c.issues.length, 0);
+});
+
+Deno.test("offerCheck: photo-only project is media_only", () => {
+  assertEquals(buildOfferCheck({ vehicle: {} }, "modern").kind, "media_only");
+});
+
+Deno.test("offerCheck: legacy price '41.436,97 € (netto)' is read as 41436.97 without price issue", () => {
+  const c = buildOfferCheck({ category: "Barkauf", finance: { totalPrice: "41.436,97 € (netto)" }, ...envOk }, "modern");
+  assertEquals(c.values.cashPrice, 41436.97);
+  assertEquals(c.issues.filter((i) => i.area === "price").length, 0);
+  assertEquals(c.status, "ok");
+});
+
+Deno.test("offerCheck: old offer without category but with rate reports missing offer type, not price", () => {
+  const c = buildOfferCheck({ finance: { totalPrice: "23.990,00 €", monthlyRate: "199" }, ...envOk }, "modern");
+  assertEquals(c.issues.map((i) => i.code), ["offer_type_missing"]);
+  assertEquals(c.values.cashPrice, 23990);
+});
+
+Deno.test("offerCheck: legacy 'Kauf' category is a cash offer", () => {
+  const c = buildOfferCheck({ category: "Kauf", finance: { totalPrice: "10000" }, ...envOk }, "autohaus");
+  assertEquals(c.values.offerType, "cash");
+  assertEquals(c.issues.length, 0);
+});
+
+Deno.test("offerCheck: cash offer without price is an error", () => {
+  const c = buildOfferCheck({ category: "Barkauf", finance: { totalPrice: "" }, ...envOk }, "modern");
+  assertEquals(c.issues[0].code, "cash_price_missing");
+  assertEquals(c.issues[0].severity, "error");
+  assertEquals(c.publishable, false);
+});
+
+Deno.test("offerCheck: unreadable price is reported with the raw value", () => {
+  const c = buildOfferCheck({ category: "Barkauf", finance: { totalPrice: "auf Anfrage" }, ...envOk }, "modern");
+  assertEquals(c.issues[0].code, "cash_price_unreadable");
+  assertEquals(c.issues[0].value, "auf Anfrage");
+});
+
+Deno.test("offerCheck: Kia-like leasing with bank text lacking total reports only that", () => {
+  const vd = { category: "Leasing", ...envOk,
+    finance: { totalPrice: "34.669,20 €", monthlyRate: "249", duration: "36", annualMileage: "10000", specialPayment: "8.625,56 €" },
+    dealer: { leasingBank: "Kia Finance", leasingLegalText: "Ein Angebot der Kia Finance, Rate {monatsrate}, Laufzeit {laufzeit}." } };
+  const c = buildOfferCheck(vd, "modern");
+  assertEquals(c.values.cashPrice, 34669.2);
+  assertEquals(c.values.monthlyRate, 249);
+  assertEquals(c.values.offerType, "leasing");
+  assertEquals(c.issues.map((i) => i.code), ["bank_text_gesamtbetrag_not_mentioned"]);
+  assertEquals(c.issues[0].value, "17.589,56 €");
+});
+
+Deno.test("offerCheck: bank text with {gesamtbetrag} passes", () => {
+  const vd = { category: "Leasing", ...envOk,
+    finance: { totalPrice: "34.669,20 €", monthlyRate: "249", duration: "36", annualMileage: "10000", specialPayment: "8.625,56 €" },
+    dealer: { leasingBank: "Kia Finance", leasingLegalText: "Ein Angebot der Kia Finance, Rate {monatsrate}, Gesamtbetrag {gesamtbetrag}." } };
+  assertEquals(buildOfferCheck(vd, "modern").status, "ok");
+});
+
+Deno.test("offerCheck: missing effective rate names exactly that field", () => {
+  const c = buildOfferCheck({ ...fullFin, ...envOk, finance: { ...fullFin.finance, interestRate: "" },
+    dealer: { ...fullFin.dealer, financingLegalText: "Der Testbank: {monatsrate}, {gesamtbetrag}." } }, "modern");
+  assertEquals(c.issues.map((i) => i.code), ["finance_effektiver_zins_missing"]);
+  assertEquals(c.values.cashPrice, 30000);
+  assertEquals(c.rateVisible, false);
+});
+
+Deno.test("offerCheck: missing CO2 class on new car is an envkv error", () => {
+  const c = buildOfferCheck({ category: "Barkauf", finance: { totalPrice: "10000" }, consumption: { fuelType: "Benzin", consumptionCombined: "5", co2Emissions: "110" } }, "modern");
+  assertEquals(c.issues.map((i) => i.code), ["envkv_co2Class_missing"]);
+  assertEquals(c.issues[0].severity, "error");
+  assertEquals(c.publishable, true);
+});

@@ -270,3 +270,158 @@ export function withComputedFinance(vd: any): any {
   }
   return out;
 }
+
+// ─── Dealer-facing offer check (API contract for the WordPress plugin) ───────
+// One server-side verdict per project so the plugin never re-derives prices or
+// guesses error causes: it only renders `offerCheck.issues` for the dealer.
+export const OFFER_CHECK_VERSION = 1;
+
+export type OfferIssue = {
+  code: string;
+  severity: "error" | "warning";
+  area: "offer_type" | "price" | "rate" | "bank" | "envkv";
+  field: string;
+  label: string;
+  message: string;
+  fix: string;
+  value?: string | null;
+};
+
+const FINANCE_FIELD_LABELS: Record<string, string> = {
+  fahrzeugpreis: "Fahrzeugpreis",
+  nettodarlehensbetrag: "Nettodarlehensbetrag",
+  laufzeit: "Laufzeit",
+  monatsrate: "Monatsrate",
+  sollzins: "Sollzins",
+  effektiver_zins: "Effektiver Jahreszins",
+  gesamtbetrag: "Gesamtbetrag",
+  fahrleistung: "Jährliche Fahrleistung",
+  bank_name: "Bank",
+  legal_text: "Banktext",
+};
+
+const ENVKV_FIELD_LABELS: Record<string, string> = {
+  co2Combined: "CO₂-Emissionen (kombiniert)",
+  co2Class: "CO₂-Klasse",
+  consumptionCombined: "Kraftstoffverbrauch (kombiniert)",
+  consumptionElectric: "Stromverbrauch (kombiniert)",
+  consumptionCombinedDischarged: "Kraftstoffverbrauch bei entladener Batterie",
+  co2ClassDischarged: "CO₂-Klasse bei entladener Batterie",
+};
+
+const digitsOf = (v: string) => (num(v) == null ? "" : (Math.round((num(v) as number) * 100)).toString());
+
+/** Classifies what a project is, so landing pages and photo-only projects are never checked as offers. */
+export function projectKind(vd: any, templateId?: string | null): "offer" | "landing_page" | "media_only" {
+  if (clean(templateId) === "landing-page") return "landing_page";
+  const f = vd?.finance;
+  const hasFinanceValue = !!f && typeof f === "object" && Object.values(f).some((v) => clean(v) !== "");
+  if (!clean(vd?.category) && !hasFinanceValue) return "media_only";
+  return "offer";
+}
+
+export function buildOfferCheck(vd: any, templateId?: string | null) {
+  const kind = projectKind(vd, templateId);
+  const f = vd?.finance || {};
+  const status = financingStatus(vd);
+  const price = buildPrice(vd);
+  const rawCategory = clean(vd?.category);
+  const values = {
+    offerType: status.offerType,
+    category: rawCategory || null,
+    cashPrice: price.cashPrice,
+    cashPriceFormatted: price.cashPriceFormatted,
+    cashPriceRaw: clean(f.totalPrice) || null,
+    monthlyRate: price.monthlyRate,
+    monthlyRateFormatted: price.monthlyRateFormatted,
+    showRate: status.showRate,
+  };
+  if (kind !== "offer") {
+    return {
+      version: OFFER_CHECK_VERSION, kind, status: "not_an_offer" as const,
+      publishable: false, rateVisible: false, values, issues: [] as OfferIssue[],
+      summary: kind === "landing_page" ? "SEO-Landingpage – kein Fahrzeugangebot, keine Preisprüfung." : "Nur Fahrzeugbilder – kein Fahrzeugangebot, keine Preisprüfung.",
+    };
+  }
+
+  const issues: OfferIssue[] = [];
+  const add = (i: OfferIssue) => issues.push(i);
+  const rawRate = clean(f.monthlyRate);
+
+  // 1) Angebotsart
+  const known = /leasing|finanzierung|kredit|barkauf|kauf|bar/i.test(rawCategory);
+  if (!rawCategory && rawRate) {
+    add({ code: "offer_type_missing", severity: "warning", area: "offer_type", field: "category", label: "Angebotsart",
+      message: "Angebotsart fehlt – das Angebot wird als Barkauf angezeigt, die eingetragene Monatsrate bleibt ausgeblendet.",
+      fix: "Im Angebot die Angebotsart Leasing, Finanzierung oder Barkauf auswählen.", value: null });
+  } else if (rawCategory && !known) {
+    add({ code: "offer_type_unknown", severity: "warning", area: "offer_type", field: "category", label: "Angebotsart",
+      message: `Angebotsart „${rawCategory}“ ist unbekannt – das Angebot wird als Barkauf angezeigt.`,
+      fix: "Im Angebot die Angebotsart Leasing, Finanzierung oder Barkauf auswählen.", value: rawCategory });
+  }
+
+  // 2) Barpreis
+  const rawPrice = clean(f.totalPrice);
+  if (!rawPrice) {
+    add({ code: "cash_price_missing", severity: status.offerType === "cash" ? "error" : "warning", area: "price", field: "finance.totalPrice", label: "Fahrzeugpreis",
+      message: status.offerType === "cash" ? "Fahrzeugpreis fehlt – das Angebot kann ohne Preis nicht veröffentlicht werden." : "Fahrzeugpreis fehlt – er wird im Angebot und im Banktext benötigt.",
+      fix: "Im Angebot den Fahrzeugpreis (Barpreis) eintragen.", value: null });
+  } else if (price.cashPrice == null) {
+    add({ code: "cash_price_unreadable", severity: "error", area: "price", field: "finance.totalPrice", label: "Fahrzeugpreis",
+      message: `Fahrzeugpreis „${rawPrice}“ enthält keinen lesbaren Betrag.`,
+      fix: "Im Angebot den Fahrzeugpreis als Betrag eintragen, z. B. 34.669,20.", value: rawPrice });
+  }
+
+  // 3) Rate / Bankangaben (nur Leasing & Finanzierung)
+  if (status.offerType !== "cash") {
+    if (rawRate && num(rawRate) == null) {
+      add({ code: "monthly_rate_unreadable", severity: "warning", area: "rate", field: "finance.monthlyRate", label: "Monatsrate",
+        message: `Monatsrate „${rawRate}“ enthält keinen lesbaren Betrag – die Rate wird ausgeblendet.`,
+        fix: "Im Angebot nur den Betrag eintragen, z. B. 249,00 – „€/mtl.“ wird automatisch ergänzt.", value: rawRate });
+    }
+    for (let i = 0; i < status.missingFields.length; i++) {
+      const key = status.missingFields[i];
+      if (key === "fahrzeugpreis" && !rawPrice) continue; // already reported as cash_price_missing
+      if (key === "monatsrate" && rawRate && num(rawRate) == null) continue;
+      const isBank = key === "bank_name" || key === "legal_text";
+      const label = FINANCE_FIELD_LABELS[key] || status.missingLabels[i] || key;
+      add({ code: isBank ? `bank_${key}_missing` : `finance_${key}_missing`, severity: "warning", area: isBank ? "bank" : "rate", field: key, label,
+        message: `${label} fehlt – die Monatsrate wird ausgeblendet, der Barpreis bleibt sichtbar.`,
+        fix: isBank ? `Im Profil unter Banken die ${status.offerType === "leasing" ? "Leasing" : "Finanzierungs"}bank und den Banktext hinterlegen.` : `Im Angebot unter ${status.offerType === "leasing" ? "Leasing" : "Finanzierung"} „${label}“ eintragen.`,
+        value: null });
+    }
+    // Banktext muss die gezeigten Pflichtbeträge tatsächlich nennen.
+    if (status.showRate) {
+      const notice = buildLegalNotice(vd);
+      const text = clean(notice?.text);
+      const vals = shortcodeValues(vd, clean(notice?.bank));
+      const amountsInText = (text.match(/\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?/g) || []).map(digitsOf);
+      const mentions = (amount: string) => { const d = digitsOf(amount); return !d || amountsInText.includes(d); };
+      for (const [key, placeholder] of [["gesamtbetrag", "{gesamtbetrag}"], ["monatsrate", "{monatsrate}"]] as const) {
+        if (text && vals[key] && !mentions(vals[key])) {
+          add({ code: `bank_text_${key}_not_mentioned`, severity: "warning", area: "bank", field: "legal_text", label: "Banktext",
+            message: `Der Banktext nennt ${key === "gesamtbetrag" ? "den Gesamtbetrag" : "die Monatsrate"} (${vals[key]}) nicht.`,
+            fix: `Im Profil unter Banken im Banktext den Platzhalter ${placeholder} einfügen.`, value: vals[key] });
+        }
+      }
+    }
+  }
+
+  // 4) Pkw-EnVKV
+  const envkv = buildEnvkv(vd);
+  const isUsed = /gebraucht/i.test(envkv.status);
+  for (const key of envkv.missingFields) {
+    const label = ENVKV_FIELD_LABELS[key] || key;
+    add({ code: `envkv_${key}_missing`, severity: isUsed ? "warning" : "error", area: "envkv", field: `consumption.${key}`, label,
+      message: `${label} fehlt – Pflichtangabe nach Pkw-EnVKV.`,
+      fix: `Im Angebot unter Verbrauch/CO₂ „${label}“ eintragen.`, value: null });
+  }
+
+  const hasError = issues.some((i) => i.severity === "error");
+  const publishable = price.cashPrice != null && !issues.some((i) => i.area === "price" && i.severity === "error");
+  return {
+    version: OFFER_CHECK_VERSION, kind, status: issues.length ? "incomplete" as const : "ok" as const,
+    publishable, rateVisible: status.showRate, values, issues,
+    summary: issues.length === 0 ? "Alle Angaben vollständig." : `${issues.length} Angabe${issues.length === 1 ? "" : "n"} prüfen${hasError ? " (Pflicht)" : ""}: ${issues.map((i) => i.label).filter((l, i, a) => a.indexOf(l) === i).join(", ")}.`,
+  };
+}
