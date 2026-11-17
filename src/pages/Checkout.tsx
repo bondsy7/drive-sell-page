@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,158 +6,158 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import PublicHeader from '@/components/public/PublicHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
-import { ALL_INCL_PACKAGES, FOTO_PACKAGES, STRIPE_PRICES } from '@/lib/stripe-plans';
-import { Check, ChevronLeft, CreditCard, Loader2, Lock, ShieldCheck, Building2, FileText } from 'lucide-react';
+import {
+  calculateInvoiceTotals,
+  formatInvoiceEuro,
+  getInvoiceOffer,
+  INVOICE_OFFERS,
+  INVOICE_PAYMENT_TERM_DAYS,
+} from '@/lib/invoice-order';
+import { Building2, Check, ChevronLeft, FileCheck2, FileText, Loader2, MailCheck, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-const euro = (cents: number) =>
-  (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const STEPS = ['Leistung wählen', 'Rechnungsdaten', 'Auftrag prüfen', 'Bestätigung'];
 
-type Offer = {
-  slug: string;
-  name: string;
-  subtitle: string;
-  priceCents: number;
-  bullets: string[];
+type SubmittedOrder = {
+  orderNumber: string;
+  offerName: string;
+  totalGrossCents: number;
+  paymentTermDays: number;
 };
-
-const OFFERS: Offer[] = [
-  ...ALL_INCL_PACKAGES.map((p) => ({
-    slug: p.slug,
-    name: p.name,
-    subtitle: 'All-Incl-Marketing',
-    priceCents: p.priceCents,
-    bullets: [`${p.credits.toLocaleString('de-DE')} Credits/Monat`, `${p.vehiclesPerMonth} Fahrzeuge/Monat`, ...p.included.slice(0, 2)],
-  })),
-  ...FOTO_PACKAGES.map((p) => ({
-    slug: p.slug,
-    name: `Fotoservice ${p.vehicles} Fahrzeug${p.vehicles > 1 ? 'e' : ''}`,
-    subtitle: 'Fotoservice',
-    priceCents: p.monthlyCents,
-    bullets: [`${p.credits.toLocaleString('de-DE')} Credits/Monat`, `${euro(p.pricePerVehicleCents)} je Fahrzeug`, '16 Perspektiven je Fahrzeug'],
-  })),
-];
-
-const STEPS = ['Tarif wählen', 'Unternehmensdaten', 'Zahlung', 'Start'];
 
 const Checkout = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const [slug, setSlug] = useState<string>(params.get('plan') || 'advanced');
+  const [slug, setSlug] = useState(params.get('plan') || 'advanced');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [company, setCompany] = useState('');
   const [contact, setContact] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [street, setStreet] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('Deutschland');
+  const [taxId, setTaxId] = useState('');
+  const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState(false);
-  const [payment, setPayment] = useState<'card' | 'sepa' | 'invoice'>('card');
+  const [business, setBusiness] = useState(false);
+  const [website, setWebsite] = useState('');
   const [firstBooking, setFirstBooking] = useState<boolean | null>(null);
+  const [submittedOrder, setSubmittedOrder] = useState<SubmittedOrder | null>(null);
+  const [emailSent, setEmailSent] = useState(true);
+  const requestId = useRef(crypto.randomUUID());
+  const startedAt = useRef(Date.now());
 
-  const offer = useMemo(() => OFFERS.find((o) => o.slug === slug) ?? OFFERS[1], [slug]);
-  const net = offer.priceCents;
-  const vat = Math.round(net * 0.19);
+  const offer = useMemo(() => getInvoiceOffer(slug) ?? getInvoiceOffer('advanced')!, [slug]);
+  const totals = useMemo(() => calculateInvoiceTotals(offer, firstBooking !== false), [offer, firstBooking]);
 
   useEffect(() => {
     if (!user) return;
-    setEmail((e) => e || user.email || '');
+    setEmail((value) => value || user.email || '');
     void (async () => {
-      const { data } = await (supabase.from('profiles') as any)
-        .select('company_name, contact_name, phone, email')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (data) {
-        setCompany((v) => v || data.company_name || '');
-        setContact((v) => v || data.contact_name || '');
-        setPhone((v) => v || data.phone || '');
-        setEmail((v) => v || data.email || user.email || '');
+      const [{ data: profile }, { data: subscriptions }, { data: previousOrders }] = await Promise.all([
+        supabase.from('profiles')
+          .select('company_name, contact_name, phone, email, address, postal_code, city, tax_id')
+          .eq('id', user.id).maybeSingle(),
+        supabase.from('user_subscriptions').select('id').eq('user_id', user.id).limit(1),
+        supabase.from('invoice_orders').select('id').eq('user_id', user.id)
+          .gt('setup_fee_cents', 0).neq('status', 'cancelled').limit(1),
+      ]);
+      if (profile) {
+        setCompany((value) => value || profile.company_name || '');
+        setContact((value) => value || profile.contact_name || '');
+        setPhone((value) => value || profile.phone || '');
+        setEmail((value) => value || profile.email || user.email || '');
+        setStreet((value) => value || profile.address || '');
+        setPostalCode((value) => value || profile.postal_code || '');
+        setCity((value) => value || profile.city || '');
+        setTaxId((value) => value || profile.tax_id || '');
       }
-      const { data: subs, error } = await (supabase.from('user_subscriptions') as any)
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
-      setFirstBooking(error ? null : (subs?.length ?? 0) === 0);
+      setFirstBooking((subscriptions?.length ?? 0) === 0 && (previousOrders?.length ?? 0) === 0);
     })();
   }, [user]);
 
-  const dataComplete = company.trim().length > 1 && contact.trim().length > 1 && /\S+@\S+\.\S+/.test(email);
+  const dataComplete = company.trim().length > 1 && contact.trim().length > 1 && /\S+@\S+\.\S+/.test(email)
+    && street.trim().length > 1 && postalCode.trim().length > 1 && city.trim().length > 1 && country.trim().length > 1;
 
-  const saveProfile = async () => {
-    if (!user) return;
-    await (supabase.from('profiles') as any)
-      .update({ company_name: company.trim(), contact_name: contact.trim(), phone: phone.trim(), email: email.trim() })
-      .eq('user_id', user.id);
+  const chooseOffer = (nextSlug: string) => {
+    setSlug(nextSlug);
+    requestId.current = crypto.randomUUID();
+    startedAt.current = Date.now();
   };
 
   const startCheckout = async () => {
-    if (!user) {
-      navigate(`/auth?redirect=${encodeURIComponent(`/checkout?plan=${slug}`)}`);
-      return;
-    }
-    if (payment === 'invoice') {
-      window.location.href = `mailto:info@breadcrumb.de?subject=${encodeURIComponent(
-        `Rechnungskauf ${offer.name} – ${company}`,
-      )}&body=${encodeURIComponent(
-        `Tarif: ${offer.name}\nUnternehmen: ${company}\nAnsprechpartner: ${contact}\nE-Mail: ${email}\nTelefon: ${phone}`,
-      )}`;
-      return;
-    }
-    const priceId = STRIPE_PRICES[slug]?.monthly;
-    if (!priceId) {
-      toast.error('Für diesen Tarif ist keine Online-Buchung hinterlegt.');
-      return;
-    }
+    if (!dataComplete || !terms || !business) return;
     setLoading(true);
     try {
-      await saveProfile();
-      const { data, error } = await supabase.functions.invoke('create-checkout', { body: { priceId } });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, '_blank');
+      if (user) {
+        await supabase.from('profiles').update({
+          company_name: company.trim(), contact_name: contact.trim(), phone: phone.trim(), email: email.trim(),
+          address: street.trim(), postal_code: postalCode.trim(), city: city.trim(), tax_id: taxId.trim(),
+        }).eq('id', user.id);
+      }
+      const { data, error } = await supabase.functions.invoke('create-invoice-order', {
+        body: {
+          offerSlug: offer.slug,
+          requestId: requestId.current,
+          company, contact, email, phone, street, postalCode, city, country, taxId, notes,
+          termsAccepted: terms,
+          businessConfirmed: business,
+          startedAt: startedAt.current,
+          website,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'Bestellung fehlgeschlagen');
+      if (!data?.order?.orderNumber) throw new Error('Die Bestellnummer fehlt in der Bestätigung.');
+      setSubmittedOrder(data.order);
+      setEmailSent(data.emailSent !== false);
       setStep(4);
-    } catch (err: any) {
-      toast.error('Fehler beim Checkout: ' + (err?.message || 'Unbekannter Fehler'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Der Rechnungsauftrag konnte nicht gesendet werden.');
     } finally {
       setLoading(false);
     }
   };
 
+  const resetCheckout = () => {
+    setSubmittedOrder(null);
+    setTerms(false);
+    setBusiness(false);
+    setStep(1);
+    requestId.current = crypto.randomUUID();
+    startedAt.current = Date.now();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
-
       <main className="mx-auto max-w-6xl px-4 py-10">
         <Link to="/pricing" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-4 w-4" /> Zurück zu den Preisen
         </Link>
-
-        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-primary">In 4 Schritten starten</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">In wenigen Minuten einsatzbereit.</h1>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Direkt auf Rechnung buchen</p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">Ohne Kreditkarte bestellen.</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Tarif wählen, Unternehmensdaten prüfen, Zahlung abschließen – danach kannst du sofort loslegen.
+          Wähle eine Leistung und sende deinen Rechnungsauftrag. Ein Konto ist für die Bestellung nicht erforderlich.
         </p>
 
-        {/* Stepper */}
         <ol className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {STEPS.map((label, i) => {
-            const n = i + 1;
-            const done = step > n;
-            const active = step === n;
+          {STEPS.map((label, index) => {
+            const number = index + 1;
+            const done = step > number;
+            const active = step === number;
             return (
               <li key={label} className="flex items-center gap-3">
-                <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground'
-                      : done
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {done ? <Check className="h-4 w-4" /> : n}
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                  active ? 'bg-primary text-primary-foreground' : done ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                }`}>
+                  {done ? <Check className="h-4 w-4" /> : number}
                 </span>
                 <span className={`text-sm ${active ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{label}</span>
               </li>
@@ -167,257 +167,141 @@ const Checkout = () => {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className="space-y-6">
-            {/* Schritt 1 */}
             <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <span className="text-primary">1.</span> Tarif wählen
-              </h2>
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><span className="text-primary">1.</span> Leistung wählen</h2>
               {step === 1 ? (
                 <>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {OFFERS.map((o) => {
-                      const selected = o.slug === slug;
-                      return (
-                        <button
-                          key={o.slug}
-                          type="button"
-                          onClick={() => setSlug(o.slug)}
-                          className={`rounded-lg border p-4 text-left transition-all ${
-                            selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/40'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-xs uppercase tracking-wide text-muted-foreground">{o.subtitle}</p>
-                              <p className="font-semibold">{o.name}</p>
-                            </div>
-                            {selected && <Check className="h-5 w-5 text-primary" />}
-                          </div>
-                          <p className="mt-2 text-xl font-bold">
-                            {euro(o.priceCents)} <span className="text-sm font-normal text-muted-foreground">/ Monat netto</span>
-                          </p>
-                          <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-                            {o.bullets.map((b) => (
-                              <li key={b} className="flex items-start gap-2">
-                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> {b}
-                              </li>
-                            ))}
-                          </ul>
-                        </button>
-                      );
-                    })}
+                  <Label htmlFor="offer" className="mt-5 block">Tarif, Credit-Paket oder Zusatzleistung</Label>
+                  <select
+                    id="offer"
+                    value={offer.slug}
+                    onChange={(event) => chooseOffer(event.target.value)}
+                    className="mt-2 flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <optgroup label="Abos und Credit-Pakete">
+                      {INVOICE_OFFERS.filter((item) => item.kind !== 'service').map((item) => <option key={item.slug} value={item.slug}>{item.subtitle}: {item.name}</option>)}
+                    </optgroup>
+                    <optgroup label="Zusatzleistungen und Einzelsets">
+                      {INVOICE_OFFERS.filter((item) => item.kind === 'service').map((item) => <option key={item.slug} value={item.slug}>{item.name} · {item.unit}</option>)}
+                    </optgroup>
+                  </select>
+                  <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-5">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{offer.subtitle}</p>
+                    <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+                      <h3 className="text-xl font-semibold">{offer.name}</h3>
+                      <p className="text-xl font-bold">{offer.fromPrice ? 'ab ' : ''}{formatInvoiceEuro(offer.priceCents)} <span className="text-sm font-normal text-muted-foreground">{offer.unit}</span></p>
+                    </div>
+                    <ul className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                      {offer.bullets.map((bullet) => <li key={bullet} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{bullet}</li>)}
+                    </ul>
                   </div>
-                  <Button className="mt-5" onClick={() => setStep(2)}>
-                    Weiter zu den Unternehmensdaten
-                  </Button>
+                  <Button className="mt-5" onClick={() => setStep(2)}>Weiter zu den Rechnungsdaten</Button>
                 </>
               ) : (
-                <div className="mt-3 flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3 text-sm">
-                  <span>
-                    <strong>{offer.name}</strong> · {euro(offer.priceCents)} / Monat netto
-                  </span>
-                  <button type="button" className="text-primary hover:underline" onClick={() => setStep(1)}>
-                    Ändern
-                  </button>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-4 py-3 text-sm">
+                  <span><strong>{offer.name}</strong> · {offer.fromPrice ? 'ab ' : ''}{formatInvoiceEuro(offer.priceCents)} {offer.unit}</span>
+                  {step < 4 && <button type="button" className="shrink-0 text-primary hover:underline" onClick={() => setStep(1)}>Ändern</button>}
                 </div>
               )}
             </section>
 
-            {/* Schritt 2 */}
             <section className={`rounded-xl border bg-card p-6 shadow-sm ${step === 2 ? 'border-primary/40' : 'border-border'}`}>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Building2 className="h-5 w-5 text-primary" /> 2. Unternehmensdaten
-              </h2>
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><Building2 className="h-5 w-5 text-primary" /> 2. Rechnungsdaten</h2>
               {step >= 2 ? (
                 <>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    autohaus.ai ist ein Angebot ausschließlich für Unternehmer im Sinne des § 14 BGB.
-                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">Diese Angaben werden für die Rechnungsstellung verwendet.</p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="company">Unternehmensname *</Label>
-                      <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Autohaus Müller GmbH" />
-                    </div>
-                    <div>
-                      <Label htmlFor="contact">Ansprechpartner *</Label>
-                      <Input id="contact" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Max Mustermann" />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">E-Mail-Adresse *</Label>
-                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="max@autohaus-mueller.de" />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Telefon</Label>
-                      <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 89 1234567" />
-                    </div>
+                    <div><Label htmlFor="company">Unternehmensname *</Label><Input id="company" autoComplete="organization" value={company} onChange={(event) => setCompany(event.target.value)} /></div>
+                    <div><Label htmlFor="contact">Ansprechpartner *</Label><Input id="contact" autoComplete="name" value={contact} onChange={(event) => setContact(event.target.value)} /></div>
+                    <div><Label htmlFor="email">Rechnungs-E-Mail *</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} /></div>
+                    <div><Label htmlFor="phone">Telefon</Label><Input id="phone" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} /></div>
+                    <div className="sm:col-span-2"><Label htmlFor="street">Straße und Hausnummer *</Label><Input id="street" autoComplete="street-address" value={street} onChange={(event) => setStreet(event.target.value)} /></div>
+                    <div><Label htmlFor="postalCode">PLZ *</Label><Input id="postalCode" autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} /></div>
+                    <div><Label htmlFor="city">Ort *</Label><Input id="city" autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)} /></div>
+                    <div><Label htmlFor="country">Land *</Label><Input id="country" autoComplete="country-name" value={country} onChange={(event) => setCountry(event.target.value)} /></div>
+                    <div><Label htmlFor="taxId">USt.-IdNr. (optional)</Label><Input id="taxId" value={taxId} onChange={(event) => setTaxId(event.target.value)} /></div>
+                    <div className="sm:col-span-2"><Label htmlFor="notes">Bemerkung zur Bestellung (optional)</Label><Textarea id="notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={1000} /></div>
                   </div>
-                  {step === 2 && (
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      <Button disabled={!dataComplete} onClick={() => setStep(3)}>
-                        Weiter zur Zahlung
-                      </Button>
-                      <Button variant="ghost" onClick={() => setStep(1)}>
-                        Zurück
-                      </Button>
-                    </div>
-                  )}
+                  <div className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                    <Label htmlFor="website">Website</Label><Input id="website" tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)} />
+                  </div>
+                  {step === 2 && <div className="mt-5 flex gap-3"><Button disabled={!dataComplete} onClick={() => setStep(3)}>Auftrag prüfen</Button><Button variant="ghost" onClick={() => setStep(1)}>Zurück</Button></div>}
                 </>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Wird nach der Tarifauswahl ausgefüllt.</p>
-              )}
+              ) : <p className="mt-2 text-sm text-muted-foreground">Wird nach der Leistungsauswahl ausgefüllt.</p>}
             </section>
 
-            {/* Schritt 3 */}
             <section className={`rounded-xl border bg-card p-6 shadow-sm ${step === 3 ? 'border-primary/40' : 'border-border'}`}>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <CreditCard className="h-5 w-5 text-primary" /> 3. Zahlung
-              </h2>
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><FileText className="h-5 w-5 text-primary" /> 3. Rechnungsauftrag prüfen</h2>
               {step >= 3 ? (
                 <>
-                  <div className="mt-4 space-y-2">
-                    {[
-                      { key: 'card' as const, label: 'Kreditkarte', hint: 'Sofort freigeschaltet' },
-                      { key: 'sepa' as const, label: 'SEPA-Lastschrift', hint: 'Im sicheren Zahlungsfenster wählbar' },
-                      { key: 'invoice' as const, label: 'Rechnung (nur Business)', hint: 'Auf Anfrage – wir melden uns schriftlich' },
-                    ].map((m) => (
-                      <button
-                        key={m.key}
-                        type="button"
-                        onClick={() => setPayment(m.key)}
-                        className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors ${
-                          payment === m.key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
-                        }`}
-                      >
-                        <span>
-                          <span className="block text-sm font-medium">{m.label}</span>
-                          <span className="block text-xs text-muted-foreground">{m.hint}</span>
-                        </span>
-                        <span
-                          className={`h-4 w-4 rounded-full border-2 ${
-                            payment === m.key ? 'border-primary bg-primary' : 'border-muted-foreground/40'
-                          }`}
-                        />
-                      </button>
-                    ))}
+                  <div className="mt-4 rounded-lg bg-muted/50 p-4 text-sm leading-relaxed">
+                    <p><strong>Ausschließlich Zahlung auf Rechnung.</strong> Die Rechnung erhalten Sie nach Prüfung per E-Mail.</p>
+                    <p className="mt-2">Zahlungsziel: {INVOICE_PAYMENT_TERM_DAYS} Tage ab Rechnungserhalt. Credits, Tarife und Services werden erst nach manueller Prüfung durch einen Admin freigegeben.</p>
                   </div>
-
-                  <label className="mt-4 flex items-start gap-3 text-sm">
-                    <Checkbox checked={terms} onCheckedChange={(v) => setTerms(v === true)} className="mt-0.5" />
-                    <span>
-                      Ich akzeptiere die{' '}
-                      <Link to="/agb" className="text-primary hover:underline" target="_blank">
-                        AGB
-                      </Link>{' '}
-                      und habe die{' '}
-                      <Link to="/datenschutz" className="text-primary hover:underline" target="_blank">
-                        Datenschutzerklärung
-                      </Link>{' '}
-                      zur Kenntnis genommen.
-                    </span>
-                  </label>
-
-                  <Button className="mt-5 w-full" size="lg" disabled={!terms || loading} onClick={startCheckout}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Wird vorbereitet …
-                      </>
-                    ) : payment === 'invoice' ? (
-                      'Rechnungskauf anfragen'
-                    ) : (
-                      'Jetzt kostenpflichtig bestellen'
-                    )}
+                  <div className="mt-4 space-y-3">
+                    <label className="flex items-start gap-3 text-sm">
+                      <Checkbox checked={business} onCheckedChange={(value) => setBusiness(value === true)} className="mt-0.5" />
+                      <span>Ich bestelle als Unternehmer im Sinne des § 14 BGB und bestätige die Richtigkeit der Rechnungsdaten. *</span>
+                    </label>
+                    <label className="flex items-start gap-3 text-sm">
+                      <Checkbox checked={terms} onCheckedChange={(value) => setTerms(value === true)} className="mt-0.5" />
+                      <span>Ich akzeptiere die <Link to="/agb" className="text-primary hover:underline" target="_blank">AGB</Link> und habe die <Link to="/datenschutz" className="text-primary hover:underline" target="_blank">Datenschutzerklärung</Link> zur Kenntnis genommen. *</span>
+                    </label>
+                  </div>
+                  <Button className="mt-5 w-full" size="lg" disabled={!terms || !business || loading} onClick={startCheckout}>
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Auftrag wird gespeichert …</> : 'Rechnungsauftrag verbindlich senden'}
                   </Button>
-                  <p className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Lock className="h-3.5 w-3.5" /> Sichere SSL-Verschlüsselung · Zahlung über Stripe
-                  </p>
-                  <button type="button" className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground" onClick={() => setStep(2)}>
-                    Zurück zu den Unternehmensdaten
-                  </button>
+                  <p className="mt-3 text-center text-xs text-muted-foreground">Keine Kreditkarte, kein SEPA und keine Weiterleitung zu einem Zahlungsanbieter.</p>
+                  <button type="button" className="mt-3 w-full text-xs text-muted-foreground hover:text-foreground" onClick={() => setStep(2)}>Zurück zu den Rechnungsdaten</button>
                 </>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Verfügbar, sobald deine Unternehmensdaten vollständig sind.</p>
-              )}
+              ) : <p className="mt-2 text-sm text-muted-foreground">Verfügbar, sobald die Rechnungsdaten vollständig sind.</p>}
             </section>
 
-            {/* Schritt 4 */}
-            {step === 4 && (
-              <section className="rounded-xl border border-primary/40 bg-primary/5 p-6">
-                <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <Check className="h-5 w-5 text-primary" /> 4. Start
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Das Zahlungsfenster wurde in einem neuen Tab geöffnet. Nach Abschluss werden deine Credits automatisch gutgeschrieben.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Button onClick={() => navigate('/dashboard')}>Zum Dashboard</Button>
-                  <Button variant="outline" onClick={startCheckout}>
-                    Zahlungsfenster erneut öffnen
-                  </Button>
+            {step === 4 && submittedOrder && (
+              <section className="rounded-xl border border-primary/40 bg-primary/5 p-6" aria-live="polite">
+                <h2 className="flex items-center gap-2 text-lg font-semibold"><FileCheck2 className="h-5 w-5 text-primary" /> Rechnungsauftrag erhalten</h2>
+                <p className="mt-3 text-sm">Bestellnummer: <strong>{submittedOrder.orderNumber}</strong></p>
+                <p className="mt-2 text-sm text-muted-foreground">{submittedOrder.offerName} · Gesamtbetrag {formatInvoiceEuro(submittedOrder.totalGrossCents)} inkl. USt.</p>
+                <div className="mt-4 flex items-start gap-3 rounded-lg bg-card p-4 text-sm">
+                  <MailCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <p>{emailSent
+                    ? `Eine Eingangsbestätigung wurde an ${email} gesendet. Die Rechnung folgt nach Prüfung separat. Das Zahlungsziel beträgt ${submittedOrder.paymentTermDays} Tage ab Rechnungserhalt.`
+                    : 'Der Auftrag ist gespeichert. Die Bestätigungs-E-Mail konnte nicht versendet werden; bitte notiere die Bestellnummer. Die Rechnung folgt nach Prüfung.'}</p>
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">Die Leistung wird ausschließlich durch einen Admin freigegeben, nicht automatisch durch Rechnungs- oder Zahlungsstatus.</p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {user && <Button onClick={() => navigate('/dashboard')}>Zum Dashboard</Button>}
+                  <Button variant={user ? 'outline' : 'default'} onClick={resetCheckout}>Weitere Leistung buchen</Button>
+                  <Button variant="ghost" onClick={() => navigate('/pricing')}>Zurück zu den Preisen</Button>
                 </div>
               </section>
             )}
           </div>
 
-          {/* Bestellübersicht */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="text-lg font-semibold">4. Bestellübersicht</h2>
+              <h2 className="text-lg font-semibold">Bestellübersicht</h2>
               <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium">{offer.name}</span>
-                  <span className="font-medium">{euro(net)}</span>
-                </div>
-                {firstBooking !== false && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Einrichtung (einmalig bei Erstbuchung, separat berechnet)</span>
-                    <span>990,00 €</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Zwischensumme</span>
-                  <span>{euro(net)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>MwSt. (19 %)</span>
-                  <span>{euro(vat)}</span>
-                </div>
-                <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-bold">
-                  <span>Gesamt / Monat</span>
-                  <span>{euro(net + vat)}</span>
-                </div>
+                <div className="flex justify-between gap-3"><span className="font-medium">{offer.name}</span><span className="shrink-0 font-medium">{offer.fromPrice ? 'ab ' : ''}{formatInvoiceEuro(totals.serviceNetCents)}</span></div>
+                {totals.setupFeeCents > 0 && <div className="flex justify-between gap-3 text-muted-foreground"><span>Einrichtung bei Erstbuchung</span><span>{formatInvoiceEuro(totals.setupFeeCents)}</span></div>}
+                <div className="flex justify-between text-muted-foreground"><span>Zwischensumme netto</span><span>{formatInvoiceEuro(totals.netCents)}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>MwSt. (19 %)</span><span>{formatInvoiceEuro(totals.vatCents)}</span></div>
+                <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-bold"><span>{totals.setupFeeCents > 0 ? 'Erste Rechnung' : 'Gesamt'}</span><span>{formatInvoiceEuro(totals.totalGrossCents)}</span></div>
               </div>
-
+              {offer.fromPrice && <p className="mt-3 text-xs text-muted-foreground">Bei „ab“-Preisen wird Umfang und Endpreis vor der Rechnungsstellung abgestimmt.</p>}
               <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" /> 12 Monate Laufzeit, danach monatlich kündbar
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" /> Sofort einsatzbereit
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" /> Alle Preise netto zzgl. USt.
-                </li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Rechnung per E-Mail</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> {INVOICE_PAYMENT_TERM_DAYS} Tage Zahlungsziel</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Manuelle Admin-Freigabe</li>
               </ul>
-
               <div className="mt-5 flex items-start gap-3 rounded-lg bg-muted/50 p-4">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <div className="text-xs text-muted-foreground">
-                  <p className="font-semibold text-foreground">Sichere Zahlung</p>
-                  Verschlüsselt und PCI-konform über Stripe.
-                </div>
+                <div className="text-xs text-muted-foreground"><p className="font-semibold text-foreground">Keine Zahlungsdaten nötig</p>Die Bestellung benötigt keine Karten- oder Bankdaten.</div>
               </div>
-
-              <Link
-                to="/pricing"
-                className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <FileText className="h-3.5 w-3.5" /> Vertrag als PDF auf der Preisseite
-              </Link>
             </div>
           </aside>
         </div>
       </main>
-
       <SiteFooter />
     </div>
   );

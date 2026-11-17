@@ -1308,6 +1308,120 @@ export type Database = {
           },
         ]
       }
+      invoice_orders: {
+        Row: {
+          activated_at: string | null
+          activated_by: string | null
+          billing_city: string
+          billing_company: string
+          billing_contact: string
+          billing_country: string
+          billing_email: string
+          billing_phone: string | null
+          billing_postal_code: string
+          billing_street: string
+          billing_tax_id: string | null
+          created_at: string
+          credits: number
+          currency: string
+          id: string
+          invoice_issued_at: string | null
+          invoice_number: string | null
+          invoice_status: string
+          notes: string | null
+          offer_kind: string
+          offer_name: string
+          offer_slug: string
+          order_number: string
+          paid_at: string | null
+          payment_status: string
+          payment_term_days: number
+          price_net_cents: number
+          request_id: string
+          setup_fee_cents: number
+          status: string
+          terms_accepted_at: string
+          total_gross_cents: number
+          updated_at: string
+          user_id: string | null
+          vat_cents: number
+        }
+        Insert: {
+          activated_at?: string | null
+          activated_by?: string | null
+          billing_city: string
+          billing_company: string
+          billing_contact: string
+          billing_country?: string
+          billing_email: string
+          billing_phone?: string | null
+          billing_postal_code: string
+          billing_street: string
+          billing_tax_id?: string | null
+          created_at?: string
+          credits?: number
+          currency?: string
+          id?: string
+          invoice_issued_at?: string | null
+          invoice_number?: string | null
+          invoice_status?: string
+          notes?: string | null
+          offer_kind: string
+          offer_name: string
+          offer_slug: string
+          order_number?: string
+          paid_at?: string | null
+          payment_status?: string
+          payment_term_days?: number
+          price_net_cents: number
+          request_id: string
+          setup_fee_cents?: number
+          status?: string
+          terms_accepted_at: string
+          total_gross_cents: number
+          updated_at?: string
+          user_id?: string | null
+          vat_cents: number
+        }
+        Update: {
+          activated_at?: string | null
+          activated_by?: string | null
+          billing_city?: string
+          billing_company?: string
+          billing_contact?: string
+          billing_country?: string
+          billing_email?: string
+          billing_phone?: string | null
+          billing_postal_code?: string
+          billing_street?: string
+          billing_tax_id?: string | null
+          created_at?: string
+          credits?: number
+          currency?: string
+          id?: string
+          invoice_issued_at?: string | null
+          invoice_number?: string | null
+          invoice_status?: string
+          notes?: string | null
+          offer_kind?: string
+          offer_name?: string
+          offer_slug?: string
+          order_number?: string
+          paid_at?: string | null
+          payment_status?: string
+          payment_term_days?: number
+          price_net_cents?: number
+          request_id?: string
+          setup_fee_cents?: number
+          status?: string
+          terms_accepted_at?: string
+          total_gross_cents?: number
+          updated_at?: string
+          user_id?: string | null
+          vat_cents?: number
+        }
+        Relationships: []
+      }
       landing_page_deletions: {
         Row: {
           deleted_at: string
@@ -4000,6 +4114,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_invoice_order: {
+        Args: { _admin_id: string; _order_id: string }
+        Returns: Json
+      }
       add_credits: {
         Args: {
           _action_type: Database["public"]["Enums"]["credit_action_type"]

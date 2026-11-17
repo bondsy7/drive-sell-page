@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, FileCheck2, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import BrandLogo from '@/components/brand/BrandLogo';
@@ -30,6 +30,7 @@ const NAV_GROUPS: NavGroupDef[] = [
     items: [
       { to: '/admin/users', icon: Users, label: 'Nutzer' },
       { to: '/admin/transactions', icon: Receipt, label: 'Transaktionen' },
+      { to: '/admin/invoice-orders', icon: FileCheck2, label: 'Rechnungsaufträge' },
       { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
       { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
       { to: '/admin/credit-economics', icon: CreditCard, label: 'Credit-Ökonomie' },

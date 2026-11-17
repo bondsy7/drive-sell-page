@@ -95,6 +95,7 @@ const AdminLayout = lazyWithRetry(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazyWithRetry(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazyWithRetry(() => import("./pages/admin/AdminUsers"));
 const AdminTransactions = lazyWithRetry(() => import("./pages/admin/AdminTransactions"));
+const AdminInvoiceOrders = lazyWithRetry(() => import("./pages/admin/AdminInvoiceOrders"));
 const AdminLeads = lazyWithRetry(() => import("./pages/admin/AdminLeads"));
 const AdminPdfGallery = lazyWithRetry(() => import("./pages/admin/AdminPdfGallery"));
 const AdminPrompts = lazyWithRetry(() => import("./pages/admin/AdminPrompts"));
@@ -257,6 +258,7 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="invoice-orders" element={<AdminInvoiceOrders />} />
                 <Route path="leads" element={<AdminLeads />} />
                 <Route path="pdf-gallery" element={<AdminPdfGallery />} />
                 <Route path="prompts" element={<AdminPrompts />} />

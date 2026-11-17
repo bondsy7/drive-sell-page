@@ -5,13 +5,12 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle, FileDown } from 'lucide-react';
+import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle, FileDown, FileText } from 'lucide-react';
 import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import PublicHeader from '@/components/public/PublicHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
 import CreditSlider from '@/components/CreditSlider';
 import {
-  STRIPE_PRICES,
   CREDIT_PACKS,
   ALL_INCL_PACKAGES,
   FOTO_PACKAGES,
@@ -28,6 +27,9 @@ import {
 import { toast } from 'sonner';
 
 // Funktionsvergleich der All-Incl-Pakete (rein visuelle Übersicht, keine Abrechnungslogik)
+const ADDON_CHECKOUT_SLUGS = ['addon-instagram', 'addon-facebook', 'addon-google-banner', 'addon-video', 'addon-landingpage'];
+const EXTRA_CHECKOUT_SLUGS = ['extra-marketing-set', 'extra-landingpage-paket', 'extra-whitelabel-automarkt', 'extra-flipping-plugin', 'extra-video-paket'];
+
 const COMPARISON_ROWS: Array<{ label: string; plans: string[] }> = [
   { label: 'Fahrzeugbilder (KI-optimiert)', plans: ['basic', 'advanced', 'premium', 'ultra'] },
   { label: 'Social-Media-Vorlagen', plans: ['basic', 'advanced', 'premium', 'ultra'] },
@@ -62,9 +64,8 @@ const Pricing = () => {
     }
   }, [searchParams]);
 
-  // Führt in den geführten Checkout (/checkout) statt direkt zu Stripe.
+  // Alle neuen Käufe laufen ausschließlich als gespeicherter Rechnungsauftrag.
   const handleCheckout = async (slug: string) => {
-    if (!STRIPE_PRICES[slug]) return;
     navigate(`/checkout?plan=${slug}`);
   };
 
@@ -83,8 +84,8 @@ const Pricing = () => {
       if (data?.url) {
         window.open(data.url, '_blank');
       }
-    } catch (err: any) {
-      setManageError(err.message || 'Unbekannter Fehler');
+    } catch (err: unknown) {
+      setManageError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     }
   };
 
@@ -105,8 +106,8 @@ const Pricing = () => {
         window.open(data.url, '_blank');
         setCancelOpen(false);
       }
-    } catch (err: any) {
-      setManageError(err.message || 'Unbekannter Fehler');
+    } catch (err: unknown) {
+      setManageError(err instanceof Error ? err.message : 'Unbekannter Fehler');
       setCancelOpen(false);
     }
   };
@@ -114,23 +115,10 @@ const Pricing = () => {
   const [loadingCredit, setLoadingCredit] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [manageError, setManageError] = useState<string | null>(null);
-  const handleBuyCredits = async (priceId: string) => {
-    if (!user) {
-      toast.error('Bitte melde dich zuerst an.');
-      return;
-    }
-    setLoadingCredit(priceId);
-    try {
-      const { data, error } = await supabase.functions.invoke('buy-credits', {
-        body: { priceId },
-      });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, '_blank');
-    } catch (err: any) {
-      toast.error('Fehler: ' + (err.message || 'Unbekannter Fehler'));
-    } finally {
-      setLoadingCredit(null);
-    }
+  const handleBuyCredits = async (slug: string) => {
+    setLoadingCredit(slug);
+    navigate(`/checkout?plan=${slug}`);
+    setLoadingCredit(null);
   };
 
   return (
@@ -149,6 +137,14 @@ const Pricing = () => {
             Wähle den Tarif, der zu deinem Bedarf passt. Alle Pakete enthalten alle Funktionen für professionelles
             Fahrzeugmarketing – Portal-Gebühren und API-Kosten inklusive.
           </p>
+        </div>
+
+        <div className="mx-auto mb-10 flex max-w-3xl items-start gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-5 text-left">
+          <FileText className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div>
+            <h2 className="font-semibold text-foreground">Alle Leistungen direkt auf Rechnung</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Ohne Kreditkarte oder SEPA bestellen – auch ohne vorherige Anmeldung. Die Rechnung kommt nach Prüfung per E-Mail und ist 14 Tage nach Erhalt fällig. Die Leistung wird manuell durch einen Admin freigegeben.</p>
+          </div>
         </div>
 
         {/* Umschalter */}
@@ -234,12 +230,6 @@ const Pricing = () => {
                       <Button variant="outline" disabled className="w-full border-primary/30 text-primary">
                         <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
                       </Button>
-                    ) : !user ? (
-                      <Link to={`/auth?plan=${pkg.slug}&cycle=monthly`} className="block">
-                        <Button className="w-full" variant={highlight ? 'default' : 'outline'}>
-                          Jetzt starten
-                        </Button>
-                      </Link>
                     ) : (
                       <Button
                         className="w-full"
@@ -248,7 +238,7 @@ const Pricing = () => {
                         onClick={() => handleCheckout(pkg.slug)}
                       >
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                        {isLoading ? 'Weiterleitung…' : 'Jetzt starten'}
+                        {isLoading ? 'Weiterleitung…' : 'Auf Rechnung bestellen'}
                       </Button>
                     )}
                   </div>
@@ -374,12 +364,6 @@ const Pricing = () => {
                       <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
                         <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
                       </Button>
-                    ) : !user ? (
-                      <Link to={`/auth?plan=${pkg.slug}&cycle=monthly`}>
-                        <Button className="w-full" variant="outline" size="sm">
-                          Paket buchen
-                        </Button>
-                      </Link>
                     ) : (
                       <Button
                         variant="outline"
@@ -388,7 +372,7 @@ const Pricing = () => {
                         onClick={() => handleCheckout(pkg.slug)}
                       >
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                        {isLoading ? 'Weiterleitung…' : 'Paket buchen'}
+                        {isLoading ? 'Weiterleitung…' : 'Auf Rechnung bestellen'}
                       </Button>
                     )}
                     <Link
@@ -415,13 +399,14 @@ const Pricing = () => {
             <div className="rounded-2xl border border-border bg-card p-5">
               <h3 className="font-display font-bold text-foreground mb-3">Zusatzapplikationen</h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {FOTO_ADDONS.map((addon) => (
+                {FOTO_ADDONS.map((addon, addonIndex) => (
                   <div key={addon.label} className="rounded-xl border border-border p-3">
                     <p className="font-semibold text-foreground text-sm">{addon.label}</p>
                     <p className="text-xs text-muted-foreground">{addon.hint}</p>
                     <p className="text-sm font-bold text-accent mt-1">
                       {addon.price} <span className="text-xs font-normal text-muted-foreground">{addon.unit} netto</span>
                     </p>
+                    <Link to={`/checkout?plan=${ADDON_CHECKOUT_SLUGS[addonIndex]}`} className="mt-3 inline-block text-xs font-medium text-primary underline underline-offset-2">Auf Rechnung bestellen</Link>
                   </div>
                 ))}
               </div>
@@ -430,7 +415,7 @@ const Pricing = () => {
             <div className="rounded-2xl border border-border bg-card p-5">
               <h3 className="font-display font-bold text-foreground mb-3">Einzelsets & Zusatzpakete</h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {EXTRA_PACKAGES.map((extra) => (
+                {EXTRA_PACKAGES.map((extra, extraIndex) => (
                   <div key={extra.label} className="rounded-xl border border-border p-3 flex flex-col">
                     <div className="flex items-start justify-between gap-2 flex-1">
                       <p className="font-semibold text-foreground text-sm">{extra.label}</p>
@@ -443,21 +428,12 @@ const Pricing = () => {
                     <p className="text-sm font-bold text-accent mt-1">
                       {extra.price} <span className="text-xs font-normal text-muted-foreground">{extra.unit} netto</span>
                     </p>
-                    {extra.onRequest && (
-                      <Link
-                        to="/fahrzeug-testen"
-                        className="mt-2 text-xs text-muted-foreground underline underline-offset-2"
-                      >
-                        Anfragen
-                      </Link>
-                    )}
+                    <Link to={`/checkout?plan=${EXTRA_CHECKOUT_SLUGS[extraIndex]}`} className="mt-3 text-xs font-medium text-primary underline underline-offset-2">Auf Rechnung bestellen</Link>
                   </div>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                Whitelabel-Automarkt und Flipping-Plugin sind derzeit nicht direkt buchbar – wir richten sie nach
-                individueller Abstimmung ein.{' '}
-                <Link to="/fahrzeug-testen" className="underline underline-offset-2">Hier anfragen</Link>.
+                Bei „ab“-Preisen und individuell einzurichtenden Leistungen stimmen wir Umfang und Endpreis vor der Rechnungsstellung mit dir ab.
               </p>
             </div>
           </div>
@@ -587,7 +563,7 @@ const Pricing = () => {
               </div>
 
               <ul className="grid gap-2 sm:grid-cols-2 text-sm text-muted-foreground">
-                {['Sofort verfügbar', 'Für alle Tarife', 'Verfallen nicht zum Monatsende', 'Einfach & sicher'].map((t) => (
+                {['Nach Admin-Freigabe verfügbar', 'Für alle Tarife', 'Verfallen nicht zum Monatsende', 'Zahlung per Rechnung'].map((t) => (
                   <li key={t} className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-primary shrink-0" />
                     {t}
@@ -596,16 +572,16 @@ const Pricing = () => {
               </ul>
 
               <Button
-                disabled={loadingCredit === pack.priceId}
-                onClick={() => handleBuyCredits(pack.priceId)}
+                disabled={loadingCredit === 'credits-200'}
+                onClick={() => handleBuyCredits('credits-200')}
                 className="w-full md:w-auto"
               >
-                {loadingCredit === pack.priceId ? (
+                {loadingCredit === 'credits-200' ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-1" />
                 ) : (
                   <Plus className="w-4 h-4 mr-1" />
                 )}
-                Credits kaufen
+                Credits auf Rechnung bestellen
               </Button>
             </div>
           ))}
