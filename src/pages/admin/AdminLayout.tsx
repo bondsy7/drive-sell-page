@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, FileCheck2, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, FileCheck2, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, HardDriveDownload, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import BrandLogo from '@/components/brand/BrandLogo';
@@ -57,6 +57,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/jobs', icon: Activity, label: 'Job-Monitor' },
       { to: '/admin/email-monitor', icon: Send, label: 'E-Mail-Monitor' },
       { to: '/admin/storage', icon: HardDrive, label: 'Storage' },
+      { to: '/admin/storage-export', icon: HardDriveDownload, label: 'Storage-Export' },
       { to: '/admin/conversion', icon: Filter, label: 'Conversion-Funnel' },
       { to: '/admin/test-drives', icon: CalendarDays, label: 'Probefahrten' },
       { to: '/admin/pipeline-stats', icon: Timer, label: 'Pipeline-Stats' },

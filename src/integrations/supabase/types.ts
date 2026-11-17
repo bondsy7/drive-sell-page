@@ -3460,6 +3460,36 @@ export type Database = {
           },
         ]
       }
+      storage_export_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          revoked_at: string | null
+          secret_hash: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          secret_hash: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          secret_hash?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           active: boolean
@@ -4231,6 +4261,30 @@ export type Database = {
           _x_api_secret?: string
         }
         Returns: undefined
+      }
+      storage_export_db_buckets: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+        }[]
+      }
+      storage_export_db_inventory: {
+        Args: { _bucket_id: string; _limit?: number; _offset?: number }
+        Returns: {
+          bucket_id: string
+          created_at: string
+          etag: string
+          id: string
+          mimetype: string
+          name: string
+          size_bytes: number
+          total_count: number
+          updated_at: string
+        }[]
       }
       website_media_missing_urls: {
         Args: { _urls: string[] }

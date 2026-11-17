@@ -44,3 +44,4 @@ The homepage look magnifier uses HoverZoomImage with the active main image and o
 
 - Public vehicle enquiries are inserted only by submit-lead after bounded schema validation, a honeypot check and dealer/project/vehicle ownership checks; client INSERT privileges stay revoked to prevent bypassing the form protections.
 - Pricing uses invoice_orders plus create-invoice-order and manage-invoice-orders for invoice-only sales; invoice/payment status never activates service, and only an explicit admin call to activate_invoice_order can grant credits or plans after account approval, because orders must work without Stripe or accidental activation.
+- Storage handover uses only the isolated admin-only storage-export function, hashed expiring sessions and short-lived signed URLs; scans/downloads never modify buckets, objects or existing policies, and secrets/URLs never enter manifests or logs.

@@ -155,6 +155,13 @@
       "when": 1794903255669,
       "tag": "0021_create_invoice_orders_and_manual_activation",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794911198936,
+      "tag": "0022_create_isolated_storage_export_sessions",
+      "breakpoints": true
     }
   ]
 }

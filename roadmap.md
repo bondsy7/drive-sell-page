@@ -1,4 +1,10 @@
 
+## Isolierter Admin-Storage-Export (17.11.2026)
+- [x] Neue Admin-only Export-Sitzungen und read-only Storage-/DB-Abgleich bereitgestellt; bestehende Buckets, Dateien, Policies und Produktfunktionen unverändert. Unauthentifizierte und widerrufene Sitzungen mit 401 abgewiesen.
+- [x] Vollständigen rekursiven Scan durchgeführt: tatsächlich 10 Buckets (zusätzlich `songs`), 13.830 Dateien, 13.147.864.798 Bytes, 56 Pakete und 0 API-/DB-Abweichungen. Kein Volldownload gestartet.
+- [x] Fortsetzbares PowerShell-Skript mit Langpfad-Unterstützung, Kurzanleitung, Entfernungsdokumentation sowie Manifest-ZIP bereitgestellt; keine Schlüssel oder Signed URLs in Dateien oder Logs.
+- [x] Genau eine öffentliche (348 Bytes) und eine private Datei (133.531 Bytes) geladen; private Datei nach 64 KiB abgebrochen und per Range fortgesetzt. Größe, Quell-MD5 und lokale SHA-256 bei beiden bestanden; alle Testsitzungen widerrufen. PowerShell 7 live getestet, Syntax für 5.1 geprüft; kein physischer Windows-Test möglich.
+
 ## DEKRA-Originalbilder November 2026 (16.11.2026)
 - [x] Alle 117 Originalaufnahmen aus 11 November-Tests von dekra@autohaus.ai und dekra2@autohaus.ai erfasst; KI-/Remaster-Ergebnisse ausgeschlossen. Für dekra3@autohaus.ai bestehen keine November-Originale.
 - [x] Jedes Originalbild visuell auf Beschnitt, Sichtbehinderung, Perspektive, Schärfe, Belichtung und fehlende Detailbelege geprüft; 70 geeignete, 38 eingeschränkte und 9 kritische Referenzen mit konkreten Verbesserungen bewertet.

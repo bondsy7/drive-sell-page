@@ -110,6 +110,7 @@ const AdminJobMonitor = lazyWithRetry(() => import("./pages/admin/AdminJobMonito
 const AdminEmailMonitor = lazyWithRetry(() => import("./pages/admin/AdminEmailMonitor"));
 const AdminRevenue = lazyWithRetry(() => import("./pages/admin/AdminRevenue"));
 const AdminStorage = lazyWithRetry(() => import("./pages/admin/AdminStorage"));
+const AdminStorageExport = lazyWithRetry(() => import("./pages/admin/AdminStorageExport"));
 const AdminConversionFunnel = lazyWithRetry(() => import("./pages/admin/AdminConversionFunnel"));
 const AdminTestDrives = lazyWithRetry(() => import("./pages/admin/AdminTestDrives"));
 const AdminPipelineStats = lazyWithRetry(() => import("./pages/admin/AdminPipelineStats"));
@@ -273,6 +274,7 @@ const App = () => (
                 <Route path="email-monitor" element={<AdminEmailMonitor />} />
                 <Route path="revenue" element={<AdminRevenue />} />
                 <Route path="storage" element={<AdminStorage />} />
+                <Route path="storage-export" element={<AdminStorageExport />} />
                 <Route path="conversion" element={<AdminConversionFunnel />} />
                 <Route path="test-drives" element={<AdminTestDrives />} />
                 <Route path="pipeline-stats" element={<AdminPipelineStats />} />
