@@ -1,4 +1,8 @@
 
+## Ansprechpartner-Darstellung in SEO-Landingpages (17.11.2026)
+- [x] Desktop auf feste Zeilen mit links 154 px großem Porträt (+10 %), 20 px Abstand und rechts bündigen Kontaktdaten umgestellt; unterschiedliche Textlängen verschieben die Spalten nicht mehr.
+- [x] Mobil weiterhin 140 px großes Bild über zentriertem Text. Am echten Maserati-Grecale-Entwurf mit vier Personen in Bearbeitung und Vorschau gemessen und visuell geprüft; HTML-Download enthält dieselben Regeln. Keine Inhalte oder Fahrzeugdaten verändert, Build erfolgreich.
+
 ## Einheitliche Monatsraten auf Fahrzeugangebotsseiten (17.11.2026)
 - [x] Eingaben mit deutscher Dezimal- und Tausenderschreibweise sowie Altbestände mit `€`, `EUR`, `mtl.` oder doppeltem `/mtl.` auf genau `249,00 €/mtl.` normalisieren; Barpreise unverändert lassen.
 - [x] Editor, Vorschau und HTML aller Angebotsvorlagen sowie Legacy-Felder und formatierte Preise in `api-vehicles` synchron ausgeben; API-Zahlenerkennung ignoriert jetzt auch die Punkte in `mtl.` korrekt.
