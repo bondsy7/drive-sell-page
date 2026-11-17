@@ -1,4 +1,9 @@
 
+## Plugin 1.7.12: Barpreis und Angebotsart (17.11.2026)
+- [x] Hochgeladenes Plugin 1.7.12 read-only geprüft und alle mitgelieferten PHP-Smoke-Tests ausgeführt; sämtliche Tests bestanden. Keine Plugin- oder Produktionsdaten verändert.
+- [x] Alle 45 Live-Angebote (15 Rinnetal, 30 Jacobs) direkt durch die Plugin-Preislogik geprüft: überall numerischer Barpreis und gültige Angebotsart vorhanden, keine Erkennungsfehler. Kia EV4: `cashPrice=34669.20`, `price.monthlyRate=249`, `offerType=leasing`, `showRate=true`.
+- [x] Vollständige Kia-Detailprüfung grenzt die Blockade ein: API-Prüfung bestanden, WordPress-Ausgabeprüfung ausschließlich wegen „Öffentlicher Banktext: Gesamtbetrag fehlt oder enthält keinen erkennbaren Wert“ gesperrt. `totalAmount=17.589,56 €` steht separat im Angebots-HTML, aber nicht im geprüften `legalNotice.text`; kein Preis- oder Kategoriefehler. Der Screenshot zeigt zusätzlich einen separaten doppelten Monatshinweis (`€/mtl. / Monat`).
+
 ## Ansprechpartner-Darstellung in SEO-Landingpages (17.11.2026)
 - [x] Desktop auf feste Zeilen mit links 154 px großem Porträt (+10 %), 20 px Abstand und rechts bündigen Kontaktdaten umgestellt; unterschiedliche Textlängen verschieben die Spalten nicht mehr.
 - [x] Mobil weiterhin 140 px großes Bild über zentriertem Text. Am echten Maserati-Grecale-Entwurf mit vier Personen in Bearbeitung und Vorschau gemessen und visuell geprüft; HTML-Download enthält dieselben Regeln. Keine Inhalte oder Fahrzeugdaten verändert, Build erfolgreich.
