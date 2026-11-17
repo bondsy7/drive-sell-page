@@ -21,7 +21,7 @@ import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
-import { parsePrice, parseDuration, parseInterestRate, formatPrice, calculateFinancingRate, calculateLeasingRate } from '@/lib/finance-utils';
+import { parsePrice, parseDuration, parseInterestRate, formatPrice, formatMonthlyRate, calculateFinancingRate, calculateLeasingRate } from '@/lib/finance-utils';
 import { calculateAllCosts } from '@/lib/cost-utils';
 import { useVinLookup } from '@/hooks/useVinLookup';
 import VinDataDialog from '@/components/VinDataDialog';
@@ -66,7 +66,10 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const emptyConsumption = { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' };
   const data: VehicleData = {
     ...vehicleData,
-    finance: vehicleData.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+    finance: {
+      ...(vehicleData.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' }),
+      monthlyRate: formatMonthlyRate(vehicleData.finance?.monthlyRate),
+    },
     vehicle: vehicleData.vehicle || { brand: '', model: '', variant: '', year: 0, color: '', fuelType: '', transmission: '', power: '', features: [] },
     dealer: vehicleData.dealer || emptyDealer,
     consumption: vehicleData.consumption || emptyConsumption,
@@ -136,7 +139,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     onDataChange({ ...data, vehicle: { ...data.vehicle, [key]: val } });
   };
   const updateFinance = (key: keyof VehicleData['finance'], val: string) => {
-    onDataChange({ ...data, finance: { ...data.finance, [key]: val } });
+    const nextValue = key === 'monthlyRate' ? formatMonthlyRate(val) : val;
+    onDataChange({ ...data, finance: { ...data.finance, [key]: nextValue } });
   };
   const updateDealer = (key: keyof DealerData, val: string) => {
     onDataChange({ ...data, dealer: { ...data.dealer, [key]: val } });

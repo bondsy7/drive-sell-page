@@ -10,6 +10,27 @@ export function parsePrice(str: string): number {
 }
 
 /**
+ * Canonical display/storage format for leasing and financing rates.
+ * Users edit only the amount; currency and monthly suffix are added exactly once.
+ * Legacy values such as "249,00 EUR", "249,00 €/mtl./mtl." and "269,- €"
+ * are normalized without changing their numeric amount.
+ */
+export function formatMonthlyRate(value: string | number | null | undefined): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+
+  const match = raw.replace(/\u00a0/g, ' ').match(/\d[\d\s.]*(?:,\d+|,-)?/);
+  if (!match) return raw;
+
+  const amount = match[0]
+    .replace(/\s+/g, '')
+    .replace(/,-$/, ',00')
+    .replace(/[.,]$/, '');
+
+  return `${amount} €/mtl.`;
+}
+
+/**
  * Parses duration string like "48 Monate" to number of months.
  */
 export function parseDuration(str: string): number {

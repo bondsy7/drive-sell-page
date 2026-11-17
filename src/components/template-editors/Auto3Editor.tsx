@@ -48,7 +48,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   const isMonthlyOffer = isLeasing || isFinanzierung;
   const sidebarPriceLabel = isLeasing ? 'Leasing ab' : isFinanzierung ? 'Finanzierung ab' : 'Fahrzeugpreis';
   const sidebarPriceValue = isMonthlyOffer ? (data.finance.monthlyRate || '') : (data.finance.totalPrice || '');
-  const sidebarPriceSuffix = isMonthlyOffer ? '' : '€';
+  const sidebarPriceSuffix = isMonthlyOffer ? '€/mtl.' : '€';
   const sidebarOnChange = (v: string) => updateFinance(isMonthlyOffer ? 'monthlyRate' : 'totalPrice', v);
   const mainImage = allImages[selectedImage] || allImages[0] || imageBase64;
   const features = data.vehicle.features || [];
@@ -488,7 +488,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                 </span>
                 {isMonthlyOffer && (
                   <span className="text-[13px] text-gray-500 font-medium inline-flex items-baseline">
-                    mtl.,&nbsp;
+                    ,&nbsp;
                     <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
                   </span>
                 )}

@@ -7,9 +7,23 @@ const ADDRESS_PLACEHOLDER = "[Anschrift der Bank eintragen]";
 
 const clean = (v: unknown) => (v ?? "").toString().trim();
 const num = (v: string) => {
-  const n = Number(v.replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+  // Read only the numeric amount. Stripping letters alone would retain the dots
+  // from "mtl." and turn valid values such as "249,00 €/mtl." into NaN.
+  const match = v.replace(/\u00a0/g, " ").match(/-?\d[\d\s.]*(?:,\d+|,-)?/);
+  if (!match) return null;
+  const n = Number(match[0].replace(/,-(?!\d)/g, ",00").replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
 };
+
+/** One canonical monthly rate for legacy API fields and WordPress price detection. */
+export function formatMonthlyRate(v: unknown): string {
+  const raw = clean(v);
+  if (!raw) return "";
+  const match = raw.replace(/\u00a0/g, " ").match(/\d[\d\s.]*(?:,\d+|,-)?/);
+  if (!match) return raw;
+  const amount = match[0].replace(/\s+/g, "").replace(/,-$/, ",00").replace(/[.,]$/, "");
+  return `${amount} €/mtl.`;
+}
 const eur = (v: unknown) => {
   const s = clean(v); if (!s) return "";
   if (/€|eur/i.test(s)) return s;
@@ -66,7 +80,7 @@ export function shortcodeValues(vd: any, bankName: string): Record<string, strin
     nettodarlehensbetrag: eur(f.netLoanAmount) || netLoanFallback(vd),
     laufzeit: months(f.duration),
     laufzeit_zahl: clean(f.duration).replace(/\D+/g, ""),
-    monatsrate: eur(f.monthlyRate),
+    monatsrate: offerType(vd) === "cash" ? eur(f.monthlyRate) : formatMonthlyRate(eur(f.monthlyRate)),
     schlussrate: eur(f.residualValue),
     fahrleistung: km(f.annualMileage),
     sollzins: pct(f.nominalInterestRate),
@@ -228,7 +242,7 @@ export function buildPrice(vd: any) {
     cashPrice: cash,
     cashPriceFormatted: cash != null ? eur(f.totalPrice) : null,
     monthlyRate: status.showRate ? rate : null,
-    monthlyRateFormatted: status.showRate && rate != null ? eur(f.monthlyRate) : null,
+    monthlyRateFormatted: status.showRate && rate != null ? formatMonthlyRate(eur(f.monthlyRate)) : null,
     source: "vehicle_data.finance.totalPrice",
   };
 }
@@ -239,7 +253,8 @@ export function withComputedFinance(vd: any): any {
   const f = vd.finance;
   const total = eur(f.totalAmount) ? f.totalAmount : leasingTotal(vd);
   const net = eur(f.netLoanAmount) ? f.netLoanAmount : (offerType(vd) === "financing" ? netLoanFallback(vd) : f.netLoanAmount);
-  const out = { ...vd, finance: { ...f, totalAmount: total || f.totalAmount || "", ...(net !== undefined ? { netLoanAmount: net || "" } : {}) } };
+  const monthlyRate = offerType(vd) === "cash" ? f.monthlyRate : formatMonthlyRate(f.monthlyRate);
+  const out = { ...vd, finance: { ...f, monthlyRate, totalAmount: total || f.totalAmount || "", ...(net !== undefined ? { netLoanAmount: net || "" } : {}) } };
   // Legacy plugins read vehicle_data.vehicle.price although PDF offers store the
   // price in finance.totalPrice. Mirror it only when no explicit vehicle price exists.
   if (!clean(out.vehicle?.price) && clean(f.totalPrice)) {

@@ -2,7 +2,8 @@ import { resolveBankPlaceholders, needsCreditWarning, CREDIT_WARNING } from '@/l
 import { withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
-import { parsePrice } from "@/lib/finance-utils";
+import { parsePrice, formatMonthlyRate } from "@/lib/finance-utils";
+export { formatMonthlyRate } from "@/lib/finance-utils";
 import { escapeHtml, DEFAULT_CONTACT_HEADING } from "@/lib/landing-contact-config";
 import { readableOn, rgba } from "@/lib/landing-theme";
 import { createElement } from 'react';
@@ -294,7 +295,7 @@ export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', lab
     items.push([getFinanceSectionTitle(data), data.finance.totalPrice]);
     if (data.finance.downPayment) items.push(['Anzahlung', data.finance.downPayment]);
   } else {
-    items.push(['Monatliche Rate', data.finance.monthlyRate]);
+    items.push(['Monatliche Rate', formatMonthlyRate(data.finance.monthlyRate)]);
     if (cat.includes('leasing')) {
       items.push(['Sonderzahlung', data.finance.specialPayment]);
     } else {

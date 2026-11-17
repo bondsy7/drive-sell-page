@@ -1,4 +1,9 @@
 
+## Einheitliche Monatsraten auf Fahrzeugangebotsseiten (17.11.2026)
+- [ ] Eingaben mit deutscher Dezimal- und Tausenderschreibweise sowie Altbestände mit `€`, `EUR`, `mtl.` oder doppeltem `/mtl.` auf genau `249,00 €/mtl.` normalisieren; Barpreise unverändert lassen.
+- [ ] Editor, Vorschau und HTML aller Angebotsvorlagen sowie Legacy-Felder und formatierte Preise in `api-vehicles` synchron ausgeben.
+- [ ] Regeltests für Eingabe, alle Vorlagen und API ergänzen; Build, Browser-Ablauf und echte Rinnetal-Ausgabe prüfen.
+
 ## Isolierter Admin-Storage-Export (17.11.2026)
 - [x] Neue Admin-only Export-Sitzungen und read-only Storage-/DB-Abgleich bereitgestellt; bestehende Buckets, Dateien, Policies und Produktfunktionen unverändert. Unauthentifizierte und widerrufene Sitzungen mit 401 abgewiesen.
 - [x] Vollständigen rekursiven Scan durchgeführt: tatsächlich 10 Buckets (zusätzlich `songs`), 13.830 Dateien, 13.147.864.798 Bytes, 56 Pakete und 0 API-/DB-Abweichungen. Kein Volldownload gestartet.

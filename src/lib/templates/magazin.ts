@@ -1,6 +1,6 @@
 import { getAiDisclosureText, withAiDisclosureAlt, buildAiDisclosureImageOverlayHTML } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, formatMonthlyRate, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
 export function generateMagazinHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -90,7 +90,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
         ${customerTypeBadgeHTML(data)}<h1>${getDisplayTitle(data)}</h1>
         <div class="variant">${data.vehicle.variant||''}</div>
         <div class="price">${data.finance.totalPrice||'–'}</div>${vatNoteHTML(data)}
-        <div class="rate-inline">${getMonthlyRateLabel(data)}: ab <strong>${data.finance.monthlyRate||'–'}</strong><span style="font-size:.85em;font-weight:500;opacity:.85">/mtl.</span>${rateTypeSuffixHTML(data)}</div>
+        <div class="rate-inline">${getMonthlyRateLabel(data)}: ab <strong>${formatMonthlyRate(data.finance.monthlyRate)||'–'}</strong>${rateTypeSuffixHTML(data)}</div>
       </div>
     </div>
     <div class="columns">
@@ -122,7 +122,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
           ${buildSocialLinksHTML(data.dealer)}
           ${buildWhatsAppButtonHTML(data.dealer, `${data.vehicle.brand} ${data.vehicle.model}`)}
         </div>
-        <div class="rate-badge"><div style="font-size:.7rem;opacity:.7;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div><div class="amount">${data.finance.monthlyRate||'–'}<span style="font-size:.7em;font-weight:500;opacity:.85">/mtl.</span>${rateTypeSuffixHTML(data)}</div><div class="period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
+        <div class="rate-badge"><div style="font-size:.7rem;opacity:.7;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div><div class="amount">${formatMonthlyRate(data.finance.monthlyRate)||'–'}${rateTypeSuffixHTML(data)}</div><div class="period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
       </div>
     </div>
     ${buildLegalTextHTML(data)}

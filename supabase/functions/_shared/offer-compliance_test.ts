@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, buildLegalNotice, buildPrice, withComputedFinance, CREDIT_WARNING } from "./offer-compliance.ts";
+import { bankFromLegalText, shortcodeValues, financingStatus, resolveBankPlaceholders, buildEnvkv, buildLegalNotice, buildPrice, withComputedFinance, formatMonthlyRate, CREDIT_WARNING } from "./offer-compliance.ts";
 
 const fullFin = { category: "Finanzierung", customerType: "private",
   finance: { totalPrice: "30000", downPayment: "3000", netLoanAmount: "27000", duration: "48", monthlyRate: "299", nominalInterestRate: "4,99", interestRate: "5,11", totalAmount: "31000" },
@@ -69,4 +69,27 @@ Deno.test("Peaq cash price is numeric and mirrored for legacy WordPress readers"
 Deno.test("legacy price fallback never overwrites an explicit vehicle price", () => {
   const vd = { vehicle: { price: "49.900,00 €" }, finance: { totalPrice: "51.500,00 €" } };
   assertEquals(withComputedFinance(vd).vehicle.price, "49.900,00 €");
+});
+
+Deno.test("monthly API price is numeric and formatted with exactly one €/mtl. suffix", () => {
+  const vd = { ...fullFin, finance: { ...fullFin.finance, monthlyRate: "249,00 €/mtl./mtl." } };
+  const price = buildPrice(vd);
+  assertEquals(price.monthlyRate, 249);
+  assertEquals(price.monthlyRateFormatted, "249,00 €/mtl.");
+  assertEquals(withComputedFinance(vd).finance.monthlyRate, "249,00 €/mtl.");
+});
+
+Deno.test("German thousands and legacy EUR/monthly inputs keep their numeric value", () => {
+  const vd = { ...fullFin, finance: { ...fullFin.finance, monthlyRate: "1.249,00 EUR mtl." } };
+  assertEquals(buildPrice(vd).monthlyRate, 1249);
+  assertEquals(buildPrice(vd).monthlyRateFormatted, "1.249,00 €/mtl.");
+  assertEquals(formatMonthlyRate("269,- €"), "269,00 €/mtl.");
+  assertEquals(buildPrice({ ...fullFin, finance: { ...fullFin.finance, monthlyRate: "269,- €" } }).monthlyRate, 269);
+});
+
+Deno.test("cash offers do not receive a monthly suffix", () => {
+  const vd = { category: "Barkauf", finance: { totalPrice: "34.669,20 €", monthlyRate: "249,00 €" } };
+  assertEquals(withComputedFinance(vd).finance.monthlyRate, "249,00 €");
+  assertEquals(buildPrice(vd).monthlyRate, null);
+  assertEquals(buildPrice(vd).cashPrice, 34669.2);
 });
