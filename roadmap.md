@@ -1,7 +1,7 @@
 
 ## Aktuelles Maserati-Logo in Admin und Grecale-Landingpage (18.11.2026)
-- [ ] Hochgeladenes Maserati-SVG ohne Bildveränderung zuschneiden und als kanonisches Markenlogo bereitstellen
-- [ ] Admin und Landingpage-Generator auf SVG vor historischen PNG-/WebP-Dateien umstellen; neueste Grecale-Seite von p.erhard aktualisieren und prüfen
+- [x] Hochgeladenes Maserati-SVG ohne Bildveränderung von 2481×3508 auf den sichtbaren Vektorbereich 1472×626 zugeschnitten und als kanonisches `svg/maserati.svg` bereitgestellt; alte Rasterdateien für ältere Seiten belassen.
+- [x] Admin und Landingpage-Generator auf SVG vor historischen PNG-/WebP-Dateien umgestellt; neueste Grecale-Seite `d6baac41-f5c6-4aab-9e34-3f80a1868746` von p.erhard einschließlich HTML aktualisiert. Drei Server- und vier Frontend-Logo-Tests bestanden, Generator bereitgestellt, Editor/Vorschau/Admin angemeldet ohne Seitenfehler geprüft; ältere Grecale-Entwürfe unverändert.
 
 ## Plugin 1.7.12: Barpreis und Angebotsart (17.11.2026)
 - [x] Hochgeladenes Plugin 1.7.12 read-only geprüft und alle mitgelieferten PHP-Smoke-Tests ausgeführt; sämtliche Tests bestanden. Keine Plugin- oder Produktionsdaten verändert.
