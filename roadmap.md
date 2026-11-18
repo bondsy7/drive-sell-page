@@ -1,8 +1,10 @@
 
-## Zentraler Lead-Empfänger für SEO-Landingpages (18.11.2026)
-- [ ] Im Profilkontakt eine optionale Lead-Empfänger-Adresse speichern und validieren.
-- [ ] `submit-lead` nutzt die Profiladresse nur bei Landingpage-Anfragen ohne eigenen Empfänger; seitenindividuelle Empfänger haben Vorrang.
-- [ ] Regeltests, Datenbank-/Funktionsbereitstellung und angemeldete Profilprüfung durchführen; keinen echten Kunden-Lead oder Testversand auslösen.
+## Zentraler Lead-Empfänger und Händler-Datenschutz für SEO-Landingpages (18.11.2026)
+- [x] Im Profilkontakt eine optionale Lead-Empfänger-Adresse speichern und validieren.
+- [x] `submit-lead` nutzt die Profiladresse nur bei Landingpage-Anfragen ohne eigenen Empfänger; seitenindividuelle Empfänger haben Vorrang.
+- [x] Händlerbezogenen Datenschutzlink im Profil speichern und in neuen sowie beim erneuten Speichern bestehender SEO-Landingpages verwenden; ohne Händler-URL erscheint kein autohaus.ai-Datenschutzlink.
+- [x] Marketing- und Datenschutz-Einwilligungs-Checkboxen durch einen schlichten Datenschutzhinweis zur Bearbeitung der konkreten Anfrage ersetzt; keine Marketing-Einwilligung mehr in der übermittelten Nachricht.
+- [x] 21 Frontend- und 8 Servertests bestanden; Profilfelder, ungültige Eingaben, sichtbares Formular und finales HTML geprüft. Build fehlerfrei, `submit-lead` bereitgestellt. Der optionale produktive Test mit separatem Testkonto wurde vor der Freigabe abgebrochen und hat keine Daten erzeugt; kein echter E-Mail-Versand ausgelöst.
 
 ## Aktuelles Maserati-Logo in Admin und Grecale-Landingpage (18.11.2026)
 - [x] Hochgeladenes Maserati-SVG ohne Bildveränderung von 2481×3508 auf den sichtbaren Vektorbereich 1472×626 zugeschnitten und als kanonisches `svg/maserati.svg` bereitgestellt; alte Rasterdateien für ältere Seiten belassen.

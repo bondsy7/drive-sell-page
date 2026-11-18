@@ -79,6 +79,7 @@ export interface LandingPageDealer {
   phone?: string;
   email?: string;
   website?: string;
+  privacyPolicyUrl?: string;
   logoUrl?: string;
   whatsappNumber?: string;
   facebookUrl?: string;
@@ -361,6 +362,7 @@ export function buildLandingPageHTML(
         accent: normalizeSectionColor(buttonColors.kontakt) || secondary,
         inventoryStyle: true,
         phone: dealer.phone,
+        privacyUrl: dealer.privacyPolicyUrl,
       })
     : '';
 

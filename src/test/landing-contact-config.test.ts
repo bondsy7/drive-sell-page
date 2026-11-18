@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeContactFormConfig, defaultContactFormConfig, isValidRecipientEmail } from '@/lib/landing-contact-config';
+import { sanitizeContactFormConfig, defaultContactFormConfig, isValidRecipientEmail, normalizeDealerPrivacyUrl } from '@/lib/landing-contact-config';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 
 const fallback = defaultContactFormConfig('Škoda Karoq', 'info@autohaus.de');
@@ -18,5 +18,11 @@ describe('Kontaktformular-Konfiguration', () => {
     const html = buildContactFormHTML({ dealerUserId: 'u', supabaseUrl: 'x', vehicleTitle: 'T', heading: '<b>Hi</b>', intro: 'Text' });
     expect(html).toContain('&lt;b&gt;Hi&lt;/b&gt;');
     expect(html).not.toContain('skoda@autohaus.de');
+  });
+  it('akzeptiert ausschließlich eine HTTPS-Datenschutzerklärung des Händlers', () => {
+    expect(normalizeDealerPrivacyUrl('https://haendler.example/datenschutz/')).toBe('https://haendler.example/datenschutz/');
+    expect(normalizeDealerPrivacyUrl('http://haendler.example/datenschutz/')).toBe('');
+    expect(normalizeDealerPrivacyUrl('/datenschutz/')).toBe('');
+    expect(normalizeDealerPrivacyUrl('javascript:alert(1)')).toBe('');
   });
 });

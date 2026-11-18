@@ -433,6 +433,7 @@ export interface ContactFormOptions {
   /** Only generated landingpages use the inventory enquiry layout. */
   inventoryStyle?: boolean;
   phone?: string;
+  privacyUrl?: string;
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
@@ -493,7 +494,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
       </div>
       <form id="leadForm" onsubmit="return submitLead(event)">
         <div hidden aria-hidden="true"><label>Website<input name="website" type="text" tabindex="-1" autocomplete="off" maxlength="1000" /></label></div>
-        ${options.inventoryStyle ? renderToStaticMarkup(createElement(LandingInquiryFields, { phone: options.phone, vehicleLabel: options.vehicleTitle })) : `<div style="display:flex;flex-direction:column;gap:12px">
+        ${options.inventoryStyle ? renderToStaticMarkup(createElement(LandingInquiryFields, { phone: options.phone, privacyUrl: options.privacyUrl, vehicleLabel: options.vehicleTitle })) : `<div style="display:flex;flex-direction:column;gap:12px">
           <input name="name" maxlength="200" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="email" maxlength="255" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="phone" maxlength="50" pattern="[+0-9() /.-]{0,50}" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='${brandColor}'" onblur="this.style.borderColor='#e2e8f0'" />
@@ -543,7 +544,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
             name: ${options.inventoryStyle ? "[fd.get('firstName'), fd.get('lastName')].map(function(v){return String(v || '').trim()}).join(' ')" : "fd.get('name')"},
             email: fd.get('email'),
             phone: fd.get('phone') || null,
-            message: ${options.inventoryStyle ? "String(fd.get('message') || '').slice(0,3000) + '\\n\\nDatenschutz: bestätigt.\\nMarketing-Einwilligung: ' + (fd.get('marketingConsent') ? 'erteilt.' : 'nicht erteilt.')" : "fd.get('message') || null"},
+            message: ${options.inventoryStyle ? "String(fd.get('message') || '').slice(0,3000)" : "fd.get('message') || null"},
             vehicleTitle: '${vehicleTitle.replace(/'/g, "\\'")}',
             interestedTestDrive: !!form.querySelector('[name=interested_test_drive]')?.checked,
             interestedTradeIn: !!form.querySelector('[name=interested_trade_in]')?.checked,

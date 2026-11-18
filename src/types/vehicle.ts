@@ -46,6 +46,7 @@ export interface DealerData {
   phone: string;
   email: string;
   website: string;
+  privacyPolicyUrl?: string;
   taxId: string;
   logoUrl: string;
   // Social media links

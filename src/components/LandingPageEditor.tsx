@@ -555,7 +555,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {contactFormEnabled && <ContactFormWidgetPreview config={contactFormConfig} accent={buttonColorOverride(content.buttonColors?.kontakt, dealer.secondaryColor)} phone={dealer.phone} vehicleLabel={vehicleTitle} />}
+      {contactFormEnabled && <ContactFormWidgetPreview config={contactFormConfig} accent={buttonColorOverride(content.buttonColors?.kontakt, dealer.secondaryColor)} phone={dealer.phone} privacyUrl={dealer.privacyPolicyUrl} vehicleLabel={vehicleTitle} />}
 
       {/* Canvas */}
       <div className="flex-1 overflow-auto p-4 sm:p-6 flex justify-center">

@@ -14,14 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus, Mail } from 'lucide-react';
+import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus, Mail, ShieldCheck } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import SocialCredentialsSection from '@/components/profile/SocialCredentialsSection';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import BrandContactsSection from '@/components/profile/BrandContactsSection';
 import Auto3ConnectionCard from '@/components/profile/Auto3ConnectionCard';
 import { toast } from 'sonner';
-import { isValidRecipientEmail } from '@/lib/landing-contact-config';
+import { isValidRecipientEmail, normalizeDealerPrivacyUrl } from '@/lib/landing-contact-config';
 
 interface ProfileData {
   company_name: string;
@@ -29,6 +29,7 @@ interface ProfileData {
   phone: string;
   email: string;
   seo_lead_recipient_email: string;
+  privacy_policy_url: string;
   website: string;
   address: string;
   postal_code: string;
@@ -56,7 +57,7 @@ interface ProfileData {
 }
 
 const emptyProfile: ProfileData = {
-  company_name: '', contact_name: '', phone: '', email: '', seo_lead_recipient_email: '', website: '',
+  company_name: '', contact_name: '', phone: '', email: '', seo_lead_recipient_email: '', privacy_policy_url: '', website: '',
   address: '', postal_code: '', city: '', tax_id: '', logo_url: '', custom_showroom_url: '',
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
@@ -146,6 +147,7 @@ const Profile = () => {
           phone: data.phone || '',
           email: data.email || '',
           seo_lead_recipient_email: data.seo_lead_recipient_email || '',
+          privacy_policy_url: data.privacy_policy_url || '',
           website: data.website || '',
           address: data.address || '',
           postal_code: data.postal_code || '',
@@ -319,6 +321,10 @@ const Profile = () => {
       toast.error('Bitte eine gültige Lead-Empfänger-Adresse eingeben.');
       return;
     }
+    if (profile.privacy_policy_url.trim() && !normalizeDealerPrivacyUrl(profile.privacy_policy_url)) {
+      toast.error('Bitte eine gültige Datenschutz-URL mit https:// eingeben.');
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       company_name: profile.company_name,
@@ -326,6 +332,7 @@ const Profile = () => {
       phone: profile.phone,
       email: profile.email,
       seo_lead_recipient_email: profile.seo_lead_recipient_email.trim() || null,
+      privacy_policy_url: normalizeDealerPrivacyUrl(profile.privacy_policy_url) || null,
       website: profile.website || null,
       address: profile.address,
       postal_code: profile.postal_code,
@@ -541,6 +548,23 @@ const Profile = () => {
                   onChange={e => update('seo_lead_recipient_email', e.target.value)}
                   placeholder="leads@autohaus.de"
                   maxLength={255}
+                />
+              </div>
+            </Section>
+
+            <Section icon={<ShieldCheck className="w-4 h-4" />} title="Datenschutzerklärung des Autohauses">
+              <p className="text-xs text-muted-foreground -mt-2">
+                Diese Erklärung wird im Anfrageformular der SEO-Landingpages verlinkt. Ohne Angabe wird keine Datenschutzerklärung von autohaus.ai verwendet.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="dealer-privacy-policy">URL zur Datenschutzerklärung</Label>
+                <Input
+                  id="dealer-privacy-policy"
+                  type="url"
+                  value={profile.privacy_policy_url}
+                  onChange={e => update('privacy_policy_url', e.target.value)}
+                  placeholder="https://www.autohaus.de/datenschutz/"
+                  maxLength={1000}
                 />
               </div>
             </Section>

@@ -1865,6 +1865,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           primary_color: string | null
+          privacy_policy_url: string | null
           secondary_color: string | null
           seo_lead_recipient_email: string | null
           tax_id: string | null
@@ -1906,6 +1907,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           primary_color?: string | null
+          privacy_policy_url?: string | null
           secondary_color?: string | null
           seo_lead_recipient_email?: string | null
           tax_id?: string | null
@@ -1947,6 +1949,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           primary_color?: string | null
+          privacy_policy_url?: string | null
           secondary_color?: string | null
           seo_lead_recipient_email?: string | null
           tax_id?: string | null

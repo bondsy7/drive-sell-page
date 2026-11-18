@@ -20,6 +20,18 @@ export function isValidRecipientEmail(value: string): boolean {
   return v.length > 0 && v.length <= CONTACT_LIMITS.recipientEmail && EMAIL_RE.test(v);
 }
 
+export function normalizeDealerPrivacyUrl(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const candidate = value.trim();
+  if (!candidate || candidate.length > 1000) return '';
+  try {
+    const url = new URL(candidate);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 export function defaultContactFormConfig(vehicleTitle: string, fallbackEmail = ''): LandingContactFormConfig {
   return {
     recipientEmail: fallbackEmail,

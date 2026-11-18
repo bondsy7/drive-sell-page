@@ -169,6 +169,13 @@
       "when": 1794991678967,
       "tag": "0023_add_seo_lead_recipient_to_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794991919953,
+      "tag": "0024_add_dealer_privacy_policy_url",
+      "breakpoints": true
     }
   ]
 }
