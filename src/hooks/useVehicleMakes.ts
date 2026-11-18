@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
+import { BRAND_ALIAS_MAP, normalizeBrand, resolveCanonicalBrand } from '@/lib/brand-aliases';
 
 export interface VehicleMake {
   key: string;
@@ -90,7 +90,9 @@ export function useVehicleMakes() {
   }, []);
 
   const getModelsForMake = useCallback((makeKey: string): string[] => {
-    const found = makes.find(m => m.key.toLowerCase() === makeKey.toLowerCase());
+    const exact = makes.find(m => m.key.toLowerCase() === makeKey.toLowerCase());
+    const canonical = exact || resolveCanonicalBrand(makeKey, makes.map(m => m.key));
+    const found = exact || makes.find(m => m.key === canonical);
     return (found?.models || []).map(m => m.key).filter(k => k !== 'ANDERE');
   }, [makes]);
 

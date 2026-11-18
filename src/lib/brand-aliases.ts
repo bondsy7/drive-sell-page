@@ -26,7 +26,7 @@ export const BRAND_ALIAS_MAP: Record<string, string[]> = {
   porsche: ['porscheag'],
   fiat: ['fiatchrysler', 'stellantis'],
   seat: ['cupra'],
-  ds: ['dsautomobiles'],
+  'ds automobiles': ['ds'],
   alpine: ['alpinecars'],
   nissan: ['datsun'],
   hyundai: ['genesis'],

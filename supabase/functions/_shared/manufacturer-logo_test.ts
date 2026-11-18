@@ -25,3 +25,12 @@ Deno.test("Volkswagen aliases still resolve to an exact SVG", () => {
     { name: "vw.svg", folder: "svg" },
   );
 });
+
+Deno.test("DS and DS Automobiles resolve to the same current logo", () => {
+  for (const brand of ["DS", "DS Automobiles", "DS AUTOMOBILES"]) {
+    assertEquals(
+      selectManufacturerLogo([{ name: "ds.png" }], [{ name: "ds.svg" }], brand),
+      { name: "ds.svg", folder: "svg" },
+    );
+  }
+});

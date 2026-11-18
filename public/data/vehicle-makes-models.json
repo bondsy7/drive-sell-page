@@ -2320,48 +2320,31 @@
           ]
         },
         {
-          "key": "DS",
-          "models": [
-            {
-              "key": "DS3"
-            },
-            {
-              "key": "DS3 Crossback"
-            },
-            {
-              "key": "DS4"
-            },
-            {
-              "key": "DS4 Crossback"
-            },
-            {
-              "key": "DS5"
-            },
-            {
-              "key": "DS7 Crossback"
-            },
-            {
-              "key": "DS9"
-            },
-            {
-              "key": "No8"
-            },
-            {
-              "key": "Nº4"
-            },
-            {
-              "key": "ANDERE"
-            }
-          ]
-        },
-        {
           "key": "DS AUTOMOBILES",
           "models": [
             {
               "key": "DS 3"
             },
             {
+              "key": "DS 3 Crossback"
+            },
+            {
+              "key": "DS 4"
+            },
+            {
+              "key": "DS 4 Crossback"
+            },
+            {
+              "key": "DS 5"
+            },
+            {
               "key": "DS 7"
+            },
+            {
+              "key": "DS 7 Crossback"
+            },
+            {
+              "key": "DS 9"
             },
             {
               "key": "N°4"

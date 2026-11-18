@@ -13,6 +13,8 @@ const BRAND_LOGO_ALIASES: Record<string, string[]> = {
   mercedesbenz: ["mercedes", "mb"],
   mercedes: ["mercedesbenz", "mb"],
   bmw: ["bayerischemotorenwerke"],
+  dsautomobiles: ["ds"],
+  ds: ["dsautomobiles"],
 };
 
 const normalize = (value: string) =>
