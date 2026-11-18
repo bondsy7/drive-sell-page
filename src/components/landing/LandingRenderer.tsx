@@ -337,7 +337,8 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
   const sections = content.sections || [];
   const liveAt = liveInsertIndex(content);
-  const liveNode = liveInventory?.config?.enabled && !removed('live-fahrzeuge') ? (
+  const liveHasContent = editable || !!liveInventory?.loading || !!liveInventory?.error || !!liveInventory?.vehicles.length;
+  const liveNode = liveInventory?.config?.enabled && liveHasContent && !removed('live-fahrzeuge') ? (
     <SortableSection id={LIVE_BLOCK_ID}>
       <LandingElementBox editable={editable} cover controlOn="#ffffff" onDelete={() => onDeleteElement?.('live-fahrzeuge')} label="Live-Fahrzeuge löschen"
         colorControl={<>
@@ -761,7 +762,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
       </LandingSectionResize>
       </LandingElementBox></>}
 
-      {liveInventory?.config?.enabled && !removed('live-fahrzeuge') && !liveInventory.loading && (
+      {liveInventory?.config?.enabled && liveInventory.vehicles.length > 0 && !removed('live-fahrzeuge') && !liveInventory.loading && (
         <FinanceFootnotes notes={buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config)} title={liveInventory.config.financeTitle} />
       )}
 

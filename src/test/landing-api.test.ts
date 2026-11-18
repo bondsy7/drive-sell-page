@@ -53,6 +53,12 @@ describe('api-landingpages inventory', () => {
     expect(v[0].priceEur).toBe(37890);
     expect(v[0].detailUrl).toBe('https://d/?n=K1');
   });
+  it('matches a model imported later despite brand and model spelling differences', () => {
+    const config = { enabled: true, mode: 'filter' as const, brand: 'DS AUTOMOBILES', model: 'DS 3 Crossback' };
+    expect(matchVehicles([], config)).toEqual([]);
+    const imported = [{ id: 'spaeter', vehicleModel: { brand: { name: 'Ds' }, model: 'DS3 Crossback' } }];
+    expect(matchVehicles(imported, config).map(v => v.id)).toEqual(['spaeter']);
+  });
   it('hides rate when bank is missing, shows with fallback bank', () => {
     const v = normalizeVehicle(raws[0]);
     expect(financingStatus(v).showRate).toBe(false);

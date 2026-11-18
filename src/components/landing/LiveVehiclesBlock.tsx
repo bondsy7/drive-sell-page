@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   DEFAULT_LIVE_INVENTORY,
+  liveBrandMatches,
+  liveModelMatches,
   matchesLiveFilter,
   resolveLiveVehicles,
   type LiveInventoryConfig,
@@ -15,6 +17,8 @@ import { fetchLiveInventory } from '@/lib/live-inventory-fetch';
 import { useLiveVehicleCardDesign } from '@/hooks/useLiveVehicleCardDesign';
 import { useDealerBanks } from '@/hooks/useDealerBanks';
 import { findFinanceGaps } from '@/lib/finance-footnotes';
+import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { resolveCanonicalBrand } from '@/lib/brand-aliases';
 
 // Re-exported so existing importers keep working.
 export { DEFAULT_LIVE_INVENTORY, matchesLiveFilter } from '@/lib/live-inventory';
@@ -34,6 +38,7 @@ interface Props {
 
 const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggestedBrand }) => {
   const { data: cardDesign } = useLiveVehicleCardDesign();
+  const { makes, getModelsForMake } = useVehicleMakes();
   const [items, setItems] = useState<LiveVehicle[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,30 +57,43 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
 
   useEffect(() => { if (value.enabled && !items && !loading) load(); /* eslint-disable-next-line */ }, [value.enabled]);
 
-  // Seitenmarke als Vorschlag übernehmen, wenn sie im Bestand vorkommt
+  // Die Seitenmarke ist auch dann wählbar, wenn noch kein Fahrzeug davon importiert wurde.
   useEffect(() => {
-    if (!items || value.brand || !suggestedBrand) return;
-    const hit = items.find(v => (v.brand || '').toLowerCase() === suggestedBrand.toLowerCase());
-    if (hit?.brand) set({ brand: hit.brand });
+    if (value.brand || !suggestedBrand || !makes.length) return;
+    const hit = (items || []).find(v => liveBrandMatches(v.brand, suggestedBrand));
+    const canonical = resolveCanonicalBrand(suggestedBrand, makes.map(m => m.key));
+    set({ brand: hit?.brand || canonical || suggestedBrand });
     // eslint-disable-next-line
-  }, [items]);
+  }, [items, makes, suggestedBrand, value.brand]);
 
   const brands = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const v of items || []) if (v.brand) m.set(v.brand, (m.get(v.brand) || 0) + 1);
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'de'));
-  }, [items]);
+    const names: string[] = [];
+    const add = (name: string | null | undefined) => {
+      if (name && !names.some(existing => liveBrandMatches(existing, name))) names.push(name);
+    };
+    for (const v of items || []) add(v.brand);
+    add(resolveCanonicalBrand(suggestedBrand || '', makes.map(m => m.key)) || suggestedBrand);
+    add(value.brand);
+    return names.map(name => [name, (items || []).filter(v => liveBrandMatches(v.brand, name)).length] as [string, number])
+      .sort((a, b) => a[0].localeCompare(b[0], 'de'));
+  }, [items, makes, suggestedBrand, value.brand]);
 
   const models = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const v of items || []) {
-      if (!v.model || (value.brand && v.brand !== value.brand)) continue;
-      m.set(v.model, (m.get(v.model) || 0) + 1);
+    const stock = (items || []).filter(v => !value.brand || liveBrandMatches(v.brand, value.brand));
+    const names = value.brand ? getModelsForMake(value.brand) : [];
+    for (const v of stock) {
+      if (v.model && !names.some(existing => liveModelMatches(existing, v.model))) names.push(v.model);
     }
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'de'));
-  }, [items, value.brand]);
+    if (value.model && !names.some(existing => liveModelMatches(existing, value.model))) names.push(value.model);
+    return names.map(name => [name, stock.filter(v => liveModelMatches(v.model, name)).length] as [string, number])
+      .sort((a, b) => a[0].localeCompare(b[0], 'de'));
+  }, [items, value.brand, value.model, getModelsForMake]);
 
   const filtered = useMemo(() => (items || []).filter(v => matchesLiveFilter(v, value)), [items, value]);
+  const selectedBrandOption = brands.find(([name]) => name === value.brand)?.[0]
+    || brands.find(([name]) => liveBrandMatches(name, value.brand))?.[0] || value.brand;
+  const selectedModelOption = models.find(([name]) => name === value.model)?.[0]
+    || models.find(([name]) => liveModelMatches(name, value.model))?.[0] || value.model;
   const gaps = useMemo(() => findFinanceGaps(resolveLiveVehicles(items || [], { ...value, cardDesign: cardDesign || value.cardDesign }), { ...value, cardDesign: cardDesign || value.cardDesign }), [items, value, cardDesign]);
   const selected = new Set(value.selectedIds);
   const shownCount = value.mode === 'manual' ? value.selectedIds.length : (value.maxItems > 0 ? Math.min(filtered.length, value.maxItems) : filtered.length);
@@ -129,7 +147,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Marke</label>
-                  <Select value={value.brand || ALL} onValueChange={(b) => set({ brand: b === ALL ? '' : b, model: '' })} disabled={disabled}>
+                  <Select value={selectedBrandOption || ALL} onValueChange={(b) => set({ brand: b === ALL ? '' : b, model: '' })} disabled={disabled}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ALL}>Alle Marken</SelectItem>
@@ -139,7 +157,7 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Modell</label>
-                  <Select value={value.model || ALL} onValueChange={(m) => set({ model: m === ALL ? '' : m })} disabled={disabled}>
+                  <Select value={selectedModelOption || ALL} onValueChange={(m) => set({ model: m === ALL ? '' : m })} disabled={disabled}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ALL}>Alle Modelle</SelectItem>
@@ -216,6 +234,13 @@ const LiveVehiclesBlock: React.FC<Props> = ({ value, onChange, disabled, suggest
                   <ul className="max-h-40 overflow-y-auto space-y-0.5">
                     {gaps.map(g => <li key={g.vehicleId}><strong>{g.title}{g.internalNumber ? ` (Nr. ${g.internalNumber})` : ''}:</strong> fehlt {g.missing.join(', ')}</li>)}
                   </ul>
+                </div>
+              )}
+
+              {value.mode === 'filter' && filtered.length === 0 && (
+                <div className="rounded-lg border border-accent/40 bg-accent/5 p-3 text-xs text-foreground space-y-1">
+                  <p className="font-semibold">Aktuell sind keine passenden Fahrzeuge im Live-Bestand.</p>
+                  <p className="text-muted-foreground">Der Abschnitt bleibt auf der Seite zunächst ausgeblendet und wird automatisch eingeblendet, sobald passende Fahrzeuge importiert wurden.</p>
                 </div>
               )}
 

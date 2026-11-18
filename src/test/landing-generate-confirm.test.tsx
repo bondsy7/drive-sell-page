@@ -3,8 +3,9 @@ import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 
 const invoke = vi.hoisted(() => vi.fn(async (_name: string) => ({ data: null, error: { message: 'Teststopp' } })));
 const ensureVehicleAuto = vi.hoisted(() => vi.fn(async () => 'vehicle-1'));
+const authUser = vi.hoisted(() => ({ id: 'user-1' }));
 
-vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user-1' } }) }));
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: authUser }) }));
 vi.mock('@/hooks/useCredits', () => ({ useCredits: () => ({ balance: 999 }) }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useSearchParams: () => [new URLSearchParams(''), vi.fn()] }));
@@ -33,6 +34,7 @@ vi.mock('@/integrations/supabase/client', () => ({
         eq: () => ({
           single: () => Promise.resolve({ data: null }),
           maybeSingle: () => Promise.resolve({ data: null }),
+          order: () => ({ limit: () => Promise.resolve({ data: [] }) }),
         }),
       }),
     }),

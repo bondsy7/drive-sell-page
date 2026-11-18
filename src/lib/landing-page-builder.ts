@@ -270,7 +270,7 @@ function buildLiveInventorySectionHTML(live: LandingPageLiveInventory): string {
   // The rule travels with the page so an external site can re-resolve the live stock.
   const rule = escapeHtml(JSON.stringify({ ...config, selectedIds: config.selectedIds ?? [] }));
 
-  return `<section id="live-fahrzeuge" class="${config.cardDesign?.preset === 'jacobs' ? 'lp-live-jacobs' : ''}" style="background:var(--lp-tint);border-top:1px solid var(--lp-border)" data-live-inventory="${rule}">
+  return `<section id="live-fahrzeuge" class="${config.cardDesign?.preset === 'jacobs' ? 'lp-live-jacobs' : ''}" style="background:var(--lp-tint);border-top:1px solid var(--lp-border)"${vehicles.length === 0 ? ' hidden' : ''} data-live-inventory="${rule}">
   <div class="lp-live-inner">
     <div class="lp-live-head"><h2 class="lp-live-title">${escapeHtml(config.title || 'Aktuelle Fahrzeuge aus unserem Bestand')}</h2>${nav}</div>
     ${inner}
@@ -488,7 +488,7 @@ ${removed('kontakt') ? '' : `  <div${sectionHeightAttributes(content.sectionHeig
     </div>
   </section></div>`}
 
-  ${liveInventory && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config), title: liveInventory.config.financeTitle })) : ''}
+  ${liveInventory && liveInventory.vehicles.length > 0 && !removed('live-fahrzeuge') && liveInventory.config?.enabled ? renderToStaticMarkup(createElement(FinanceFootnotes, { notes: buildFinanceFootnotes(liveInventory.vehicles, liveInventory.config), title: liveInventory.config.financeTitle })) : ''}
 
 
   ${contactFormHTML}

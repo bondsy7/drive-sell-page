@@ -1,3 +1,4 @@
+import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
 import jacobsCardCss from '@/styles/jacobs-vehicle-cards.css?raw';
 import jacobsRegular from '@/assets/jacobs-montserrat-regular.asset.json';
 import jacobsBold from '@/assets/jacobs-montserrat-bold.asset.json';
@@ -138,9 +139,31 @@ export function isLiveInventoryConfig(v: unknown): v is LiveInventoryConfig {
   return !!v && typeof v === 'object' && 'mode' in (v as any) && 'layout' in (v as any);
 }
 
+export function liveBrandMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = normalizeBrand(a || '');
+  const right = normalizeBrand(b || '');
+  if (!left || !right) return false;
+  if (left === right) return true;
+  return Object.entries(BRAND_ALIAS_MAP).some(([canonical, aliases]) => {
+    const names = [canonical, ...aliases].map(normalizeBrand);
+    return names.includes(left) && names.includes(right);
+  });
+}
+
+/** Auto3 and the model database differ only in typography for some model names. */
+export function liveModelMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  const normalize = (value: string | null | undefined) => (value || '')
+    .trim().toLowerCase().normalize('NFKC')
+    .replace(/º/g, '°').replace(/^no(?=\d)/, 'n°')
+    .replace(/[-_\s.]+/g, '');
+  const left = normalize(a);
+  const right = normalize(b);
+  return !!left && left === right;
+}
+
 export function matchesLiveFilter(v: LiveVehicle, c: LiveInventoryConfig): boolean {
-  if (c.brand && (v.brand || '').toLowerCase() !== c.brand.toLowerCase()) return false;
-  if (c.model && (v.model || '').toLowerCase() !== c.model.toLowerCase()) return false;
+  if (c.brand && !liveBrandMatches(v.brand, c.brand)) return false;
+  if (c.model && !liveModelMatches(v.model, c.model)) return false;
   if (c.condition === 'new' && v.used !== false) return false;
   if (c.condition === 'used' && v.used !== true) return false;
   return true;

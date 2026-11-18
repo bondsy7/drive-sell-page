@@ -26,7 +26,7 @@ interface Props {
  */
 const LiveVehicleShowcase: React.FC<Props> = ({ config, vehicles, inventoryUrl, loading, error, editable }) => {
   const trackRef = useRef<HTMLDivElement>(null);
-  if (!config?.enabled) return null;
+  if (!config?.enabled || (!editable && !loading && !error && vehicles.length === 0)) return null;
   const notes = new Map(buildFinanceFootnotes(vehicles, config).map(n => [n.vehicleId, n]));
 
   const scroll = (dir: -1 | 1) => {

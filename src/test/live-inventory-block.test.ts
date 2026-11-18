@@ -81,10 +81,22 @@ describe('Live-Fahrzeuge block', () => {
       .toEqual(['2']);
   });
 
-  it('prüft Marke und Modell ohne Rücksicht auf Groß- und Kleinschreibung', () => {
+  it('prüft Groß- und Kleinschreibung sowie bekannte Markenschreibweisen', () => {
     expect(matchesLiveFilter(car('9', 'ŠKODA', 'KAROQ', true), cfg({ brand: 'Škoda', model: 'karoq' }))).toBe(true);
     expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'skoda', model: 'KAROQ' }))).toBe(true);
-    expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'Škoda' }))).toBe(false);
+    expect(matchesLiveFilter(car('9', 'Skoda', 'Karoq', true), cfg({ brand: 'Škoda' }))).toBe(true);
+    expect(matchesLiveFilter(car('9', 'VW', 'Golf', true), cfg({ brand: 'Škoda' }))).toBe(false);
+  });
+
+  it('zeigt ein noch fehlendes Modell automatisch nach dem späteren Import mit Bestands-Schreibweise', () => {
+    const config = cfg({ enabled: true, brand: 'DS AUTOMOBILES', model: 'DS 3 Crossback' });
+    expect(resolveLiveVehicles(STOCK, config)).toEqual([]);
+    const imported = car('ds-neu', 'Ds', 'DS3 Crossback', false);
+    expect(resolveLiveVehicles([...STOCK, imported], config)).toEqual([imported]);
+  });
+
+  it('erkennt N°-Modelle unabhängig von der Schreibweise', () => {
+    expect(matchesLiveFilter(car('ds8', 'DS', 'No8', false), cfg({ brand: 'DS Automobiles', model: 'N°8' }))).toBe(true);
   });
 
   it('zeigt Auto3-Kraftstoffcodes als deutsches Wort', () => {

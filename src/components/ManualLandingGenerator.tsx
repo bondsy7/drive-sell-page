@@ -404,7 +404,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             vehicleId: effectiveVehicleId,
             supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
             vehicleTitle: `${brand} ${model}`,
-          }),
+          }, liveInventory.enabled ? { config: liveInventory, vehicles: [] } : undefined),
         }).select('id').single();
 
         if (saveError || !project) {
