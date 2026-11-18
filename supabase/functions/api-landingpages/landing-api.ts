@@ -16,7 +16,7 @@ export interface LiveConfig {
   cardDesign?: { preset?: string; detailUrlTemplate?: string };
 }
 
-export function buildSeo(pc: Row, imageMap: Record<string, string>, status: string, fallbackTitle: string) {
+export function buildSeo(pc: Row, imageMap: Record<string, string>, fallbackTitle: string) {
   const meta = (pc.meta || {}) as Row;
   const title = meta.title || fallbackTitle;
   const description = meta.description || "";
@@ -25,7 +25,7 @@ export function buildSeo(pc: Row, imageMap: Record<string, string>, status: stri
     metaTitle: title,
     metaDescription: description,
     canonical: typeof meta.canonical === "string" && /^https?:\/\//.test(meta.canonical) ? meta.canonical : null,
-    robots: status === "published" ? "index,follow" : "noindex,nofollow",
+    robots: "index,follow",
     ogTitle: meta.ogTitle || title,
     ogDescription: meta.ogDescription || description,
     ogImage,

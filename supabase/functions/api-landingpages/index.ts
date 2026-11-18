@@ -59,18 +59,16 @@ Deno.serve(async (req) => {
 
     // ── LIST ──
     if (sub.length === 0) {
-      const status = url.searchParams.get("status");
-      if (status && !["draft", "published", "archived"].includes(status)) return err(400, "invalid_status", "status must be draft, published or archived");
-      let q = sb.from("projects").select("id, title, slug, landing_status, updated_at")
+      // The plugin controls publication. Legacy landing_status values and ?status=... never filter delivery.
+      const q = sb.from("projects").select("id, title, slug, updated_at")
         .eq("user_id", userId).eq("template_id", "landing-page")
         .order("updated_at", { ascending: false }).limit(MAX_LIST);
-      if (status) q = q.eq("landing_status", status);
       const { data, error } = await q;
       if (error) throw error;
       const items: Row[] = (data || []).map((p) => ({
-        id: p.id, title: cleanTitle(p.title), slug: p.slug, status: p.landing_status, updated_at: p.updated_at,
+        id: p.id, title: cleanTitle(p.title), slug: p.slug, status: "published", updated_at: p.updated_at,
       }));
-      if (url.searchParams.get("include_deleted") !== "false" && !status) {
+      if (url.searchParams.get("include_deleted") !== "false") {
         const since = new Date(Date.now() - DELETED_RETENTION_DAYS * 864e5).toISOString();
         const { data: del } = await sb.from("landing_page_deletions").select("id, title, slug, deleted_at")
           .eq("user_id", userId).gte("deleted_at", since).order("deleted_at", { ascending: false }).limit(MAX_LIST);
@@ -85,7 +83,7 @@ Deno.serve(async (req) => {
     if (sub.length > 2 || !["", "html", "inventory"].includes(action)) return err(404, "not_found", "Unknown endpoint");
 
     const { data: page, error: pageErr } = await sb.from("projects")
-      .select("id, title, slug, landing_status, created_at, updated_at, html_content, vehicle_data")
+      .select("id, title, slug, created_at, updated_at, html_content, vehicle_data")
       .eq("id", id).eq("user_id", userId).eq("template_id", "landing-page").maybeSingle();
     if (pageErr) throw pageErr;
     if (!page) {
@@ -106,10 +104,10 @@ Deno.serve(async (req) => {
         id: page.id,
         title: cleanTitle(page.title),
         slug: page.slug,
-        status: page.landing_status,
+        status: "published",
         pageType: vd.pageType || null,
         vehicle: { brand: vd.brand || null, model: vd.model || null, variant: vd.variant || null },
-        seo: buildSeo(pc, vd.imageMap || {}, page.landing_status, cleanTitle(page.title)),
+        seo: buildSeo(pc, vd.imageMap || {}, cleanTitle(page.title)),
         content: {
           h1: pc.meta?.h1 || pc.hero?.headline || null,
           hero: pc.hero || null,
@@ -141,7 +139,7 @@ Deno.serve(async (req) => {
       const html = buildFragment(page.html_content, page.id, live ? `${base}/${page.id}/inventory` : null);
       return new Response(html, {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "X-Landingpage-Updated-At": page.updated_at, "X-Landingpage-Status": page.landing_status },
+        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "X-Landingpage-Updated-At": page.updated_at, "X-Landingpage-Status": "published" },
       });
     }
 

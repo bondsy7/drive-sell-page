@@ -36,10 +36,8 @@ describe('api-landingpages fragment', () => {
 });
 
 describe('api-landingpages seo', () => {
-  it('robots follow status', () => {
-    expect(buildSeo({}, {}, 'published', 't').robots).toBe('index,follow');
-    expect(buildSeo({}, {}, 'draft', 't').robots).toBe('noindex,nofollow');
-    expect(buildSeo({}, {}, 'archived', 't').robots).toBe('noindex,nofollow');
+  it('lets the plugin control publication without a hidden legacy robots status', () => {
+    expect(buildSeo({}, {}, 't').robots).toBe('index,follow');
   });
 });
 

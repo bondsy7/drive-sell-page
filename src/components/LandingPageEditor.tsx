@@ -48,8 +48,6 @@ import LandingContactImagesDialog from '@/components/landing/LandingContactImage
 import { injectBrandContactsIntoSection } from '@/lib/brand-contacts';
 import { buttonColorOverride } from '@/lib/landing-section-colors';
 
-import LandingStatusSelect from '@/components/landing/LandingStatusSelect';
-
 interface LandingPageEditorProps {
   projectId: string;
   vehicleId?: string | null;
@@ -504,7 +502,6 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <Button size="sm" variant="outline" onClick={() => setLiveDialogOpen(true)} className="gap-2" title="Fahrzeuge aus dem Live-Bestand in die Seite einblenden">
             <Car className="w-4 h-4" /> Live-Fahrzeuge
           </Button>
-          {projectId && <LandingStatusSelect projectId={projectId} />}
           <Button size="sm" onClick={handleExport} className="gap-2">
             <Download className="w-4 h-4" /> HTML herunterladen
           </Button>
