@@ -67,7 +67,7 @@ export default function AdminLogos() {
 
   const getLogoForBrand = useCallback((brandKey: string): LogoFile | null => {
     const normalized = normalizeBrand(brandKey);
-    const allLogos = [...logos, ...svgs];
+    const allLogos = [...svgs, ...logos];
     const exact = allLogos.find(l => normalizeBrand(l.name.replace(/\.[^.]+$/, '')) === normalized);
     if (exact) return exact;
     // Check aliases
@@ -95,7 +95,7 @@ export default function AdminLogos() {
 
     // Get all custom logos that don't match any make
     const customLogos: { key: string; modelCount: number; logo: LogoFile }[] = [];
-    const allLogos = [...logos, ...svgs];
+    const allLogos = [...svgs, ...logos];
     const makeKeys = makes.map(m => normalizeBrand(m.key));
 
     for (const l of allLogos) {

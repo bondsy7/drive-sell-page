@@ -1,4 +1,8 @@
 
+## Aktuelles Maserati-Logo in Admin und Grecale-Landingpage (18.11.2026)
+- [ ] Hochgeladenes Maserati-SVG ohne Bildveränderung zuschneiden und als kanonisches Markenlogo bereitstellen
+- [ ] Admin und Landingpage-Generator auf SVG vor historischen PNG-/WebP-Dateien umstellen; neueste Grecale-Seite von p.erhard aktualisieren und prüfen
+
 ## Plugin 1.7.12: Barpreis und Angebotsart (17.11.2026)
 - [x] Hochgeladenes Plugin 1.7.12 read-only geprüft und alle mitgelieferten PHP-Smoke-Tests ausgeführt; sämtliche Tests bestanden. Keine Plugin- oder Produktionsdaten verändert.
 - [x] Alle 45 Live-Angebote (15 Rinnetal, 30 Jacobs) direkt durch die Plugin-Preislogik geprüft: überall numerischer Barpreis und gültige Angebotsart vorhanden, keine Erkennungsfehler. Kia EV4: `cashPrice=34669.20`, `price.monthlyRate=249`, `offerType=leasing`, `showRate=true`.

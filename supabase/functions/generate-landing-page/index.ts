@@ -3,6 +3,7 @@ import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import { selectManufacturerLogo } from "../_shared/manufacturer-logo.ts";
 
 // ─── Robust JSON extraction ───
 function extractJsonFromResponse(response: string): unknown {
@@ -114,31 +115,17 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
 }
 
 // ─── Brand logo lookup ───
-const BRAND_LOGO_ALIASES: Record<string, string[]> = {
-  volkswagen: ['vw'], vw: ['volkswagen'], mercedesbenz: ['mercedes', 'mb'], mercedes: ['mercedesbenz', 'mb'], bmw: ['bayerischemotorenwerke'],
-};
-
 async function findBrandLogo(supabase: any, brand: string): Promise<string> {
   try {
-    const brandNorm = brand.toLowerCase().replace(/[-_\s]+/g, '').replace(/é/g, 'e');
-    const aliases = BRAND_LOGO_ALIASES[brandNorm] || [];
-    const allKeys = [brandNorm, ...aliases];
-    const matchFile = (files: any[], folder: string): string | null => {
-      for (const f of (files || [])) {
-        const fn = f.name.toLowerCase().replace(/\.[^.]+$/, '').replace(/[-_\s]+/g, '');
-        if (allKeys.some(k => fn === k)) {
-          const path = folder ? `${folder}/${f.name}` : f.name;
-          const { data } = supabase.storage.from('manufacturer-logos').getPublicUrl(path);
-          return data.publicUrl;
-        }
-      }
-      return null;
-    };
     const [{ data: rootFiles }, { data: svgFiles }] = await Promise.all([
       supabase.storage.from('manufacturer-logos').list('', { limit: 500 }),
       supabase.storage.from('manufacturer-logos').list('svg', { limit: 500 }),
     ]);
-    return matchFile(rootFiles, '') || matchFile(svgFiles, 'svg') || '';
+    const match = selectManufacturerLogo(rootFiles || [], svgFiles || [], brand);
+    if (!match) return '';
+    const path = match.folder ? `${match.folder}/${match.name}` : match.name;
+    const { data } = supabase.storage.from('manufacturer-logos').getPublicUrl(path);
+    return data.publicUrl;
   } catch (_e) {}
   return '';
 }
