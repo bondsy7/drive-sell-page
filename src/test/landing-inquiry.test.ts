@@ -45,35 +45,38 @@ describe('landing enquiry default message names the vehicle', () => {
     expect(html).toContain('angebotene Fahrzeug KIA EV4 und bitte um weitere Informationen');
   });
 
-  it('links only the dealer privacy policy and omits marketing and privacy checkboxes', () => {
+  it('requires privacy consent, links only the dealer policy and omits marketing consent', () => {
     const html = renderToStaticMarkup(createElement(LandingInquiryFields, {
       privacyUrl: 'https://haendler.example/datenschutz/',
     }));
     expect(html).toContain('href="https://haendler.example/datenschutz/"');
     expect(html).toContain('Datenschutzerklärung des Autohauses');
+    expect(html).toMatch(/<input[^>]*name="privacyConsent"[^>]*required/);
     expect(html).not.toContain('marketingConsent');
-    expect(html).not.toContain('privacyConsent');
     expect(html).not.toContain('autohaus.ai');
   });
 
-  it('does not fall back to the autohaus.ai privacy page when no dealer URL exists', () => {
+  it('requires consent without falling back to the autohaus.ai privacy page', () => {
     const html = renderToStaticMarkup(createElement(LandingInquiryFields, {}));
     expect(html).toContain('Datenschutzhinweise erhalten Sie vom Autohaus.');
+    expect(html).toMatch(/<input[^>]*name="privacyConsent"[^>]*required/);
     expect(html).not.toContain('/datenschutz/');
     expect(html).not.toContain('autohaus.ai');
   });
 
-  it('exports the dealer privacy link without recording a marketing consent', () => {
+  it('exports the checked consent and dealer privacy link without marketing consent', () => {
     const html = buildContactFormHTML({
       dealerUserId: 'dealer-1', projectId: 'project-1', supabaseUrl: 'https://example.supabase.co',
       vehicleTitle: 'KIA EV4', inventoryStyle: true, privacyUrl: 'https://haendler.example/datenschutz/',
     });
     expect(html).toContain('href="https://haendler.example/datenschutz/"');
+    expect(html).toMatch(/<input[^>]*name="privacyConsent"[^>]*required/);
+    expect(html).toContain("privacyConsent: fd.get('privacyConsent') === 'yes'");
     expect(html).not.toContain('Marketing-Einwilligung');
     expect(html).not.toContain('marketingConsent');
   });
 
-  it('carries the profile dealer privacy URL into the final landingpage HTML', () => {
+  it('carries the profile dealer privacy URL and required consent into the final landingpage HTML', () => {
     const content = {
       meta: { title: 'Kia EV4', description: '', h1: 'Kia EV4' },
       hero: { headline: 'Kia EV4', subheadline: '', ctaText: 'Jetzt anfragen' },
@@ -86,6 +89,7 @@ describe('landing enquiry default message names the vehicle', () => {
     });
     expect(html).toContain('href="https://haendler.example/datenschutz/"');
     expect(html).toContain('Datenschutzerklärung des Autohauses');
+    expect(html).toMatch(/<input[^>]*name="privacyConsent"[^>]*required/);
     expect(html).not.toContain('marketingConsent');
     expect(html).not.toContain('Marketing-Einwilligung');
   });

@@ -12,6 +12,12 @@ Deno.test('rejects invalid email and blank names', () => {
   assertEquals(leadSchema.safeParse({ ...valid, name: '   ' }).success, false);
   assertEquals(leadSchema.safeParse(valid).success, true);
 });
+Deno.test('requires checked privacy consent in new landing forms and keeps legacy forms compatible', () => {
+  assertEquals(leadSchema.safeParse({ ...valid, privacyConsent: false }).success, false);
+  assertEquals(leadSchema.safeParse({ ...valid, privacyConsent: 'yes' }).success, false);
+  assertEquals(leadSchema.safeParse({ ...valid, privacyConsent: true }).success, true);
+  assertEquals(leadSchema.safeParse(valid).success, true);
+});
 Deno.test('rejects oversized text, header injection and nonboolean flags', () => {
   assertEquals(leadSchema.safeParse({ ...valid, message: 'x'.repeat(3201) }).success, false);
   assertEquals(leadSchema.safeParse({ ...valid, email: 'test@example.com\r\nBcc:evil@example.com' }).success, false);

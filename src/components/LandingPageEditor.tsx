@@ -42,7 +42,7 @@ import CreditBadge from '@/components/landing/CreditBadge';
 import {
   LANDING_IMAGE_TIER, creditLabel, landingImageCost, planBulkImageRun, readInsufficientCredits,
 } from '@/lib/landing-credit-costs';
-import { defaultContactFormConfig, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
+import { defaultContactFormConfig, resolveLandingPrivacyUrl, sanitizeContactFormConfig, type LandingContactFormConfig } from '@/lib/landing-contact-config';
 import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/landing/LandingContactForm';
 import LandingContactImagesDialog from '@/components/landing/LandingContactImagesDialog';
 import { injectBrandContactsIntoSection } from '@/lib/brand-contacts';
@@ -131,7 +131,21 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const setLiveInventory = useCallback((value: React.SetStateAction<LiveInventoryConfig>) => updateEditor('liveInventory', value), [updateEditor]);
   const setContactFormEnabled = useCallback((value: React.SetStateAction<boolean>) => updateEditor('contactFormEnabled', value), [updateEditor]);
   const deleteElement = useCallback((id: string) => setContent(previous => removeLandingElement(previous, id)), [setContent]);
-  const [dealer] = useState<LandingPageDealer>(initialDealer);
+  const [profilePrivacy, setProfilePrivacy] = useState<{ loaded: boolean; value: string }>({ loaded: false, value: '' });
+  const userId = user?.id;
+  useEffect(() => {
+    let active = true;
+    if (!userId) return () => { active = false; };
+    supabase.from('profiles').select('privacy_policy_url').eq('id', userId).maybeSingle()
+      .then(({ data, error }) => {
+        if (active) setProfilePrivacy({ loaded: !error, value: data?.privacy_policy_url || '' });
+      });
+    return () => { active = false; };
+  }, [userId]);
+  const dealer = useMemo<LandingPageDealer>(() => ({
+    ...initialDealer,
+    privacyPolicyUrl: resolveLandingPrivacyUrl(profilePrivacy.value, initialDealer.privacyPolicyUrl, profilePrivacy.loaded),
+  }), [initialDealer, profilePrivacy]);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);

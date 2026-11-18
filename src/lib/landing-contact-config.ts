@@ -32,6 +32,11 @@ export function normalizeDealerPrivacyUrl(value: unknown): string {
   }
 }
 
+/** Once loaded, the current profile is authoritative, including an intentionally cleared URL. */
+export function resolveLandingPrivacyUrl(profileValue: unknown, savedValue?: unknown, profileLoaded = true): string {
+  return normalizeDealerPrivacyUrl(profileLoaded ? profileValue : savedValue);
+}
+
 export function defaultContactFormConfig(vehicleTitle: string, fallbackEmail = ''): LandingContactFormConfig {
   return {
     recipientEmail: fallbackEmail,

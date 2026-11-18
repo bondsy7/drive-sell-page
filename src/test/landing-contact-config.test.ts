@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeContactFormConfig, defaultContactFormConfig, isValidRecipientEmail, normalizeDealerPrivacyUrl } from '@/lib/landing-contact-config';
+import { sanitizeContactFormConfig, defaultContactFormConfig, isValidRecipientEmail, normalizeDealerPrivacyUrl, resolveLandingPrivacyUrl } from '@/lib/landing-contact-config';
 import { buildContactFormHTML } from '@/lib/templates/shared';
 
 const fallback = defaultContactFormConfig('Škoda Karoq', 'info@autohaus.de');
@@ -24,5 +24,10 @@ describe('Kontaktformular-Konfiguration', () => {
     expect(normalizeDealerPrivacyUrl('http://haendler.example/datenschutz/')).toBe('');
     expect(normalizeDealerPrivacyUrl('/datenschutz/')).toBe('');
     expect(normalizeDealerPrivacyUrl('javascript:alert(1)')).toBe('');
+  });
+  it('nutzt nach dem Laden immer die aktuelle Profil-URL für bestehende Landingpages', () => {
+    expect(resolveLandingPrivacyUrl('https://neu.example/datenschutz/', 'https://alt.example/datenschutz/')).toBe('https://neu.example/datenschutz/');
+    expect(resolveLandingPrivacyUrl('', 'https://alt.example/datenschutz/')).toBe('');
+    expect(resolveLandingPrivacyUrl('', 'https://alt.example/datenschutz/', false)).toBe('https://alt.example/datenschutz/');
   });
 });

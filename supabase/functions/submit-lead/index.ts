@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     try { body = JSON.parse(raw); } catch { return reply({ error: "Ungültige Anfrage." }, 400); }
     if (isHoneypotSubmission(body)) return reply({ success: true });
     const parsed = leadSchema.safeParse(body);
-    if (!parsed.success) return reply({ error: "Bitte Name, E-Mail und Kontaktangaben prüfen." }, 400);
+    if (!parsed.success) return reply({ error: "Bitte Name, E-Mail, Kontaktangaben und Datenschutzbestätigung prüfen." }, 400);
     const {
       dealerUserId, projectId, vehicleId, name, email, phone, message, vehicleTitle,
       interestedTestDrive, interestedTradeIn, interestedLeasing, interestedFinancing, interestedPurchase

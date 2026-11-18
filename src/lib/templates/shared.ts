@@ -545,6 +545,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
             email: fd.get('email'),
             phone: fd.get('phone') || null,
             message: ${options.inventoryStyle ? "String(fd.get('message') || '').slice(0,3000)" : "fd.get('message') || null"},
+            ${options.inventoryStyle ? "privacyConsent: fd.get('privacyConsent') === 'yes'," : ''}
             vehicleTitle: '${vehicleTitle.replace(/'/g, "\\'")}',
             interestedTestDrive: !!form.querySelector('[name=interested_test_drive]')?.checked,
             interestedTradeIn: !!form.querySelector('[name=interested_trade_in]')?.checked,

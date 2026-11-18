@@ -12,6 +12,8 @@ export const leadSchema = z.object({
   message: text(3200).nullish(),
   vehicleTitle: text(300).nullish(),
   website: z.string().max(1000).optional().default(''),
+  // New SEO landing forms always send this field; absent keeps legacy offer forms compatible.
+  privacyConsent: z.literal(true).optional(),
   interestedTestDrive: z.boolean().optional().default(false),
   interestedTradeIn: z.boolean().optional().default(false),
   interestedLeasing: z.boolean().optional().default(false),

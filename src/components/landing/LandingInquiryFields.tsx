@@ -15,8 +15,11 @@ export const LANDING_INQUIRY_CSS = `
 .lp-inquiry input:not([type=checkbox]){height:39px;}
 .lp-inquiry textarea{min-height:220px;resize:vertical;line-height:1.4;}
 .lp-inquiry input:focus-visible,.lp-inquiry textarea:focus-visible{outline:2px solid var(--inquiry-accent);outline-offset:2px;}
-.lp-inquiry-privacy{margin:18px 0 0;font-size:12px;line-height:1.5;}
-.lp-inquiry-privacy a{color:var(--inquiry-accent);text-decoration:underline;}
+.lp-inquiry-consent{display:flex;align-items:flex-start;gap:10px;margin:18px 0 0;}
+.lp-inquiry-consent input{box-sizing:border-box;flex:0 0 auto;width:18px;height:18px;margin:2px 0 0;accent-color:var(--inquiry-accent);cursor:pointer;}
+.lp-inquiry-consent label{font-size:12px;line-height:1.5;cursor:pointer;}
+.lp-inquiry-consent a{color:var(--inquiry-accent);text-decoration:underline;}
+.lp-inquiry-privacy{margin:8px 0 0 28px;font-size:12px;line-height:1.5;}
 .lp-inquiry-note{margin:24px 0 8px;line-height:1.5;font-size:16px;}
 .lp-inquiry-actions{display:flex;justify-content:space-between;gap:20px;}
 .lp-inquiry-actions .lp-inquiry-action{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;width:43%;border:0;border-radius:999px;background:var(--inquiry-accent);color:var(--inquiry-on-accent);font-size:15px;font-weight:700;text-decoration:none;cursor:pointer;padding:12px 16px;}
@@ -53,12 +56,15 @@ export default function LandingInquiryFields({ phone, privacyUrl, vehicleLabel }
       <div className="lp-inquiry-field"><Label htmlFor="lead-phone">Telefonnummer *</Label><Input id="lead-phone" name="phone" type="tel" autoComplete="tel" required maxLength={50} pattern="[+0-9() /.-]{3,50}" /></div>
       <div className="lp-inquiry-field"><Label htmlFor="lead-message">Ihre Nachricht (optional)</Label><Textarea id="lead-message" name="message" defaultValue={inquiryMessage(vehicleLabel)} maxLength={3000} rows={8} /></div>
     </div>
-    <p className="lp-inquiry-privacy">
-      Ihre Angaben werden zur Bearbeitung Ihrer Anfrage verwendet.{' '}
-      {dealerPrivacyUrl
-        ? <>Weitere Informationen finden Sie in der <a href={dealerPrivacyUrl} target="_blank" rel="noopener noreferrer">Datenschutzerklärung des Autohauses</a>.</>
-        : 'Datenschutzhinweise erhalten Sie vom Autohaus.'}
-    </p>
+    <div className="lp-inquiry-consent">
+      <input id="lead-privacy-consent" name="privacyConsent" type="checkbox" value="yes" required />
+      <Label htmlFor="lead-privacy-consent">
+        Ich habe die {dealerPrivacyUrl
+          ? <a href={dealerPrivacyUrl} target="_blank" rel="noopener noreferrer">Datenschutzerklärung des Autohauses</a>
+          : 'Datenschutzerklärung des Autohauses'} gelesen und stimme der Verarbeitung meiner Angaben zur Bearbeitung meiner Anfrage zu.*
+      </Label>
+    </div>
+    {!dealerPrivacyUrl && <p className="lp-inquiry-privacy">Datenschutzhinweise erhalten Sie vom Autohaus.</p>}
     <p className="lp-inquiry-note">Bitte mit * gekennzeichnete Felder ausfüllen.<br />Kostenlos und unverbindlich!</p>
     <div className="lp-inquiry-actions">
       <Button type="submit" id="leadSubmitBtn" className="lp-inquiry-action">Senden</Button>
