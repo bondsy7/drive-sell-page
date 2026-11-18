@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { isHoneypotSubmission, leadSchema, ownsLeadContext } from './validation.ts';
+import { isHoneypotSubmission, leadSchema, ownsLeadContext, resolveLeadContact } from './validation.ts';
 
 const valid = { dealerUserId: '11111111-1111-4111-8111-111111111111', name: 'Test Anfrage', email: 'test@example.com' };
 Deno.test('bot trap detects filled field but allows legacy forms', () => {
@@ -26,4 +26,18 @@ Deno.test('rejects foreign or missing projects and vehicles', () => {
   assertEquals(ownsLeadContext('a', null, { user_id: 'b' }, null, 'v'), false);
   assertEquals(ownsLeadContext('a', { user_id: 'a', vehicle_id: 'v' }, { user_id: 'a' }, 'p', 'v'), true);
   assertEquals(ownsLeadContext('a', { user_id: 'a', vehicle_id: 'v' }, { user_id: 'a' }, 'p', 'other'), false);
+});
+Deno.test('page-specific landing recipient takes precedence over profile default', () => {
+  assertEquals(resolveLeadContact('zentrale@autohaus.de', { recipientEmail: 'modell@autohaus.de', subject: 'Modellanfrage' }), {
+    recipientEmail: 'modell@autohaus.de', subject: 'Modellanfrage',
+  });
+});
+Deno.test('blank page recipient uses profile lead address and keeps page subject', () => {
+  assertEquals(resolveLeadContact(' zentrale@autohaus.de ', { recipientEmail: ' ', subject: ' SEO-Anfrage ' }), {
+    recipientEmail: 'zentrale@autohaus.de', subject: 'SEO-Anfrage',
+  });
+});
+Deno.test('missing or invalid recipients never produce a mail destination', () => {
+  assertEquals(resolveLeadContact(null, undefined), null);
+  assertEquals(resolveLeadContact('invalid', { recipientEmail: 'also-invalid' }), null);
 });

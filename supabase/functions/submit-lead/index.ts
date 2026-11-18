@@ -2,10 +2,9 @@ import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { isHoneypotSubmission, leadSchema, ownsLeadContext } from "./validation.ts";
+import { isHoneypotSubmission, leadSchema, ownsLeadContext, resolveLeadContact } from "./validation.ts";
 
 const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
-const RECIPIENT_RE = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
 
 const reply = (body: object, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -34,13 +33,13 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !serviceKey) return reply({ error: "Dienst nicht verfügbar." }, 503);
     const supabase = createClient(supabaseUrl, serviceKey);
-    const { data: dealerProfile, error: dealerError } = await supabase.from("profiles").select("id").eq("id", dealerUserId).maybeSingle();
+    const { data: dealerProfile, error: dealerError } = await supabase.from("profiles").select("id, seo_lead_recipient_email").eq("id", dealerUserId).maybeSingle();
     if (dealerError) return reply({ error: "Anfrage konnte nicht geprüft werden." }, 503);
     if (!dealerProfile) return reply({ error: "Ungültiger Anfragekontext." }, 400);
 
     let resolvedVehicleId = vehicleId || null;
     // Landing-page recipient/subject come only from the saved page of this dealer, never from the request.
-    let pageContact: { recipientEmail?: string; subject?: string } | null = null;
+    let pageContact: ReturnType<typeof resolveLeadContact> = null;
     if (projectId) {
       const { data: project, error: projectError } = await supabase
         .from("projects")
@@ -52,9 +51,7 @@ Deno.serve(async (req) => {
       if (project?.vehicle_id && vehicleId && project.vehicle_id !== vehicleId) return reply({ error: "Ungültiger Anfragekontext." }, 400);
       if (!resolvedVehicleId) resolvedVehicleId = project?.vehicle_id || null;
       const cfg = (project?.vehicle_data as any)?.contactFormConfig;
-      if (project?.user_id === dealerUserId && cfg && typeof cfg.recipientEmail === "string" && RECIPIENT_RE.test(cfg.recipientEmail.trim())) {
-        pageContact = { recipientEmail: cfg.recipientEmail.trim().slice(0, 255), subject: typeof cfg.subject === "string" ? cfg.subject.slice(0, 200) : undefined };
-      }
+      pageContact = resolveLeadContact(dealerProfile.seo_lead_recipient_email, cfg);
     }
 
     if (resolvedVehicleId) {

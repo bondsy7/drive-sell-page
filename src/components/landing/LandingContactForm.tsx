@@ -19,7 +19,7 @@ export const ContactFormConfigDialog: React.FC<{
 }> = ({ open, onOpenChange, value, onConfirm }) => {
   const [draft, setDraft] = useState(value);
   useEffect(() => { if (open) setDraft(value); }, [open, value]);
-  const emailOk = isValidRecipientEmail(draft.recipientEmail);
+  const emailOk = !draft.recipientEmail.trim() || isValidRecipientEmail(draft.recipientEmail);
   const set = (key: keyof LandingContactFormConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setDraft(d => ({ ...d, [key]: e.target.value.slice(0, CONTACT_LIMITS[key]) }));
 
@@ -28,11 +28,11 @@ export const ContactFormConfigDialog: React.FC<{
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Kontaktformular einstellen</DialogTitle>
-          <DialogDescription>Gilt nur für diese Landingpage. Die Empfängeradresse ist für Besucher nicht sichtbar.</DialogDescription>
+          <DialogDescription>Gilt nur für diese Landingpage. Ohne eigene Empfängeradresse gilt der Lead-Empfänger aus dem Profil. Die Adresse ist für Besucher nicht sichtbar.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="cf-recipient">Empfänger-E-Mail *</Label>
+            <Label htmlFor="cf-recipient">Eigene Empfänger-E-Mail (optional)</Label>
             <Input id="cf-recipient" type="email" value={draft.recipientEmail} onChange={set('recipientEmail')} placeholder="verkauf-skoda@autohaus.de" />
             {draft.recipientEmail && !emailOk && <p className="text-xs text-destructive">Bitte genau eine gültige E-Mail-Adresse eingeben.</p>}
           </div>

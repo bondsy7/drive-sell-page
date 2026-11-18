@@ -1,4 +1,9 @@
 
+## Zentraler Lead-Empfänger für SEO-Landingpages (18.11.2026)
+- [ ] Im Profilkontakt eine optionale Lead-Empfänger-Adresse speichern und validieren.
+- [ ] `submit-lead` nutzt die Profiladresse nur bei Landingpage-Anfragen ohne eigenen Empfänger; seitenindividuelle Empfänger haben Vorrang.
+- [ ] Regeltests, Datenbank-/Funktionsbereitstellung und angemeldete Profilprüfung durchführen; keinen echten Kunden-Lead oder Testversand auslösen.
+
 ## Aktuelles Maserati-Logo in Admin und Grecale-Landingpage (18.11.2026)
 - [x] Hochgeladenes Maserati-SVG ohne Bildveränderung von 2481×3508 auf den sichtbaren Vektorbereich 1472×626 zugeschnitten und als kanonisches `svg/maserati.svg` bereitgestellt; alte Rasterdateien für ältere Seiten belassen.
 - [x] Admin und Landingpage-Generator auf SVG vor historischen PNG-/WebP-Dateien umgestellt; neueste Grecale-Seite `d6baac41-f5c6-4aab-9e34-3f80a1868746` von p.erhard einschließlich HTML aktualisiert. Drei Server- und vier Frontend-Logo-Tests bestanden, Generator bereitgestellt, Editor/Vorschau/Admin angemeldet ohne Seitenfehler geprüft; ältere Grecale-Entwürfe unverändert.

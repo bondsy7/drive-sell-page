@@ -105,7 +105,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     contactFormEnabled: initialVehicleData?.contactFormEnabled !== false,
     contactFormConfig: sanitizeContactFormConfig(
       initialVehicleData?.contactFormConfig,
-      defaultContactFormConfig(`${brand} ${model}`.trim(), initialDealer?.email || ''),
+      defaultContactFormConfig(`${brand} ${model}`.trim()),
     ),
   });
   const contactFormConfig = editorState.contactFormConfig;

@@ -1866,6 +1866,7 @@ export type Database = {
           postal_code: string | null
           primary_color: string | null
           secondary_color: string | null
+          seo_lead_recipient_email: string | null
           tax_id: string | null
           tiktok_url: string | null
           updated_at: string
@@ -1906,6 +1907,7 @@ export type Database = {
           postal_code?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          seo_lead_recipient_email?: string | null
           tax_id?: string | null
           tiktok_url?: string | null
           updated_at?: string
@@ -1946,6 +1948,7 @@ export type Database = {
           postal_code?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          seo_lead_recipient_email?: string | null
           tax_id?: string | null
           tiktok_url?: string | null
           updated_at?: string

@@ -30,3 +30,18 @@ export function ownsLeadContext(dealer: string, project: { user_id: string; vehi
   if (project?.vehicle_id && vehicleId && project.vehicle_id !== vehicleId) return false;
   return true;
 }
+
+const RECIPIENT_RE = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
+const cleanRecipient = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const email = value.trim();
+  return email.length <= 255 && RECIPIENT_RE.test(email) ? email : undefined;
+};
+
+export function resolveLeadContact(profileRecipient: unknown, pageConfig: unknown): { recipientEmail: string; subject?: string } | null {
+  const cfg = pageConfig && typeof pageConfig === 'object' ? pageConfig as Record<string, unknown> : {};
+  const recipientEmail = cleanRecipient(cfg.recipientEmail) || cleanRecipient(profileRecipient);
+  if (!recipientEmail) return null;
+  const subject = typeof cfg.subject === 'string' ? cfg.subject.trim().slice(0, 200) : '';
+  return { recipientEmail, ...(subject ? { subject } : {}) };
+}

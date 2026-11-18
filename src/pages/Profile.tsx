@@ -14,19 +14,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus } from 'lucide-react';
+import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus, Mail } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import SocialCredentialsSection from '@/components/profile/SocialCredentialsSection';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import BrandContactsSection from '@/components/profile/BrandContactsSection';
 import Auto3ConnectionCard from '@/components/profile/Auto3ConnectionCard';
 import { toast } from 'sonner';
+import { isValidRecipientEmail } from '@/lib/landing-contact-config';
 
 interface ProfileData {
   company_name: string;
   contact_name: string;
   phone: string;
   email: string;
+  seo_lead_recipient_email: string;
   website: string;
   address: string;
   postal_code: string;
@@ -54,7 +56,7 @@ interface ProfileData {
 }
 
 const emptyProfile: ProfileData = {
-  company_name: '', contact_name: '', phone: '', email: '', website: '',
+  company_name: '', contact_name: '', phone: '', email: '', seo_lead_recipient_email: '', website: '',
   address: '', postal_code: '', city: '', tax_id: '', logo_url: '', custom_showroom_url: '',
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
@@ -143,6 +145,7 @@ const Profile = () => {
           contact_name: data.contact_name || '',
           phone: data.phone || '',
           email: data.email || '',
+          seo_lead_recipient_email: data.seo_lead_recipient_email || '',
           website: data.website || '',
           address: data.address || '',
           postal_code: data.postal_code || '',
@@ -312,12 +315,17 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!user) return;
+    if (profile.seo_lead_recipient_email.trim() && !isValidRecipientEmail(profile.seo_lead_recipient_email)) {
+      toast.error('Bitte eine gültige Lead-Empfänger-Adresse eingeben.');
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       company_name: profile.company_name,
       contact_name: profile.contact_name,
       phone: profile.phone,
       email: profile.email,
+      seo_lead_recipient_email: profile.seo_lead_recipient_email.trim() || null,
       website: profile.website || null,
       address: profile.address,
       postal_code: profile.postal_code,
@@ -517,6 +525,23 @@ const Profile = () => {
                   <Label className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Webseite</Label>
                   <Input value={profile.website} onChange={e => update('website', e.target.value)} placeholder="https://www.autohaus-mustermann.de" />
                 </div>
+              </div>
+            </Section>
+
+            <Section icon={<Mail className="w-4 h-4" />} title="Lead-Empfänger für SEO-Landingpages">
+              <p className="text-xs text-muted-foreground -mt-2">
+                Anfragen über SEO-Landingpages werden an diese Adresse gesendet. Eine direkt an der Landingpage hinterlegte Empfänger-Adresse hat Vorrang.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="seo-lead-recipient">E-Mail-Adresse</Label>
+                <Input
+                  id="seo-lead-recipient"
+                  type="email"
+                  value={profile.seo_lead_recipient_email}
+                  onChange={e => update('seo_lead_recipient_email', e.target.value)}
+                  placeholder="leads@autohaus.de"
+                  maxLength={255}
+                />
               </div>
             </Section>
 
