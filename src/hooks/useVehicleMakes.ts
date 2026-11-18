@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { BRAND_ALIAS_MAP, normalizeBrand, resolveCanonicalBrand } from '@/lib/brand-aliases';
+import { versionedManufacturerLogoUrl } from '@/lib/manufacturer-logo-storage';
 
 export interface VehicleMake {
   key: string;
@@ -15,16 +16,25 @@ export interface MakeLogo {
 
 let cachedMakes: VehicleMake[] | null = null;
 let cachedLogos: MakeLogo[] | null = null;
+const logoCacheListeners = new Set<() => void>();
 
-/** Invalidate logo cache so next useVehicleMakes call reloads from storage */
+/** Invalidate and refresh mounted logo consumers, not only future hook mounts. */
 export function invalidateLogoCache() {
   cachedLogos = null;
+  logoCacheListeners.forEach(listener => listener());
 }
 
 export function useVehicleMakes() {
   const [makes, setMakes] = useState<VehicleMake[]>(cachedMakes || []);
   const [logos, setLogos] = useState<MakeLogo[]>(cachedLogos || []);
   const [loading, setLoading] = useState(!cachedMakes);
+  const [logoRevision, setLogoRevision] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => setLogoRevision(value => value + 1);
+    logoCacheListeners.add(refresh);
+    return () => { logoCacheListeners.delete(refresh); };
+  }, []);
 
   useEffect(() => {
     if (cachedMakes && cachedLogos) {
@@ -68,7 +78,10 @@ export function useVehicleMakes() {
               const path = folder ? `${folder}/${f.name}` : f.name;
               return {
                 name: f.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[-_\s]+/g, ''),
-                url: supabase.storage.from('manufacturer-logos').getPublicUrl(path).data.publicUrl,
+                url: versionedManufacturerLogoUrl(
+                  supabase.storage.from('manufacturer-logos').getPublicUrl(path).data.publicUrl,
+                  f,
+                ),
                 originalName: f.name,
               };
             });
@@ -87,7 +100,7 @@ export function useVehicleMakes() {
     };
 
     load();
-  }, []);
+  }, [logoRevision]);
 
   const getModelsForMake = useCallback((makeKey: string): string[] => {
     const exact = makes.find(m => m.key.toLowerCase() === makeKey.toLowerCase());

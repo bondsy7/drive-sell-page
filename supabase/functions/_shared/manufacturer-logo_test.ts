@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { selectManufacturerLogo } from "./manufacturer-logo.ts";
+import { selectManufacturerLogo, versionedManufacturerLogoUrl } from "./manufacturer-logo.ts";
 
 Deno.test("Maserati uses the current SVG instead of the legacy PNG", () => {
   assertEquals(
@@ -33,4 +33,18 @@ Deno.test("DS and DS Automobiles resolve to the same current logo", () => {
       { name: "ds.svg", folder: "svg" },
     );
   }
+});
+
+Deno.test("replacing a logo changes its generated public URL", () => {
+  const publicUrl = "https://example.test/manufacturer-logos/svg/kia.svg";
+  const before = versionedManufacturerLogoUrl(publicUrl, {
+    name: "kia.svg",
+    updated_at: "2026-11-18T13:39:00.000Z",
+  });
+  const after = versionedManufacturerLogoUrl(publicUrl, {
+    name: "kia.svg",
+    updated_at: "2026-11-18T13:40:11.329983+00:00",
+  });
+  assertEquals(before === after, false);
+  assertEquals(after.includes("/svg/kia.svg?v="), true);
 });

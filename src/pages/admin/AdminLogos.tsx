@@ -8,6 +8,7 @@ import { Upload, Trash2, Image, Loader2, FileCode, Search, Check, X, AlertCircle
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVehicleMakes, invalidateLogoCache } from '@/hooks/useVehicleMakes';
 import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
+import { versionedManufacturerLogoUrl } from '@/lib/manufacturer-logo-storage';
 
 interface LogoFile {
   name: string;
@@ -52,11 +53,15 @@ export default function AdminLogos() {
     const mapFiles = (files: any[] | null, folder: string): LogoFile[] =>
       (files || [])
         .filter((f: any) => f.name && !f.name.startsWith('.') && f.id)
-        .map((f: any) => ({
-          name: f.name,
-          folder,
-          url: supabase.storage.from(BUCKET).getPublicUrl(folder ? `${folder}/${f.name}` : f.name).data.publicUrl,
-        }));
+        .map((f: any) => {
+          const path = folder ? `${folder}/${f.name}` : f.name;
+          const publicUrl = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+          return {
+            name: f.name,
+            folder,
+            url: versionedManufacturerLogoUrl(publicUrl, f),
+          };
+        });
 
     setLogos(mapFiles(rootRes.data, ''));
     setSvgs(mapFiles(svgRes.data, 'svg'));
@@ -170,23 +175,40 @@ export default function AdminLogos() {
     loadAll();
   };
 
-  const uploadForBrand = async (brandKey: string, file: File) => {
+  const uploadForBrand = async (brandKey: string, file: File, previous?: LogoFile | null): Promise<boolean> => {
     const isSvg = file.name.toLowerCase().endsWith('.svg');
     const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
     const safeName = brandKey.toLowerCase().replace(/\s+/g, '-') + '.' + ext;
     const folder = isSvg ? 'svg' : '';
     const path = folder ? `${folder}/${safeName}` : safeName;
+    const previousPath = previous ? (previous.folder ? `${previous.folder}/${previous.name}` : previous.name) : null;
 
     setUploading(true);
     const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
-    setUploading(false);
 
-    if (error) toast.error('Fehler: ' + error.message);
-    else {
-      toast.success(`Logo für ${brandKey} hochgeladen`);
-      invalidateLogoCache();
-      loadAll();
+    if (error) {
+      setUploading(false);
+      toast.error('Fehler: ' + error.message);
+      return false;
     }
+
+    // A format change must not leave the old SVG winning over the new raster file.
+    if (previousPath && previousPath !== path) {
+      const { error: removeError } = await supabase.storage.from(BUCKET).remove([previousPath]);
+      if (removeError) {
+        await supabase.storage.from(BUCKET).remove([path]);
+        setUploading(false);
+        toast.error('Das alte Logo konnte nicht ersetzt werden: ' + removeError.message);
+        await loadAll();
+        return false;
+      }
+    }
+
+    invalidateLogoCache();
+    await loadAll();
+    setUploading(false);
+    toast.success(`Logo für ${brandKey} gespeichert`);
+    return true;
   };
 
   const deleteFile = async (folder: string, name: string) => {
@@ -194,6 +216,7 @@ export default function AdminLogos() {
     const { error } = await supabase.storage.from(BUCKET).remove([path]);
     if (error) toast.error('Fehler: ' + error.message);
     else {
+      invalidateLogoCache();
       toast.success('Gelöscht');
       if (folder === 'svg') setSvgs(prev => prev.filter(l => l.name !== name));
       else setLogos(prev => prev.filter(l => l.name !== name));
@@ -209,6 +232,7 @@ export default function AdminLogos() {
     }
     setLogos([]); setSvgs([]);
     setUploading(false);
+    invalidateLogoCache();
     toast.success(`${allFiles.length} Datei(en) gelöscht`);
   };
 
@@ -232,7 +256,8 @@ export default function AdminLogos() {
   const createNewBrand = async () => {
     if (!newBrandName.trim()) { toast.error('Bitte einen Markennamen eingeben.'); return; }
     if (!newBrandFile) { toast.error('Bitte ein Logo auswählen.'); return; }
-    await uploadForBrand(newBrandName.trim(), newBrandFile);
+    const saved = await uploadForBrand(newBrandName.trim(), newBrandFile);
+    if (!saved) return;
     setShowNewBrand(false);
     setNewBrandName('');
     setNewBrandFile(null);
@@ -253,7 +278,8 @@ export default function AdminLogos() {
 
   const saveEditLogo = async () => {
     if (!editBrand || !editFile) return;
-    await uploadForBrand(editBrand, editFile);
+    const saved = await uploadForBrand(editBrand, editFile, getLogoForBrand(editBrand));
+    if (!saved) return;
     setEditBrand(null);
     setEditFile(null);
     setEditPreview(null);

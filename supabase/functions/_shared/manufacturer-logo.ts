@@ -1,5 +1,19 @@
 export interface ManufacturerLogoFile {
   name: string;
+  updated_at?: string | null;
+  created_at?: string | null;
+}
+
+/** Cache-bust replaced objects without changing their stable brand filename. */
+export function versionedManufacturerLogoUrl(
+  publicUrl: string,
+  file?: ManufacturerLogoFile,
+): string {
+  const timestamp = Date.parse(file?.updated_at || file?.created_at || "");
+  if (!Number.isFinite(timestamp)) return publicUrl;
+  const url = new URL(publicUrl);
+  url.searchParams.set("v", String(timestamp));
+  return url.toString();
 }
 
 export interface ManufacturerLogoMatch {

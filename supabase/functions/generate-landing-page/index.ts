@@ -3,7 +3,7 @@ import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
-import { selectManufacturerLogo } from "../_shared/manufacturer-logo.ts";
+import { selectManufacturerLogo, versionedManufacturerLogoUrl } from "../_shared/manufacturer-logo.ts";
 
 // ─── Robust JSON extraction ───
 function extractJsonFromResponse(response: string): unknown {
@@ -125,7 +125,10 @@ async function findBrandLogo(supabase: any, brand: string): Promise<string> {
     if (!match) return '';
     const path = match.folder ? `${match.folder}/${match.name}` : match.name;
     const { data } = supabase.storage.from('manufacturer-logos').getPublicUrl(path);
-    return data.publicUrl;
+    const sourceFile = (match.folder === 'svg' ? svgFiles : rootFiles)?.find(
+      (file: { name: string }) => file.name === match.name,
+    );
+    return versionedManufacturerLogoUrl(data.publicUrl, sourceFile);
   } catch (_e) {}
   return '';
 }
