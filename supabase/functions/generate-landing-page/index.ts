@@ -1,3 +1,4 @@
+import { buildCanonicalUrl, buildStructuredData, clampMetaDescription, landingSlugify, stripPlaceholders } from "../_shared/landing-seo.ts";
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // generate-landing-page v6 – Hero 3:1 + rich sections + reliable image gen
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -351,6 +352,14 @@ HELPFUL CONTENT RICHTLINIEN:
 - AUSNAHME Kontakt: Ein Abschnitt mit der Überschrift "Kontakt" enthält KEINE Listen (<ul>/<ol>/<li>) – nur reiner Fließtext in <p>-Absätzen
 - Content MUSS LANG und DETAILLIERT sein – mindestens 150 Wörter pro Section
 
+SEO/GEO-PFLICHTREGELN:
+- NIEMALS Platzhalter wie "Musterstadt", "Musterstraße", "Max Mustermann" oder erfundene PLZ/Adressen verwenden – weder in Titel, Überschriften, Text noch FAQ.
+- Ortsangaben NUR aus den Händler-Informationen übernehmen. ${dealer?.city ? `Standortbezug zu ${dealer.city} dezent in Text und 1–2 FAQ einbauen (z. B. Probefahrt, Beratung vor Ort).` : "Es ist kein Standort bekannt: KEINE Städte oder Regionen nennen, marken- und fahrzeugbezogen formulieren."}
+- Modellname exakt wie angegeben verwenden; keine Modelle, Motorisierungen oder Varianten erfinden. Unsichere Werte als "je nach Ausführung" kennzeichnen statt Zahlen zu erfinden.
+- Keine abgedroschenen Werbefloskeln ("Wohlfühloase", "Symphonie aus", "zieht alle Blicke auf sich", "lässt keine Wünsche offen", "mehr als nur ein") – sachlich und nutzwertig schreiben, jede Seite modellspezifisch.
+- FAQ: <h3>Frage</h3><p>Antwort</p> je Frage; neben Technik auch praktische Kundenfragen (Probefahrt-Ablauf, Inzahlungnahme, Verfügbarkeit/Lieferzeit, Finanzierung beim Händler).
+- Technische-Daten-Abschnitt endet mit: <p><small>Angaben gemäß Herstellerdaten; Ausstattungs- und Motorisierungsdetails können abweichen.</small></p>
+
 BILD-PROMPT REGELN (KRITISCH):
 Für den Hero: Erstelle einen cinematic wide-angle shot (3:1 Panorama). Das Bild muss breit und flach sein!
 Für ALLE Bilder: Die Prompts müssen eine professionelle Automotive-Aufnahme beschreiben, bei der das Fahrzeug sichtbar durch die neue Umgebung beleuchtet wird. Nenne klare Lichtquellen (Decken-LEDs, Fensterlicht, Sonne, Studio-Softboxen), natürliche Lack-/Glas-/Chrom-Reflexionen der neuen Szene, weiche Bodenschatten, Reifen-Kontakt und dezente Bodenreflexionen. Keine fremden/alten Reflexionen, keine Personen, keine anderen Fahrzeuge, keine Wasserzeichen, keine zufälligen Logos.
@@ -368,7 +377,7 @@ ${dealerInfo}
 
 Antworte AUSSCHLIESSLICH als JSON:
 {
-  "meta": { "title": "SEO Title (<60 Zeichen)", "description": "Meta Description (<160 Zeichen)", "h1": "Hauptüberschrift" },
+  "meta": { "title": "SEO Title (<60 Zeichen)", "description": "Meta Description (max. 150 Zeichen)", "h1": "Hauptüberschrift" },
   "hero": {
     "headline": "Emotionale Headline",
     "subheadline": "Untertitel mit Kernvorteil",
@@ -453,6 +462,22 @@ ${!ownCount ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUSST für JEDE v
         console.error("JSON repair failed:", repairError);
         return new Response(JSON.stringify({ error: "KI-Antwort konnte nicht verarbeitet werden" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    }
+
+    // ─── SEO post-processing (new pages only) ───
+    {
+      pageContent.meta = pageContent.meta || {};
+      pageContent.hero = pageContent.hero || {};
+      for (const k of ["title", "description", "h1"]) if (typeof pageContent.meta[k] === "string") pageContent.meta[k] = stripPlaceholders(pageContent.meta[k]);
+      for (const k of ["headline", "subheadline"]) if (typeof pageContent.hero[k] === "string") pageContent.hero[k] = stripPlaceholders(pageContent.hero[k]);
+      if (pageContent.meta.description) pageContent.meta.description = clampMetaDescription(pageContent.meta.description);
+      const canonicalUrl = buildCanonicalUrl(dealer?.website, landingSlugify([brand, model, variant].filter(Boolean).join(" ")));
+      pageContent.seo = pageContent.seo || {};
+      if (canonicalUrl) pageContent.seo.canonicalUrl = canonicalUrl;
+      pageContent.seo.structuredData = buildStructuredData({
+        dealer, brand, model, canonicalUrl,
+        faqHtml: (pageContent.sections || []).filter((x: any) => x?.type === "faq").map((x: any) => String(x.content || "")),
+      });
     }
 
     // ─── Step 2: Collect all image prompts ───
@@ -743,7 +768,7 @@ function buildHTML(
   <title>${meta.title || `${brand} ${model}`}</title>
   <meta name="description" content="${meta.description || ""}">
   <meta name="keywords" content="${(seo.keywords || []).join(", ")}">
-  <link rel="canonical" href="${website || "#"}">
+  <link rel="canonical" href="${seo.canonicalUrl || website || "#"}">
   <meta property="og:title" content="${meta.title || `${brand} ${model}`}">
   <meta property="og:description" content="${meta.description || ""}">
   <meta property="og:type" content="website">

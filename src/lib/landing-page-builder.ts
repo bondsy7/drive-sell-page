@@ -53,7 +53,7 @@ export interface LandingPageContent {
   meta: { title: string; description: string; h1: string };
   hero: { headline: string; subheadline: string; ctaText: string; imagePrompt?: string };
   sections: LandingPageSection[];
-  seo?: { keywords?: string[]; structuredData?: any };
+  seo?: { keywords?: string[]; structuredData?: any; canonicalUrl?: string };
 }
 
 function resolveFrame(content: LandingPageContent, id: string, aspect: number): LandingImageFrame | null {
@@ -374,7 +374,7 @@ export function buildLandingPageHTML(
   <title>${escapeHtml(meta.title || `${brand} ${model}`)}</title>
   <meta name="description" content="${escapeHtml(meta.description || '')}">
   <meta name="keywords" content="${(seo.keywords || []).map(escapeHtml).join(', ')}">
-  <link rel="canonical" href="${website || '#'}">
+  <link rel="canonical" href="${escapeHtml(seo.canonicalUrl || website || '#')}">
   <meta property="og:title" content="${escapeHtml(meta.title || `${brand} ${model}`)}">
   <meta property="og:description" content="${escapeHtml(meta.description || '')}">
   <meta property="og:type" content="website">
