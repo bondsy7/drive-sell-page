@@ -64,8 +64,16 @@ export default function SalesAutopilotSettings() {
     }
   };
 
+  const demoKnowledgeActive = sa.documents.some((doc) => doc.is_active && doc.source_type === 'demo_seed');
+
   return (
     <div className="space-y-6">
+      {demoKnowledgeActive && (
+        <div role="status" className="rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm">
+          <p className="font-semibold text-foreground flex items-center gap-2"><Shield className="w-4 h-4" /> DEMO-Versandschutz aktiv</p>
+          <p className="text-muted-foreground mt-1">Solange aktives DEMO-Wissen vorhanden ist, erzeugt auch der Autopilot nur Entwürfe mit Freigabe. DEMO-E-Mails werden vom Versanddienst zusätzlich ausgeschlossen.</p>
+        </div>
+      )}
       {/* Mode Selection */}
       <Card>
         <CardHeader>

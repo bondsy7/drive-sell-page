@@ -48,8 +48,16 @@ export default function SalesKnowledgeTab() {
 
   if (documentsLoading) return <div className="flex justify-center py-12"><div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full" /></div>;
 
+  const demoDocuments = documents.filter((doc) => doc.is_active && doc.source_type === 'demo_seed');
+
   return (
     <div className="space-y-6">
+      {demoDocuments.length > 0 && (
+        <div role="status" className="rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm">
+          <p className="font-semibold text-foreground">DEMO-Wissen aktiv ({demoDocuments.length} Dokumente)</p>
+          <p className="text-muted-foreground mt-1">Diese Inhalte sind nur für Funktionstests. Der vollautomatische Kundenversand wird dadurch auf einen Entwurf mit Freigabe umgestellt.</p>
+        </div>
+      )}
       {/* Upload Section */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <h3 className="font-semibold text-foreground text-sm">Wissensdokument hochladen</h3>
@@ -114,6 +122,7 @@ export default function SalesKnowledgeTab() {
                     {doc.chunk_count > 0 && <span className="mr-3">{doc.chunk_count} Chunks</span>}
                     <span>{new Date(doc.created_at).toLocaleDateString('de-DE')}</span>
                   </div>
+                  {doc.ingestion_error && <p className="mt-1 text-xs text-destructive">{doc.ingestion_error}</p>}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button

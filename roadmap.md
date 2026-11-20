@@ -1,4 +1,11 @@
 
+## DEMO-Wissensbasis und Verkaufsassistent für Bonds (20.11.2026)
+- [x] Ausschließlich für d.bonds@autoactiva.de 15 umfangreiche, konsistente und sichtbar als DEMO gekennzeichnete Dokumente in allen 15 vorhandenen Wissenskategorien gespeichert.
+- [x] Ingestion, semantisches Chunking, echte Gemini-Embeddings und nutzergetrenntes Retrieval repariert: 31 Chunks, 31 Embeddings mit je 3.072 Dimensionen; neun Regeltests bestanden.
+- [x] Chat und Antwortgenerator an tatsächliche Quellen angebunden; zehn echte Verkaufsfragen nach markdownbereinigter Faktenprüfung 10/10 bestanden, Generator zusätzlich mit gespeicherter Konversation und Leasingquelle bestanden.
+- [x] DEMO-Wissen erzwingt auch bei `full_auto` einen Entwurf mit `pending_approval`; Aus/Freigabe/Vollautomat sowie ausdrücklicher Chat-Versandbefehl getestet, null Test-E-Mails versendet. Temporäre Autopilot-Leads und Entwürfe entfernt, ursprüngliche fünf Outbox-Einträge und `full_auto` unverändert.
+- [x] Wissen und Chat als Bonds geprüft: 15 sichtbare Dokumente, 15× `ready`, Quellen und DEMO-Hinweis sichtbar, drei DEMO-Versandknöpfe gesperrt, keine Browserfehler; Build erfolgreich. Internen Versanddienst nicht direkt aufgerufen, damit keine bereits vorhandenen E-Mails verarbeitet wurden.
+
 ## Zentraler Lead-Empfänger und Händler-Datenschutz für SEO-Landingpages (18.11.2026)
 - [x] Im Profilkontakt eine optionale Lead-Empfänger-Adresse speichern und validieren.
 - [x] `submit-lead` nutzt die Profiladresse nur bei Landingpage-Anfragen ohne eigenen Empfänger; seitenindividuelle Empfänger haben Vorrang.

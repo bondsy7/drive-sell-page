@@ -3,6 +3,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { requireServiceRole } from "../_shared/service-auth.ts";
+import {
+  hasActiveDemoKnowledge,
+  isDemoCustomer,
+  isDemoEmailContent,
+  resolveAutopilotDecision,
+} from "../_shared/sales-autopilot.ts";
+import {
+  buildSalesKnowledgeContext,
+  retrieveSalesKnowledge,
+  toUsedKnowledgeContext,
+} from "../_shared/sales-knowledge.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +39,7 @@ WICHTIG: Gehe gezielt auf die Kundeninteressen ein:
 - Bei Probefahrt-Interesse: Biete konkret einen Termin an
 - Bei Inzahlungnahme: Frage nach Fahrzeugdetails
 - Bei Leasing/Finanzierung: Erwähne attraktive Konditionen
-- Bei Kauf: Bestätige Preis und Verfügbarkeit
+- Bei Kauf: Nenne Preis und Verfügbarkeit nur, wenn sie in den Fahrzeugdaten oder Wissensquellen ausdrücklich belegt sind; frage sonst gezielt nach
 - Biete einen Rückruf an wenn gewünscht
 
 Erstelle NUR den E-Mail-Text (Betreff wird separat generiert). Beginne mit der Anrede.
@@ -77,6 +88,33 @@ serve(async (req) => {
     const { data: lead } = await adminSupabase.from('leads').select('*').eq('id', leadId).single();
     if (!lead) throw new Error("Kundenanfrage wurde nicht gefunden");
 
+    const autopilotMode = profile.autopilot_mode || 'approval';
+    const autoReplyStages = profile.auto_reply_stages || ['new_lead'];
+    const journeyStage = 'new_lead';
+    const demoKnowledgeActive = await hasActiveDemoKnowledge(adminSupabase, dealerUserId);
+    const demoCustomer = isDemoCustomer(lead);
+    const autopilotDecision = resolveAutopilotDecision({
+      mode: autopilotMode,
+      stage: journeyStage,
+      autoReplyStages,
+      demoKnowledgeActive,
+      demoCustomer,
+    });
+
+    if (autopilotDecision === 'notify_only') {
+      await adminSupabase.from('sales_notifications').insert({
+        user_id: dealerUserId,
+        notification_type: 'new_lead',
+        title: 'Neuer Lead eingegangen',
+        body: 'Der Autopilot ist aus. Es wurde keine automatische Antwort erstellt oder versendet.',
+        related_lead_id: leadId,
+        requires_approval: false,
+      });
+      return new Response(JSON.stringify({ status: 'notified_only', autoProcessing: false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Load vehicle context from project if linked
     let vehicleContext: any = {};
     let vehicleTitle = lead.vehicle_title || '';
@@ -87,11 +125,6 @@ serve(async (req) => {
         if (!vehicleTitle) vehicleTitle = project.title || '';
       }
     }
-
-    const autopilotMode = profile.autopilot_mode || 'approval';
-    const autoReplyStages = profile.auto_reply_stages || ['new_lead'];
-
-    const journeyStage = 'new_lead';
 
     // Build interest summary
     const interests: string[] = [];
@@ -106,6 +139,14 @@ serve(async (req) => {
 
     const tone = profile.default_tone || 'freundlich';
     const customerMessage = lead.message || `Anfrage von ${lead.name} zu ${vehicleTitle || 'einem Fahrzeug'}`;
+    const knowledge = await retrieveSalesKnowledge({
+      adminSupabase,
+      apiKey: GEMINI_API_KEY,
+      userId: dealerUserId,
+      query: `${customerMessage} ${vehicleTitle} ${interests.join(' ')}`,
+      limit: 8,
+    });
+    const knowledgeContext = buildSalesKnowledgeContext(knowledge);
 
     // Build prompt – load custom base prompt from admin settings
     const basePrompt = await getCustomPrompt(adminSupabase, "auto_process_lead", DEFAULT_LEAD_PROMPT);
@@ -124,10 +165,14 @@ ${lead.interested_test_drive ? '- Biete konkret einen Probefahrt-Termin an und f
 ${lead.interested_trade_in ? '- Frage nach Details zum Fahrzeug für die Inzahlungnahme (Marke, Modell, Baujahr, km-Stand).' : ''}
 ${lead.interested_leasing ? '- Erwähne attraktive Leasing-Konditionen und biete eine individuelle Berechnung an.' : ''}
 ${lead.interested_financing ? '- Erwähne Finanzierungsmöglichkeiten und biete eine individuelle Berechnung an.' : ''}
-${lead.interested_purchase ? '- Bestätige den aktuellen Kaufpreis und Verfügbarkeit.' : ''}
+${lead.interested_purchase ? '- Nenne Kaufpreis und Verfügbarkeit nur bei ausdrücklicher Quelle; frage andernfalls danach.' : ''}
 ${!interests.length && profile.should_push_test_drive ? '- Biete eine Probefahrt an.' : ''}
 ${!interests.length && profile.should_push_financing ? '- Erwähne Finanzierungsmöglichkeiten.' : ''}
 ${profile.should_offer_callback ? '- Biete einen Rückruf an.' : ''}
+
+## HINTERLEGTES WISSEN
+${knowledgeContext || 'Keine passende Wissensquelle gefunden. Erfinde keine Preise, Ausstattung, Konditionen, Lieferzeiten oder Prozesse.'}
+${knowledgeContext ? 'Nutze Quellenkennungen wie [Q1] für konkrete Fakten. DEMO-Quellen sind ausschließlich Testwissen und keine echten Kundenkonditionen.' : ''}
 
 Erstelle NUR den E-Mail-Text (Betreff wird separat generiert). Beginne mit der Anrede.
 ${profile.signature_name ? `Signatur: ${profile.signature_name}${profile.signature_role ? ', ' + profile.signature_role : ''}${profile.signature_phone ? ', Tel: ' + profile.signature_phone : ''}${profile.signature_email ? ', ' + profile.signature_email : ''}` : ''}
@@ -163,7 +208,7 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
     }
 
     const aiResult = await aiResponse.json();
-    const generatedText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let generatedText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!generatedText) throw new Error("Es konnte keine Antwort erstellt werden");
 
     // Generate subject line
@@ -189,7 +234,11 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
       }
     } catch {}
 
-    const needsApproval = autopilotMode !== 'full_auto' || !autoReplyStages.includes(journeyStage);
+    const needsApproval = autopilotDecision !== 'queue';
+    const demoProtected = demoKnowledgeActive || demoCustomer || isDemoEmailContent(emailSubject, generatedText);
+    if (demoProtected && !isDemoEmailContent(emailSubject, generatedText)) {
+      generatedText += '\n\n[DEMO] Nur zur internen Prüfung – nicht an echte Kunden senden.';
+    }
 
     // Create conversation
     const { data: conversation } = await adminSupabase.from('sales_assistant_conversations').insert({
@@ -216,7 +265,7 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
         output_text: generatedText,
         approval_status: needsApproval ? 'draft' : 'approved',
         generation_mode: 'quick_reply',
-        metadata: { auto_generated: true, lead_id: leadId, interests },
+        metadata: { auto_generated: true, lead_id: leadId, interests, demoProtected, autopilotDecision, usedContext: toUsedKnowledgeContext(knowledge) },
       });
 
       // Put email in outbox (pending_approval or queued)
@@ -228,6 +277,7 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
         body_html: `<div style="font-family:sans-serif;line-height:1.6">${generatedText.replace(/\n/g, '<br>')}</div>`,
         body_text: generatedText,
         status: needsApproval ? 'pending_approval' : 'queued',
+        is_demo: demoProtected,
         conversation_id: conversation.id,
         lead_id: leadId,
       }).select().single();
@@ -275,7 +325,7 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
         user_id: dealerUserId,
         notification_type: 'new_lead',
         title: needsApproval ? '🔔 Neuer Lead – Entwurf zur Freigabe' : '✅ Neuer Lead – Automatisch beantwortet',
-        body: `${lead.name} hat sich für "${vehicleTitle || 'ein Fahrzeug'}" interessiert.${interests.length > 0 ? ` Interessen: ${interests.join(', ')}.` : ''} ${needsApproval ? 'Bitte prüfe den Antwortentwurf.' : 'Die Antwort wurde automatisch gesendet.'}`,
+        body: `${lead.name} hat sich für "${vehicleTitle || 'ein Fahrzeug'}" interessiert.${interests.length > 0 ? ` Interessen: ${interests.join(', ')}.` : ''} ${demoProtected ? 'DEMO-Schutz aktiv: Kein automatischer Kundenversand; bitte Entwurf prüfen.' : needsApproval ? 'Bitte prüfe den Antwortentwurf.' : 'Die Antwort wurde automatisch zur Zustellung vorgemerkt.'}`,
         action_type: 'view_conversation',
         action_payload: {
           conversationId: conversation.id,
@@ -285,6 +335,8 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
           leadName: lead.name,
           leadEmail: lead.email,
           interests,
+          demoProtected,
+          isDemo: demoProtected,
         },
         requires_approval: needsApproval,
         approval_status: needsApproval ? 'pending' : 'approved',
@@ -304,6 +356,9 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
     return new Response(JSON.stringify({
       status: needsApproval ? 'draft_created' : 'auto_sent',
       conversationId: conversation?.id,
+      demoProtected,
+      autopilotDecision,
+      usedContext: toUsedKnowledgeContext(knowledge),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

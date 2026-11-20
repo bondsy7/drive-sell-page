@@ -318,6 +318,13 @@ export default function SalesGeneratorTab() {
           )}
         </div>
 
+        {sa.lastResponse?.demoProtected && (
+          <div role="status" className="rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm">
+            <p className="font-semibold text-foreground">DEMO-Wissen verwendet</p>
+            <p className="text-muted-foreground mt-1">Nur zur internen Prüfung. Diese Antwort ist nicht für den automatischen Kundenversand freigegeben.</p>
+          </div>
+        )}
+
         {/* Used Context */}
         {sa.lastResponse?.usedContext && sa.lastResponse.usedContext.length > 0 && (
           <Accordion type="single" collapsible>

@@ -2643,6 +2643,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          is_demo: boolean
           lead_id: string | null
           sent_at: string | null
           status: string
@@ -2658,6 +2659,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          is_demo?: boolean
           lead_id?: string | null
           sent_at?: string | null
           status?: string
@@ -2673,6 +2675,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          is_demo?: boolean
           lead_id?: string | null
           sent_at?: string | null
           status?: string
@@ -2705,6 +2708,7 @@ export type Database = {
           created_at: string
           document_id: string
           embedding: string | null
+          embedding_v2: string | null
           id: string
           is_active: boolean | null
           metadata: Json | null
@@ -2717,6 +2721,7 @@ export type Database = {
           created_at?: string
           document_id: string
           embedding?: string | null
+          embedding_v2?: string | null
           id?: string
           is_active?: boolean | null
           metadata?: Json | null
@@ -2729,6 +2734,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           embedding?: string | null
+          embedding_v2?: string | null
           id?: string
           is_active?: boolean | null
           metadata?: Json | null
@@ -2751,8 +2757,10 @@ export type Database = {
           content_text: string | null
           created_at: string
           document_type: string
+          embedding_model: string | null
           embedding_status: string | null
           id: string
+          ingestion_error: string | null
           is_active: boolean | null
           mime_type: string | null
           public_url: string | null
@@ -2768,8 +2776,10 @@ export type Database = {
           content_text?: string | null
           created_at?: string
           document_type?: string
+          embedding_model?: string | null
           embedding_status?: string | null
           id?: string
+          ingestion_error?: string | null
           is_active?: boolean | null
           mime_type?: string | null
           public_url?: string | null
@@ -2785,8 +2795,10 @@ export type Database = {
           content_text?: string | null
           created_at?: string
           document_type?: string
+          embedding_model?: string | null
           embedding_status?: string | null
           id?: string
+          ingestion_error?: string | null
           is_active?: boolean | null
           mime_type?: string | null
           public_url?: string | null
@@ -4250,6 +4262,23 @@ export type Database = {
       }
       is_account_approved: { Args: { _user_id: string }; Returns: boolean }
       landing_slugify: { Args: { _t: string }; Returns: string }
+      match_sales_knowledge_chunks: {
+        Args: {
+          match_count?: number
+          match_user_id: string
+          query_embedding: string
+          selected_document_ids?: string[]
+        }
+        Returns: {
+          chunk_id: string
+          chunk_text: string
+          document_id: string
+          document_type: string
+          similarity: number
+          source_type: string
+          title: string
+        }[]
+      }
       reset_monthly_credits: {
         Args: { _description?: string; _plan_credits: number; _user_id: string }
         Returns: Json

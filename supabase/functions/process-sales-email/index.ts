@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { requireServiceRole } from "../_shared/service-auth.ts";
+import { isDemoEmailContent } from "../_shared/sales-autopilot.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,7 @@ type OutboxEmail = {
   subject: string;
   body_html: string;
   body_text: string | null;
+  is_demo: boolean;
 };
 
 const toPlainText = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -74,8 +76,9 @@ serve(async (req) => {
 
     let query = adminSupabase
       .from("sales_email_outbox")
-      .select("id, user_id, to_email, to_name, subject, body_html, body_text")
+      .select("id, user_id, to_email, to_name, subject, body_html, body_text, is_demo")
       .eq("status", "queued")
+      .eq("is_demo", false)
       .order("created_at", { ascending: true })
       .limit(emailId ? 1 : 20);
 
@@ -110,9 +113,20 @@ serve(async (req) => {
 
     let sent = 0;
     let failed = 0;
+    let demoBlocked = 0;
 
     for (const email of emails) {
       try {
+        if (email.is_demo || isDemoEmailContent(email.subject, email.body_text || email.body_html)) {
+          demoBlocked += 1;
+          await adminSupabase.from("sales_email_outbox").update({
+            status: "pending_approval",
+            is_demo: true,
+            error_message: "DEMO-Schutz: automatischer Kundenversand blockiert.",
+          }).eq("id", email.id);
+          continue;
+        }
+
         const payload: Record<string, unknown> = {
           from: resendFromEmail,
           to: [email.to_email],
@@ -157,7 +171,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ processed: emails.length, sent, failed }), {
+    return new Response(JSON.stringify({ processed: emails.length, sent, failed, demoBlocked }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

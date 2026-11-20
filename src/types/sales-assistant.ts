@@ -60,6 +60,8 @@ export interface SalesKnowledgeDocument {
   mime_type: string | null;
   content_text: string | null;
   embedding_status: EmbeddingStatus;
+  embedding_model?: string | null;
+  ingestion_error?: string | null;
   chunk_count: number;
   is_active: boolean;
   version_label: string | null;
@@ -167,6 +169,7 @@ export interface GenerateResponse {
   confidenceNotes: string;
   conversationId: string;
   messageId: string;
+  demoProtected?: boolean;
 }
 
 export const JOURNEY_STAGE_LABELS: Record<JourneyStage, string> = {

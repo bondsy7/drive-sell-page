@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Bell, CheckCircle2, Eye, Mail, MailOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Loader2, Bell, CheckCircle2, Eye, Mail, MailOpen, ChevronDown, ChevronUp, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -139,6 +139,10 @@ export default function SalesChatPage() {
   };
 
   const approveNotification = async (notifId: string, payload: any) => {
+    if (payload?.demoProtected || payload?.isDemo) {
+      toast.error('DEMO-Entwürfe sind vom Kundenversand ausgeschlossen.');
+      return;
+    }
     // Approve notification
     await supabase.from('sales_notifications' as any)
       .update({ approval_status: 'approved', is_read: true } as any).eq('id', notifId);
@@ -281,9 +285,15 @@ export default function SalesChatPage() {
                       </div>
                     )}
 
-                    <Button size="sm" className="h-7 text-xs w-full" onClick={() => approveNotification(n.id, p)}>
-                      <CheckCircle2 className="w-3 h-3 mr-1" /> Freigeben & Versenden
-                    </Button>
+                    {p.demoProtected || p.isDemo ? (
+                      <Button size="sm" variant="outline" className="h-7 text-xs w-full" disabled>
+                        <ShieldAlert className="w-3 h-3 mr-1" /> DEMO – Versand gesperrt
+                      </Button>
+                    ) : (
+                      <Button size="sm" className="h-7 text-xs w-full" onClick={() => approveNotification(n.id, p)}>
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Freigeben & Versenden
+                      </Button>
+                    )}
                   </div>
                 );
               })}

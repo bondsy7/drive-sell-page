@@ -176,6 +176,13 @@
       "when": 1794991919953,
       "tag": "0024_add_dealer_privacy_policy_url",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795179583704,
+      "tag": "0025_enable_sales_knowledge_retrieval_and_demo_send_guard",
+      "breakpoints": true
     }
   ]
 }

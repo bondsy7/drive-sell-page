@@ -2,6 +2,11 @@ import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import {
+  buildSalesKnowledgeContext,
+  retrieveSalesKnowledge,
+  toUsedKnowledgeContext,
+} from "../_shared/sales-knowledge.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,8 +32,10 @@ serve(async (req) => {
     });
     const adminSupabase = createClient(supabaseUrl, serviceKey);
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error("Not authenticated");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authError } = await supabase.auth.getClaims(token);
+    if (authError || !claims?.claims?.sub) throw new Error("Not authenticated");
+    const userId = claims.claims.sub;
 
     const body = await req.json();
     const {
@@ -39,7 +46,7 @@ serve(async (req) => {
 
     // Credit deduction (1 credit)
     const { data: creditResult } = await adminSupabase.rpc('deduct_credits', {
-      _user_id: user.id,
+      _user_id: userId,
       _amount: 1,
       _action_type: 'admin_adjustment',
       _description: 'Sales Assistant: Antwort generieren',
@@ -53,10 +60,10 @@ serve(async (req) => {
     }
 
     // Load dealer profile
-    const { data: dealerProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    const { data: dealerProfile } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
     // Load sales assistant profile
-    const { data: salesProfile } = await supabase.from('sales_assistant_profiles').select('*').eq('user_id', user.id).single();
+    const { data: salesProfile } = await supabase.from('sales_assistant_profiles').select('*').eq('user_id', userId).single();
 
     // Load vehicle context from project
     let vehicleData = vehicleContext || {};
@@ -77,23 +84,22 @@ serve(async (req) => {
     // Load journey template
     const { data: journeyTemplates } = await supabase.from('customer_journey_templates')
       .select('*').eq('journey_stage', journeyStage)
-      .or(`user_id.eq.${user.id},is_global.eq.true`)
+      .or(`user_id.eq.${userId},is_global.eq.true`)
       .order('is_global', { ascending: true }).limit(1);
     const journeyTemplate = journeyTemplates?.[0];
 
-    // Load knowledge documents
-    let knowledgeContext = '';
-    if (selectedKnowledgeDocumentIds?.length > 0) {
-      const { data: docs } = await supabase.from('sales_knowledge_documents')
-        .select('title, content_text, document_type')
-        .in('id', selectedKnowledgeDocumentIds).eq('is_active', true);
-      if (docs) knowledgeContext = docs.map((d: any) => `--- ${d.title} (${d.document_type}) ---\n${d.content_text || ''}`).join('\n\n');
-    } else {
-      const { data: docs } = await supabase.from('sales_knowledge_documents')
-        .select('title, content_text, document_type')
-        .eq('user_id', user.id).eq('is_active', true).limit(10);
-      if (docs) knowledgeContext = docs.map((d: any) => `--- ${d.title} (${d.document_type}) ---\n${d.content_text || ''}`).join('\n\n');
-    }
+    // Retrieve only this user's semantically matching, active knowledge chunks.
+    const knowledgeSources = await retrieveSalesKnowledge({
+      adminSupabase,
+      apiKey: geminiKey,
+      userId,
+      query: customerMessage,
+      selectedDocumentIds: selectedKnowledgeDocumentIds,
+      limit: 8,
+    });
+    const knowledgeContext = buildSalesKnowledgeContext(knowledgeSources);
+    const actualUsedContext = toUsedKnowledgeContext(knowledgeSources);
+    const demoProtected = knowledgeSources.some((source) => source.isDemo);
 
     // Load admin system prompt – first check ai_prompts (new unified), then legacy key
     let systemPrompt = 'Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.';
@@ -106,7 +112,7 @@ serve(async (req) => {
         // Fallback to legacy key
         const { data: adminSettings } = await adminSupabase.from('admin_settings')
           .select('value').eq('key', 'sales_assistant_system_prompt').single();
-        if ((adminSettings?.value as any)?.prompt) systemPrompt = (adminSettings.value as any).prompt;
+        if ((adminSettings?.value as any)?.prompt) systemPrompt = (adminSettings?.value as any).prompt;
       }
     } catch (e) { console.warn("Custom prompt load failed:", e); }
 
@@ -165,7 +171,9 @@ serve(async (req) => {
 
     // 7. Knowledge context
     if (knowledgeContext) {
-      promptBlocks.push(`## Hinterlegtes Firmenwissen\n${knowledgeContext}`);
+      promptBlocks.push(`## Hinterlegtes Firmenwissen\nNutze nur die folgenden, tatsächlich gefundenen Ausschnitte für firmenspezifische Fakten. Kennzeichne DEMO-Inhalte nicht als echte Angebotsbedingungen.\n${knowledgeContext}`);
+    } else {
+      promptBlocks.push('## Hinterlegtes Firmenwissen\nKeine passenden Wissens-Chunks gefunden. Erfinde keine Konditionen oder Firmenregeln.');
     }
 
     // 8. Channel rules
@@ -249,11 +257,17 @@ serve(async (req) => {
       };
     }
 
+    // Source binding is derived from retrieval, never from model-invented citations.
+    parsedResponse.usedContext = actualUsedContext;
+    if (demoProtected) {
+      parsedResponse.confidenceNotes = `DEMO-Wissen verwendet; nicht für automatischen Kundenversand freigegeben. ${parsedResponse.confidenceNotes || ''}`.trim();
+    }
+
     // Save conversation
     let convId = conversationId;
     if (!convId) {
       const { data: conv } = await supabase.from('sales_assistant_conversations').insert({
-        user_id: user.id,
+        user_id: userId,
         project_id: (projectId && projectId !== 'none') ? projectId : null,
         lead_id: (leadId && leadId !== 'none') ? leadId : null,
         vehicle_context: vehicleData,
@@ -280,22 +294,22 @@ serve(async (req) => {
     let messageId = null;
     if (convId) {
       await supabase.from('sales_assistant_messages').insert({
-        conversation_id: convId, user_id: user.id, role: 'user',
+        conversation_id: convId, user_id: userId, role: 'user',
         message_type: desiredOutputType, input_text: customerMessage, channel: sourceChannel,
       } as any);
 
       const { data: msg } = await supabase.from('sales_assistant_messages').insert({
-        conversation_id: convId, user_id: user.id, role: 'assistant',
+        conversation_id: convId, user_id: userId, role: 'assistant',
         message_type: desiredOutputType, output_text: parsedResponse.generatedText,
         channel: sourceChannel, approval_status: 'draft', generation_mode: 'quick_reply',
-        metadata: { usedContext: parsedResponse.usedContext, confidenceNotes: parsedResponse.confidenceNotes },
+        metadata: { usedContext: actualUsedContext, confidenceNotes: parsedResponse.confidenceNotes, demoProtected },
       } as any).select('id').single();
       messageId = (msg as any)?.id;
 
       // Save tasks
       if (parsedResponse.recommendedNextSteps?.length) {
         const taskRows = parsedResponse.recommendedNextSteps.map((step: any) => ({
-          conversation_id: convId, user_id: user.id,
+          conversation_id: convId, user_id: userId,
           title: step.title, description: step.description,
           task_type: step.type || 'other', priority: 'medium', status: 'open',
         }));
@@ -304,7 +318,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ...parsedResponse, conversationId: convId, messageId,
+      ...parsedResponse, conversationId: convId, messageId, demoProtected,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {

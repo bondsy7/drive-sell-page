@@ -3,6 +3,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
+import {
+  buildSalesKnowledgeContext,
+  formatKnowledgeSourcesForChat,
+  retrieveSalesKnowledge,
+  toUsedKnowledgeContext,
+} from "../_shared/sales-knowledge.ts";
+import { hasActiveDemoKnowledge, isDemoEmailContent } from "../_shared/sales-autopilot.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,8 +44,10 @@ serve(async (req) => {
     });
     const adminSupabase = createClient(supabaseUrl, serviceKey);
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error("Not authenticated");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authError } = await supabase.auth.getClaims(token);
+    if (authError || !claims?.claims?.sub) throw new Error("Not authenticated");
+    const userId = claims.claims.sub;
 
     await chargeCredits(req, "chat_message", { description: "Verkaufsassistent-Nachricht" });
 
@@ -47,33 +56,33 @@ serve(async (req) => {
     // Load all context in parallel
     const [notifResult, tasksResult, convsResult, profileResult, bookingsResult, quotesResult, tradeInsResult, leadsResult, emailsResult, dealerProfileResult] = await Promise.all([
       supabase.from('sales_notifications').select('*')
-        .eq('user_id', user.id).eq('is_read', false)
+        .eq('user_id', userId).eq('is_read', false)
         .order('created_at', { ascending: false }).limit(20),
       supabase.from('sales_assistant_tasks').select('*')
-        .eq('user_id', user.id).eq('status', 'open')
+        .eq('user_id', userId).eq('status', 'open')
         .order('created_at', { ascending: false }).limit(20),
       supabase.from('sales_assistant_conversations').select('*')
-        .eq('user_id', user.id).in('status', ['open', 'in_progress', 'waiting'])
+        .eq('user_id', userId).in('status', ['open', 'in_progress', 'waiting'])
         .order('updated_at', { ascending: false }).limit(10),
       supabase.from('sales_assistant_profiles').select('*')
-        .eq('user_id', user.id).single(),
+        .eq('user_id', userId).single(),
       supabase.from('test_drive_bookings').select('*')
-        .eq('user_id', user.id).in('status', ['pending', 'confirmed'])
+        .eq('user_id', userId).in('status', ['pending', 'confirmed'])
         .order('booking_date', { ascending: true }).limit(20),
       supabase.from('sales_quotes').select('*')
-        .eq('user_id', user.id).in('status', ['draft', 'sent'])
+        .eq('user_id', userId).in('status', ['draft', 'sent'])
         .order('created_at', { ascending: false }).limit(20),
       supabase.from('trade_in_valuations').select('*')
-        .eq('user_id', user.id).in('status', ['draft', 'sent'])
+        .eq('user_id', userId).in('status', ['draft', 'sent'])
         .order('created_at', { ascending: false }).limit(10),
       supabase.from('leads').select('*')
-        .eq('dealer_user_id', user.id)
+        .eq('dealer_user_id', userId)
         .order('created_at', { ascending: false }).limit(20),
       supabase.from('sales_email_outbox').select('*')
-        .eq('user_id', user.id).in('status', ['queued', 'sent'])
+        .eq('user_id', userId).in('status', ['queued', 'sent'])
         .order('created_at', { ascending: false }).limit(10),
       supabase.from('profiles').select('*')
-        .eq('id', user.id).single(),
+        .eq('id', userId).single(),
     ]);
 
     const notifications = notifResult.data || [];
@@ -91,6 +100,22 @@ serve(async (req) => {
     const today = new Date().toISOString().split('T')[0];
     const todayBookings = bookings.filter((b: any) => b.booking_date === today);
     const upcomingBookings = bookings.filter((b: any) => b.booking_date > today);
+
+    const lastUserMsg = messages[messages.length - 1];
+    if (!Array.isArray(messages) || lastUserMsg?.role !== 'user' || typeof lastUserMsg?.content !== 'string' || !lastUserMsg.content.trim()) {
+      throw new Error('Eine konkrete Nutzerfrage ist erforderlich');
+    }
+    const [knowledgeSources, demoKnowledgeActive] = await Promise.all([
+      retrieveSalesKnowledge({
+        adminSupabase,
+        apiKey: GEMINI_API_KEY,
+        userId,
+        query: lastUserMsg.content,
+        limit: 8,
+      }),
+      hasActiveDemoKnowledge(adminSupabase, userId),
+    ]);
+    const knowledgeContext = buildSalesKnowledgeContext(knowledgeSources);
 
     const DEFAULT_SALES_CHAT_INTRO = `Du bist der interne Verkaufsassistent-Chatbot für ein Autohaus. Du hast Zugriff auf folgende Systeme und Daten:`;
     const chatIntro = await getCustomPrompt(adminSupabase, "sales_chat", DEFAULT_SALES_CHAT_INTRO);
@@ -202,6 +227,10 @@ ${tasks.length > 0 ? `\n## OFFENE AUFGABEN\n${tasks.slice(0, 10).map((t: any) =>
 
 ${conversations.length > 0 ? `\n## AKTIVE GESPRÄCHE\n${conversations.slice(0, 5).map((c: any) => `- ${c.conversation_title || 'Unbenannt'} (Status: ${c.status}, Phase: ${c.journey_stage})${c.next_action ? ` → ${c.next_action}` : ''}`).join('\n')}` : ''}
 
+## HINTERLEGTES WISSEN
+${knowledgeContext || 'Keine passenden Wissens-Chunks gefunden. Erfinde keine Firmenregeln, Konditionen oder Prozesse.'}
+${knowledgeContext ? 'Nutze die Quellenkennungen [Q1], [Q2] usw. bei fachlichen Aussagen. DEMO-Quellen sind Testwissen und niemals als echte Kundenkonditionen darzustellen.' : ''}
+
 ## VERHALTEN
 - Antworte immer auf Deutsch, knapp und hilfreich
 - Sei PROAKTIV: Wenn ein neuer Lead Interesse an Probefahrt hat, schlage sofort vor einen Termin zu buchen. Bei Leasing/Finanzierungsinteresse, biete an ein Angebot zu erstellen. Bei Inzahlungnahme, frage nach Details zum Altfahrzeug.
@@ -217,25 +246,25 @@ ${conversations.length > 0 ? `\n## AKTIVE GESPRÄCHE\n${conversations.slice(0, 5
 ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
     // Save user message
-    const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg?.role === 'user') {
       await supabase.from('sales_chat_messages').insert({
-        user_id: user.id, role: 'user', content: lastUserMsg.content,
+        user_id: userId, role: 'user', content: lastUserMsg.content,
       });
     }
 
     // Check for approval commands
     const userText = (lastUserMsg?.content || '').toLowerCase();
     if (userText.includes('freigabe') || userText.includes('genehmig') || userText.includes('absenden') || userText.includes('freigeben')) {
-      if (pendingApprovals.length > 0) {
-        // Approve notifications
-        const approvalIds = pendingApprovals.map((n: any) => n.id);
+      const deliverableApprovals = pendingApprovals.filter((n: any) => !n.action_payload?.demoProtected && !n.action_payload?.isDemo);
+      if (deliverableApprovals.length > 0) {
+        // DEMO approvals stay pending and are never queued from a text command.
+        const approvalIds = deliverableApprovals.map((n: any) => n.id);
         await supabase.from('sales_notifications').update({
           approval_status: 'approved', is_read: true,
         }).in('id', approvalIds);
 
-        // Queue pending emails for sending
-        for (const n of pendingApprovals) {
+        // Queue only non-DEMO emails for sending.
+        for (const n of deliverableApprovals) {
           const payload = n.action_payload || {};
           if (payload.emailId) {
             await supabase.from('sales_email_outbox').update({ status: 'queued', error_message: null }).eq('id', payload.emailId);
@@ -303,18 +332,21 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
       const body = bodyMatch?.[1]?.trim();
 
       if (toEmail && subject && body) {
+        const demoEmail = demoKnowledgeActive || isDemoEmailContent(subject, body);
         const { data: queuedEmail, error } = await supabase.from('sales_email_outbox').insert({
-          user_id: user.id,
+          user_id: userId,
           to_email: toEmail,
           to_name: toName || null,
           subject: subject,
           body_html: `<div style="font-family:sans-serif;line-height:1.6">${body.replace(/\n/g, '<br>')}</div>`,
           body_text: body,
-          status: 'queued',
+          status: demoEmail ? 'pending_approval' : 'queued',
+          is_demo: demoEmail,
         }).select('id').single();
 
         if (!error) {
-          if (queuedEmail?.id) {
+          // DEMO answers must never enter the automatic customer-delivery path.
+          if (queuedEmail?.id && !demoEmail) {
             await fetch(`${supabaseUrl}/functions/v1/process-sales-email`, {
               method: 'POST',
               headers: {
@@ -324,7 +356,9 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
               body: JSON.stringify({ emailId: queuedEmail.id }),
             }).catch((invokeError) => console.error('process-sales-email invoke error:', invokeError));
           }
-          actions.push(`📧 E-Mail an ${toName || toEmail} in die Outbox gelegt.`);
+          actions.push(demoEmail
+            ? `DEMO-E-Mailentwurf für ${toName || toEmail} gespeichert – kein automatischer Versand.`
+            : `📧 E-Mail an ${toName || toEmail} in die Outbox gelegt.`);
         }
       }
     }
@@ -364,7 +398,7 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
               const estimate = JSON.parse(jsonMatch[0]);
               // Save to DB
               await supabase.from('trade_in_valuations').insert({
-                user_id: user.id,
+                user_id: userId,
                 vehicle_make: make,
                 vehicle_model: model,
                 vehicle_year: year,
@@ -398,7 +432,7 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
       if (customerName && bookingDate && bookingTime) {
         const { error } = await supabase.from('test_drive_bookings').insert({
-          user_id: user.id,
+          user_id: userId,
           customer_name: customerName,
           customer_email: customerEmail || null,
           customer_phone: customerPhone || null,
@@ -430,7 +464,7 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
         validUntil.setDate(validUntil.getDate() + validDays);
 
         const { error } = await supabase.from('sales_quotes').insert({
-          user_id: user.id,
+          user_id: userId,
           vehicle_title: vehicleTitle,
           base_price: basePrice,
           discount_amount: discountAmount,
@@ -453,12 +487,21 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
     if (actions.length > 0) {
       cleanContent += '\n\n---\n**Ausgeführte Aktionen:**\n' + actions.map(a => `- ${a}`).join('\n');
     }
+    if (demoKnowledgeActive && knowledgeSources.length > 0) {
+      cleanContent += '\n\n**DEMO-Schutz:** Diese Antwort verwendet gekennzeichnetes Testwissen und ist nicht für den automatischen Kundenversand freigegeben.';
+    }
+    cleanContent += formatKnowledgeSourcesForChat(knowledgeSources);
 
     await supabase.from('sales_chat_messages').insert({
-      user_id: user.id, role: 'assistant', content: cleanContent,
+      user_id: userId, role: 'assistant', content: cleanContent,
     });
 
-    return new Response(JSON.stringify({ content: cleanContent, actions }), {
+    return new Response(JSON.stringify({
+      content: cleanContent,
+      actions,
+      sources: toUsedKnowledgeContext(knowledgeSources),
+      demoProtected: demoKnowledgeActive,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
