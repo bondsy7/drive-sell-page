@@ -25,7 +25,9 @@ interface ImageUploadRemasterProps {
 
 interface UploadedImage {
   id: string;
+  /** Byte-for-byte source file, kept separate from the compressed AI working copy. */
   originalBase64: string;
+  aiBase64: string;
   remasteredBase64: string | null;
   status: 'pending' | 'processing' | 'done' | 'error';
   error?: string;
@@ -75,11 +77,12 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
 
       const rawBase64 = await fileToBase64(file);
-      const base64 = await compressImageForAI(rawBase64).catch(() => rawBase64);
+      const aiBase64 = await compressImageForAI(rawBase64).catch(() => rawBase64);
 
       newImages.push({
         id: crypto.randomUUID(),
-        originalBase64: base64,
+        originalBase64: rawBase64,
+        aiBase64,
         remasteredBase64: null,
         status: 'pending',
       });
@@ -96,9 +99,14 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const keepOriginal = remasterConfig.scene === 'none';
   const isRemasterConfigValid = !!remasterConfig.scene;
 
   const startRemastering = async () => {
+    if (keepOriginal) {
+      finishUp();
+      return;
+    }
     if (!remasterConfig.scene || !remasterConfig.licensePlate) {
       toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
       return;
@@ -180,11 +188,11 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         let mainRef: GeminiFileRef | null = null;
         let mainOpenAIRef: OpenAIFileRef | null = null;
         if (useOpenAIFiles) {
-          const uploaded = await uploadToOpenAIFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
+          const uploaded = await uploadToOpenAIFiles([{ id: img.id, imageBase64: img.aiBase64 }]);
           mainOpenAIRef = uploaded?.[0] || null;
           console.log(`[Remaster] OpenAI file id cached for main image: ${mainOpenAIRef ? 1 : 0}`);
         } else {
-          const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
+          const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.aiBase64 }]);
           mainRef = mainUploaded?.[0] || null;
         }
 
@@ -192,7 +200,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         let dynamicPrompt = defaultPrompt;
         if (cleanupActive) {
           try {
-            const detectedBranding = await detectVehicleBranding(img.originalBase64);
+            const detectedBranding = await detectVehicleBranding(img.aiBase64);
             console.log(`[Remaster] branding pre-scan img=${img.id} items=${detectedBranding?.length ?? 0}`);
             dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, promptOverrides);
           } catch (e) {
@@ -200,7 +208,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           }
         }
 
-        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef, dynamicPrompt, mainOpenAIRef));
+        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.aiBase64, mainRef, dynamicPrompt, mainOpenAIRef));
 
 
         if (error || !data?.imageBase64) {
@@ -231,6 +239,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
   };
 
   const retrySingleImage = async (id: string) => {
+    if (keepOriginal) return;
     const img = images.find(x => x.id === id);
     if (!img) return;
     setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
@@ -239,12 +248,12 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       const overrides = await fetchPromptOverrides();
       let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
       if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
-        try { detectedBranding = await detectVehicleBranding(img.originalBase64); } catch { /* continue */ }
+        try { detectedBranding = await detectVehicleBranding(img.aiBase64); } catch { /* continue */ }
       }
       const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
 
       // Upload main + shared assets via File API
-      const assets: { id: string; b64: string }[] = [{ id: 'main', b64: img.originalBase64 }];
+      const assets: { id: string; b64: string }[] = [{ id: 'main', b64: img.aiBase64 }];
       if (remasterConfig.customShowroomBase64) assets.push({ id: 'showroom', b64: remasterConfig.customShowroomBase64 });
       if (remasterConfig.customPlateImageBase64) assets.push({ id: 'plate', b64: remasterConfig.customPlateImageBase64 });
       if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) assets.push({ id: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
@@ -261,7 +270,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
 
       const { data, error } = await invokeRemasterVehicleImage({
-        imageBase64: openAIMap.main ? null : img.originalBase64,
+        imageBase64: openAIMap.main ? null : img.aiBase64,
         mainImageFileUri: refMap.main || null,
         mainImageOpenAIFile: openAIMap.main || null,
         customShowroomOpenAIFile: openAIMap.showroom || null,
@@ -310,6 +319,17 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     }));
 
   const finishUp = () => {
+    if (keepOriginal) {
+      const originals = images.map(img => img.originalBase64);
+      if (originals.length === 0) {
+        toast.error('Bitte lade zuerst mindestens ein Bild hoch.');
+        return;
+      }
+      toast.success(`${originals.length} Originalbild${originals.length === 1 ? '' : 'er'} unverändert übernommen.`);
+      onComplete(originals[0], originals.slice(1), originals);
+      return;
+    }
+
     const done = images.filter(img => img.status === 'done' && img.remasteredBase64);
     if (done.length === 0) {
       toast.error('Keine Bilder erfolgreich verarbeitet.');
@@ -323,14 +343,18 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
   };
 
   const doneCount = images.filter(i => i.status === 'done').length;
-  const allDone = images.length > 0 && images.every(i => i.status === 'done' || i.status === 'error') && !isProcessing;
+  const allDone = !keepOriginal && images.length > 0 && images.every(i => i.status === 'done' || i.status === 'error') && !isProcessing;
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
       <div className="text-center">
-        <h2 className="font-display text-xl font-bold text-foreground mb-2">Eigene Bilder hochladen & remastern</h2>
+        <h2 className="font-display text-xl font-bold text-foreground mb-2">
+          {keepOriginal ? 'Eigene Bilder unverändert übernehmen' : 'Eigene Bilder hochladen & remastern'}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Lade deine Fahrzeugfotos hoch. Die KI setzt das Auto in einen professionellen Showroom – alle Details bleiben erhalten.
+          {keepOriginal
+            ? 'Deine hochgeladenen Originaldateien werden exakt übernommen – ohne KI, Remastering oder Komprimierung.'
+            : 'Lade deine Fahrzeugfotos hoch. Die KI setzt das Auto in einen professionellen Showroom – alle Details bleiben erhalten.'}
         </p>
       </div>
 
@@ -472,6 +496,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
             >
               {isProcessing ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
+              ) : keepOriginal ? (
+                <><Upload className="w-4 h-4" /> Bilder unverändert übernehmen</>
               ) : (
                 <><ImageIcon className="w-4 h-4" /> Bilder remastern</>
               )}

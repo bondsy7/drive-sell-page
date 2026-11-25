@@ -1,4 +1,8 @@
 
+## Unveränderte eigene Fotos im PDF-Angebotsgenerator (25.11.2026)
+- [x] Bei „Eigene Fotos“ und „Keine Änderung am Bild“ die exakt hochgeladenen Originaldateien ohne KI-Remastering und ohne AI-Komprimierung auf der Angebotsseite verwenden.
+- [x] Zwei Regeltests und echter angemeldeter Browserablauf bestanden: zwei 1400×900-PNGs in Vorschau und Storage bytegleich, null KI-Bildaufrufe, keine Browserfehler; normaler Remastering-Weg unverändert. Sämtliche Testfahrzeuge, Projekte und Bilder gezielt entfernt.
+
 ## DEMO-Wissensbasis und Verkaufsassistent für Bonds (20.11.2026)
 - [x] Ausschließlich für d.bonds@autoactiva.de 15 umfangreiche, konsistente und sichtbar als DEMO gekennzeichnete Dokumente in allen 15 vorhandenen Wissenskategorien gespeichert.
 - [x] Ingestion, semantisches Chunking, echte Gemini-Embeddings und nutzergetrenntes Retrieval repariert: 31 Chunks, 31 Embeddings mit je 3.072 Dimensionen; neun Regeltests bestanden.
