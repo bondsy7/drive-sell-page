@@ -1,4 +1,5 @@
 import { buildCanonicalUrl, buildStructuredData, clampMetaDescription, landingSlugify, stripPlaceholders } from "../_shared/landing-seo.ts";
+import { landingDealerName, normalizeLandingDealerWording } from "../_shared/landing-dealer-wording.ts";
 import { blockedAccountResponse } from "../_shared/blocked-accounts.ts";
 // generate-landing-page v6 – Hero 3:1 + rich sections + reliable image gen
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -279,7 +280,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { brand, model, pageType, additionalInfo, dealer, variant, color, price, targetAudience, tone, imageStyle, uploadedImages, vehicleId, imageLinks, imageFill } = body;
+    const { brand, model, pageType, additionalInfo, variant, color, price, targetAudience, tone, imageStyle, uploadedImages, vehicleId, imageLinks, imageFill } = body;
+    let dealer = body.dealer;
 
     if (!brand || !model || !pageType) {
       return new Response(JSON.stringify({ error: "brand, model und pageType sind erforderlich" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -302,6 +304,7 @@ serve(async (req) => {
     const totalCost = ownCount <= 0 ? 5 : ownOnly ? 1 : 3;
     const authResult = await authenticateAndDeductCredits(req, totalCost);
     if (authResult instanceof Response) return authResult;
+    if (dealer) dealer = { ...dealer, name: landingDealerName(authResult.userId, dealer.name || '') };
 
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
@@ -463,6 +466,8 @@ ${!ownCount ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUSST für JEDE v
         return new Response(JSON.stringify({ error: "KI-Antwort konnte nicht verarbeitet werden" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
+
+    pageContent = normalizeLandingDealerWording(pageContent, authResult.userId);
 
     // ─── SEO post-processing (new pages only) ───
     {

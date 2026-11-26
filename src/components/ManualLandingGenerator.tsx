@@ -1,4 +1,5 @@
 import { fixBrandSpelling, fixBrandSpellingDeep } from '@/lib/brand-spelling';
+import { landingDealerName, normalizeLandingDealerWording } from '../../supabase/functions/_shared/landing-dealer-wording';
 import { readBrandContacts, contactsForBrand, contactBrands, injectBrandContacts } from '@/lib/brand-contacts';
 import { LANDING_UPLOAD_DISCLOSURE_NOTICE } from '@/lib/landing-image-disclosure';
 import { buildLandingPageHTML } from '@/lib/landing-page-builder';
@@ -300,7 +301,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       // Use auto-loaded profile
       const profile = dealerProfile;
       const dealer = profile ? {
-        name: profile.company_name || '',
+        name: landingDealerName(user.id, profile.company_name || ''),
         address: profile.address || '',
         postalCode: profile.postal_code || '',
         city: profile.city || '',
@@ -379,7 +380,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         setProgress('Seite wird gespeichert...');
         setProgressPercent(90);
 
-        data.pageContent = fixBrandSpellingDeep(data.pageContent);
+        data.pageContent = normalizeLandingDealerWording(fixBrandSpellingDeep(data.pageContent), user.id);
         const brandContacts = readBrandContacts(dealerProfile?.ci_settings);
         const chosenContacts = contactBrand === '__none' ? [] : contactsForBrand(brandContacts, contactBrand === '__auto' ? brand : contactBrand);
         if (chosenContacts.length) data.pageContent = injectBrandContacts(data.pageContent, chosenContacts);

@@ -1,4 +1,8 @@
 
+## Headerverlauf und Händlertexte für Paul (26.11.2026)
+- [x] HTML-Headerbild samt Zoom vollständig im Verlauf begrenzt; Kia und Škoda im echten Download bei 1850, 820 und 390 px geprüft. Vorheriger Überstand von 34/59 px reproduziert und nach Korrektur ausgeschlossen.
+- [x] Pauls 15 bestehende Landingpages inklusive SEO-/FAQ-Metadaten und künftige automatische Texte auf „wir-sind-jacobs“ vereinheitlicht; sieben gespeicherte Hintergrundheader korrigiert. Bearbeitung/Vorschau, Generator, HTML-/Offline-Download und read-only Website-Fragment-Ausgabe geprüft; andere Profile, Profilsettings und PDF-Angebote unverändert. 32 unterschiedliche Regel-/Regressionstests bestanden, Generator bereitgestellt, Vorschau fehlerfrei.
+
 ## Unveränderte eigene Fotos im PDF-Angebotsgenerator (25.11.2026)
 - [x] Bei „Eigene Fotos“ und „Keine Änderung am Bild“ die exakt hochgeladenen Originaldateien ohne KI-Remastering und ohne AI-Komprimierung auf der Angebotsseite verwenden.
 - [x] Zwei Regeltests und echter angemeldeter Browserablauf bestanden: zwei 1400×900-PNGs in Vorschau und Storage bytegleich, null KI-Bildaufrufe, keine Browserfehler; normaler Remastering-Weg unverändert. Sämtliche Testfahrzeuge, Projekte und Bilder gezielt entfernt.

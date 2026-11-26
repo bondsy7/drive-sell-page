@@ -47,6 +47,7 @@ import { ContactFormConfigDialog, ContactFormWidgetPreview } from '@/components/
 import LandingContactImagesDialog from '@/components/landing/LandingContactImagesDialog';
 import { injectBrandContactsIntoSection } from '@/lib/brand-contacts';
 import { buttonColorOverride } from '@/lib/landing-section-colors';
+import { landingDealerName, normalizeLandingDealerWording } from '../../supabase/functions/_shared/landing-dealer-wording';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -92,12 +93,12 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const generateCost = landingImageCost(costs, 'image_generate');
   const remasterCost = landingImageCost(costs, 'image_remaster');
   const { state: editorState, update: updateEditor, change, undo, canUndo } = useLandingEditorHistory({
-    content: {
+    content: normalizeLandingDealerWording({
       ...initialContent,
       meta: initialContent?.meta || { title: '', description: '', h1: '' },
       hero: initialContent?.hero || { headline: '', subheadline: '', ctaText: '' },
       sections: (initialContent?.sections || []).map(s => ({ ...s, enabled: s.enabled !== false })),
-    } as LandingPageContent,
+    } as LandingPageContent, user?.id),
     images: initialImages,
     liveInventory: initialLiveInventory?.enabled ? { ...DEFAULT_LIVE_INVENTORY, ...initialLiveInventory } : DEFAULT_LIVE_INVENTORY,
     contactFormEnabled: initialVehicleData?.contactFormEnabled !== false,
@@ -142,8 +143,9 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   }, [userId]);
   const dealer = useMemo<LandingPageDealer>(() => ({
     ...initialDealer,
+    name: landingDealerName(userId, initialDealer.name || ''),
     privacyPolicyUrl: resolveLandingPrivacyUrl(profilePrivacy.value, initialDealer.privacyPolicyUrl, profilePrivacy.loaded),
-  }), [initialDealer, profilePrivacy]);
+  }), [initialDealer, profilePrivacy, userId]);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);

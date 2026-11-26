@@ -403,7 +403,7 @@ export function buildLandingPageHTML(
     ${LIVE_INVENTORY_CSS}
     /* Narrow layouts (tablet / mobile and real devices): image and text always stack. */
     @media(max-width:768px){
-      section > div:not(.lp-hero-grid){padding:56px 20px !important}
+      section > div:not(.lp-hero-grid):not(.lp-hero-bg-media):not(.lp-hero-scrim){padding:56px 20px !important}
       .lp-split{grid-template-columns:1fr !important;gap:24px !important}
       .lp-split-media{order:-1 !important}
       .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
@@ -414,7 +414,7 @@ export function buildLandingPageHTML(
       ${LIVE_INVENTORY_NARROW_CSS}
     }
     @container lp (max-width:900px){
-      section > div:not(.lp-hero-grid){padding:56px 20px !important}
+      section > div:not(.lp-hero-grid):not(.lp-hero-bg-media):not(.lp-hero-scrim){padding:56px 20px !important}
       .lp-split{grid-template-columns:1fr !important;gap:28px !important;align-items:start !important}
       .lp-split-media{order:-1 !important}
       .lp-hero-text{padding:48px 24px !important;min-height:0 !important}
@@ -442,7 +442,7 @@ ${removed('header') ? '' : `  <header style="position:sticky;top:0;z-index:50;ba
   </header>`}
 
 ${removed('hero') ? '' : `  <div${sectionHeightAttributes(content.sectionHeights?.hero)}><section${heroBgMode ? ' class="lp-hero-bgmode"' : ''} style="position:relative;min-height:560px;overflow:hidden;background:${heroBackground}">
-${heroBgMode ? `    <div style="position:absolute;inset:0;z-index:0">
+${heroBgMode ? `    <div class="lp-hero-bg-media" style="position:absolute;inset:0;z-index:0;overflow:hidden">
       ${shouldLabelLandingImage(content, 'hero', heroImage) ? buildAiDisclosureImageOverlayHTML("landing") : ''}
       <img src="${heroImage}" alt="${escapeHtml(shouldLabelLandingImage(content, 'hero', heroImage) ? withAiDisclosureAlt(`${brand} ${model}`) : `${brand} ${model}`)}" style="width:100%;height:100%;object-fit:cover;display:block;${heroFrame ? frameImageCss(heroFrame) : ''}" loading="eager" decoding="async"/>
     </div>
