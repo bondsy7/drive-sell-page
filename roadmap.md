@@ -1,4 +1,8 @@
 
+## Dashboard-Kategorie Landingpages (26.11.2026)
+- [x] Eigene Kategorie mit Auswahl Landingpages/PDF-Angebotsseiten und zugehörigen Fahrzeugkarten ergänzt; rein lesend und gruppiert nach Fahrzeug-ID, Dashboard-Auswahl über URL erreichbar.
+- [x] Drei Regeltests bestanden; als Paul 13 Fahrzeuge mit Landingpages und 27 mit PDF-Angebotsseiten abgeglichen, beide direkten Fahrzeuglinks und PDF-Paginierung (24 + 3) geprüft. Desktop, 700 px und 390 px visuell geprüft, kein Seitenüberlauf oder Browserfehler im vollständigen erfolgreichen Lauf. Vorschau fehlerfrei; keine bestehenden Datensätze verändert.
+
 ## Headerverlauf und Händlertexte für Paul (26.11.2026)
 - [x] HTML-Headerbild samt Zoom vollständig im Verlauf begrenzt; Kia und Škoda im echten Download bei 1850, 820 und 390 px geprüft. Vorheriger Überstand von 34/59 px reproduziert und nach Korrektur ausgeschlossen.
 - [x] Pauls 15 bestehende Landingpages inklusive SEO-/FAQ-Metadaten und künftige automatische Texte auf „wir-sind-jacobs“ vereinheitlicht; sieben gespeicherte Hintergrundheader korrigiert. Bearbeitung/Vorschau, Generator, HTML-/Offline-Download und read-only Website-Fragment-Ausgabe geprüft; andere Profile, Profilsettings und PDF-Angebote unverändert. 32 unterschiedliche Regel-/Regressionstests bestanden, Generator bereitgestellt, Vorschau fehlerfrei.
