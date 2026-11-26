@@ -93,6 +93,13 @@ export interface RendererProps {
   liveInventory?: LiveInventoryView | null;
 }
 
+/**
+ * In the editor, CTA links must not navigate: the click belongs to the caret and
+ * to the edit menus. Preview mode and the exported HTML keep the real link.
+ */
+const editClickGuard = (editable: boolean): Pick<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'onClick'> =>
+  editable ? { onClick: (event) => event.preventDefault() } : {};
+
 const Editable: React.FC<{
   id?: string;
   value: string;
@@ -297,7 +304,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
     : null;
   const linkProps = (id: string, fallback: string) => {
     const { href, external } = resolveButtonLink(content.buttonLinks?.[id], fallback);
-    return external ? { href, target: '_blank', rel: 'noopener' } : { href };
+    return { ...(external ? { href, target: '_blank', rel: 'noopener' } : { href }), ...editClickGuard(editable) };
   };
   const linkControlTitled = (id: string, fallbackLabel: string, heading: string) => editable && onButtonLinkChange
     ? <ButtonLinkButton value={content.buttonLinks?.[id]} fallbackLabel={fallbackLabel} heading={heading} onChange={link => onButtonLinkChange(id, link)} />
@@ -456,6 +463,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
         {phone && (
           <a
             href={`tel:${phone}`}
+            {...editClickGuard(editable)}
             style={{
               background: headerButtonBg,
               color: readableOn(headerButtonBg),
@@ -737,12 +745,12 @@ const LandingRenderer: React.FC<RendererProps> = ({
           {address && <p style={{ color: '#64748b', fontSize: 15, marginBottom: 20 }}>{address}</p>}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 20 }}>
             {phone && (
-              <a href={`tel:${phone}`} style={contactPillStyle(primary)}>
+              <a href={`tel:${phone}`} {...editClickGuard(editable)} style={contactPillStyle(primary)}>
                 📞 {phone}
               </a>
             )}
             {dealer.email && (
-              <a href={`mailto:${dealer.email}`} style={contactPillStyle(primary)}>
+              <a href={`mailto:${dealer.email}`} {...editClickGuard(editable)} style={contactPillStyle(primary)}>
                 ✉ {dealer.email}
               </a>
             )}
@@ -751,6 +759,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
                 href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noopener"
+                {...editClickGuard(editable)}
                 style={{ ...contactPillStyle(primary), background: '#25d366', color: '#fff', borderColor: '#25d366' }}
               >
                 💬 WhatsApp
@@ -882,7 +891,7 @@ const SectionRenderer: React.FC<{
     : null;
   const linkProps = (field: string, fallback: string) => {
     const { href, external } = resolveButtonLink(buttonLinks?.[`${s.id}.${field}`], fallback);
-    return external ? { href, target: '_blank', rel: 'noopener' } : { href };
+    return { ...(external ? { href, target: '_blank', rel: 'noopener' } : { href }), ...editClickGuard(editable) };
   };
   const buttonBg = (field: string, fallback: string) => buttonColorOverride(buttonColors?.[`${s.id}.${field}`], fallback);
 
