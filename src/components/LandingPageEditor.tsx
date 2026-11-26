@@ -112,7 +112,8 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [contactConfigOpen, setContactConfigOpen] = useState(false);
   const [contactImagesSection, setContactImagesSection] = useState<string | null>(null);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
-  const { content, images, contactFormEnabled } = editorState;
+  const { content: storedContent, images, contactFormEnabled } = editorState;
+  const content = useMemo(() => normalizeLandingDealerWording(storedContent, user?.id), [storedContent, user?.id]);
   const liveInventory = useMemo(() => ({ ...editorState.liveInventory, cardDesign: profileCardDesign || undefined }), [editorState.liveInventory, profileCardDesign]);
   const setContent = useCallback((value: React.SetStateAction<LandingPageContent>) => updateEditor('content', value), [updateEditor]);
   const pendingInsert = useRef<{ sectionId: string; anchor: string; pos: 'before' | 'after'; id: string } | null>(null);
